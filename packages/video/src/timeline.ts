@@ -1,22 +1,31 @@
 import type { FieldColor } from "./theme";
 
+export type TransitionVariant = "sweep" | "zoom" | "ripple";
+
 /**
  * The story's order, length in beats and field color, as plain data so it can be tested without
  * Remotion. Sections of the soundtrack line up with scene starts (timeline.test.ts checks it):
  * the kick enters on the first cut, the climax lands on identity and the outro on closing.
- * No two neighbouring scenes share a field, so every cell wipe is visible (RHYTHM 3).
+ * No two neighbouring scenes share a field, so every cell transition is visible (RHYTHM 3).
+ * `transition` is how the scene takes over from the one before it (CellTransition); the climax
+ * zooms, the rest alternate so no two cuts in a row look the same.
  */
 export const TIMELINE = [
   { id: "intro", beats: 8, field: "ink" },
-  { id: "contributions", beats: 16, field: "persimmon" },
-  { id: "rhythm", beats: 20, field: "paper" },
-  { id: "tech-dna", beats: 16, field: "cobalt" },
-  { id: "projects", beats: 16, field: "paper" },
-  { id: "community", beats: 12, field: "cobalt" },
-  { id: "engineering", beats: 14, field: "ink" },
-  { id: "identity", beats: 16, field: "persimmon" },
-  { id: "closing", beats: 14, field: "ink" },
-] as const satisfies readonly { id: string; beats: number; field: FieldColor }[];
+  { id: "contributions", beats: 16, field: "persimmon", transition: "sweep" },
+  { id: "rhythm", beats: 20, field: "paper", transition: "ripple" },
+  { id: "tech-dna", beats: 16, field: "cobalt", transition: "sweep" },
+  { id: "projects", beats: 16, field: "paper", transition: "ripple" },
+  { id: "community", beats: 12, field: "cobalt", transition: "sweep" },
+  { id: "engineering", beats: 14, field: "ink", transition: "ripple" },
+  { id: "identity", beats: 16, field: "persimmon", transition: "zoom" },
+  { id: "closing", beats: 14, field: "ink", transition: "sweep" },
+] as const satisfies readonly {
+  id: string;
+  beats: number;
+  field: FieldColor;
+  transition?: TransitionVariant;
+}[];
 
 export type SceneId = (typeof TIMELINE)[number]["id"];
 
