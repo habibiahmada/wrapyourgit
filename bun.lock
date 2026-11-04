@@ -73,6 +73,7 @@
       "name": "@wyg/video",
       "version": "0.0.0",
       "dependencies": {
+        "@remotion/google-fonts": "4.0.540",
         "@wyg/schema": "workspace:*",
         "remotion": "4.0.540",
       },
@@ -427,6 +428,8 @@
     "@remotion/compositor-win32-x64-msvc": ["@remotion/compositor-win32-x64-msvc@4.0.540", "", { "os": "win32", "cpu": "x64" }, "sha512-cU698PDKh7n/o6OXVOUf5WpviP1S2cR7G0vU/lkcUcNAMnT84AmLMejVC2Em1qHCnYcvulYxyLbhx61OWiAg8Q=="],
 
     "@remotion/elevenlabs": ["@remotion/elevenlabs@4.0.540", "", { "dependencies": { "@remotion/captions": "4.0.540", "zod": "4.6.7" } }, "sha512-iU8X5xGwt0ZRZUAp1R9IsXN3Fd2QFaKGbCSKYqGYGSI+Vwi7FC8L0oStKLkONX5HUAJdy9svgmunM1lwvm0Ztw=="],
+
+    "@remotion/google-fonts": ["@remotion/google-fonts@4.0.540", "", { "dependencies": { "remotion": "4.0.540" } }, "sha512-rdJGUeJMLg8f9XtIQj+BWWw0BN0unN9ZpXSVg6Zhcs8O75k4ILDLqExUlom2qq1HVOJfWZaYyD5Eu1kR7ZtWTQ=="],
 
     "@remotion/lambda": ["@remotion/lambda@4.0.540", "", { "dependencies": { "@aws-sdk/client-cloudwatch-logs": "3.986.0", "@aws-sdk/client-iam": "3.986.0", "@aws-sdk/client-lambda": "3.986.0", "@aws-sdk/client-s3": "3.986.0", "@aws-sdk/client-service-quotas": "3.986.0", "@aws-sdk/client-sts": "3.986.0", "@aws-sdk/lib-storage": "3.986.0", "@aws-sdk/middleware-flexible-checksums": "3.972.5", "@aws-sdk/s3-request-presigner": "3.986.0", "@remotion/bundler": "4.0.540", "@remotion/cli": "4.0.540", "@remotion/lambda-client": "4.0.540", "@remotion/licensing": "4.0.540", "@remotion/renderer": "4.0.540", "@remotion/streaming": "4.0.540", "@smithy/abort-controller": "4.0.1", "remotion": "4.0.540", "zod": "4.6.7" } }, "sha512-/DuyCFN9avl0sUdLejh8hifntt0mKYxlsUjNmMgn5t00t31Iah1cpn0QOlV1XE6NfwfgfncMwPImkPmJhdzlAw=="],
 

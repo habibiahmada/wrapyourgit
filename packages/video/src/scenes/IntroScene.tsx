@@ -1,41 +1,81 @@
 import type { RecapData } from "@wyg/schema";
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { beats } from "../audio/track";
+import { Field } from "../components/Field";
+import { Slam } from "../components/Slam";
+import { heatLevels } from "../heat";
 import { useLayout } from "../layout";
-import { theme } from "../theme";
+import { palette, useUnit } from "../theme";
 
+/** Ink field. The user's first week of the year lights up cell by cell, then the title lands. */
 export function IntroScene({ data }: { data: RecapData }) {
   const frame = useCurrentFrame();
-  const { fps, width } = useVideoConfig();
+  const { fps } = useVideoConfig();
   const layout = useLayout();
-  const reveal = spring({ frame, fps, config: { damping: 200 } });
-  const titleSize = width * (layout === "landscape" ? 0.07 : 0.11);
+  const u = useUnit();
+  const firstWeek = heatLevels(data.contributions.calendar).slice(0, 7);
+  const cell = u * (layout === "landscape" ? 7 : 8);
+  const title = u * (layout === "portrait" ? 15 : 13);
 
-  return (
-    <AbsoluteFill
+  const week = (
+    <div
       style={{
-        background: theme.background,
-        color: theme.foreground,
-        fontFamily: theme.fontSans,
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
+        display: "flex",
+        flexDirection: layout === "landscape" ? "column" : "row",
+        gap: cell * 0.18,
       }}
     >
-      <div
-        style={{
-          opacity: reveal,
-          transform: `translateY(${interpolate(reveal, [0, 1], [40, 0])}px)`,
-        }}
-      >
-        <div style={{ fontFamily: theme.fontMono, color: theme.muted, fontSize: titleSize * 0.22 }}>
+      {Array.from({ length: 7 }, (_, i) => {
+        const level = firstWeek[i] ?? 0;
+        // Cells light on half-beats across the first four beats, before the title lands.
+        const lit = interpolate(frame, [i * beats(0.5, fps), i * beats(0.5, fps) + 4], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        return (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: seven fixed weekday cells, index is the weekday
+            key={i}
+            style={{
+              width: cell,
+              height: cell,
+              borderRadius: cell * 0.12,
+              background: level > 0 ? palette.heat[level - 1] : palette.paper,
+              opacity: level > 0 ? lit : lit * 0.14,
+              transform: `scale(${0.6 + 0.4 * lit})`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+
+  const text = (
+    <div style={{ display: "flex", flexDirection: "column", gap: u * 2 }}>
+      <Slam at={beats(4, fps)}>
+        <div style={{ fontSize: u * 4.5, fontWeight: 700 }}>
           @{data.profile.login} · {data.meta.year}
         </div>
-        <div style={{ fontSize: titleSize, fontWeight: 700, lineHeight: 1.05 }}>
-          Your year
-          <br />
-          in code.
-        </div>
+      </Slam>
+      <div style={{ fontSize: title, fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.02em" }}>
+        <Slam at={beats(5, fps)}>Your year</Slam>
+        <Slam at={beats(6, fps)}>in code.</Slam>
       </div>
-    </AbsoluteFill>
+    </div>
+  );
+
+  return (
+    <Field
+      color="ink"
+      style={{
+        flexDirection: layout === "landscape" ? "row" : "column",
+        justifyContent: layout === "landscape" ? "flex-start" : "space-between",
+        alignItems: layout === "landscape" ? "center" : "flex-start",
+        gap: u * 8,
+      }}
+    >
+      {week}
+      {text}
+    </Field>
   );
 }

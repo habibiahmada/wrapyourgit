@@ -16,4 +16,4 @@ Videos are downloaded and re-posted to Instagram/TikTok/YouTube, so the music li
 
 ## Consequences
 
-Music must be chosen before scene timing is locked (M4). Placeholder silence until then.
+Music must be chosen before scene timing is locked (M4). Until then a synthesised CC0 placeholder (`scripts/synth-placeholder-track.ts`, 120 BPM) is used to test beat sync, with the same metadata shape the real track will use (`packages/video/src/audio/track.ts`).

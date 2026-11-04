@@ -20,6 +20,10 @@ A ~90 s video at 30 fps is ~2,700 frames. Vercel functions cannot run Chromium +
 - Spend burns credits now, real money from January (see ADR-0005).
 - Site bundle must be redeployed whenever `packages/video` changes (CI step later).
 
+## Local baseline (Spike B, 2026-11-04)
+
+Four scenes, 900 frames (30 s), real RecapData, Remotion CLI on the maintainer's laptop, rendering from one prebuilt bundle: 9:16 85 s, 4:5 58 s, 1:1 42 s, 16:9 62 s. Each MP4 is about 2 MB (H.264 + AAC 48 kHz). A Lambda render is still to be measured.
+
 ## To record after Spike B
 
 | Format | Duration | Render time | Est. cost/render |

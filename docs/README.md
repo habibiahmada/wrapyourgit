@@ -8,6 +8,7 @@
 | [architecture/decisions/](architecture/decisions/)   | ADRs: one decision per file, with alternatives        | A non-trivial technical choice is made or reversed |
 | [analytics/metrics.md](analytics/metrics.md)         | Definition, GitHub source and caveats of every metric | Any metric is added or its computation changes     |
 | [video/scene-system.md](video/scene-system.md)       | Scenes, layouts, animation rules, audio, export       | Scenes, formats or the audio approach change       |
+| [../DESIGN.md](../DESIGN.md)                         | Visual direction: palette, type, motif, dials         | The look of the story changes                      |
 | [development/setup.md](development/setup.md)         | Local setup, env vars, GitHub App, AWS                | Setup steps change                                 |
 
 **Source of truth order:** code + tests > metrics.md / ADRs > PRD. If they disagree, fix the doc in the same change.

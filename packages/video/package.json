@@ -12,6 +12,7 @@
     "render": "remotion render src/remotion-entry.ts"
   },
   "dependencies": {
+    "@remotion/google-fonts": "4.0.540",
     "@wyg/schema": "workspace:*",
     "remotion": "4.0.540"
   },

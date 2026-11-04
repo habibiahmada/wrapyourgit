@@ -60,10 +60,10 @@ Before declaring work done: `bun run typecheck && bun test && bun run lint`.
 
 ## Where to read next
 
-| You are working on               | Read                                                                  |
-| -------------------------------- | --------------------------------------------------------------------- |
-| Anything                         | [docs/README.md](docs/README.md)                                      |
-| GitHub fetching / metrics        | [docs/analytics/metrics.md](docs/analytics/metrics.md)                |
-| Scenes, animation, audio, export | [docs/video/scene-system.md](docs/video/scene-system.md)              |
-| Infra, auth, deploy              | [docs/architecture/overview.md](docs/architecture/overview.md) + ADRs |
-| What to build next               | [docs/product/roadmap.md](docs/product/roadmap.md)                    |
+| You are working on               | Read                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| Anything                         | [docs/README.md](docs/README.md)                                                  |
+| GitHub fetching / metrics        | [docs/analytics/metrics.md](docs/analytics/metrics.md)                            |
+| Scenes, animation, audio, export | [DESIGN.md](DESIGN.md) + [docs/video/scene-system.md](docs/video/scene-system.md) |
+| Infra, auth, deploy              | [docs/architecture/overview.md](docs/architecture/overview.md) + ADRs             |
+| What to build next               | [docs/product/roadmap.md](docs/product/roadmap.md)                                |
