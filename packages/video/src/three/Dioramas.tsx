@@ -259,6 +259,12 @@ const SCENES: Record<ArchetypeId, (props: { t: number }) => React.ReactNode> = {
   "open-sourcer": OpenSourcer,
 };
 
+/** Only the archetype's props and characters, without stage, lights or backdrop (for cutouts). */
+export function ArchetypeProps({ archetype, t = 0 }: { archetype: ArchetypeId; t?: number }) {
+  const Scene = SCENES[archetype];
+  return <Scene t={t} />;
+}
+
 /** The archetype's diorama on the shared stage. */
 export function ArchetypeDiorama({
   archetype,
