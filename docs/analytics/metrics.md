@@ -85,13 +85,17 @@ Copy rule: "Your projects gained 128 stars in 2026" vs "Your projects have 412 s
 
 ## Archetypes
 
-Rule-based, computed in `packages/analytics` (M3). Each archetype gets a score 0–1; highest score wins if it is ≥ its minimum threshold, otherwise `archetype = null` ("Your story is just beginning"). `reasons` lists the facts that drove the score.
+Rule-based, in `packages/analytics/src/archetype.ts`. An archetype is only scored when its **minimum** is met. Its **strength** is the signal divided by what a strong year looks like (1 = strong). The highest strength wins, and ties go to the archetype listed first in the table. When no minimum is met, `archetype = null` and the UI says "Your story is just beginning". `scores` holds `strength / (1 + strength)` for every archetype that qualified. That maps each strength into 0–1 without changing the order, and two very strong archetypes never both land on exactly 1. `reasons` are the winner's facts, most telling first, with zero-valued facts left out. Counts only: repository names never appear in reasons.
 
-| Id           | Signal (draft, tune with real data)                            | Minimum                                    |
-| ------------ | -------------------------------------------------------------- | ------------------------------------------ |
-| builder      | Repos created + commits to own repos                           | ≥ 2 repos created or ≥ 50 own-repo commits |
-| consistent   | activeDays / days in period, longest streak                    | ≥ 30% active days                          |
-| explorer     | `languages.distinctCount`, new languages vs earlier years (P1) | ≥ 4 languages                              |
-| collaborator | reviews + PRs to others' repos                                 | ≥ 10 reviews or ≥ 10 external PRs          |
-| night-owl    | share of commits 22:00–04:00 local (estimated)                 | ≥ 40% of ≥ 50 sampled commits              |
-| open-sourcer | contributions to external public repos                         | ≥ 3 external repos                         |
+| Id           | Minimum                                      | Strength (1 = strong year)                     | Reasons                                      |
+| ------------ | -------------------------------------------- | ---------------------------------------------- | -------------------------------------------- |
+| builder      | ≥ 2 repos created or ≥ 50 own-repo commits   | max(created / 10, own-repo commits / 500)      | own-repo commits; repos created this year    |
+| consistent   | ≥ 30% of days in the period active           | (active share / 0.5 + longest streak / 30) / 2 | active share; longest streak                 |
+| explorer     | ≥ 4 languages (`languages.distinctCount`)    | languages / 6                                  | language count                               |
+| collaborator | ≥ 10 reviews or ≥ 10 external PRs            | (reviews + external PRs) / 30                  | reviews; PRs to repos the user doesn't own   |
+| night-owl    | ≥ 40% of ≥ 50 sampled commits in 22:00–04:00 | night share / 0.4                              | night share (estimated: sample of top repos) |
+| open-sourcer | ≥ 3 external public repos                    | external public repos / 6                      | count of public repos the user doesn't own   |
+
+Inputs: own-repo commits sum `commitContributionsByRepository` where owner = viewer. External PRs sum `pullRequestContributionsByRepository.contributions.totalCount` where owner ≠ viewer. External public repos are the union of commit and PR repos where owner ≠ viewer and `isPrivate` is false. The active share is `activeDays` divided by the days in the period so far.
+
+**Tuning status (2026-11-04):** the reference values were set against one real account (the maintainer's year so far) plus the persona cases in `archetype.test.ts`. That account comes out as builder 0.80, open-sourcer 0.63, consistent 0.62, explorer 0.60 and collaborator 0.35, which reflects 2,049 commits to their own repos against about 40 elsewhere. Re-tune with more accounts during the staging beta (M6) before the final recaps.

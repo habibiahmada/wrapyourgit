@@ -1,4 +1,5 @@
 import { type Metric, type RecapData, type RepoRef, SCHEMA_VERSION } from "@wyg/schema";
+import { classifyArchetype, nightShare } from "./archetype";
 import { busiestMonth, countActiveDays, longestStreak, monthlyTotals } from "./calendar";
 
 /**
@@ -19,7 +20,12 @@ export interface ActivityInput {
   };
   calendar: { date: string; count: number }[];
   commitRepos: { repo: RepoInput; commits: number; languages: LanguageInput }[];
-  pullRequestRepos: { nameWithOwner: string; ownerLogin: string }[];
+  pullRequestRepos: {
+    nameWithOwner: string;
+    ownerLogin: string;
+    isPrivate: boolean;
+    pullRequests: number;
+  }[];
   pullRequests: { merged: boolean }[];
   issues: { closed: boolean }[];
   ownedRepos: RepoInput[];
@@ -73,6 +79,12 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
   const languages = languageShares(input.commitRepos);
   const ownedRepos = input.ownedRepos.filter((repo) => !repo.isFork);
   const reposCreated = ownedRepos.filter((repo) => inPeriod(repo.createdAt));
+  const activeDays = countActiveDays(calendar);
+  const streak = longestStreak(calendar);
+  const hourly = hourlyCommits(input.commitSample, timezone);
+  const distinctLanguages = languages.filter((l) => l.share >= DISTINCT_LANGUAGE_MIN_SHARE).length;
+  const external = externalRepos(input);
+  const night = hourly.status === "ok" ? nightShare(hourly.value) : { share: null, sample: 0 };
 
   return {
     meta: {
@@ -93,17 +105,17 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
       total: input.totals.contributions,
       commits: input.totals.commits,
       privateCount: ok(input.totals.restricted),
-      activeDays: countActiveDays(calendar),
-      longestStreak: longestStreak(calendar),
+      activeDays,
+      longestStreak: streak,
       busiestMonth: busiestMonth(calendar),
       monthly: monthlyTotals(calendar),
       weekday: weekdayTotals(calendar),
-      hourly: hourlyCommits(input.commitSample, timezone),
+      hourly,
       calendar,
     },
     languages: {
       top: languages.slice(0, TOP_LANGUAGES),
-      distinctCount: languages.filter((l) => l.share >= DISTINCT_LANGUAGE_MIN_SHARE).length,
+      distinctCount: distinctLanguages,
     },
     repositories: {
       ownedTotal: ownedRepos.length,
@@ -137,10 +149,28 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
       issuesOpened: input.totals.issues,
       issuesClosed: countDetailed(input.issues, input.totals.issues, (issue) => issue.closed),
       reviews: input.totals.reviews,
-      externalRepos: countExternalRepos(input),
+      externalRepos: external.all.size,
     },
-    // Archetypes are M3: thresholds get tuned against real accounts first.
-    identity: { archetype: null, scores: {}, reasons: [] },
+    identity: classifyArchetype({
+      reposCreated: reposCreated.length,
+      ownRepoCommits: sum(
+        input.commitRepos
+          .filter((entry) => !external.isExternal(entry.repo.ownerLogin))
+          .map((entry) => entry.commits),
+      ),
+      activeDayShare: calendar.length > 0 ? activeDays / calendar.length : 0,
+      longestStreak: streak.days,
+      distinctLanguages,
+      reviews: input.totals.reviews,
+      externalPullRequests: sum(
+        input.pullRequestRepos
+          .filter((repo) => external.isExternal(repo.ownerLogin))
+          .map((repo) => repo.pullRequests),
+      ),
+      nightShare: night.share,
+      nightSample: night.sample,
+      externalPublicRepos: external.public.size,
+    }),
   };
 }
 
@@ -231,16 +261,22 @@ function countDetailed<T>(
   };
 }
 
-function countExternalRepos(input: ActivityInput): number {
+/**
+ * Repos not owned by the user that received their commits or PRs. `public` drops private ones:
+ * open-sourcer counts only work other people can see.
+ */
+function externalRepos(input: ActivityInput) {
   const login = input.viewer.login.toLowerCase();
-  const external = new Set<string>();
-  for (const { repo } of input.commitRepos) {
-    if (repo.ownerLogin.toLowerCase() !== login) external.add(repo.nameWithOwner);
+  const isExternal = (ownerLogin: string) => ownerLogin.toLowerCase() !== login;
+  const all = new Set<string>();
+  const publicRepos = new Set<string>();
+  const repos = [...input.commitRepos.map(({ repo }) => repo), ...input.pullRequestRepos];
+  for (const repo of repos) {
+    if (!isExternal(repo.ownerLogin)) continue;
+    all.add(repo.nameWithOwner);
+    if (!repo.isPrivate) publicRepos.add(repo.nameWithOwner);
   }
-  for (const repo of input.pullRequestRepos) {
-    if (repo.ownerLogin.toLowerCase() !== login) external.add(repo.nameWithOwner);
-  }
-  return external.size;
+  return { all, public: publicRepos, isExternal };
 }
 
 /** Highest-scoring repo, or null when every score is 0 ("most starred" of zero stars is noise). */

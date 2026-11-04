@@ -54,8 +54,8 @@ const baseInput = (): ActivityInput => ({
     },
   ],
   pullRequestRepos: [
-    { nameWithOwner: "other/lib", ownerLogin: "other" },
-    { nameWithOwner: "third/docs", ownerLogin: "third" },
+    { nameWithOwner: "other/lib", ownerLogin: "other", isPrivate: false, pullRequests: 2 },
+    { nameWithOwner: "third/docs", ownerLogin: "third", isPrivate: false, pullRequests: 1 },
   ],
   pullRequests: [{ merged: true }, { merged: false }, { merged: true }],
   issues: [{ closed: true }, { closed: false }],
@@ -165,6 +165,12 @@ describe("buildRecap", () => {
     const input = baseInput();
     input.totals.pullRequests = 5;
     expect(buildRecap(input, options).engineering.prsMerged).toMatchObject({ estimated: true });
+  });
+
+  test("identity is derived from the same input: 3 of 4 days active makes them consistent", () => {
+    const { identity } = buildRecap(baseInput(), options);
+    expect(identity.archetype).toBe("consistent");
+    expect(identity.reasons).toEqual(["Active on 75% of days", "A 2-day streak"]);
   });
 
   test("merged count is unavailable when no PR details came back", () => {

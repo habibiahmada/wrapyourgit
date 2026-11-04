@@ -1,5 +1,6 @@
 import type { RecapData } from "@wyg/schema";
 import { EDITION_YEAR } from "@wyg/schema";
+import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "@wyg/video/copy";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -168,6 +169,21 @@ function RecapSummary({
             <dd className="text-3xl font-extrabold tabular-nums">
               {contributions.commits.toLocaleString("en-US")}
             </dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="text-ink-soft">Your archetype</dt>
+            <dd className="text-3xl font-extrabold">
+              {data.identity.archetype ? ARCHETYPE_LABELS[data.identity.archetype] : NO_ARCHETYPE}
+            </dd>
+            {data.identity.reasons.length > 0 && (
+              <dd>
+                <ul className="mt-1 text-base">
+                  {data.identity.reasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </dd>
+            )}
           </div>
         </dl>
       </div>

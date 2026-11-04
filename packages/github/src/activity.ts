@@ -19,7 +19,13 @@ export interface YearActivity {
   calendar: { date: string; count: number }[];
   /** Repos the user committed to in the period, with their commit count (summed per day). */
   commitRepos: { repo: RepoFacts; commits: number; languages: LanguageBytes }[];
-  pullRequestRepos: { nameWithOwner: string; ownerLogin: string }[];
+  /** Repos the user opened PRs in, with how many PRs (one contribution per PR). */
+  pullRequestRepos: {
+    nameWithOwner: string;
+    ownerLogin: string;
+    isPrivate: boolean;
+    pullRequests: number;
+  }[];
   /** PR/issue details GitHub returned; may be fewer than `totals` when some are restricted. */
   pullRequests: { merged: boolean }[];
   issues: { closed: boolean }[];
@@ -112,7 +118,8 @@ const OVERVIEW_QUERY = /* GraphQL */ `
           weeks { contributionDays { date contributionCount } }
         }
         pullRequestContributionsByRepository(maxRepositories: 100) {
-          repository { nameWithOwner owner { login } }
+          contributions { totalCount }
+          repository { nameWithOwner isPrivate owner { login } }
         }
       }
     }
@@ -137,7 +144,8 @@ interface RawOverview {
         weeks: { contributionDays: { date: string; contributionCount: number }[] }[];
       };
       pullRequestContributionsByRepository: {
-        repository: { nameWithOwner: string; owner: { login: string } };
+        contributions: { totalCount: number };
+        repository: { nameWithOwner: string; isPrivate: boolean; owner: { login: string } };
       }[];
     };
   };
@@ -495,6 +503,8 @@ export async function fetchYearActivity(
     pullRequestRepos: collection.pullRequestContributionsByRepository.map((entry) => ({
       nameWithOwner: entry.repository.nameWithOwner,
       ownerLogin: entry.repository.owner.login,
+      isPrivate: entry.repository.isPrivate,
+      pullRequests: entry.contributions.totalCount,
     })),
     pullRequests: pullRequests.items,
     issues: issues.items,
