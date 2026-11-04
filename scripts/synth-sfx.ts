@@ -10,7 +10,7 @@
 
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { SFX, type SfxName } from "../packages/video/src/audio/sfx";
+import { BLIP_STEPS, SFX, type SfxName, sfxFile } from "../packages/video/src/audio/sfx";
 
 const SAMPLE_RATE = 44_100;
 const A5 = 880;
@@ -37,7 +37,7 @@ function lowPass(cutoff: (t: number) => number) {
 }
 
 /** Builds a voice per sound: a function of time in seconds, called once per sample in order. */
-const VOICES: Record<SfxName, () => (t: number, length: number) => number> = {
+const VOICES: Record<SfxName, (step: number) => (t: number, length: number) => number> = {
   whoosh: () => {
     const filter = lowPass((t) => 300 + 5000 * Math.sin(Math.PI * Math.min(1, t / 0.45)));
     return (t, length) => filter(noise(), t) * Math.sin(Math.PI * (t / length)) ** 1.5 * 2.2;
@@ -71,7 +71,10 @@ const VOICES: Record<SfxName, () => (t: number, length: number) => number> = {
       return thump + 0.35 * filter(noise(), t) * Math.exp(-t * 30);
     };
   },
-  blip: () => (t) => (0.8 * sine(A5, t) + 0.2 * sine(A5 * 2, t)) * Math.exp(-t * 28),
+  blip: (step) => {
+    const frequency = A5 * (BLIP_STEPS[step] ?? 1);
+    return (t) => (0.8 * sine(frequency, t) + 0.2 * sine(frequency * 2, t)) * Math.exp(-t * 28);
+  },
   shimmer: () => (t, length) => {
     // Bell partials of an A major-ish arpeggio rising across the sweep.
     const partials = [1, 1.25, 1.5, 2, 2.5, 3];
@@ -122,9 +125,10 @@ function wav(samples: Float32Array): ArrayBuffer {
 const publicDir = resolve(import.meta.dir, "../packages/video/public");
 await mkdir(join(publicDir, "audio/sfx"), { recursive: true });
 
-for (const name of Object.keys(SFX) as SfxName[]) {
-  const { file, seconds } = SFX[name];
-  const voice = VOICES[name]();
+async function render(name: SfxName, step: number) {
+  const { seconds } = SFX[name];
+  const file = sfxFile(name, step);
+  const voice = VOICES[name](step);
   const samples = new Float32Array(Math.round(seconds * SAMPLE_RATE));
   // A 2 ms fade at both ends so no effect starts or stops with a click.
   const edge = 0.002 * SAMPLE_RATE;
@@ -134,4 +138,12 @@ for (const name of Object.keys(SFX) as SfxName[]) {
   }
   await Bun.write(join(publicDir, file), wav(samples));
   console.log(`Wrote ${file} (${seconds}s)`);
+}
+
+for (const name of Object.keys(SFX) as SfxName[]) {
+  if (name === "blip") {
+    for (let step = 0; step < BLIP_STEPS.length; step++) await render(name, step);
+  } else {
+    await render(name, 0);
+  }
 }
