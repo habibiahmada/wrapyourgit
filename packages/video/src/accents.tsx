@@ -2,6 +2,8 @@ import type { LayoutFamily, RecapData } from "@wyg/schema";
 import type { ReactNode } from "react";
 import { beats } from "./audio/track";
 import { Accent } from "./components/Accent";
+import { LiveAccent } from "./components/LiveAccent";
+import { ChibiCell } from "./three/ChibiCell";
 import type { SceneId } from "./timeline";
 
 /*
@@ -19,13 +21,18 @@ const at = (layout: LayoutFamily, spots: PerLayout): Spot => spots[layout];
 export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily): ReactNode {
   switch (id) {
     case "intro": {
-      // Cell waves hello from the right edge while the first week lights up.
+      // Cell waves hello from the right while the first week lights up: live 3D, so the arm,
+      // head, legs and eyes really move.
       const spot = at(layout, {
-        portrait: { x: 0.8, y: 0.36, size: 1.25, rotate: -10 },
-        compact: { x: 0.8, y: 0.4, size: 0.9, rotate: -10 },
-        landscape: { x: 0.78, y: 0.46, size: 0.85, rotate: -10 },
+        portrait: { x: 0.72, y: 0.4, size: 0.95 },
+        compact: { x: 0.76, y: 0.42, size: 0.75 },
+        landscape: { x: 0.76, y: 0.46, size: 0.72 },
       });
-      return <Accent art="cutout-cell-wave" at={beats(1)} enter="right" idle="wave" {...spot} />;
+      return (
+        <LiveAccent at={beats(1)} enter="right" x={spot.x} y={spot.y} size={spot.size}>
+          {(t) => <ChibiCell motion="wave" t={t} rotationY={-0.35} />}
+        </LiveAccent>
+      );
     }
     case "contributions": {
       // Cell cheers the big number from the empty side, clear of the stat chips.
