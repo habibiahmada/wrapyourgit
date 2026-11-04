@@ -4,18 +4,18 @@ How the story and the exported video are built. Code: `packages/video`.
 
 ## Building blocks
 
-| Concept       | Where                               | Notes                                                                                                  |
-| ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `WrapStory`   | `src/WrapStory.tsx`                 | `<Series>` of all scenes, takes `{ data: RecapData }`                                                  |
-| `SCENES`      | `src/WrapStory.tsx`                 | Ordered list `{ id, durationInFrames, Component }`. Also used by the web Player to seek scene-by-scene |
-| Compositions  | `src/Root.tsx`                      | `wrap-9x16`, `wrap-4x5`, `wrap-1x1`, `wrap-16x9`                                                       |
-| Layout family | `useLayout()`                       | `portrait` / `compact` / `landscape` ([ADR-0003](../architecture/decisions/0003-layout-families.md))   |
-| Theme         | `src/theme.ts`                      | Tokens from [DESIGN.md](../../DESIGN.md): palette, allowed text pairings, font, `useUnit()`            |
-| Fixtures      | `src/fixtures/`                     | `sampleRecap` for Studio; `emptyRecap` and `busyRecap` (long names, five-digit totals) for edge checks |
-| Track         | `src/audio/track.ts`                | BPM, sections and `beats(n)`; scene durations are whole beats                                          |
-| Transition    | `src/components/CellTransition.tsx` | Cell transition that opens every scene after the intro; variant per scene in `timeline.ts`             |
-| Sound effects | `src/components/Sfx.tsx`            | `<Sfx>`, `CountTicks`; rendered by the components that move (`Slam`, bars, transitions)                |
-| Accent        | `src/accents.tsx`                   | Per-scene illustration (baked cutout) passed to `Field` through `AccentContext`, drawn behind the text |
+| Concept       | Where                                | Notes                                                                                                  |
+| ------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `WrapStory`   | `src/WrapStory.tsx`                  | `<Series>` of all scenes, takes `{ data: RecapData }`                                                  |
+| `SCENES`      | `src/WrapStory.tsx`                  | Ordered list `{ id, durationInFrames, Component }`. Also used by the web Player to seek scene-by-scene |
+| Compositions  | `src/Root.tsx`                       | `wrap-9x16`, `wrap-4x5`, `wrap-1x1`, `wrap-16x9`                                                       |
+| Layout family | `useLayout()`                        | `portrait` / `compact` / `landscape` ([ADR-0003](../architecture/decisions/0003-layout-families.md))   |
+| Theme         | `src/theme.ts`                       | Tokens from [DESIGN.md](../../DESIGN.md): palette, allowed text pairings, font, `useUnit()`            |
+| Fixtures      | `src/fixtures/`                      | `sampleRecap` for Studio; `emptyRecap` and `busyRecap` (long names, five-digit totals) for edge checks |
+| Track         | `src/audio/track.ts`                 | BPM, sections and `beats(n)`; scene durations are whole beats                                          |
+| Transition    | `src/components/SceneTransition.tsx` | Opens every scene after the intro; each cut has its own move, set per scene in `timeline.ts`           |
+| Sound effects | `src/components/Sfx.tsx`             | `<Sfx>`, `CountTicks`; rendered by the components that move (`Slam`, bars, transitions)                |
+| Accent        | `src/accents.tsx`                    | Per-scene illustration (baked cutout) passed to `Field` through `AccentContext`, drawn behind the text |
 
 ## Rules
 
@@ -64,13 +64,18 @@ Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`),
 
 ## Transitions
 
-Each scene after the intro opens with `CellTransition` (one beat). For the first half, the previous scene, frozen on its last frame and silent, moves out while cells of its field cover it (about one in ten is lit green); in the second half the cells clear in the same order and reveal the new scene. It lives at the start of the new scene so a web chapter never stops on a half-finished exit, and no scene length changes.
+Every cut has its own move, like a camera rather than a slideshow (the reference is GitHub Unwrapped), and no move repeats (`timeline.test.ts`). `SceneTransition` wraps the new scene for its first beat and also renders the previous scene frozen on its last frame and silent, so it can move both. It lives at the start of the new scene, so a web chapter never stops on a half-finished exit and no scene length changes. Each move plays its own sound.
 
-| Variant  | Old scene              | Cells                                     | Used by                                     |
-| -------- | ---------------------- | ----------------------------------------- | ------------------------------------------- |
-| `sweep`  | slides toward the wave | diagonal wave, direction alternates       | contributions, tech-dna, community, closing |
-| `ripple` | shrinks slightly       | from the centre outward, seeded jitter    | rhythm, projects, engineering               |
-| `zoom`   | rushes forward         | one lit cell fills the frame, then breaks | identity (the climax)                       |
+| Cut                     | Move       | What happens                                                                          |
+| ----------------------- | ---------- | ------------------------------------------------------------------------------------- |
+| intro → contributions   | `dive`     | the camera dives into the first week's cells; a cell swells into the new field        |
+| contributions → rhythm  | `tilt`     | the camera tilts down: old scene up, new scene up from below, motion blur             |
+| rhythm → tech-dna       | `pan`      | whip pan sideways with blur and a slight lean                                         |
+| tech-dna → projects     | `iris`     | a circle opens on the new scene, rimmed with a lit green ring                         |
+| projects → community    | `blinds`   | ink and green bars sweep across like contribution rows, then fold away                |
+| community → engineering | `flip`     | the frame flips like a card; the new scene is its back                                |
+| engineering → identity  | `flash`    | the old scene lunges into a flash of light; the archetype lands with a camera shake   |
+| identity → closing      | `pullback` | the camera pulls back: the old scene shrinks into a tilted card toward the year graph |
 
 ## Audio
 
@@ -78,7 +83,7 @@ See [ADR-0009](../architecture/decisions/0009-sound-design.md). Files in `packag
 
 - **Track:** `wrapyourgit-120bpm-v2.m4a` (AAC, 66 s), synthesised by `bun scripts/synth-track.ts` from `TRACK` (120 BPM = 15 frames per beat). Intro (pad, riser), drop at contributions (four-on-the-floor kick, sixteenth hats with an open hat on the off-beat, side-chained eighth-note bass, claps from beat 24, snare fills every fourth bar), arpeggio and lead hook from beat 40, two beats of rest and a crash at the identity climax, half-time outro over closing. A soft-clip master stage keeps it dense at -1 dBFS. Regenerate whenever `TRACK` or the timeline changes.
 - **Loop:** `TRACK.loop` is beats 40–88 (20–44 s): same chord at both ends, nothing building inside (`track.test.ts`).
-- **Effects:** `SFX` in `src/audio/sfx.ts`, WAV files in `audio/sfx/`, synthesised by `bun scripts/synth-sfx.ts`. Rule: **the sound comes from the component that moves.** `Slam` plays `pop` (pass `sound="land"`, `"blip"`, `"shimmer"` or `null` when another element already sounds on that frame); `CountTicks` ticks on each visible change of a count-up (at most every 2 frames) and lands at the end; bars and rows use `blip` with a rising `step`; accents pop or whoosh in; transitions play `whoosh` then `cells`. Slams on frame 0 are silent (the transition sounds there).
+- **Effects:** `SFX` in `src/audio/sfx.ts`, WAV files in `audio/sfx/`, synthesised by `bun scripts/synth-sfx.ts`. Rule: **the sound comes from the component that moves.** `Slam` plays `pop` (pass `sound="land"`, `"blip"`, `"shimmer"` or `null` when another element already sounds on that frame); `CountTicks` ticks on each visible change of a count-up (at most every 2 frames) and lands at the end; bars and rows use `blip` with a rising `step`; accents pop or whoosh in; each transition plays the sounds of its move (`SOUNDS` in `SceneTransition.tsx`). Slams on frame 0 are silent (the transition sounds there).
 - **Video:** `WrapStory` mixes the track in (`music` defaults to true) with a two-beat fade at the end; effects are mixed by Remotion.
 - **Web:** the Player gets `music: false` and plays only the effects, muted with the sound toggle. The music runs on Web Audio (`apps/web/src/app/recap/use-music.ts`): played from the first hello, it loops 20–44 s sample-exact for as long as the chapters last, and fades out over 1.4 s on the audio clock when the last chapter's animation ends or the story moves past it. Replay and sound are icon buttons at the top right.
 

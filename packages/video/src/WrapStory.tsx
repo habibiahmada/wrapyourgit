@@ -2,8 +2,8 @@ import type { RecapData } from "@wyg/schema";
 import { AbsoluteFill, Freeze, Html5Audio, interpolate, Series, staticFile } from "remotion";
 import { sceneAccent } from "./accents";
 import { beats, TRACK } from "./audio/track";
-import { CellTransition } from "./components/CellTransition";
 import { AccentContext } from "./components/Field";
+import { SceneTransition } from "./components/SceneTransition";
 import { SfxContext } from "./components/Sfx";
 import { useLayout } from "./layout";
 import { ClosingScene } from "./scenes/ClosingScene";
@@ -76,15 +76,12 @@ export function WrapStory({ data, music = true }: WrapStoryProps) {
           const previous = SCENES[index - 1];
           return (
             <Series.Sequence key={id} durationInFrames={durationInFrames} name={id}>
-              <AccentContext value={sceneAccent(id, data, layout)}>
-                <Component data={data} />
-              </AccentContext>
-              {previous && "transition" in scene && (
-                <CellTransition
+              {previous && "transition" in scene ? (
+                <SceneTransition
                   variant={scene.transition}
                   from={previous.field}
+                  to={scene.field}
                   seed={id}
-                  direction={index % 4 < 2 ? 1 : -1}
                   previous={
                     // The scene being left, held on its last frame and silent: its sounds already played.
                     <SfxContext value={false}>
@@ -95,7 +92,15 @@ export function WrapStory({ data, music = true }: WrapStoryProps) {
                       </AccentContext>
                     </SfxContext>
                   }
-                />
+                >
+                  <AccentContext value={sceneAccent(id, data, layout)}>
+                    <Component data={data} />
+                  </AccentContext>
+                </SceneTransition>
+              ) : (
+                <AccentContext value={sceneAccent(id, data, layout)}>
+                  <Component data={data} />
+                </AccentContext>
               )}
             </Series.Sequence>
           );

@@ -35,6 +35,8 @@ The story should feel like a produced video, the way GitHub Unwrapped does, not 
 
 ## Design
 
+> **Revised 2026-11-05 after review:** the maintainer wanted a different move for every cut, as in GitHub Unwrapped, not three variants of one cell wipe. The cell-only variants below were replaced by eight distinct moves (`SceneTransition`; see `docs/video/scene-system.md`, Transitions). The timing rule (one beat, at the start of the new scene) is unchanged.
+
 ### Transitions
 
 - **Where the exit happens.** On the web each chapter stops on its last frame and waits for Next, so an exit inside the old scene's last beat would leave the chapter parked on an empty frame. The exit therefore plays at the **start of the next scene**: for its first beat, the next `Series.Sequence` also renders the previous scene frozen on its final frame (`<Freeze>`, with that scene's own accent), animates it out, and the cells reveal the new scene underneath. Scene lengths, beat alignment and web hold frames do not change.

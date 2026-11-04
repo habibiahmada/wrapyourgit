@@ -12,11 +12,11 @@ The story should feel like a produced video: animated transitions, one energetic
 
 ## Decision
 
-1. **Effects live in the composition.** One `<Sfx>` component (`packages/video/src/components/Sfx.tsx`) is rendered by the components that move: `Slam` (default `pop`), `CountTicks` (ticks and `land`), bars and rows (`blip`, eight pitches), accents and `CellTransition` (`whoosh`, `cells`). A sound is placed on the same frame as its animation by construction, a skipped beat is silent, and the Player and Lambda play the same effects on the same frames.
+1. **Effects live in the composition.** One `<Sfx>` component (`packages/video/src/components/Sfx.tsx`) is rendered by the components that move: `Slam` (default `pop`), `CountTicks` (ticks and `land`), bars and rows (`blip`, eight pitches), accents, and `SceneTransition` (the sounds of each move). A sound is placed on the same frame as its animation by construction, a skipped beat is silent, and the Player and Lambda play the same effects on the same frames.
 2. **Effects are WAV.** Synthesised by `scripts/synth-sfx.ts` (CC0), mono 16-bit, a few kilobytes each. No encoder padding, so a pop lands on its frame.
 3. **Music is a prop.** `WrapStory` mixes the soundtrack in when `music` is true (the default: Studio and Lambda). The web Player passes `music: false`; the web story plays the track itself.
 4. **The web plays music on Web Audio.** A decoded buffer on an `AudioBufferSourceNode` with `loopStart`/`loopEnd` from `TRACK.loop` (beats 40–88, same chord at both ends, nothing building inside) loops sample-exact. Mute and fades are gain nodes on the audio clock, so a fade finishes in a background tab.
-5. **Transitions belong to the scene that starts.** `CellTransition` renders the previous scene frozen on its last frame (`<Freeze>`, effects disabled through `SfxContext`) for the first half of the new scene's first beat. A web chapter that stops on its last frame never stops on a half-finished exit, and no durations change.
+5. **Transitions belong to the scene that starts.** `SceneTransition` wraps the new scene for its first beat and renders the previous scene frozen on its last frame (`<Freeze>`, effects disabled through `SfxContext`), so each cut can move both; every cut has its own move. A web chapter that stops on its last frame never stops on a half-finished exit, and no durations change.
 
 ## Alternatives
 

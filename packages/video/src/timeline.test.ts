@@ -25,17 +25,16 @@ describe("timeline and soundtrack", () => {
     }
   });
 
-  test("every cut after the intro has a transition, and neighbouring cuts differ", () => {
+  test("every cut after the intro has its own transition, none repeated", () => {
     const [intro, ...rest] = TIMELINE;
     expect(intro && "transition" in intro).toBe(false);
-    for (const scene of rest) expect("transition" in scene).toBe(true);
-    for (let i = 1; i < rest.length; i++) {
-      expect(transitionOf(rest[i])).not.toBe(transitionOf(rest[i - 1]));
-    }
+    const moves = rest.map(transitionOf);
+    expect(moves.every(Boolean)).toBe(true);
+    expect(new Set(moves).size).toBe(moves.length);
   });
 
-  test("the climax zooms in", () => {
-    expect(transitionOf(TIMELINE.find((scene) => scene.id === "identity"))).toBe("zoom");
+  test("the climax gets the flash", () => {
+    expect(transitionOf(TIMELINE.find((scene) => scene.id === "identity"))).toBe("flash");
   });
 });
 
