@@ -6,6 +6,7 @@ import {
   hourlyCommits,
   languageShares,
   previousYear,
+  starredSummary,
 } from "./recap";
 
 const repo = (
@@ -268,6 +269,76 @@ describe("previousYear", () => {
       { year: 2026, timezone: "UTC", now: new Date("2026-11-04T12:00:00Z") },
     );
     expect(recap.previousYear.status).toBe("ok");
+    expect(() => recapDataSchema.parse(recap)).not.toThrow();
+  });
+});
+
+describe("starredSummary", () => {
+  const inPeriod = (iso: string) =>
+    iso.slice(0, 10) >= "2026-01-01" && iso.slice(0, 10) <= "2026-12-31";
+  const star = (
+    starredAt: string,
+    name: string,
+    stars: number,
+    primaryLanguage: string | null,
+  ) => ({
+    starredAt,
+    repo: repo(name, { stars, primaryLanguage }),
+  });
+
+  test("counts only stars inside the period and ranks the top five by stargazers", () => {
+    const result = starredSummary(
+      {
+        complete: true,
+        items: [
+          star("2026-11-01T00:00:00Z", "a/one", 10, "Python"),
+          star("2026-10-01T00:00:00Z", "b/two", 500, "Python"),
+          star("2026-09-01T00:00:00Z", "c/three", 50, "Go"),
+          star("2026-08-01T00:00:00Z", "d/four", 900, null),
+          star("2026-07-01T00:00:00Z", "e/five", 70, "Rust"),
+          star("2026-06-01T00:00:00Z", "f/six", 5, "Python"),
+          star("2025-12-31T23:00:00Z", "g/last-year", 99999, "C"),
+        ],
+      },
+      inPeriod,
+    );
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    expect(result.estimated).toBe(false);
+    expect(result.value.count).toBe(6);
+    expect(result.value.top.map((r) => r.nameWithOwner)).toEqual([
+      "d/four",
+      "b/two",
+      "e/five",
+      "c/three",
+      "a/one",
+    ]);
+    expect(result.value.languages).toEqual([
+      { name: "Python", count: 3 },
+      { name: "Go", count: 1 },
+      { name: "Rust", count: 1 },
+    ]);
+  });
+
+  test("a walk stopped by the page cap is a lower bound, marked estimated", () => {
+    const result = starredSummary(
+      { complete: false, items: [star("2026-05-01T00:00:00Z", "a/one", 1, "Go")] },
+      inPeriod,
+    );
+    expect(result).toMatchObject({ status: "ok", estimated: true, value: { count: 1 } });
+  });
+
+  test("unavailable when GitHub refused, never zero", () => {
+    expect(starredSummary(null, inPeriod).status).toBe("unavailable");
+  });
+
+  test("buildRecap carries it and the recap stays valid", () => {
+    const input = {
+      ...baseInput(),
+      starred: { complete: true, items: [star("2026-01-02T00:00:00Z", "a/one", 3, "Go")] },
+    };
+    const recap = buildRecap(input, options);
+    expect(recap.starred).toMatchObject({ status: "ok", value: { count: 1 } });
     expect(() => recapDataSchema.parse(recap)).not.toThrow();
   });
 });

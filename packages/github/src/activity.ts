@@ -38,6 +38,11 @@ export interface YearActivity {
    */
   stars: { nameWithOwner: string; starredAt: string[]; complete: boolean }[] | null;
   forks: { nameWithOwner: string; createdAt: string[]; complete: boolean }[];
+  /**
+   * Repositories the viewer starred, newest first, down to the start of the period. `complete` is
+   * false when the page cap stopped the walk first. Null when GitHub refused the listing.
+   */
+  starred: { items: { starredAt: string; repo: RepoFacts }[]; complete: boolean } | null;
   /** Authored timestamps of the user's commits on default branches of their top repos. */
   commitSample: { authoredAt: string[]; reposSampled: number; complete: boolean };
 }
@@ -273,6 +278,17 @@ const OWNED_REPOS_QUERY = /* GraphQL */ `
   }
 `;
 
+const STARRED_QUERY = /* GraphQL */ `
+  query Starred($after: String) {
+    viewer {
+      starredRepositories(first: 100, after: $after, orderBy: { field: STARRED_AT, direction: DESC }) {
+        pageInfo { hasNextPage endCursor }
+        edges { starredAt node { ${REPO_FIELDS} } }
+      }
+    }
+  }
+`;
+
 const STARGAZERS_QUERY = /* GraphQL */ `
   query Stargazers($owner: String!, $name: String!, $after: String) {
     repository(owner: $owner, name: $name) {
@@ -450,6 +466,32 @@ export async function fetchYearActivity(
     });
   }
 
+  // Newest first, so the walk stops as soon as a page reaches back before the period.
+  const starred: YearActivity["starred"] = await paginate(
+    async (after) => {
+      const data = await githubGraphql<{
+        viewer: {
+          starredRepositories: Page<{ edges: { starredAt: string; node: RawRepo }[] }>;
+        };
+      }>(token, STARRED_QUERY, { after });
+      const connection = data.viewer.starredRepositories;
+      return {
+        items: connection.edges.map((edge) => ({
+          starredAt: edge.starredAt,
+          repo: toRepoFacts(edge.node),
+        })),
+        pageInfo: connection.pageInfo,
+      };
+    },
+    {
+      maxPages: maxStarPages,
+      shouldContinue: (page) => (page.at(-1)?.starredAt ?? "") >= fromIso,
+    },
+  ).catch((error: unknown) => {
+    if (isForbidden(error)) return null;
+    throw error;
+  });
+
   const sampledRepos = [...commitRepos]
     .sort((a, b) => b.commits - a.commits)
     .slice(0, commitSampleRepos);
@@ -510,6 +552,7 @@ export async function fetchYearActivity(
     ownedRepos: ownedRepos.items,
     stars,
     forks,
+    starred,
     commitSample: { authoredAt, reposSampled: sampledRepos.length, complete: sampleComplete },
   };
 }

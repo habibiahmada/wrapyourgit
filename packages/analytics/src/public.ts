@@ -28,5 +28,15 @@ export function toPublicRecap(recap: RecapData): RecapData {
       mostStarredNew: publicOnly(recap.community.mostStarredNew),
       mostForked: publicOnly(recap.community.mostForked),
     },
+    starred:
+      recap.starred.status === "ok"
+        ? {
+            ...recap.starred,
+            value: {
+              ...recap.starred.value,
+              top: recap.starred.value.top.filter((repo) => !repo.isPrivate),
+            },
+          }
+        : recap.starred,
   };
 }

@@ -79,6 +79,23 @@ export const sampleRecap: RecapData = {
     reviews: 40,
     externalRepos: 5,
   },
+  starred: {
+    status: "ok",
+    estimated: false,
+    value: {
+      count: 42,
+      top: [
+        repo("sample-org/editor", { stars: 182000, primaryLanguage: "TypeScript" }),
+        repo("sample-org/runtime", { stars: 96000, primaryLanguage: "Rust" }),
+        repo("sample-org/notebook", { stars: 41000, primaryLanguage: "Python" }),
+      ],
+      languages: [
+        { name: "TypeScript", count: 14 },
+        { name: "Rust", count: 9 },
+        { name: "Python", count: 7 },
+      ],
+    },
+  },
   previousYear: {
     status: "ok",
     estimated: false,
