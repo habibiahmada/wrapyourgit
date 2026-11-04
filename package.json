@@ -1,0 +1,24 @@
+{
+  "name": "wrapyourgit",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "scripts"
+  ],
+  "scripts": {
+    "dev": "bun run --filter @wyg/web dev",
+    "build": "bun run --filter @wyg/web build",
+    "studio": "bun run --filter @wyg/video studio",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test",
+    "lint": "biome check .",
+    "format": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@types/bun": "1.4.4",
+    "typescript": "^5"
+  }
+}

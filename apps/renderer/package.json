@@ -1,0 +1,20 @@
+{
+  "name": "@wyg/renderer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "deploy": "bun src/deploy.ts"
+  },
+  "dependencies": {
+    "@remotion/lambda": "4.0.540",
+    "@wyg/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

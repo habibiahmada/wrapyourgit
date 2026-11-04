@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# build output
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# remotion
+packages/video/out/
+apps/renderer/out/
+
+# env (commit .env.example only)
+.env*
+!.env.example
+
+# deploy / tooling
+.vercel/
+coverage/
+
+# local data dumps from spikes (may contain private GitHub data)
+.data/
+
+# misc
+.DS_Store
+*.pem
+*.log

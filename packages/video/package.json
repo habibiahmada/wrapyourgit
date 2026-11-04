@@ -1,0 +1,29 @@
+{
+  "name": "@wyg/video",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "studio": "remotion studio src/remotion-entry.ts",
+    "render": "remotion render src/remotion-entry.ts"
+  },
+  "dependencies": {
+    "@wyg/schema": "workspace:*",
+    "remotion": "4.0.540"
+  },
+  "devDependencies": {
+    "@remotion/cli": "4.0.540",
+    "@types/react": "^19",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-dom": "^19"
+  }
+}

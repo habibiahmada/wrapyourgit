@@ -1,0 +1,16 @@
+{
+  "name": "@wyg/scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@wyg/analytics": "workspace:*",
+    "@wyg/github": "workspace:*",
+    "@wyg/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
