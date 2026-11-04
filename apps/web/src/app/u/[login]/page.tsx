@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { ClosingSection } from "@/components/landing/sections";
 import { LoadingCell } from "@/components/loading-cell";
 import { CellField, calendarLevels } from "@/components/site/cell-field";
+import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
@@ -33,25 +34,27 @@ export default function PublicRecapPage({ params }: PageProps<"/u/[login]">) {
   return (
     <>
       <SiteHeader base="/" />
-      <main id="main" className="flex flex-1 flex-col">
-        <Suspense
-          fallback={
-            <div>
-              <LoadingCell label="Loading this recap…" />
-            </div>
-          }
-        >
-          <PublicRecap params={params} />
-        </Suspense>
-        <ClosingSection
-          action={
-            <a href="/" className={button.primary}>
-              Make your own recap
-            </a>
-          }
-        />
-      </main>
-      <SiteFooter base="/" />
+      <PageTransition>
+        <main id="main" className="flex flex-1 flex-col">
+          <Suspense
+            fallback={
+              <div>
+                <LoadingCell label="Loading this recap…" />
+              </div>
+            }
+          >
+            <PublicRecap params={params} />
+          </Suspense>
+          <ClosingSection
+            action={
+              <a href="/" className={button.primary}>
+                Make your own recap
+              </a>
+            }
+          />
+        </main>
+        <SiteFooter base="/" />
+      </PageTransition>
     </>
   );
 }

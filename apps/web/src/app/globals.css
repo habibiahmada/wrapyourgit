@@ -168,6 +168,111 @@
   }
 }
 
+/* View transitions (components/site/page-transition.tsx and the story steps). Old content
+   leaves fast, new content arrives a little slower, so they never compete. */
+:root {
+  --vt-exit: 160ms;
+  --vt-enter: 240ms;
+  --vt-move: 420ms;
+}
+::view-transition {
+  /* Clicks during the animation reach the live page instead of the overlay. */
+  pointer-events: none;
+}
+::view-transition-old(.page-out) {
+  animation: var(--vt-exit) ease-in both vt-fade reverse;
+}
+::view-transition-new(.page-in) {
+  animation:
+    var(--vt-enter) ease-out var(--vt-exit) both vt-fade,
+    var(--vt-move) ease-out both vt-rise;
+}
+::view-transition-old(.nav-forward),
+::view-transition-old(.story-next) {
+  --vt-offset: -64px;
+  animation:
+    var(--vt-exit) ease-in both vt-fade reverse,
+    var(--vt-move) ease-in-out both vt-slide reverse;
+}
+::view-transition-new(.nav-forward),
+::view-transition-new(.story-next) {
+  --vt-offset: 64px;
+  animation:
+    var(--vt-enter) ease-out var(--vt-exit) both vt-fade,
+    var(--vt-move) ease-in-out both vt-slide;
+}
+::view-transition-old(.nav-back),
+::view-transition-old(.story-prev) {
+  --vt-offset: 64px;
+  animation:
+    var(--vt-exit) ease-in both vt-fade reverse,
+    var(--vt-move) ease-in-out both vt-slide reverse;
+}
+::view-transition-new(.nav-back),
+::view-transition-new(.story-prev) {
+  --vt-offset: -64px;
+  animation:
+    var(--vt-enter) ease-out var(--vt-exit) both vt-fade,
+    var(--vt-move) ease-in-out both vt-slide;
+}
+::view-transition-old(.slide-down) {
+  animation:
+    var(--vt-exit) ease-out both vt-fade reverse,
+    var(--vt-exit) ease-out both vt-rise reverse;
+}
+::view-transition-new(.slide-up) {
+  animation:
+    var(--vt-enter) ease-in var(--vt-exit) both vt-fade,
+    var(--vt-move) ease-out both vt-rise;
+}
+/* The header is the fixed reference point: it never slides with the page. */
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+@keyframes vt-rise {
+  from {
+    transform: translateY(14px);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes vt-slide {
+  from {
+    translate: var(--vt-offset);
+  }
+  to {
+    translate: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    /* biome-ignore lint/complexity/noImportantStyles: (*) loses to the (.class) rules above */
+    animation-duration: 0s !important;
+    /* biome-ignore lint/complexity/noImportantStyles: (*) loses to the (.class) rules above */
+    animation-delay: 0s !important;
+  }
+}
+
 /* No visible scrollbars anywhere (the maintainer's call); scrolling itself is unchanged. */
 * {
   scrollbar-width: none;

@@ -10,6 +10,11 @@ import { Suspense } from "react";
 import { LanguageBadge } from "@/components/language-badge";
 import { LoadingCell } from "@/components/loading-cell";
 import { CellField, calendarLevels } from "@/components/site/cell-field";
+import {
+  FallbackTransition,
+  PageTransition,
+  RevealTransition,
+} from "@/components/site/page-transition";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 import { getRecap, isShared } from "@/server/recaps";
@@ -27,8 +32,16 @@ import { SyncForm } from "./sync-form";
 export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   return (
     <div className="flex flex-1 flex-col">
-      <Suspense fallback={<LoadingCell label="Opening your dashboard…" />}>
-        <Dashboard searchParams={searchParams} />
+      <Suspense
+        fallback={
+          <FallbackTransition>
+            <LoadingCell label="Opening your dashboard…" />
+          </FallbackTransition>
+        }
+      >
+        <RevealTransition>
+          <Dashboard searchParams={searchParams} />
+        </RevealTransition>
       </Suspense>
     </div>
   );
@@ -54,10 +67,14 @@ async function Dashboard({
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-line bg-[#010409]">
+      <header
+        className="sticky top-0 z-40 border-b border-line bg-[#010409]"
+        style={{ viewTransitionName: "site-header" }}
+      >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
           <Link
             href="/"
+            transitionTypes={["nav-back"]}
             className="inline-flex min-h-11 items-center gap-2 text-lg font-bold hover:text-muted"
           >
             WrapYourGit
@@ -85,43 +102,45 @@ async function Dashboard({
         </div>
       </header>
 
-      <main id="main" className="flex flex-1 flex-col">
-        {recap ? (
-          <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[18rem_1fr]">
-            <Profile
-              data={recap.data}
-              avatarUrl={user.avatarUrl}
-              login={user.login}
-              syncedAt={recap.syncedAt}
-              retryAt={retryAt}
-            />
-            <div className="flex min-w-0 flex-col gap-10">
-              <Overview data={recap.data} />
-              <Highlights data={recap.data} />
-              <section aria-labelledby="compare-title">
-                <h2 id="compare-title" className={sectionTitle}>
-                  {recap.data.meta.year} vs {recap.data.meta.year - 1}
-                </h2>
-                <p className="mt-2 mb-6 max-w-2xl text-muted">
-                  The same stretch of both years, side by side, so the comparison is fair while{" "}
-                  {recap.data.meta.year} is still running.
-                </p>
-                <YearComparison data={recap.data} />
-              </section>
-              <ShareSection
+      <PageTransition>
+        <main id="main" className="flex flex-1 flex-col">
+          {recap ? (
+            <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[18rem_1fr]">
+              <Profile
+                data={recap.data}
+                avatarUrl={user.avatarUrl}
                 login={user.login}
-                shared={shared}
                 syncedAt={recap.syncedAt}
-                stale={shareFlag === "stale"}
+                retryAt={retryAt}
               />
+              <div className="flex min-w-0 flex-col gap-10">
+                <Overview data={recap.data} />
+                <Highlights data={recap.data} />
+                <section aria-labelledby="compare-title">
+                  <h2 id="compare-title" className={sectionTitle}>
+                    {recap.data.meta.year} vs {recap.data.meta.year - 1}
+                  </h2>
+                  <p className="mt-2 mb-6 max-w-2xl text-muted">
+                    The same stretch of both years, side by side, so the comparison is fair while{" "}
+                    {recap.data.meta.year} is still running.
+                  </p>
+                  <YearComparison data={recap.data} />
+                </section>
+                <ShareSection
+                  login={user.login}
+                  shared={shared}
+                  syncedAt={recap.syncedAt}
+                  stale={shareFlag === "stale"}
+                />
+              </div>
             </div>
-          </div>
-        ) : (
-          <EmptyState />
-        )}
-        {recap && <InstallPrivate />}
-        <DeleteSection login={user.login} unconfirmed={deleteFlag === "unconfirmed"} />
-      </main>
+          ) : (
+            <EmptyState />
+          )}
+          {recap && <InstallPrivate />}
+          <DeleteSection login={user.login} unconfirmed={deleteFlag === "unconfirmed"} />
+        </main>
+      </PageTransition>
     </>
   );
 }
@@ -186,7 +205,7 @@ function Profile({
         {profile.name && <p className="text-2xl font-bold">{profile.name}</p>}
         <p className="text-xl text-muted">@{login}</p>
       </div>
-      <Link href="/recap" className={`${button.primary} w-full`}>
+      <Link href="/recap" transitionTypes={["nav-forward"]} className={`${button.primary} w-full`}>
         Play your story
       </Link>
       <div>

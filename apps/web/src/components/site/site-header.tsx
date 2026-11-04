@@ -11,7 +11,11 @@ import { SiteNav } from "./site-nav";
  */
 export function SiteHeader({ base = "" }: { base?: "" | "/" }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-[#010409]">
+    <header
+      className="sticky top-0 z-40 border-b border-line bg-[#010409]"
+      // The anchor of every page transition: the header never slides (globals.css).
+      style={{ viewTransitionName: "site-header" }}
+    >
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-[var(--radius-control)] focus:bg-overlay focus:px-4 focus:py-3 focus:font-semibold"
@@ -21,6 +25,7 @@ export function SiteHeader({ base = "" }: { base?: "" | "/" }) {
       <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
         <Link
           href="/"
+          transitionTypes={["nav-back"]}
           className="inline-flex min-h-11 items-center gap-2 text-lg font-bold hover:text-muted"
         >
           {/* A week of contribution cells as the mark: the product is the graph. */}
@@ -61,7 +66,7 @@ async function HeaderAction() {
   const user = await getCurrentUser();
   if (!user) return <SignInButton />;
   return (
-    <Link href="/dashboard" className={button.primary}>
+    <Link href="/dashboard" transitionTypes={["nav-forward"]} className={button.primary}>
       Your dashboard
     </Link>
   );

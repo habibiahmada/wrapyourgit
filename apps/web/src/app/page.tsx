@@ -13,6 +13,7 @@ import {
   StorySection,
 } from "@/components/landing/sections";
 import { CellField, demoLevels } from "@/components/site/cell-field";
+import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SignInButton, SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
@@ -52,68 +53,70 @@ export default function Home({ searchParams }: PageProps<"/">) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       <SiteHeader />
-      <main id="main" className="flex flex-1 flex-col">
-        <section aria-labelledby="hero-title" className="relative overflow-hidden">
-          <div className="mx-auto max-w-7xl px-4 sm:px-8">
-            <Suspense fallback={null}>
-              <Notice searchParams={searchParams} />
-            </Suspense>
-            <div className="grid items-center gap-10 pt-12 pb-10 sm:pt-16 lg:grid-cols-[1fr_1.05fr]">
-              <div>
-                <h1
-                  id="hero-title"
-                  className="text-5xl leading-[1.02] font-bold tracking-tight text-balance sm:text-7xl"
-                >
-                  Every green square has a story.{" "}
-                  <span className="text-green">Here's yours, in motion.</span>
-                </h1>
-                <p className="mt-8 max-w-xl text-lg text-muted sm:text-xl">
-                  Sign in with GitHub and watch your {EDITION_YEAR} play back as a short animated
-                  story: your contributions, your rhythm, the languages you lived in and the kind of
-                  developer you turned out to be.
-                </p>
-                <div className="mt-10 flex flex-wrap items-center gap-3">
-                  <Suspense fallback={<SignInButton />}>
-                    <PrimaryAction />
-                  </Suspense>
-                  <a href="#story" className={button.quiet}>
-                    See the nine chapters
-                  </a>
+      <PageTransition>
+        <main id="main" className="flex flex-1 flex-col">
+          <section aria-labelledby="hero-title" className="relative overflow-hidden">
+            <div className="mx-auto max-w-7xl px-4 sm:px-8">
+              <Suspense fallback={null}>
+                <Notice searchParams={searchParams} />
+              </Suspense>
+              <div className="grid items-center gap-10 pt-12 pb-10 sm:pt-16 lg:grid-cols-[1fr_1.05fr]">
+                <div>
+                  <h1
+                    id="hero-title"
+                    className="text-5xl leading-[1.02] font-bold tracking-tight text-balance sm:text-7xl"
+                  >
+                    Every green square has a story.{" "}
+                    <span className="text-green">Here's yours, in motion.</span>
+                  </h1>
+                  <p className="mt-8 max-w-xl text-lg text-muted sm:text-xl">
+                    Sign in with GitHub and watch your {EDITION_YEAR} play back as a short animated
+                    story: your contributions, your rhythm, the languages you lived in and the kind
+                    of developer you turned out to be.
+                  </p>
+                  <div className="mt-10 flex flex-wrap items-center gap-3">
+                    <Suspense fallback={<SignInButton />}>
+                      <PrimaryAction />
+                    </Suspense>
+                    <a href="#story" className={button.quiet}>
+                      See the nine chapters
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <Image
+                    src="/art/hero-cast.png"
+                    alt="Cell the builder waving in front of a 3D contribution graph, with a beaver, an owl and a bee"
+                    width={1200}
+                    height={900}
+                    preload
+                    fetchPriority="high"
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    className="h-auto w-full motion-safe:animate-[rise_900ms_ease-out_both]"
+                  />
                 </div>
               </div>
-              <div>
-                <Image
-                  src="/art/hero-cast.png"
-                  alt="Cell the builder waving in front of a 3D contribution graph, with a beaver, an owl and a bee"
-                  width={1200}
-                  height={900}
-                  preload
-                  fetchPriority="high"
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  className="h-auto w-full motion-safe:animate-[rise_900ms_ease-out_both]"
-                />
-              </div>
             </div>
-          </div>
-          {/* A year of cells along the bottom of the hero: the motif the whole product is built on. */}
-          <CellField levels={HERO_CELLS} className="block h-24 w-full sm:h-32" />
-        </section>
+            {/* A year of cells along the bottom of the hero: the motif the whole product is built on. */}
+            <CellField levels={HERO_CELLS} className="block h-24 w-full sm:h-32" />
+          </section>
 
-        <StorySection />
-        <ArchetypesSection />
-        <LetterSection />
-        <KeepSection />
-        <PrivacySection />
-        <FaqSection />
-        <ClosingSection
-          action={
-            <Suspense fallback={<SignInButton />}>
-              <PrimaryAction />
-            </Suspense>
-          }
-        />
-      </main>
-      <SiteFooter />
+          <StorySection />
+          <ArchetypesSection />
+          <LetterSection />
+          <KeepSection />
+          <PrivacySection />
+          <FaqSection />
+          <ClosingSection
+            action={
+              <Suspense fallback={<SignInButton />}>
+                <PrimaryAction />
+              </Suspense>
+            }
+          />
+        </main>
+        <SiteFooter />
+      </PageTransition>
     </>
   );
 }
@@ -122,7 +125,7 @@ async function PrimaryAction() {
   const user = await getCurrentUser();
   if (!user) return <SignInButton />;
   return (
-    <Link href="/dashboard" className={button.primary}>
+    <Link href="/dashboard" transitionTypes={["nav-forward"]} className={button.primary}>
       Open your {EDITION_YEAR} recap, @{user.login}
     </Link>
   );
