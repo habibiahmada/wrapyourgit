@@ -106,7 +106,13 @@ export function CommunityScene({ data }: { data: RecapData }) {
       </div>
 
       <div
-        style={{ display: "flex", flexDirection: "column", gap: u * 2, alignItems: "flex-start" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: u * 2,
+          alignItems: "flex-start",
+          maxWidth: "100%",
+        }}
       >
         {facts.map((fact, index) => (
           <Slam key={fact} at={beats(5 + index * 2, fps)} from="left">
@@ -118,7 +124,9 @@ export function CommunityScene({ data }: { data: RecapData }) {
                 fontWeight: 700,
                 padding: `${u * 1.4}px ${u * 2.6}px`,
                 borderRadius: u * 0.8,
-                whiteSpace: "nowrap",
+                // Chips wrap instead of running off a narrow frame (a long repo name in 9:16).
+                maxWidth: "100%",
+                lineHeight: 1.2,
               }}
             >
               {fact}
