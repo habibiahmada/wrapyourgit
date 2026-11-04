@@ -41,3 +41,33 @@ export async function githubGraphql<T>(
   }
   return body.data as T;
 }
+
+export interface PageInfo {
+  hasNextPage: boolean;
+  endCursor: string | null;
+}
+
+/**
+ * Walks a cursor connection page by page. `fetchPage` returns the items and pageInfo for one page;
+ * `shouldContinue` lets callers stop early (e.g. once results fall before the period).
+ * `complete` is false when the page cap stopped us before the connection was exhausted.
+ */
+export async function paginate<T>(
+  fetchPage: (after: string | null) => Promise<{ items: T[]; pageInfo: PageInfo }>,
+  {
+    maxPages = Number.POSITIVE_INFINITY,
+    shouldContinue = () => true,
+  }: { maxPages?: number; shouldContinue?: (page: T[]) => boolean } = {},
+): Promise<{ items: T[]; complete: boolean }> {
+  const items: T[] = [];
+  let after: string | null = null;
+  for (let page = 0; page < maxPages; page++) {
+    const result = await fetchPage(after);
+    items.push(...result.items);
+    if (!result.pageInfo.hasNextPage || !shouldContinue(result.items)) {
+      return { items, complete: true };
+    }
+    after = result.pageInfo.endCursor;
+  }
+  return { items, complete: false };
+}
