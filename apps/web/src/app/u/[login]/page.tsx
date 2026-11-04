@@ -9,7 +9,7 @@ import { StoryPlayer } from "../../recap/story-player";
 
 export async function generateMetadata({ params }: PageProps<"/u/[login]">): Promise<Metadata> {
   const { login } = await params;
-  const recap = await getPublicRecap(login);
+  const recap = (await getPublicRecap(login))?.data;
   if (!recap) return { title: "Recap not found · WrapYourGit" };
   const title = `@${recap.profile.login}'s ${recap.meta.year} in code · WrapYourGit`;
   const description = `${recap.contributions.total.toLocaleString("en-US")} contributions, a ${recap.contributions.longestStreak.days}-day streak${recap.identity.archetype ? `, ${ARCHETYPE_LABELS[recap.identity.archetype]}` : ""}.`;
@@ -48,9 +48,9 @@ export default function PublicRecapPage({ params }: PageProps<"/u/[login]">) {
 
 async function PublicRecap({ params }: { params: PageProps<"/u/[login]">["params"] }) {
   const { login } = await params;
-  const recap = await getPublicRecap(login);
-  if (!recap) notFound();
-  return <Summary data={recap} />;
+  const shared = await getPublicRecap(login);
+  if (!shared) notFound();
+  return <Summary data={shared.data} />;
 }
 
 function Summary({ data }: { data: RecapData }) {

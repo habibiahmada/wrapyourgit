@@ -4,6 +4,15 @@
  * 8 h and come with a refresh token.
  */
 
+import { timingSafeEqual } from "node:crypto";
+
+/** Constant-time state check that compares bytes, so multi-byte input is a mismatch, not a throw. */
+export function statesMatch(received: string, expected: string): boolean {
+  const a = Buffer.from(received);
+  const b = Buffer.from(expected);
+  return b.length > 0 && a.length === b.length && timingSafeEqual(a, b);
+}
+
 const AUTHORIZE_URL = "https://github.com/login/oauth/authorize";
 const TOKEN_URL = "https://github.com/login/oauth/access_token";
 
@@ -126,7 +135,8 @@ export function refreshTokens(
 
 /**
  * Revokes the user's authorization of the app ("Disconnect"), which also invalidates every token
- * GitHub issued to us for them. A 404 means it was already revoked, which is fine.
+ * GitHub issued to us for them. A 404 means it was already revoked, which is fine; anything else
+ * that isn't 2xx (422 included) is a failure, so the UI never claims a revocation that didn't happen.
  */
 export async function revokeGrant(
   params: { clientId: string; clientSecret: string; accessToken: string },
@@ -143,7 +153,7 @@ export async function revokeGrant(
     },
     body: JSON.stringify({ access_token: params.accessToken }),
   });
-  if (!response.ok && response.status !== 404 && response.status !== 422) {
+  if (!response.ok && response.status !== 404) {
     throw new OAuthError("revoke_failed", `GitHub grant revocation: HTTP ${response.status}`);
   }
 }

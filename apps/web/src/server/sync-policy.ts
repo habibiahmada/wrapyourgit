@@ -25,3 +25,13 @@ export function safeTimezone(value: unknown): string {
 export function yearRange(year: number): { from: Date; to: Date } {
   return { from: new Date(Date.UTC(year, 0, 1)), to: new Date(Date.UTC(year, 11, 31, 23, 59, 59)) };
 }
+
+/**
+ * Publishing needs a recent sync. Privacy flags are stored as of the last sync, so a repository
+ * made private since then would still be named publicly until the next sync (security review M2).
+ */
+export const PUBLISH_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export function canPublish(syncedAt: Date | null, now: Date): boolean {
+  return syncedAt !== null && now.getTime() - syncedAt.getTime() <= PUBLISH_MAX_AGE_MS;
+}

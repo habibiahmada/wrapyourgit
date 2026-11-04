@@ -1,8 +1,12 @@
 import "server-only";
-import type { RecapData } from "@wyg/schema";
+import { toPublicRecap } from "@wyg/analytics";
+import { EDITION_YEAR, type RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS } from "@wyg/video/copy";
 import { calendarGrid, heatLevels } from "@wyg/video/heat";
+import { and, eq } from "drizzle-orm";
+import { cacheLife } from "next/cache";
 import { ImageResponse } from "next/og";
+import { db, recaps } from "./db";
 
 /*
  * The shareable summary card (PRD P0 "PNG summary card"), also used as the public page's OG image.
@@ -139,4 +143,26 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
       ],
     },
   );
+}
+
+/**
+ * The card as PNG bytes, cached per user and sync time. Rendering is the expensive part, and the
+ * public OG route is reachable anonymously (security review M1), so each recap version renders
+ * once; a new sync changes `_syncedAtIso` and with it the cache key. The share check stays with
+ * the caller, so unpublishing takes effect immediately.
+ */
+export async function cardPng(
+  userId: string,
+  // Unused in the body on purpose: as an argument it is part of the cache key.
+  _syncedAtIso: string,
+): Promise<Uint8Array<ArrayBuffer> | null> {
+  "use cache";
+  cacheLife("days");
+  const [row] = await db
+    .select({ data: recaps.data })
+    .from(recaps)
+    .where(and(eq(recaps.userId, userId), eq(recaps.year, EDITION_YEAR)));
+  if (!row) return null;
+  const card = await renderCard(toPublicRecap(row.data));
+  return new Uint8Array(await card.arrayBuffer());
 }

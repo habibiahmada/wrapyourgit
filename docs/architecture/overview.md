@@ -35,7 +35,7 @@
 
 **Export:** user picks format + soundtrack → API creates a render job row → `startRender()` → poll `getRenderStatus()` → MP4 in S3 (private, signed download URL, lifecycle expiry).
 
-**Public page:** `/u/<login>` (login matched case-insensitively) renders `toPublicRecap()` from `@wyg/analytics` only when a `recap_shares` row exists. Private repos are removed from every named field; aggregate counts stay. The same projection feeds `opengraph-image` and the downloadable card at `/api/card` (`server/card.tsx`, `next/og`, 1200×630). An unknown or unshared login gets `notFound()`: the OG image returns a real 404, while the page streams a 404 view with HTTP 200 because the lookup sits behind `<Suspense>` (Cache Components).
+**Public page:** `/u/<login>` (login matched case-insensitively) renders `toPublicRecap()` from `@wyg/analytics` only when a `recap_shares` row exists. Private repos are removed from every named field; aggregate counts stay; the timezone and commit-hour histogram are withheld. Publishing requires a sync from the last 24 h, because privacy flags are as of the last sync. The card PNG is cached per user and sync time (`cardPng`), while the share check runs on every request. The same projection feeds `opengraph-image` and the downloadable card at `/api/card` (`server/card.tsx`, `next/og`, 1200×630). An unknown or unshared login gets `notFound()`: the OG image returns a real 404, while the page streams a 404 view with HTTP 200 because the lookup sits behind `<Suspense>` (Cache Components).
 
 **Logins:** GitHub logins can be renamed and later reused by someone else. A unique index on `lower(login)` guarantees `/u/<login>` resolves to one person, and sign-in hands the login over in one transaction: an older row still holding it gets the placeholder `~<github_id>` (`~` never appears in GitHub logins) until that person signs in again.
 
@@ -48,9 +48,9 @@ Added in M5: `recap_shares` (user, year; a row means published, so sharing is of
 ## Auth and sync (M2)
 
 - Sign-in: `/api/auth/signin` sets a 10-minute httpOnly cookie holding state + PKCE verifier and redirects to GitHub. `/api/auth/callback/github` checks state (constant-time), exchanges the code with the client secret, upserts the user, stores tokens encrypted and starts a session.
-- Access tokens are refreshed 5 minutes before expiry (`tokenState` in `server/oauth.ts`). A failed refresh asks the user to sign in again.
+- Access tokens are refreshed 5 minutes before expiry (`tokenState` in `server/oauth.ts`), inside a transaction holding `SELECT … FOR UPDATE` on the token row, because GitHub refresh tokens are single-use. A failed refresh asks the user to sign in again.
 - State-changing route handlers (`signout`, `account/delete`) reject a foreign or missing `Origin`; session cookies are `SameSite=Lax`.
-- Sync is a server action: session check, 10-minute cooldown, `fetchYearActivity` → `buildRecap` → `recapDataSchema.parse` → upsert.
+- Sync is a server action: session check, then an atomic claim on `users.sync_started_at` (10-minute cooldown; a failed sync releases it), then `fetchYearActivity` → `buildRecap` → `recapDataSchema.parse` → upsert. Server logs record error kind and status only (`server/log.ts`), never GitHub's message, which can name private repos.
 - With Cache Components, every session read sits behind `<Suspense>`; pages that use the current time call `connection()`.
 
 Statistics live inside `recaps.data` as one validated document rather than in many stat tables: everything is recomputable from GitHub, and the schema is the single contract.

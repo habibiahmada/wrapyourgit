@@ -4,6 +4,8 @@ import {
   exchangeCode,
   OAuthError,
   REFRESH_SKEW_MS,
+  revokeGrant,
+  statesMatch,
   tokenState,
   toTokenSet,
 } from "./oauth";
@@ -90,5 +92,36 @@ describe("tokenState", () => {
     expect(
       tokenState({ accessExpiresAt: null, refreshToken: null, refreshExpiresAt: null }, now),
     ).toBe("valid");
+  });
+});
+
+describe("statesMatch", () => {
+  test("equal states match, different ones don't", () => {
+    expect(statesMatch("abc", "abc")).toBe(true);
+    expect(statesMatch("abc", "abd")).toBe(false);
+  });
+
+  test("multi-byte input of the same character length is a mismatch, not a crash", () => {
+    // "é" is 1 character but 2 bytes; timingSafeEqual throws on unequal byte lengths.
+    expect(statesMatch("éb", "ab")).toBe(false);
+  });
+
+  test("an empty expected state never matches", () => {
+    expect(statesMatch("", "")).toBe(false);
+  });
+});
+
+describe("revokeGrant", () => {
+  const stub = (status: number) =>
+    (async () => new Response(null, { status })) as unknown as typeof fetch;
+  const params = { clientId: "id", clientSecret: "secret", accessToken: "ghu_a" };
+
+  test("204 and 404 (already gone) count as revoked", async () => {
+    await expect(revokeGrant(params, { fetchImpl: stub(204) })).resolves.toBeUndefined();
+    await expect(revokeGrant(params, { fetchImpl: stub(404) })).resolves.toBeUndefined();
+  });
+
+  test("422 is a failure, so the UI never claims a revocation that didn't happen", async () => {
+    await expect(revokeGrant(params, { fetchImpl: stub(422) })).rejects.toThrow(OAuthError);
   });
 });

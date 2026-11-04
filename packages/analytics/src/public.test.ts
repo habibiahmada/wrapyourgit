@@ -32,7 +32,7 @@ const recap = (): RecapData => ({
     busiestMonth: { month: 3, count: 40 },
     monthly: Array(12).fill(0),
     weekday: Array(7).fill(0),
-    hourly: { status: "unavailable", reason: "none" },
+    hourly: { status: "ok", value: Array(24).fill(1), estimated: true },
     calendar: [{ date: "2026-01-01", count: 2 }],
   },
   languages: { top: [], distinctCount: 0 },
@@ -96,6 +96,12 @@ describe("toPublicRecap", () => {
 
   test("the result is still valid RecapData, so the story renders it unchanged", () => {
     expect(() => recapDataSchema.parse(toPublicRecap(recap()))).not.toThrow();
+  });
+
+  test("habits that hint at location or routine stay private: timezone and commit hours", () => {
+    const published = toPublicRecap(recap());
+    expect(published.meta.timezone).toBe("UTC");
+    expect(published.contributions.hourly.status).toBe("unavailable");
   });
 
   test("does not mutate the stored recap", () => {

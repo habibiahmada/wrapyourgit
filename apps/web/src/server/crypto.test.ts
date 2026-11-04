@@ -27,6 +27,14 @@ describe("encrypt / decrypt", () => {
   test("the wrong key fails", () => {
     expect(() => decrypt(encrypt("ghu_secret", key), randomBytes(32))).toThrow();
   });
+
+  test("a truncated auth tag is rejected on every runtime, not left to Node's defaults", () => {
+    const [version, iv, tag = "", ciphertext] = encrypt("ghu_secret", key).split(".");
+    const short = Buffer.from(tag, "base64url").subarray(0, 4).toString("base64url");
+    expect(() => decrypt([version, iv, short, ciphertext].join("."), key)).toThrow(
+      "Unrecognised encrypted value",
+    );
+  });
 });
 
 describe("parseKey", () => {

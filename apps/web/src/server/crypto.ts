@@ -7,6 +7,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
  */
 
 const VERSION = "v1";
+const TAG_BYTES = 16;
 
 /** Decodes TOKEN_ENCRYPTION_KEY (`openssl rand -base64 32`) and checks it is 32 bytes. */
 export function parseKey(base64: string): Buffer {
@@ -18,7 +19,7 @@ export function parseKey(base64: string): Buffer {
 /** `v1.<iv>.<tag>.<ciphertext>`, base64url parts. The version allows key rotation later. */
 export function encrypt(plaintext: string, key: Buffer): string {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: TAG_BYTES });
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return [VERSION, iv, tag, ciphertext]
@@ -28,11 +29,16 @@ export function encrypt(plaintext: string, key: Buffer): string {
 
 export function decrypt(payload: string, key: Buffer): string {
   const [version, iv, tag, ciphertext] = payload.split(".");
-  if (version !== VERSION || !iv || !tag || ciphertext === undefined) {
+  const tagBytes = Buffer.from(tag ?? "", "base64url");
+  // Node accepts GCM tags as short as 4 bytes unless told otherwise; a short tag is far easier
+  // to forge, so anything but the full 16 bytes is refused before decryption.
+  if (version !== VERSION || !iv || tagBytes.length !== TAG_BYTES || ciphertext === undefined) {
     throw new Error("Unrecognised encrypted value");
   }
-  const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(iv, "base64url"));
-  decipher.setAuthTag(Buffer.from(tag, "base64url"));
+  const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(iv, "base64url"), {
+    authTagLength: TAG_BYTES,
+  });
+  decipher.setAuthTag(tagBytes);
   return Buffer.concat([
     decipher.update(Buffer.from(ciphertext, "base64url")),
     decipher.final(),

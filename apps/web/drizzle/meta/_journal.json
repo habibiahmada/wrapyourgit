@@ -22,6 +22,13 @@
       "when": 1793768098105,
       "tag": "0002_perpetual_supernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793770756596,
+      "tag": "0003_large_manta",
+      "breakpoints": true
     }
   ]
 }

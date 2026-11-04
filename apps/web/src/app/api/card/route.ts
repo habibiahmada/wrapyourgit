@@ -1,7 +1,6 @@
-import { toPublicRecap } from "@wyg/analytics";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/server/auth";
-import { renderCard } from "@/server/card";
+import { cardPng } from "@/server/card";
 import { getRecap } from "@/server/recaps";
 
 /**
@@ -12,13 +11,14 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return new NextResponse("Sign in first", { status: 401 });
   const recap = await getRecap(user.id);
-  if (!recap) return new NextResponse("Build your recap first", { status: 404 });
+  const png = recap && (await cardPng(user.id, recap.syncedAt.toISOString()));
+  if (!recap || !png) return new NextResponse("Build your recap first", { status: 404 });
 
-  const card = await renderCard(toPublicRecap(recap.data));
-  card.headers.set(
-    "Content-Disposition",
-    `attachment; filename="wrapyourgit-${recap.data.meta.year}-${user.login}.png"`,
-  );
-  card.headers.set("Cache-Control", "private, no-store");
-  return card;
+  return new NextResponse(png, {
+    headers: {
+      "Content-Type": "image/png",
+      "Content-Disposition": `attachment; filename="wrapyourgit-${recap.data.meta.year}-${user.login}.png"`,
+      "Cache-Control": "private, no-store",
+    },
+  });
 }

@@ -2,10 +2,10 @@ import "server-only";
 import { buildRecap, toPublicRecap } from "@wyg/analytics";
 import { fetchYearActivity } from "@wyg/github";
 import { EDITION_YEAR, type RecapData, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { getGithubToken } from "./auth";
 import { db, recapShares, recaps, users } from "./db";
-import { nextSyncAt, safeTimezone, yearRange } from "./sync-policy";
+import { SYNC_COOLDOWN_MS, safeTimezone, yearRange } from "./sync-policy";
 
 export interface StoredRecap {
   data: RecapData;
@@ -34,11 +34,41 @@ export async function getRecap(userId: string): Promise<StoredRecap | null> {
 
 /** Fetch → compute → validate → store. Throws SyncTooSoonError inside the cooldown. */
 export async function syncRecap(userId: string, timezone: unknown): Promise<StoredRecap> {
-  const now = new Date();
-  const existing = await getRecap(userId);
-  const retryAt = nextSyncAt(existing?.syncedAt ?? null, now);
-  if (retryAt) throw new SyncTooSoonError(retryAt);
+  // Claim the sync slot in one statement: of N parallel clicks, exactly one gets a row back.
+  const cooldownSeconds = SYNC_COOLDOWN_MS / 1000;
+  const [claimed] = await db
+    .update(users)
+    .set({ syncStartedAt: sql`now()` })
+    .where(
+      and(
+        eq(users.id, userId),
+        or(
+          isNull(users.syncStartedAt),
+          lt(users.syncStartedAt, sql`now() - make_interval(secs => ${cooldownSeconds})`),
+        ),
+      ),
+    )
+    .returning({ id: users.id });
+  if (!claimed) {
+    const [user] = await db
+      .select({ syncStartedAt: users.syncStartedAt })
+      .from(users)
+      .where(eq(users.id, userId));
+    const started = user?.syncStartedAt ?? new Date();
+    throw new SyncTooSoonError(new Date(started.getTime() + SYNC_COOLDOWN_MS));
+  }
 
+  try {
+    return await runSync(userId, timezone);
+  } catch (error) {
+    // A failed sync shouldn't lock the user out for the whole cooldown.
+    await db.update(users).set({ syncStartedAt: null }).where(eq(users.id, userId));
+    throw error;
+  }
+}
+
+async function runSync(userId: string, timezone: unknown): Promise<StoredRecap> {
+  const now = new Date();
   const token = await getGithubToken(userId);
   const { from, to } = yearRange(EDITION_YEAR);
   const activity = await fetchYearActivity(token, from, to);
@@ -82,9 +112,16 @@ export async function setShared(userId: string, shared: boolean): Promise<void> 
  * The public projection of a shared recap, looked up by GitHub login (case-insensitive), or null
  * when that login has no recap or hasn't shared it. Never returns the stored document.
  */
-export async function getPublicRecap(login: string): Promise<RecapData | null> {
+export async function getPublicRecap(
+  login: string,
+): Promise<{ userId: string; data: RecapData; syncedAt: Date } | null> {
   const [row] = await db
-    .select({ data: recaps.data, schemaVersion: recaps.schemaVersion })
+    .select({
+      userId: users.id,
+      data: recaps.data,
+      schemaVersion: recaps.schemaVersion,
+      syncedAt: recaps.syncedAt,
+    })
     .from(users)
     .innerJoin(
       recapShares,
@@ -94,5 +131,5 @@ export async function getPublicRecap(login: string): Promise<RecapData | null> {
     .where(eq(sql`lower(${users.login})`, login.toLowerCase()))
     .limit(1);
   if (!row || row.schemaVersion !== SCHEMA_VERSION) return null;
-  return toPublicRecap(row.data);
+  return { userId: row.userId, data: toPublicRecap(row.data), syncedAt: row.syncedAt };
 }

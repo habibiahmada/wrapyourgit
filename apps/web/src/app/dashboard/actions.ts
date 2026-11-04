@@ -2,8 +2,11 @@
 
 import { GitHubApiError } from "@wyg/github";
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { getCurrentUser, ReauthorizeError } from "@/server/auth";
-import { SyncTooSoonError, setShared, syncRecap } from "@/server/recaps";
+import { errorSummary } from "@/server/log";
+import { getRecap, SyncTooSoonError, setShared, syncRecap } from "@/server/recaps";
+import { canPublish } from "@/server/sync-policy";
 
 export type SyncState =
   | { status: "idle" }
@@ -25,7 +28,7 @@ export async function syncAction(_previous: SyncState, form: FormData): Promise<
     if (error instanceof SyncTooSoonError) {
       return { status: "error", kind: "too-soon", retryAt: error.retryAt.toISOString() };
     }
-    console.error("Sync failed", error instanceof Error ? error.message : error);
+    console.error("Sync failed", errorSummary(error));
     return { status: "error", kind: error instanceof GitHubApiError ? "github" : "unknown" };
   }
   refresh();
@@ -36,6 +39,13 @@ export async function syncAction(_previous: SyncState, form: FormData): Promise<
 export async function setShareAction(form: FormData): Promise<void> {
   const user = await getCurrentUser();
   if (!user) return;
-  await setShared(user.id, form.get("share") === "on");
+  const share = form.get("share") === "on";
+  if (share) {
+    // Privacy flags are as of the last sync; publishing old data could name a repo made private
+    // since then (security review M2).
+    const recap = await getRecap(user.id);
+    if (!canPublish(recap?.syncedAt ?? null, new Date())) redirect("/dashboard?share=stale");
+  }
+  await setShared(user.id, share);
   refresh();
 }

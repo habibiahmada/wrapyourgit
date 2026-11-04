@@ -25,6 +25,8 @@ export const users = pgTable(
     login: text("login").notNull(),
     name: text("name"),
     avatarUrl: text("avatar_url").notNull(),
+    /** Claimed atomically when a sync starts; enforces the cooldown even for parallel clicks. */
+    syncStartedAt: timestamp("sync_started_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   // /u/<login> must resolve to exactly one person, case-insensitively (see signInWithTokens).

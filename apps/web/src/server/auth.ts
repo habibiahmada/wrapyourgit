@@ -1,6 +1,6 @@
 import "server-only";
 import { fetchViewer } from "@wyg/github";
-import { and, eq, gt, ne, sql } from "drizzle-orm";
+import { and, eq, gt, lt, ne, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { decrypt, encrypt, hashToken, parseKey, randomToken } from "./crypto";
 import { db, githubTokens, sessions, users } from "./db";
@@ -79,7 +79,13 @@ export async function signInWithTokens(tokens: TokenSet): Promise<string> {
   return user.id;
 }
 
-async function saveTokens(userId: string, tokens: TokenSet): Promise<void> {
+type Executor = Pick<typeof db, "insert">;
+
+async function saveTokens(
+  userId: string,
+  tokens: TokenSet,
+  executor: Executor = db,
+): Promise<void> {
   const key = encryptionKey();
   const row = {
     accessToken: encrypt(tokens.accessToken, key),
@@ -88,7 +94,7 @@ async function saveTokens(userId: string, tokens: TokenSet): Promise<void> {
     refreshExpiresAt: tokens.refreshExpiresAt,
     updatedAt: new Date(),
   };
-  await db
+  await executor
     .insert(githubTokens)
     .values({ userId, ...row })
     .onConflictDoUpdate({ target: githubTokens.userId, set: row });
@@ -98,6 +104,10 @@ async function saveTokens(userId: string, tokens: TokenSet): Promise<void> {
 export async function startSession(userId: string): Promise<void> {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
+  // Expired rows are useless and only grow the table; clear this user's on every sign-in.
+  await db
+    .delete(sessions)
+    .where(and(eq(sessions.userId, userId), lt(sessions.expiresAt, sql`now()`)));
   await db.insert(sessions).values({ tokenHash: hashToken(token), userId, expiresAt });
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -132,28 +142,33 @@ export async function endSession(): Promise<void> {
 
 /** A usable GitHub access token for the user, refreshing it first when it is about to expire. */
 export async function getGithubToken(userId: string): Promise<string> {
+  const key = encryptionKey();
   const [row] = await db.select().from(githubTokens).where(eq(githubTokens.userId, userId));
   if (!row) throw new ReauthorizeError();
-  const key = encryptionKey();
-  const state = tokenState(
-    {
-      accessExpiresAt: row.accessExpiresAt,
-      refreshToken: row.refreshToken,
-      refreshExpiresAt: row.refreshExpiresAt,
-    },
-    new Date(),
-  );
-  if (state === "valid") return decrypt(row.accessToken, key);
-  if (state === "reauthorize" || !row.refreshToken) throw new ReauthorizeError();
+  if (tokenState(row, new Date()) === "valid") return decrypt(row.accessToken, key);
 
-  const fresh = await refreshTokens({
-    ...githubApp(),
-    refreshToken: decrypt(row.refreshToken, key),
-  }).catch(() => {
-    throw new ReauthorizeError();
+  // GitHub refresh tokens are single-use. Lock the row so two requests that both see an expiring
+  // token don't both spend the same refresh token; the second one finds the first one's result.
+  return db.transaction(async (tx) => {
+    const [locked] = await tx
+      .select()
+      .from(githubTokens)
+      .where(eq(githubTokens.userId, userId))
+      .for("update");
+    if (!locked) throw new ReauthorizeError();
+    const state = tokenState(locked, new Date());
+    if (state === "valid") return decrypt(locked.accessToken, key);
+    if (state === "reauthorize" || !locked.refreshToken) throw new ReauthorizeError();
+
+    const fresh = await refreshTokens({
+      ...githubApp(),
+      refreshToken: decrypt(locked.refreshToken, key),
+    }).catch(() => {
+      throw new ReauthorizeError();
+    });
+    await saveTokens(userId, fresh, tx);
+    return fresh.accessToken;
   });
-  await saveTokens(userId, fresh);
-  return fresh.accessToken;
 }
 
 /**

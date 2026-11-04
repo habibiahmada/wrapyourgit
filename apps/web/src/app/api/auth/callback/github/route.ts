@@ -1,8 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { appUrl, githubApp, OAUTH_COOKIE, signInWithTokens, startSession } from "@/server/auth";
-import { exchangeCode } from "@/server/oauth";
+import { errorSummary } from "@/server/log";
+import { exchangeCode, statesMatch } from "@/server/oauth";
 
 const back = (error: string) => NextResponse.redirect(new URL(`/?signin=${error}`, appUrl()));
 
@@ -14,14 +14,8 @@ export async function GET(request: NextRequest) {
   store.delete({ name: OAUTH_COOKIE, path: "/api/auth" });
 
   if (params.get("error") === "access_denied") return back("cancelled");
-  const state = params.get("state") ?? "";
   const code = params.get("code");
-  if (
-    !code ||
-    !expectedState ||
-    state.length !== expectedState.length ||
-    !timingSafeEqual(Buffer.from(state), Buffer.from(expectedState))
-  ) {
+  if (!code || !statesMatch(params.get("state") ?? "", expectedState)) {
     return back("expired");
   }
 
@@ -35,7 +29,7 @@ export async function GET(request: NextRequest) {
     const userId = await signInWithTokens(tokens);
     await startSession(userId);
   } catch (error) {
-    console.error("GitHub sign-in failed", error instanceof Error ? error.message : error);
+    console.error("GitHub sign-in failed", errorSummary(error));
     return back("failed");
   }
   return NextResponse.redirect(new URL("/dashboard", appUrl()));

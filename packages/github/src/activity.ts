@@ -208,10 +208,9 @@ async function fetchCommitRepos(token: string, from: Date, to: Date) {
   for (const collection of Object.values(data.viewer)) {
     for (const entry of collection.commitContributionsByRepository) {
       if (entry.contributions.pageInfo.hasNextPage) {
-        // Cannot happen with quarter-sized ranges; fail loudly rather than undercount.
-        throw new Error(
-          `More than 100 commit days in one quarter for ${entry.repository.nameWithOwner}`,
-        );
+        // Cannot happen with quarter-sized ranges; fail loudly rather than undercount. The message
+        // carries no repo name: it may be private and errors end up in logs.
+        throw new Error("More than 100 commit days for one repository in one quarter");
       }
       const commits = entry.contributions.nodes.reduce((sum, node) => sum + node.commitCount, 0);
       const existing = byRepo.get(entry.repository.nameWithOwner);

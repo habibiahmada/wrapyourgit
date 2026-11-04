@@ -40,7 +40,7 @@ async function Dashboard({
   const recap = await getRecap(user.id);
   const retryAt = nextSyncAt(recap?.syncedAt ?? null, new Date());
   const shared = recap ? await isShared(user.id) : false;
-  const { delete: deleteFlag } = await searchParams;
+  const { delete: deleteFlag, share: shareFlag } = await searchParams;
 
   return (
     <>
@@ -76,7 +76,14 @@ async function Dashboard({
           )}
         </section>
 
-        {recap && <ShareSection login={user.login} shared={shared} />}
+        {recap && (
+          <ShareSection
+            login={user.login}
+            shared={shared}
+            syncedAt={recap.syncedAt}
+            stale={shareFlag === "stale"}
+          />
+        )}
 
         <section className="mt-auto border-t-2 border-ink px-4 py-10 sm:px-10">
           <h2 className="text-2xl font-extrabold">Delete my data</h2>
@@ -221,16 +228,39 @@ function RecapSummary({
  * Publishing is opt-in. The public page and the PNG card show the public projection: counts
  * only, private repositories never named.
  */
-function ShareSection({ login, shared }: { login: string; shared: boolean }) {
+function ShareSection({
+  login,
+  shared,
+  syncedAt,
+  stale,
+}: {
+  login: string;
+  shared: boolean;
+  syncedAt: Date;
+  stale: boolean;
+}) {
   const path = `/u/${login}`;
+  const synced = syncedAt.toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  });
   return (
     <section className="border-t-2 border-ink px-4 py-10 sm:px-10">
       <h2 className="text-2xl font-extrabold">Share your recap</h2>
       <p className="mt-2 max-w-2xl text-base">
         {shared
           ? "Your recap page is public. Anyone with the link can see your counts and play your story. Private repositories are never named."
-          : "Publish a page anyone can open, with your counts and your story. Private repositories are never named. It stays off until you turn it on."}
+          : "Publish a page anyone can open, with your counts and your story. Private repositories are never named. It stays off until you turn it on."}{" "}
+        It shows your data as of your last sync ({synced} UTC). If you make a repository private,
+        sync again so the page stops naming it.
       </p>
+      {stale && (
+        <p role="alert" className="mt-3 font-bold">
+          Sync first: publishing needs data from the last 24 hours, so private repositories are up
+          to date.
+        </p>
+      )}
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <form action={setShareAction}>
           <input type="hidden" name="share" value={shared ? "off" : "on"} />
