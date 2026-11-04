@@ -1,0 +1,71 @@
+# WrapYourGit: full description
+
+> WrapYourGit turns a developer's GitHub activity for one year into an animated, shareable story. Free, read-only GitHub sign-in, no access to source code. Edition: 2026. Site: https://wrapyourgit.habibiahmada.dev
+
+## What it is
+
+A web app. You sign in with GitHub, WrapYourGit reads the activity counts GitHub keeps for your account for the year, and plays them back as a short story set to music, chapter by chapter, at your own pace. Its promise is that every number on screen is correct and explainable: each metric has a written definition, and anything GitHub does not provide is shown as unavailable rather than as zero. Estimates are labelled.
+
+## The story
+
+Three short warm-up slides, then nine chapters (about one minute of music), then a comparison with last year, a letter, and your downloads.
+
+1. Intro: the first week of your contribution graph lights up.
+2. Contributions: total contributions, active days and longest streak.
+3. Rhythm: your year as a contribution calendar, your busiest month and weekday pattern.
+4. Languages: the languages you wrote, weighted by your own commits to each repository rather than by repository size.
+5. Projects: your most active repositories, new repositories and repositories you contributed to.
+6. Community: stars and forks your repositories gained this year, and the most starred one.
+7. Engineering: pull requests opened and merged, reviews and issues.
+8. Identity: your developer archetype and the facts that earned it.
+9. Closing: your handle, four headline facts and the year as a small graph.
+
+After the chapters: this year against the same stretch of last year (fair while the year is still running), and a letter from Cell, the mascot, that reads your year the way a friend would. A quiet year is told it counts; a relentless one is told to rest.
+
+## Archetypes
+
+One main archetype plus up to two runner-ups. If none fits yet, the story says so.
+
+- Builder: created at least two repositories, or made 50 or more commits to your own.
+- Consistent: active on at least 30% of the days so far.
+- Explorer: wrote in four or more languages.
+- Collaborator: ten or more reviews, or ten or more pull requests on other people's repositories.
+- Night owl: at least 40% of sampled commits between 22:00 and 04:00 (estimated, and labelled as such).
+- Open sourcer: contributed to three or more public repositories you don't own.
+
+## What you can keep
+
+- The story itself, in the browser, with its soundtrack.
+- Ten slides as PNG (1080 × 1350, one per chapter plus the letter), or all ten in a ZIP.
+- One PDF with the same ten slides.
+- A public page at /u/<your-login>, off until you publish it; private repository names are removed.
+- An MP4 video in four aspect ratios: coming soon, not available yet.
+
+## Privacy
+
+- Reads: counts GitHub already keeps about your year (contributions, languages, repositories you committed to, stars, pull requests).
+- Never touches: your code. Signing in asks GitHub for no repository permissions.
+- Token: kept on the server only, encrypted at rest, never sent to the browser.
+- Public: nothing until you publish. A published recap drops private repository names, your timezone and the hours you commit.
+- Leaving: Settings, then Delete my data, removes your account and recap and revokes WrapYourGit's access to GitHub.
+- Full policy: https://wrapyourgit.habibiahmada.dev/privacy
+
+## FAQ
+
+**Does WrapYourGit read my code?** No. Signing in asks GitHub for no repository permissions, and it only reads the counts GitHub keeps about your activity.
+
+**Why is my active-days number slightly different from my GitHub profile?** Your yearly total matches the profile. On a few days GitHub's public graph files one contribution on the neighbouring day, so active days can differ by one or two.
+
+**Are private repositories included?** Your contributions to private repositories, your own and your organisations', count toward your total. Their names never appear in anything you can share.
+
+**2026 isn't over yet. Is my recap final?** Not until the year ends. Until then the story says "so far", and you can sync again from your dashboard to bring it up to date.
+
+**Does it compare with last year?** Yes. Your dashboard and the story put this year next to the same stretch of last year.
+
+**Can I download the video?** Not yet. MP4 export is still being set up. Today you can download every slide as a PNG, all of them as a ZIP, or one PDF.
+
+**How do I delete my data?** Sign in, open Settings and choose Delete my data. It removes your recap and account and revokes WrapYourGit's access to GitHub.
+
+## Author
+
+Built by Habibi Ahmad Aziz (habibiahmada): https://habibiahmada.dev, https://github.com/habibiahmada
