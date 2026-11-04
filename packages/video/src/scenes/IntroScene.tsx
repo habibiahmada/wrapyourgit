@@ -2,6 +2,7 @@ import type { RecapData } from "@wyg/schema";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { beats } from "../audio/track";
 import { Field } from "../components/Field";
+import { Sfx } from "../components/Sfx";
 import { Slam } from "../components/Slam";
 import { heatLevels } from "../heat";
 import { useLayout } from "../layout";
@@ -60,7 +61,9 @@ export function IntroScene({ data }: { data: RecapData }) {
       <div style={{ fontSize: title, fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.02em" }}>
         <Slam at={beats(5, fps)}>Every green</Slam>
         <Slam at={beats(5.5, fps)}>square has</Slam>
-        <Slam at={beats(6, fps)}>a story.</Slam>
+        <Slam at={beats(6, fps)} sound="land">
+          a story.
+        </Slam>
       </div>
     </div>
   );
@@ -77,6 +80,17 @@ export function IntroScene({ data }: { data: RecapData }) {
     >
       {week}
       {text}
+      {/* Each day of the first week lights with a note, climbing; empty days are quieter. */}
+      {Array.from({ length: 7 }, (_, i) => (
+        <Sfx
+          // biome-ignore lint/suspicious/noArrayIndexKey: one sound per weekday cell
+          key={i}
+          at={i * beats(0.5, fps)}
+          sound="blip"
+          step={i}
+          volume={(firstWeek[i] ?? 0) > 0 ? 0.35 : 0.15}
+        />
+      ))}
     </Field>
   );
 }

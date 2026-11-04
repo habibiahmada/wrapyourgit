@@ -2,6 +2,7 @@ import type { RecapData } from "@wyg/schema";
 import { useVideoConfig } from "remotion";
 import { beats } from "../audio/track";
 import { Field } from "../components/Field";
+import { CountTicks } from "../components/Sfx";
 import { Slam } from "../components/Slam";
 import { useCountUp } from "../components/useCountUp";
 import { useLayout } from "../layout";
@@ -55,7 +56,7 @@ export function EngineeringScene({ data }: { data: RecapData }) {
 
   return (
     <Field color="ink" style={{ flexDirection: "column", justifyContent: "center", gap: u * 5 }}>
-      <Slam at={0}>
+      <Slam at={0} sound={null}>
         <div style={{ fontSize: u * 4.5, fontWeight: 700 }}>your engineering footprint</div>
       </Slam>
       <div
@@ -87,6 +88,7 @@ function CounterCell({ counter, at }: { counter: Counter; at: number }) {
   const value = useCountUp(counter.value, at, at + beats(2, fps));
   return (
     <Slam at={at}>
+      <CountTicks value={counter.value} from={at} to={at + beats(2, fps)} />
       <div
         style={{
           fontSize: u * 13,

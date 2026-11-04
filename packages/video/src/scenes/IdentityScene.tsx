@@ -2,6 +2,7 @@ import type { RecapData } from "@wyg/schema";
 import { spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { beats } from "../audio/track";
 import { Field } from "../components/Field";
+import { Sfx } from "../components/Sfx";
 import { Slam } from "../components/Slam";
 import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "../copy";
 import { fitFontSize } from "../heat";
@@ -39,7 +40,7 @@ export function IdentityScene({ data }: { data: RecapData }) {
       color="persimmon"
       style={{ flexDirection: "column", justifyContent: "center", gap: u * 4 }}
     >
-      <Slam at={0}>
+      <Slam at={0} sound={null}>
         <div style={{ fontSize: u * 5, fontWeight: 700 }}>your {data.meta.year} archetype</div>
       </Slam>
       <div style={{ display: "flex", alignItems: "center", gap: u * 3 }}>
@@ -58,6 +59,8 @@ export function IdentityScene({ data }: { data: RecapData }) {
         >
           {title}
         </div>
+        {/* The climax: a heavy hit for an archetype, a plain landing for the honest no-label line. */}
+        <Sfx at={beats(2, fps)} sound={archetype ? "impact" : "land"} />
       </div>
       <div
         style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: u * 2 }}

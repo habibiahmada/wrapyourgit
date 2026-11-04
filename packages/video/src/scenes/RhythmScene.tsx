@@ -2,6 +2,7 @@ import type { RecapData } from "@wyg/schema";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { beats } from "../audio/track";
 import { Field } from "../components/Field";
+import { Sfx } from "../components/Sfx";
 import { Slam } from "../components/Slam";
 import { calendarGrid, fitFontSize, heatLevels } from "../heat";
 import { useLayout } from "../layout";
@@ -107,7 +108,7 @@ export function RhythmScene({ data }: { data: RecapData }) {
     >
       {busiestMonth && (
         <div style={{ minWidth: 0 }}>
-          <Slam at={beats(9, fps)}>
+          <Slam at={beats(9, fps)} sound="land">
             <div
               style={{
                 fontSize: fitFontSize(MONTHS[busiestMonth.month - 1] ?? "", monthWidth, u * 11),
@@ -130,6 +131,10 @@ export function RhythmScene({ data }: { data: RecapData }) {
       )}
       {topWeekday >= 0 && (
         <div>
+          {/* The bars grow together; their notes climb Monday to Sunday. */}
+          {weekday.map((_, day) => (
+            <Sfx key={WEEKDAYS[day]} at={beats(12, fps) + day * 2} sound="blip" step={day} />
+          ))}
           <div style={{ display: "flex", alignItems: "flex-end", gap: u * 1.2, height: barHeight }}>
             {weekday.map((count, day) => (
               <div
@@ -171,6 +176,9 @@ export function RhythmScene({ data }: { data: RecapData }) {
     >
       {vertical ? graph : <div style={{ alignSelf: "center" }}>{graph}</div>}
       {facts}
+      {/* The year draws in over six beats: one shimmer as it starts, a softer one halfway. */}
+      <Sfx at={beats(1, fps)} sound="shimmer" />
+      <Sfx at={beats(4, fps)} sound="shimmer" volume={0.25} />
     </Field>
   );
 }

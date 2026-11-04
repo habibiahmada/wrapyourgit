@@ -51,7 +51,8 @@ export function TechDnaScene({ data }: { data: RecapData }) {
     });
     return (
       <div key={language.name} style={{ display: "flex", flexDirection: "column", gap: u * 0.8 }}>
-        <Slam at={at}>
+        {/* Each row fills on its beat; the notes climb down the list. */}
+        <Slam at={at} sound="blip" step={index * 2}>
           <div
             style={{
               display: "flex",
@@ -111,15 +112,15 @@ export function TechDnaScene({ data }: { data: RecapData }) {
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <Slam at={0}>
+        <Slam at={0} sound={null}>
           <div style={{ fontSize: u * 4.5, fontWeight: 700 }}>your top language</div>
         </Slam>
-        <Slam at={beats(1, fps)}>
+        <Slam at={beats(1, fps)} sound="land">
           <div style={{ margin: `${u * 2}px 0`, transform: "rotate(-6deg)", width: "fit-content" }}>
             <LanguageMark name={top.name} color={top.color} size={u * (side ? 16 : 18)} />
           </div>
         </Slam>
-        <Slam at={beats(1, fps)}>
+        <Slam at={beats(1, fps)} sound={null}>
           <div
             style={{
               fontSize: nameSize,
