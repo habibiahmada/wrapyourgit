@@ -88,6 +88,7 @@ async function Dashboard({
               <div className="flex min-w-0 flex-col gap-10">
                 <Overview data={recap.data} />
                 <Highlights data={recap.data} />
+                <StarredSection data={recap.data} />
                 <section aria-labelledby="compare-title">
                   <h2 id="compare-title" className={sectionTitle}>
                     {recap.data.meta.year} vs {recap.data.meta.year - 1}
@@ -322,6 +323,87 @@ function Highlights({ data }: { data: RecapData }) {
             <p className="mt-3 text-muted">Not enough data yet. Sync again after a few commits.</p>
           )}
         </div>
+      </div>
+    </section>
+  );
+}
+
+const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+
+/**
+ * What caught your eye: repositories you starred this year (metrics.md, "Starred by you"). The
+ * dashboard is private, so private repositories are named here; public surfaces drop them.
+ */
+function StarredSection({ data }: { data: RecapData }) {
+  const { starred, languages, meta } = data;
+  if (starred.status !== "ok" || starred.value.count === 0) return null;
+  const { count, top, languages: starredLanguages } = starred.value;
+  const wrote = languages.top[0]?.name;
+  const eyed = starredLanguages[0]?.name;
+  return (
+    <section aria-labelledby="starred-title">
+      <h2 id="starred-title" className={sectionTitle}>
+        What caught your eye
+      </h2>
+      <p className="mt-2 mb-6 max-w-2xl text-muted">
+        You starred{" "}
+        <span className="font-semibold text-fg tabular-nums">
+          {starred.estimated ? "~" : ""}
+          {n(count)}
+        </span>{" "}
+        {count === 1 ? "repository" : "repositories"} in {meta.year}
+        {!meta.isFinal && " so far"}.
+        {wrote && eyed && wrote !== eyed && (
+          <>
+            {" "}
+            You wrote mostly {wrote}, but starred mostly {eyed}.
+          </>
+        )}
+      </p>
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <div className={`reveal p-5 ${box}`}>
+          <h3 className="text-sm font-semibold text-muted">The most popular ones you starred</h3>
+          <ol className="mt-3 divide-y divide-line">
+            {top.map((repo) => (
+              <li key={repo.nameWithOwner} className="flex items-center gap-3 py-2.5">
+                <a
+                  href={`https://github.com/${repo.nameWithOwner}`}
+                  className="min-w-0 flex-1 truncate font-semibold text-blue hover:underline"
+                >
+                  {repo.nameWithOwner}
+                </a>
+                {repo.primaryLanguage && (
+                  <span className="hidden text-sm text-muted sm:inline">
+                    {repo.primaryLanguage}
+                  </span>
+                )}
+                <span className="flex items-center gap-1 text-muted tabular-nums">
+                  <svg aria-hidden viewBox="0 0 16 16" className="size-4 fill-current">
+                    <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
+                  </svg>
+                  <span className="sr-only">Stars:</span>
+                  {compact.format(repo.stars)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        {starredLanguages.length > 0 && (
+          <div className={`reveal p-5 ${box}`}>
+            <h3 className="text-sm font-semibold text-muted">Languages you starred</h3>
+            <ul className="mt-3 space-y-3">
+              {starredLanguages.map((language) => (
+                <li key={language.name} className="flex items-center gap-3">
+                  <LanguageBadge name={language.name} color={null} size={28} />
+                  <span className="flex-1 font-semibold">{language.name}</span>
+                  <span className="text-muted tabular-nums">
+                    {n(language.count)} {language.count === 1 ? "repo" : "repos"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </section>
   );
