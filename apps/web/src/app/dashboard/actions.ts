@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser, ReauthorizeError } from "@/server/auth";
 import { errorSummary } from "@/server/log";
+import { isNetworkError } from "@/server/network";
 import { getRecap, SyncTooSoonError, setShared, syncRecap } from "@/server/recaps";
 import { canPublish } from "@/server/sync-policy";
 
@@ -13,7 +14,7 @@ export type SyncState =
   | { status: "done" }
   | {
       status: "error";
-      kind: "signed-out" | "reauthorize" | "too-soon" | "github" | "unknown";
+      kind: "signed-out" | "reauthorize" | "too-soon" | "network" | "github" | "unknown";
       retryAt?: string;
     };
 
@@ -29,6 +30,7 @@ export async function syncAction(_previous: SyncState, form: FormData): Promise<
       return { status: "error", kind: "too-soon", retryAt: error.retryAt.toISOString() };
     }
     console.error("Sync failed", errorSummary(error));
+    if (isNetworkError(error)) return { status: "error", kind: "network" };
     return { status: "error", kind: error instanceof GitHubApiError ? "github" : "unknown" };
   }
   refresh();

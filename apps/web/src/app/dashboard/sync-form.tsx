@@ -9,6 +9,7 @@ const MESSAGES: Record<Exclude<SyncState, { status: "idle" | "done" }>["kind"], 
   "signed-out": "Your session ended. Sign in again to sync.",
   reauthorize: "Your GitHub sign-in expired. Sign in again, then sync.",
   "too-soon": "You synced a few minutes ago.",
+  network: "We couldn't reach GitHub. Check your connection and sync again.",
   github: "GitHub didn't answer as expected. Try again in a minute.",
   unknown: "Something went wrong while building your recap. Try again in a minute.",
 };
