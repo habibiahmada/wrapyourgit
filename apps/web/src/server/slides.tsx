@@ -475,19 +475,25 @@ async function slide(data: RecapData, index: number): Promise<ReactElement> {
         INK,
         <div style={{ display: "flex", flexDirection: "column" }}>
           <img
-            src={await art("cell-proud")}
-            width={480}
-            height={360}
-            style={{ borderRadius: 20, alignSelf: "flex-end" }}
+            src={await art("cutout-cell-proud")}
+            width={280}
+            height={210}
+            style={{ alignSelf: "flex-end", flexShrink: 0 }}
             alt=""
           />
-          <span style={{ fontSize: 46, fontWeight: 800, marginTop: 20 }}>{letter.greeting}</span>
+          {/* flexShrink 0: Satori squeezes flex children instead of overflowing, which stacks them. */}
+          <span style={{ fontSize: 44, fontWeight: 800, flexShrink: 0 }}>{letter.greeting}</span>
           {letter.paragraphs.map((paragraph) => (
-            <span key={paragraph} style={{ fontSize: 30, lineHeight: 1.35, marginTop: 18 }}>
+            <span
+              key={paragraph}
+              style={{ fontSize: 24, lineHeight: 1.42, marginTop: 12, flexShrink: 0 }}
+            >
               {paragraph}
             </span>
           ))}
-          <span style={{ fontSize: 30, fontWeight: 700, marginTop: 26 }}>{letter.signOff}</span>
+          <span style={{ fontSize: 28, fontWeight: 700, marginTop: 22, flexShrink: 0 }}>
+            {letter.signOff}
+          </span>
         </div>,
       );
     }
