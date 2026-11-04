@@ -5,135 +5,107 @@ import { Accent } from "./components/Accent";
 import type { SceneId } from "./timeline";
 
 /*
- * One illustration per scene, each used differently so the story doesn't repeat one picture:
- * Cell peeking from an edge, a faint silhouette behind the numbers, a character in a corner, and
- * the full archetype only at the climax. Positions are fractions of the frame, per layout family.
- * Silhouettes stay at low opacity so text contrast is unaffected (R-25).
+ * One illustration per scene, placed in the space that scene's layout leaves empty, so it is
+ * large without covering a number or a label. Positions are tuned per layout family from rendered
+ * stills of the sample and edge recaps (docs/video/scene-system.md). Full colour everywhere: the
+ * faint silhouettes this replaced ended up hidden behind the numbers.
  */
+
+type Spot = { x: number; y: number; size: number; rotate?: number };
+type PerLayout = Record<LayoutFamily, Spot>;
+
+const at = (layout: LayoutFamily, spots: PerLayout): Spot => spots[layout];
+
 export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily): ReactNode {
-  const wide = layout === "landscape";
-  const tall = layout === "portrait";
   switch (id) {
-    case "intro":
+    case "intro": {
       // Cell waves hello from the right edge while the first week lights up.
+      const spot = at(layout, {
+        portrait: { x: 0.8, y: 0.36, size: 1.25, rotate: -10 },
+        compact: { x: 0.8, y: 0.4, size: 0.9, rotate: -10 },
+        landscape: { x: 0.78, y: 0.46, size: 0.85, rotate: -10 },
+      });
+      return <Accent art="cutout-cell-wave" at={beats(1)} enter="right" {...spot} />;
+    }
+    case "contributions": {
+      // Cell cheers the big number from the empty side, clear of the stat chips.
+      const spot = at(layout, {
+        portrait: { x: 0.74, y: 0.5, size: 1.2, rotate: -12 },
+        compact: { x: 0.78, y: 0.48, size: 0.85, rotate: -12 },
+        landscape: { x: 0.82, y: 0.8, size: 0.62, rotate: -10 },
+      });
+      return <Accent art="cutout-cell-cheer" at={beats(2)} enter="right" {...spot} />;
+    }
+    case "rhythm": {
+      // Cell the runner and the ant, in the gap between the calendar and the month.
+      const spot = at(layout, {
+        portrait: { x: 0.64, y: 0.82, size: 1.05 },
+        compact: { x: 0.64, y: 0.46, size: 0.78 },
+        landscape: { x: 0.5, y: 0.55, size: 0.78 },
+      });
+      return <Accent art="skin-consistent" at={beats(8)} enter="bottom" {...spot} />;
+    }
+    case "tech-dna": {
+      // Thinking Cell between the language name and the list.
+      const spot = at(layout, {
+        portrait: { x: 0.62, y: 0.5, size: 1.05, rotate: 6 },
+        compact: { x: 0.84, y: 0.47, size: 0.5, rotate: 6 },
+        landscape: { x: 0.24, y: 0.82, size: 0.5, rotate: 6 },
+      });
+      return <Accent art="cutout-cell-think" at={beats(6)} enter="bottom" {...spot} />;
+    }
+    case "projects": {
+      // The builder and the beaver, between the top repository and the list.
+      const spot = at(layout, {
+        portrait: { x: 0.56, y: 0.46, size: 1.15 },
+        compact: { x: 0.62, y: 0.42, size: 0.75 },
+        landscape: { x: 0.22, y: 0.8, size: 0.5 },
+      });
+      return <Accent art="skin-builder" at={beats(1)} enter="bottom" {...spot} />;
+    }
+    case "community": {
+      // Cell handing blocks to friends, in the open space beside the star count.
+      const spot = at(layout, {
+        portrait: { x: 0.56, y: 0.52, size: 1.45 },
+        compact: { x: 0.66, y: 0.56, size: 0.9 },
+        landscape: { x: 0.76, y: 0.36, size: 0.72 },
+      });
+      return <Accent art="cutout-open-sourcer" at={beats(4)} enter="right" {...spot} />;
+    }
+    case "engineering": {
+      // Cell with its headset and the bee, below or beside the counters.
+      const spot = at(layout, {
+        portrait: { x: 0.58, y: 0.85, size: 1.1 },
+        compact: { x: 0.74, y: 0.8, size: 0.68 },
+        landscape: { x: 0.84, y: 0.84, size: 0.46 },
+      });
+      return <Accent art="skin-collaborator" at={beats(2)} enter="bottom" {...spot} />;
+    }
+    case "identity": {
+      // The climax: the person's own archetype, big and in full colour.
+      const spot = at(layout, {
+        portrait: { x: 0.62, y: 0.84, size: 1.1 },
+        compact: { x: 0.68, y: 0.84, size: 0.78 },
+        landscape: { x: 0.76, y: 0.72, size: 0.9 },
+      });
       return (
         <Accent
-          art="cutout-cell-wave"
-          at={beats(1)}
-          enter="right"
-          x={wide ? 0.86 : 0.84}
-          y={tall ? 0.36 : 0.4}
-          size={tall ? 1 : 0.72}
-          rotate={-10}
-        />
-      );
-    case "contributions":
-      // Cell leans in from the right edge to cheer the big number.
-      return (
-        <Accent
-          art="cutout-cell-cheer"
-          at={beats(2)}
-          enter="right"
-          x={wide ? 0.9 : 0.86}
-          y={tall ? 0.46 : 0.42}
-          size={tall ? 0.95 : 0.7}
-          rotate={-14}
-        />
-      );
-    case "rhythm":
-      // Cell the runner and the ant as a huge silhouette, cut off by the right edge.
-      return (
-        <Accent
-          art="skin-consistent"
-          at={beats(8)}
-          x={0.86}
-          y={tall ? 0.5 : 0.55}
-          size={tall ? 2.1 : 1.7}
-          rotate={-8}
-          silhouette="dark"
-          opacity={0.1}
-        />
-      );
-    case "tech-dna":
-      // Thinking Cell peeks up from the bottom-right corner, clear of the footnote on the left.
-      return (
-        <Accent
-          art="cutout-cell-think"
-          at={beats(6)}
-          enter="bottom"
-          x={wide ? 0.93 : 0.92}
-          y={tall ? 0.94 : 0.93}
-          size={tall ? 0.6 : 0.42}
-          rotate={8}
-        />
-      );
-    case "projects":
-      // The builder and the beaver as a giant silhouette leaning in from the right edge.
-      return (
-        <Accent
-          art="skin-builder"
-          at={beats(1)}
-          x={0.9}
-          y={tall ? 0.42 : 0.5}
-          size={tall ? 2.3 : 1.8}
-          rotate={7}
-          silhouette="dark"
-          opacity={0.09}
-        />
-      );
-    case "community":
-      // Cell handing out blocks, full colour, in the lower right.
-      return (
-        <Accent
-          art="cutout-open-sourcer"
-          at={beats(4)}
-          enter="right"
-          x={wide ? 0.8 : 0.72}
-          y={tall ? 0.42 : 0.4}
-          size={tall ? 1 : 0.75}
-        />
-      );
-    case "engineering":
-      // Cell with its headset and the bee, a big pale silhouette rising from the bottom edge.
-      return (
-        <Accent
-          art="skin-collaborator"
-          at={beats(2)}
-          x={0.7}
-          y={tall ? 0.78 : 0.72}
-          size={tall ? 2.2 : 1.7}
-          rotate={-5}
-          silhouette="light"
-          opacity={0.1}
-        />
-      );
-    case "identity":
-      // The climax: the archetype's own scene, big and in full colour.
-      return data.identity.archetype ? (
-        <Accent
-          art={`skin-${data.identity.archetype}`}
+          art={data.identity.archetype ? `skin-${data.identity.archetype}` : "cutout-cell-sleep"}
           at={beats(3)}
           enter="bottom"
-          x={wide ? 0.76 : 0.68}
-          y={tall ? 0.84 : 0.84}
-          size={tall ? 1.1 : 0.78}
+          {...spot}
         />
-      ) : (
-        <Accent art="cutout-cell-sleep" at={beats(3)} enter="bottom" x={0.7} y={0.8} size={0.7} />
       );
-    case "closing":
+    }
+    case "closing": {
       // A proud Cell rises from the bottom edge to sign off.
-      return (
-        <Accent
-          art="cutout-cell-proud"
-          at={beats(7)}
-          enter="bottom"
-          x={wide ? 0.86 : 0.8}
-          y={tall ? 0.9 : 0.86}
-          size={tall ? 0.75 : 0.5}
-          rotate={-6}
-        />
-      );
+      const spot = at(layout, {
+        portrait: { x: 0.78, y: 0.88, size: 0.9, rotate: -6 },
+        compact: { x: 0.8, y: 0.86, size: 0.58, rotate: -6 },
+        landscape: { x: 0.88, y: 0.84, size: 0.5, rotate: -6 },
+      });
+      return <Accent art="cutout-cell-proud" at={beats(7)} enter="bottom" {...spot} />;
+    }
     default:
       return null;
   }
