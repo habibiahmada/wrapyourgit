@@ -26,25 +26,29 @@ How the story and the exported video are built. Code: `packages/video`.
 7. **Reduced motion (web).** Honour `prefers-reduced-motion`: Player shows scenes at their final frame with simple fades.
 8. **Fonts & assets** load via `staticFile()` / `@remotion/google-fonts` with `delayRender` so Lambda renders don't flash fallback fonts.
 
-## Planned scenes (target ~90 s at 30 fps)
+## Scenes (66 s at 30 fps, 132 beats at 120 BPM)
 
-| #   | id            | Content                                                | Climax                                         |
-| --- | ------------- | ------------------------------------------------------ | ---------------------------------------------- |
-| 1   | intro         | first week lights up, `@login · 2026`, title           | ✅ 8 beats, ink                                |
-| 2   | contributions | total count-up, active days, streak                    | ✅ 16 beats, persimmon; kick enters on its cut |
-| 3   | rhythm        | calendar heatmap draws in, busiest month, weekday bars | ✅ 20 beats, paper                             |
-| 4   | tech-dna      | top language, rows of 5% cells per language            | ✅ 16 beats, cobalt                            |
-| 5   | projects      | repo cards one by one, top repo spotlight              |                                                |
-| 6   | community     | stars/forks gained, most starred                       |                                                |
-| 7   | engineering   | PRs/merged/issues/reviews counters                     |                                                |
-| 8   | identity      | archetype reveal + reasons                             | music drop                                     |
-| 9   | closing       | summary grid, wrapyourgit.app/u/login                  | outro                                          |
+Order, length and field color live in `src/timeline.ts`; `timeline.test.ts` checks that the story is as long as the track and that music sections start on scene cuts.
+
+| #   | id            | Beats | Field     | Content                                                                         | Music              |
+| --- | ------------- | ----- | --------- | ------------------------------------------------------------------------------- | ------------------ |
+| 1   | intro         | 8     | ink       | first week lights up, `@login · 2026`, title                                    | pad, riser         |
+| 2   | contributions | 16    | persimmon | total count-up, active days, streak                                             | drop: kick enters  |
+| 3   | rhythm        | 20    | paper     | calendar heatmap draws in, busiest month, weekday bars                          |                    |
+| 4   | tech-dna      | 16    | cobalt    | top language, rows of 5% cells per language                                     | arpeggio enters    |
+| 5   | projects      | 16    | paper     | top repo spotlight, then rows scaled to its commits; new / contributed-to       |                    |
+| 6   | community     | 12    | cobalt    | stars gained (or current total, labelled as such), forks, most starred          |                    |
+| 7   | engineering   | 14    | ink       | non-zero counters only: PRs, merged, reviews, issues, external repos            | riser, 2-beat rest |
+| 8   | identity      | 16    | persimmon | archetype reveal (heavier spring) and its reasons; honest line when null        | climax: crash      |
+| 9   | closing       | 14    | ink       | handle, four headline facts, the year as a small graph, "Made with WrapYourGit" | outro, fade        |
+
+Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`), which turns every private repo into "Private repository", because the MP4 is shareable. Metrics go through `metricValue()`: unavailable skips the beat, estimates get "~" and a footnote.
 
 ## Audio
 
 - Files in `packages/video/public/audio/`, licences in `LICENSES.md` there ([ADR-0007](../architecture/decisions/0007-soundtrack-sourcing.md)).
 - `<Html5Audio>` (`<Audio>` is deprecated in Remotion 4.0.540) with a volume curve that fades the last two beats; SFX via `<Sequence>`-scoped `<Html5Audio>`.
-- Spike B placeholder: `placeholder-120bpm.wav`, synthesised by `scripts/synth-placeholder-track.ts` from `TRACK` (120 BPM = 15 frames per beat; pad and riser for 8 beats, then kick, hats and bass).
+- Track: `wrapyourgit-120bpm.m4a` (AAC, 66 s), synthesised by `bun scripts/synth-track.ts` from `TRACK` (120 BPM = 15 frames per beat). Sections: intro (pad, riser), drop at contributions (kick, hats, bass; claps from beat 24, arpeggio from beat 40), two beats of rest and a crash at the identity climax, half-time outro over closing. Regenerate it whenever `TRACK` or the timeline changes.
 - Track metadata (`bpm`, `offsetMs`, sections) drives scene durations: each scene snaps to a whole number of beats.
 - Web: Player starts muted or waits for a tap; never autoplay sound.
 

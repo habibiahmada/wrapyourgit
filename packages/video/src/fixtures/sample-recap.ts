@@ -1,10 +1,23 @@
-import { type RecapData, SCHEMA_VERSION } from "@wyg/schema";
+import { type RecapData, type RepoRef, SCHEMA_VERSION } from "@wyg/schema";
 
 /** Fake data for Remotion Studio and visual tests. Not a real account. */
 const calendar = Array.from({ length: 365 }, (_, i) => {
   const date = new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10);
   return { date, count: (i * 7) % 5 === 0 ? 0 : (i * 13) % 9 };
 });
+
+const repo = (nameWithOwner: string, extra: Partial<RepoRef> = {}): RepoRef => ({
+  nameWithOwner,
+  isPrivate: false,
+  isFork: false,
+  primaryLanguage: "TypeScript",
+  stars: 0,
+  forks: 0,
+  createdAt: "2025-03-01T00:00:00Z",
+  ...extra,
+});
+
+const trailmix = repo("octo-sample/trailmix", { stars: 211, createdAt: "2026-02-10T00:00:00Z" });
 
 export const sampleRecap: RecapData = {
   meta: {
@@ -37,14 +50,25 @@ export const sampleRecap: RecapData = {
     ],
     distinctCount: 7,
   },
-  repositories: { ownedTotal: 34, contributedTo: 12, createdThisYear: 6, top: [] },
+  repositories: {
+    ownedTotal: 34,
+    contributedTo: 12,
+    createdThisYear: 6,
+    top: [
+      { ...trailmix, commits: 312 },
+      { ...repo("octo-sample/client-portal", { isPrivate: true }), commits: 188 },
+      { ...repo("octo-sample/dotfiles", { primaryLanguage: "Shell", stars: 14 }), commits: 96 },
+      { ...repo("acme/design-tokens", { primaryLanguage: "JavaScript" }), commits: 41 },
+      { ...repo("octo-sample/notes", { primaryLanguage: "Python" }), commits: 12 },
+    ],
+  },
   community: {
     totalStars: 412,
     starsGained: { status: "ok", value: 128, estimated: false },
     totalForks: 37,
     forksGained: { status: "ok", value: 12, estimated: false },
-    mostStarred: null,
-    mostStarredNew: null,
+    mostStarred: trailmix,
+    mostStarredNew: trailmix,
     mostForked: null,
   },
   engineering: {
@@ -55,5 +79,9 @@ export const sampleRecap: RecapData = {
     reviews: 40,
     externalRepos: 5,
   },
-  identity: { archetype: "builder", scores: { builder: 0.8 }, reasons: ["Created 6 repositories"] },
+  identity: {
+    archetype: "builder",
+    scores: { builder: 0.72, consistent: 0.55 },
+    reasons: ["1,204 commits to your own repositories", "6 new repositories this year"],
+  },
 };

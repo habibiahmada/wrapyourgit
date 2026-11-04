@@ -2,41 +2,41 @@ import type { RecapData } from "@wyg/schema";
 import { AbsoluteFill, Html5Audio, interpolate, Series, staticFile } from "remotion";
 import { beats, TRACK } from "./audio/track";
 import { CellWipe } from "./components/CellWipe";
+import { ClosingScene } from "./scenes/ClosingScene";
+import { CommunityScene } from "./scenes/CommunityScene";
 import { ContributionsScene } from "./scenes/ContributionsScene";
+import { EngineeringScene } from "./scenes/EngineeringScene";
+import { IdentityScene } from "./scenes/IdentityScene";
 import { IntroScene } from "./scenes/IntroScene";
+import { ProjectsScene } from "./scenes/ProjectsScene";
 import { RhythmScene } from "./scenes/RhythmScene";
 import { TechDnaScene } from "./scenes/TechDnaScene";
-import type { FieldColor } from "./theme";
+import { type SceneId, TIMELINE } from "./timeline";
+
+const COMPONENTS: Record<SceneId, (props: { data: RecapData }) => React.ReactNode> = {
+  intro: IntroScene,
+  contributions: ContributionsScene,
+  rhythm: RhythmScene,
+  "tech-dna": TechDnaScene,
+  projects: ProjectsScene,
+  community: CommunityScene,
+  engineering: EngineeringScene,
+  identity: IdentityScene,
+  closing: ClosingScene,
+};
 
 /**
  * The full recap as one timeline. The SAME component is used by:
  * - the web live story (@remotion/player), and
  * - MP4 export (Remotion Lambda).
- * Durations are whole beats of the soundtrack, so every cut lands on a beat. The intro is
- * exactly TRACK.sections.drop beats long, so the kick enters on the first hard cut.
- * `field` is the scene's background, which the next scene's cell wipe breaks apart.
+ * Order, beats and fields come from timeline.ts; durations are whole beats of the soundtrack,
+ * so every cut lands on a beat. `field` is what the next scene's cell wipe breaks apart.
  */
-export const SCENES = [
-  {
-    id: "intro",
-    durationInFrames: beats(TRACK.sections.drop),
-    field: "ink",
-    Component: IntroScene,
-  },
-  {
-    id: "contributions",
-    durationInFrames: beats(16),
-    field: "persimmon",
-    Component: ContributionsScene,
-  },
-  { id: "rhythm", durationInFrames: beats(20), field: "paper", Component: RhythmScene },
-  { id: "tech-dna", durationInFrames: beats(16), field: "cobalt", Component: TechDnaScene },
-] as const satisfies readonly {
-  id: string;
-  durationInFrames: number;
-  field: FieldColor;
-  Component: (props: { data: RecapData }) => React.ReactNode;
-}[];
+export const SCENES = TIMELINE.map((scene) => ({
+  ...scene,
+  durationInFrames: beats(scene.beats),
+  Component: COMPONENTS[scene.id],
+}));
 
 export const STORY_DURATION_IN_FRAMES = SCENES.reduce((sum, s) => sum + s.durationInFrames, 0);
 

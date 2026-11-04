@@ -1,6 +1,6 @@
 # 0007. Soundtrack: CC0 / royalty-free tracks first, generated later
 
-- Status: Proposed
+- Status: Accepted for MVP (2026-11-04): original synthesised track, see Outcome
 - Date: 2026-11-04
 
 ## Context
@@ -17,3 +17,7 @@ Videos are downloaded and re-posted to Instagram/TikTok/YouTube, so the music li
 ## Consequences
 
 Music must be chosen before scene timing is locked (M4). Until then a synthesised CC0 placeholder (`scripts/synth-placeholder-track.ts`, 120 BPM) is used to test beat sync, with the same metadata shape the real track will use (`packages/video/src/audio/track.ts`).
+
+## Outcome (M4)
+
+The maintainer chose an original synthesised track for the MVP over a third-party CC0 track. `scripts/synth-track.ts` builds it deterministically from `TRACK` metadata (120 BPM, 132 beats, sections on scene cuts), so it is ours under CC0 with no Content ID or attribution risk, and the music can't drift from the scenes. The trade-off is sound quality: it is minimal electronic, not a studio production. Point 3 (more moods, generated or licensed) stays P1.
