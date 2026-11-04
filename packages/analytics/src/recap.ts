@@ -23,7 +23,8 @@ export interface ActivityInput {
   pullRequests: { merged: boolean }[];
   issues: { closed: boolean }[];
   ownedRepos: RepoInput[];
-  stars: { nameWithOwner: string; starredAt: string[]; complete: boolean }[];
+  /** Null when the token was not allowed to list stargazers. */
+  stars: { nameWithOwner: string; starredAt: string[]; complete: boolean }[] | null;
   forks: { nameWithOwner: string; createdAt: string[]; complete: boolean }[];
   commitSample: { authoredAt: string[]; reposSampled: number; complete: boolean };
 }
@@ -115,10 +116,12 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
     },
     community: {
       totalStars: sum(ownedRepos.map((repo) => repo.stars)),
-      starsGained: countGained(
-        input.stars.map((s) => ({ dates: s.starredAt, complete: s.complete })),
-        inPeriod,
-      ),
+      starsGained: input.stars
+        ? countGained(
+            input.stars.map((s) => ({ dates: s.starredAt, complete: s.complete })),
+            inPeriod,
+          )
+        : { status: "unavailable", reason: "GitHub did not allow listing stargazers" },
       totalForks: sum(ownedRepos.map((repo) => repo.forks)),
       forksGained: countGained(
         input.forks.map((f) => ({ dates: f.createdAt, complete: f.complete })),

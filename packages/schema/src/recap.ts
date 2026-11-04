@@ -57,7 +57,10 @@ export const recapDataSchema = z.object({
     periodEnd: isoDate,
     isFinal: z.boolean(),
     generatedAt: z.iso.datetime(),
-    /** IANA timezone used for day/hour bucketing. */
+    /**
+     * IANA timezone used for periodEnd and hourly buckets. Calendar days come from GitHub, which
+     * dates each commit by its own git timezone offset (docs/analytics/metrics.md).
+     */
     timezone: z.string(),
   }),
   profile: z.object({

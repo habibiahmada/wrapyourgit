@@ -2,9 +2,11 @@
  * Spike: can we build valid RecapData for one real account?
  *
  *   GITHUB_TOKEN=$(gh auth token) bun scripts/spike-github.ts
+ *   GITHUB_TOKEN=$(cat .data/github-app-token) SPIKE_LABEL=app bun scripts/spike-github.ts
  *
  * Writes the raw activity and the recap to .data/ (gitignored: they may contain private repo
  * names), validates the recap against the schema and prints a summary plus rate-limit cost.
+ * SPIKE_LABEL suffixes the output files so runs with different tokens can be diffed.
  */
 import { buildRecap } from "@wyg/analytics";
 import { fetchYearActivity, githubGraphql } from "@wyg/github";
@@ -21,7 +23,10 @@ if (!token) {
 const now = new Date();
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const from = new Date(Date.UTC(EDITION_YEAR, 0, 1));
-const to = new Date(Math.min(now.getTime(), Date.UTC(EDITION_YEAR, 11, 31, 23, 59, 59)));
+// Always the whole year: GitHub stamps a day's commits at Pacific midnight of the commit's own
+// local date, so cutting the range at "now" could drop today. The future holds no contributions.
+const to = new Date(Date.UTC(EDITION_YEAR, 11, 31, 23, 59, 59));
+const suffix = process.env.SPIKE_LABEL ? `-${process.env.SPIKE_LABEL}` : "";
 
 // Count requests by wrapping fetch: the remaining-points delta is useless if the hourly window
 // resets mid-sync. Every query here costs 1 point, so requests ≈ points.
@@ -41,10 +46,10 @@ const { rateLimit } = await githubGraphql<{ rateLimit: { cost: number; remaining
 );
 
 const login = activity.viewer.login;
-await Bun.write(`.data/activity-${login}.json`, JSON.stringify(activity, null, 2));
+await Bun.write(`.data/activity-${login}${suffix}.json`, JSON.stringify(activity, null, 2));
 
 const recap = recapDataSchema.parse(buildRecap(activity, { year: EDITION_YEAR, timezone, now }));
-await Bun.write(`.data/recap-${login}.json`, JSON.stringify(recap, null, 2));
+await Bun.write(`.data/recap-${login}${suffix}.json`, JSON.stringify(recap, null, 2));
 
 const show = (m: { status: string; value?: unknown; estimated?: boolean; reason?: string }) =>
   m.status === "ok" ? `${m.value}${m.estimated ? " (estimated)" : ""}` : `unavailable: ${m.reason}`;
@@ -81,4 +86,6 @@ console.table({
   requests,
   rateLimitRemaining: rateLimit.remaining,
 });
-console.log(`Schema OK. Wrote .data/activity-${login}.json and .data/recap-${login}.json`);
+console.log(
+  `Schema OK. Wrote .data/activity-${login}${suffix}.json and .data/recap-${login}${suffix}.json`,
+);

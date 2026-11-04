@@ -1,4 +1,4 @@
-import { githubGraphql, paginate } from "./client";
+import { GitHubApiError, githubGraphql, paginate } from "./client";
 
 /**
  * Everything analytics needs for one user's year, flattened out of GitHub's GraphQL shapes.
@@ -26,7 +26,11 @@ export interface YearActivity {
   /** Non-fork repos owned by the user, as of fetch time. */
   ownedRepos: RepoFacts[];
   /** Newest-first timestamps, fetched until they fall before the period or the page cap hits. */
-  stars: { nameWithOwner: string; starredAt: string[]; complete: boolean }[];
+  /**
+   * Null when the token may not list stargazers: a GitHub App user token needs Metadata access,
+   * which only exists on repos where the app is installed (ADR-0006).
+   */
+  stars: { nameWithOwner: string; starredAt: string[]; complete: boolean }[] | null;
   forks: { nameWithOwner: string; createdAt: string[]; complete: boolean }[];
   /** Authored timestamps of the user's commits on default branches of their top repos. */
   commitSample: { authoredAt: string[]; reposSampled: number; complete: boolean };
@@ -310,6 +314,14 @@ const COMMIT_HISTORY_QUERY = /* GraphQL */ `
 
 type Page<T> = { pageInfo: { hasNextPage: boolean; endCursor: string | null } } & T;
 
+function isForbidden(error: unknown): boolean {
+  return (
+    error instanceof GitHubApiError &&
+    Array.isArray(error.details) &&
+    error.details.some((detail: { type?: string }) => detail.type === "FORBIDDEN")
+  );
+}
+
 function splitName(nameWithOwner: string): { owner: string; name: string } {
   const [owner = "", name = ""] = nameWithOwner.split("/");
   return { owner, name };
@@ -380,7 +392,7 @@ export async function fetchYearActivity(
     };
   });
 
-  const stars: YearActivity["stars"] = [];
+  let stars: YearActivity["stars"] = [];
   for (const repo of ownedRepos.items.filter((r) => r.stars > 0)) {
     const result = await paginate(
       async (after) => {
@@ -394,7 +406,14 @@ export async function fetchYearActivity(
         };
       },
       { maxPages: maxStarPages, shouldContinue: (page) => (page.at(-1) ?? "") >= fromIso },
-    );
+    ).catch((error: unknown) => {
+      if (isForbidden(error)) return null;
+      throw error;
+    });
+    if (!result) {
+      stars = null;
+      break;
+    }
     stars.push({
       nameWithOwner: repo.nameWithOwner,
       starredAt: result.items,

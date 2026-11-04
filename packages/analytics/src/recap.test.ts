@@ -131,10 +131,18 @@ describe("buildRecap", () => {
 
   test("a capped stargazer walk makes the gain an estimate", () => {
     const input = baseInput();
-    input.stars = input.stars.map((walk, index) =>
+    input.stars = (input.stars ?? []).map((walk, index) =>
       index === 0 ? { ...walk, complete: false } : walk,
     );
     expect(buildRecap(input, options).community.starsGained).toMatchObject({ estimated: true });
+  });
+
+  test("stars gained is unavailable, not 0, when stargazers could not be listed", () => {
+    const input = baseInput();
+    input.stars = null;
+    const recap = buildRecap(input, options);
+    expect(recap.community.starsGained.status).toBe("unavailable");
+    expect(recap.community.totalStars).toBe(13);
   });
 
   test("no stars at all means no most-starred repo", () => {

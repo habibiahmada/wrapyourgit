@@ -21,5 +21,5 @@
 | [0003](architecture/decisions/0003-layout-families.md)                   | Four aspect ratios, three layout families                    | Accepted                      |
 | [0004](architecture/decisions/0004-render-on-remotion-lambda.md)         | Render MP4 on Remotion Lambda (AWS)                          | Accepted                      |
 | [0005](architecture/decisions/0005-environments-and-hosting.md)          | Vercel + Neon for dev/staging, AWS for production            | Accepted, cost review pending |
-| [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions     | Proposed, verify in spike     |
+| [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions     | Accepted                      |
 | [0007](architecture/decisions/0007-soundtrack-sourcing.md)               | Soundtrack: CC0/royalty-free tracks first, generated later   | Proposed                      |

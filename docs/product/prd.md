@@ -67,7 +67,7 @@ All GitHub users. No per-segment features in MVP; insights must make sense for l
 - More soundtracks (target 4 moods: Epic Journey, Future Tech, High Energy, Chill Coding)
 - AI-written year summary (grounded strictly in RecapData)
 - Year-over-year comparison (2025 vs 2026)
-- Private repository details via GitHub App installation (opt-in)
+- Private repository details and stars gained this year via GitHub App installation (opt-in, ADR-0006)
 - Customisable share cards
 
 ### P2: later

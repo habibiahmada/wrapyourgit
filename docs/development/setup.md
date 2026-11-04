@@ -30,8 +30,15 @@ Raw JSON lands in `.data/` (gitignored, may contain private repo names).
 
 1. GitHub → Settings → Developer settings → GitHub Apps → New.
 2. Callback URL: `http://localhost:3000/api/auth/callback/github` (+ staging/prod URLs).
-3. Enable _Expire user authorization tokens_. Request **no repository permissions**. Account permissions: none required for MVP (see [ADR-0006](../architecture/decisions/0006-github-app-auth.md)).
+3. Enable _Expire user authorization tokens_ and _Enable Device Flow_ (used by the token script below). Untick _Webhook → Active_. Request **no repository permissions**. Account permissions: none required for MVP (see [ADR-0006](../architecture/decisions/0006-github-app-auth.md)).
 4. Put Client ID/secret in `GITHUB_APP_CLIENT_ID` / `GITHUB_APP_CLIENT_SECRET`.
+
+To run the data spike with a real sign-in token instead of your `gh` token:
+
+```bash
+GITHUB_APP_CLIENT_ID=<client id> bun scripts/github-app-token.ts
+GITHUB_TOKEN=$(cat .data/github-app-token) SPIKE_LABEL=app bun scripts/spike-github.ts
+```
 
 ## AWS for Remotion Lambda (Spike B / M5)
 
