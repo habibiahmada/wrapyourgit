@@ -45,3 +45,13 @@ Why these colors: the green is the color of the user's own contribution graph, s
 - A cell wipe opens every scene: the previous scene's color breaks into cells that fall away in a seeded order.
 - After each count-up, the final number holds still for at least 1.5 s.
 - No endless loops. Motion stops once the scene's beat is delivered.
+
+## Web (landing, dashboard, story page)
+
+Dial for web chrome: ENERGY 3 / RHYTHM 2 / MOTION 1. The story player is where the motion lives, so the pages around it use hover and focus states only and never compete with it.
+
+- Pages use the same fields as the video. The landing opens on ink, the dashboard sits on paper, and calls to action use persimmon with ink text (5.05:1). Because every surface is a brand field shared with the exported video, there is no separate light/dark theme. A toggle would break the match between the page and the video people share.
+- Type is Bricolage Grotesque (`next/font`), with the same weights as the video. Headlines are 800, and body text is 400 at 16px or more.
+- The motif shows up in a single place per page, as a row of lit contribution cells beside the main number. Cells are never used as bullets or decoration elsewhere.
+- Radius is 6px on buttons and cards and 4px on cells, with no pills. There are no shadows, because fields are flat.
+- Focus is a 3px ink outline offset by 3px (paper on ink fields), which gives at least 3:1 on every field.

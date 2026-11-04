@@ -26,6 +26,19 @@ GITHUB_TOKEN=$(gh auth token) bun scripts/spike-github.ts
 ```
 Raw JSON lands in `.data/` (gitignored, may contain private repo names).
 
+## Local database
+
+```bash
+bun scripts/dev-db.ts                      # Postgres 16 on localhost:54329 (podman or docker)
+bun run --filter @wyg/web db:migrate       # apply migrations in apps/web/drizzle
+```
+
+After changing `apps/web/src/server/db/schema.ts`, run `bun run --filter @wyg/web db:generate` and commit the new migration. Stop the container with `bun scripts/dev-db.ts --stop`; data persists in the `wyg-postgres-data` volume.
+
+## Web sign-in locally
+
+`apps/web/.env.local` needs `APP_URL`, `DATABASE_URL`, `TOKEN_ENCRYPTION_KEY` (`openssl rand -base64 32`), `GITHUB_APP_CLIENT_ID` and `GITHUB_APP_CLIENT_SECRET` (GitHub App → Credentials → Client secrets → New secret). Restart `bun run dev` after editing it; a running dev server may keep the old values.
+
 ## GitHub App (M2)
 
 1. GitHub → Settings → Developer settings → GitHub Apps → New.

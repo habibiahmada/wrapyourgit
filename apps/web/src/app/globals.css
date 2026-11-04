@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tokens from DESIGN.md. Text pairings are limited to the measured ones listed there. */
+@theme {
+  --color-ink: #14130f;
+  --color-paper: #f4efe3;
+  --color-ink-soft: #5c584e;
+  --color-persimmon: #e4572e;
+  --color-cobalt: #2b39c8;
+  --color-cell: #39d353;
+  --color-heat-1: #9be9a8;
+  --color-heat-2: #40c463;
+  --color-heat-3: #30a14e;
+  --color-heat-4: #216e39;
+  --font-sans: var(--font-bricolage), system-ui, sans-serif;
+  --radius-control: 6px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  /* R-39: one place that says "this can be used". */
+  a[href],
+  button:not(:disabled),
+  summary,
+  select,
+  label[for],
+  input[type="checkbox"],
+  [role="button"] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  /* Ink outline on light fields; .on-dark flips it to paper on ink and cobalt. */
+  :focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+  .on-dark :focus-visible {
+    outline-color: var(--color-paper);
+  }
 }

@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   // Workspace packages ship TypeScript source (no build step), so Next must compile them.
-  transpilePackages: ["@wyg/schema", "@wyg/analytics", "@wyg/video"],
+  transpilePackages: ["@wyg/schema", "@wyg/analytics", "@wyg/github", "@wyg/video"],
   turbopack: {
     rules: {
       "*.css": {
