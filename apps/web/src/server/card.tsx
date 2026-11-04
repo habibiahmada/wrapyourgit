@@ -44,6 +44,20 @@ function bricolage(weight: 400 | 700 | 800): Promise<ArrayBuffer> {
   return font;
 }
 
+/** Bricolage Grotesque at the three weights the design uses, for any next/og render. */
+export async function cardFonts() {
+  const [regular, bold, heavy] = await Promise.all([
+    bricolage(400),
+    bricolage(700),
+    bricolage(800),
+  ]);
+  return [
+    { name: "Bricolage", data: regular, weight: 400 as const, style: "normal" as const },
+    { name: "Bricolage", data: bold, weight: 700 as const, style: "normal" as const },
+    { name: "Bricolage", data: heavy, weight: 800 as const, style: "normal" as const },
+  ];
+}
+
 export async function renderCard(data: RecapData): Promise<ImageResponse> {
   const { contributions, languages, identity, profile, meta } = data;
   const levels = heatLevels(contributions.calendar);
@@ -56,11 +70,7 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
     identity.archetype ? { label: "archetype", value: ARCHETYPE_LABELS[identity.archetype] } : null,
   ].filter((fact) => fact !== null);
 
-  const [regular, bold, heavy] = await Promise.all([
-    bricolage(400),
-    bricolage(700),
-    bricolage(800),
-  ]);
+  const fonts = await cardFonts();
 
   return new ImageResponse(
     <div
@@ -136,11 +146,7 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
     </div>,
     {
       ...CARD_SIZE,
-      fonts: [
-        { name: "Bricolage", data: regular, weight: 400, style: "normal" },
-        { name: "Bricolage", data: bold, weight: 700, style: "normal" },
-        { name: "Bricolage", data: heavy, weight: 800, style: "normal" },
-      ],
+      fonts,
     },
   );
 }

@@ -3,6 +3,8 @@ import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "@wyg/video/copy";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { LoadingCell } from "@/components/loading-cell";
+import { Scene3D } from "@/components/scene3d/scene-3d";
 import { button } from "@/components/ui";
 import { getPublicRecap } from "@/server/recaps";
 import { StoryPlayer } from "../../recap/story-player";
@@ -29,13 +31,7 @@ export default function PublicRecapPage({ params }: PageProps<"/u/[login]">) {
         <p className="text-lg font-extrabold">WrapYourGit</p>
       </header>
       <main className="on-dark flex flex-1 flex-col bg-ink px-4 pb-14 text-paper sm:px-10">
-        <Suspense
-          fallback={
-            <p role="status" className="py-20 text-lg">
-              Loading this recap…
-            </p>
-          }
-        >
+        <Suspense fallback={<LoadingCell label="Loading this recap…" />}>
           <PublicRecap params={params} />
         </Suspense>
       </main>
@@ -89,6 +85,13 @@ function Summary({ data }: { data: RecapData }) {
             </dd>
           </div>
         </dl>
+        {identity.archetype && (
+          <Scene3D
+            art={identity.archetype}
+            alt={`A 3D diorama of the ${ARCHETYPE_LABELS[identity.archetype]} archetype`}
+            className="mt-10 max-w-xl rounded-[var(--radius-control)]"
+          />
+        )}
         <a href="/" className={`${button.primary} mt-10`}>
           Make your own {meta.year} recap
         </a>

@@ -1,6 +1,7 @@
 import { EDITION_YEAR } from "@wyg/schema";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Scene3D } from "@/components/scene3d/scene-3d";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 
@@ -24,17 +25,27 @@ export default function Home({ searchParams }: PageProps<"/">) {
           <Suspense fallback={null}>
             <Notice searchParams={searchParams} />
           </Suspense>
-          <h1 className="mt-12 max-w-4xl text-6xl leading-[0.95] font-extrabold tracking-tight sm:mt-20 sm:text-8xl">
-            Your year in code.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg sm:text-xl">
-            Sign in with GitHub and get your {EDITION_YEAR} as a short animated story: your
-            contributions, your streaks, your busiest month and the languages you wrote most.
-          </p>
-          <div className="mt-10 flex flex-wrap items-center gap-4">
-            <Suspense fallback={<SignInLink />}>
-              <PrimaryAction />
-            </Suspense>
+          <div className="mt-10 grid items-center gap-10 sm:mt-14 lg:grid-cols-[1fr_1.1fr]">
+            <div>
+              <h1 className="max-w-4xl text-6xl leading-[0.95] font-extrabold tracking-tight sm:text-8xl">
+                Your year in code.
+              </h1>
+              <p className="mt-6 max-w-xl text-lg sm:text-xl">
+                Sign in with GitHub and get your {EDITION_YEAR} as a short animated story: your
+                contributions, your streaks, your busiest month and the languages you wrote most.
+              </p>
+              <div className="mt-10 flex flex-wrap items-center gap-4">
+                <Suspense fallback={<SignInLink />}>
+                  <PrimaryAction />
+                </Suspense>
+              </div>
+            </div>
+            <Scene3D
+              art="hero"
+              priority
+              alt="Cell, the WrapYourGit mascot, in a hard hat in front of a 3D contribution graph"
+              className="rounded-[var(--radius-control)]"
+            />
           </div>
         </section>
 

@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./copy": "./src/copy.ts",
-    "./heat": "./src/heat.ts"
+    "./heat": "./src/heat.ts",
+    "./three": "./src/three/index.ts",
+    "./letter": "./src/letter.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -14,13 +16,19 @@
     "render": "remotion render src/remotion-entry.ts"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
+    "@react-three/postprocessing": "^3.2.2",
     "@remotion/google-fonts": "4.0.540",
+    "@remotion/three": "4.0.540",
     "@wyg/schema": "workspace:*",
-    "remotion": "4.0.540"
+    "remotion": "4.0.540",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@remotion/cli": "4.0.540",
     "@types/react": "^19",
+    "@types/three": "^0.187.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "typescript": "^5"

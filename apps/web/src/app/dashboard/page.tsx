@@ -5,6 +5,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { LoadingCell } from "@/components/loading-cell";
+import { Scene3D } from "@/components/scene3d/scene-3d";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 import { getRecap, isShared } from "@/server/recaps";
@@ -15,13 +17,7 @@ import { SyncForm } from "./sync-form";
 export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   return (
     <div className="flex flex-1 flex-col">
-      <Suspense
-        fallback={
-          <p role="status" className="px-4 py-14 text-lg sm:px-10">
-            Loading your dashboard…
-          </p>
-        }
-      >
+      <Suspense fallback={<LoadingCell label="Loading your dashboard…" />}>
         <Dashboard searchParams={searchParams} />
       </Suspense>
     </div>
@@ -61,17 +57,24 @@ async function Dashboard({
           {recap ? (
             <RecapSummary data={recap.data} syncedAt={recap.syncedAt} retryAt={retryAt} />
           ) : (
-            <div className="max-w-2xl">
-              <h1 className="text-5xl leading-[0.95] font-extrabold tracking-tight sm:text-6xl">
-                No recap yet.
-              </h1>
-              <p className="mt-4 text-lg">
-                Build your {EDITION_YEAR} recap from your GitHub activity. WrapYourGit reads your
-                contribution counts, never your code.
-              </p>
-              <div className="mt-8">
-                <SyncForm label={`Build my ${EDITION_YEAR} recap`} retryAt={null} />
+            <div className="grid items-center gap-10 lg:grid-cols-[1.2fr_1fr]">
+              <div className="max-w-2xl">
+                <h1 className="text-5xl leading-[0.95] font-extrabold tracking-tight sm:text-6xl">
+                  No recap yet.
+                </h1>
+                <p className="mt-4 text-lg">
+                  Build your {EDITION_YEAR} recap from your GitHub activity. WrapYourGit reads your
+                  contribution counts, never your code.
+                </p>
+                <div className="mt-8">
+                  <SyncForm label={`Build my ${EDITION_YEAR} recap`} retryAt={null} />
+                </div>
               </div>
+              <Scene3D
+                art="cell-sleep"
+                alt="Cell asleep on its stage, waiting for your first recap"
+                className="rounded-[var(--radius-control)]"
+              />
             </div>
           )}
         </section>
@@ -197,6 +200,13 @@ function RecapSummary({
             )}
           </div>
         </dl>
+        {data.identity.archetype && (
+          <Scene3D
+            art={data.identity.archetype}
+            alt={`A 3D diorama of the ${ARCHETYPE_LABELS[data.identity.archetype]} archetype`}
+            className="mt-8 max-w-xl rounded-[var(--radius-control)]"
+          />
+        )}
       </div>
 
       <div className="flex flex-col items-start gap-6 lg:pt-10">

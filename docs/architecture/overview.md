@@ -31,7 +31,7 @@
 
 **Sync:** user signs in → server fetches with the user's token (contributions, repos, PR/issue details, stargazers for owned repos) → analytics builds `RecapData` → validated with `recapDataSchema.parse` → stored as JSON in `recaps` (versioned by `schemaVersion`). Raw responses may be cached briefly to allow recomputation; source code is never fetched.
 
-**Story:** `/recap` loads `RecapData` and renders `<Player component={WrapStory} />` with composition size chosen from the viewport (`layoutForSize`). Tap/click seeks to the next scene boundary from `SCENES`.
+**Story:** `/recap` is a guided walk (`story-flow.tsx`): a welcome step, then one step per scene, where the Player is remounted per scene and fenced with `inFrame`/`outFrame` so it stops on the scene's last frame and waits for Next. After that come the congratulations letter (`congratsLetter` in `@wyg/video/letter`, every sentence from a real number) and the export step. Slides: `/api/story/slide/[n]` (10 PNGs at 4:5 rendered with next/og from the public projection, cached per user and sync time), `/api/story/zip` and `/api/story/pdf` (pdf-lib). MP4 stays "coming soon" until the Lambda export (M5).
 
 **Export:** user picks format + soundtrack → API creates a render job row → `startRender()` → poll `getRenderStatus()` → MP4 in S3 (private, signed download URL, lifecycle expiry).
 

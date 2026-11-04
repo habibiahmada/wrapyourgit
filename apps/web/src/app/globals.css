@@ -16,6 +16,29 @@
   --radius-control: 6px;
 }
 
+/* Loading illustrations bob in place (motion-safe only, see loading-cell.tsx). */
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Letter paragraphs rise in one after another (motion-safe only, see story-flow.tsx). */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @layer base {
   body {
     background: var(--color-paper);

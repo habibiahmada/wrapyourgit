@@ -2,10 +2,11 @@ import { EDITION_YEAR } from "@wyg/schema";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { LoadingCell } from "@/components/loading-cell";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 import { getRecap } from "@/server/recaps";
-import { StoryPlayer } from "./story-player";
+import { StoryFlow } from "./story-flow";
 
 export default function RecapPage() {
   return (
@@ -16,13 +17,7 @@ export default function RecapPage() {
           Back to dashboard
         </Link>
       </div>
-      <Suspense
-        fallback={
-          <p role="status" className="py-20 text-lg">
-            Loading your story…
-          </p>
-        }
-      >
+      <Suspense fallback={<LoadingCell label="Loading your story…" />}>
         <Story />
       </Suspense>
     </main>
@@ -45,9 +40,8 @@ async function Story() {
     );
   }
   return (
-    <div className="flex w-full max-w-5xl justify-center">
-      <h1 className="sr-only">Your {EDITION_YEAR} story</h1>
-      <StoryPlayer data={recap.data} />
+    <div className="flex w-full max-w-6xl flex-1 flex-col">
+      <StoryFlow data={recap.data} />
     </div>
   );
 }

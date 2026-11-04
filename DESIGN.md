@@ -55,3 +55,15 @@ Dial for web chrome: ENERGY 3 / RHYTHM 2 / MOTION 1. The story player is where t
 - The motif shows up in a single place per page, as a row of lit contribution cells beside the main number. Cells are never used as bullets or decoration elsewhere.
 - Radius is 6px on buttons and cards and 4px on cells, with no pills. There are no shadows, because fields are flat.
 - Focus is a 3px ink outline offset by 3px (paper on ink fields), which gives at least 3:1 on every field.
+
+## Illustration (3D)
+
+Chosen by the maintainer on 2026-11-04, after flat SVG and isometric SVG were judged too plain.
+
+- **Cell**, the mascot, is a rounded 3D contribution cell with a sculpted face (eyes, cheeks, mouth, arms and feet as geometry, no textures). Poses: idle, wave, cheer, proud (crown of cells), think and sleep. Friends in group scenes use heat-ramp body colours.
+- **One diorama per archetype**, built from the same parts. Builder has a crane placing a cell on a contribution city. Consistent has seven steps rising day by day. Explorer has floating islands, a flag and a telescope. Collaborator has two Cells passing a block. Night owl has a moon, a desk, a glowing laptop and a lamp. Open sourcer has Cell handing blocks to friends.
+- **Stage and background are flat and solid**: an ink background and an unlit stage with one glowing green rim. There is no gradient backdrop; the maintainer rejected a lit cove as "slop". Colour and volume come from the lit objects only.
+- **Light**: a warm key light with shadows, a cobalt rim, a persimmon kicker and a spotlight on the objects, plus contact shadows to ground them. Bloom only affects emissive things (the stage rim, the busiest cells, the moon, screens), plus a light vignette. No depth of field, because it blurred Cell.
+- **Code**: `packages/video/src/three` (React Three Fiber). Every motion is a function of `t` seconds: the render clock on the web, `frame / fps` in Remotion.
+- **Delivery on the web**: `Scene3D` shows the baked PNG (`apps/web/public/art`, made by `bun scripts/render-art.ts`) first, then lazy-loads the live scene when it is visible. Reduced motion or no WebGL keeps the still. Small screens skip post effects. One WebGL canvas per view: browsers run out of contexts after a few.
+- **Loading** uses the baked "Cell thinking" image with a gentle motion-safe bob, never WebGL.

@@ -1,0 +1,30 @@
+import { zipSync } from "fflate";
+import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/server/auth";
+import { getRecap } from "@/server/recaps";
+import { SLIDE_TITLES, slideFileName, slidePng } from "@/server/slides";
+
+/** Every story slide as PNG in one ZIP. PNGs are already compressed, so entries are stored. */
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) return new NextResponse("Sign in first", { status: 401 });
+  const recap = await getRecap(user.id);
+  if (!recap) return new NextResponse("Build your recap first", { status: 404 });
+
+  const syncedAt = recap.syncedAt.toISOString();
+  const files: Record<string, Uint8Array> = {};
+  await Promise.all(
+    SLIDE_TITLES.map(async (_, i) => {
+      const png = await slidePng(user.id, syncedAt, i);
+      if (png) files[slideFileName(recap.data.meta.year, user.login, i)] = png;
+    }),
+  );
+  const zip = zipSync(files, { level: 0 });
+  return new NextResponse(new Uint8Array(zip), {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="wrapyourgit-${recap.data.meta.year}-${user.login}-slides.zip"`,
+      "Cache-Control": "private, no-store",
+    },
+  });
+}
