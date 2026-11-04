@@ -42,7 +42,8 @@ Why these colors: the green is the color of the user's own contribution graph, s
 
 - Everything is frame-driven (`interpolate`, `spring`, `random(seed)`).
 - Cuts and the start of each count-up land on beats of the track. Scene lengths are whole beats.
-- A cell wipe opens every scene: the previous scene's color breaks into cells that fall away in a seeded order.
+- A cell transition opens every scene after the intro: the previous scene moves out (slides, shrinks or rushes forward) while contribution cells cover it, then the cells clear to reveal the new scene. Three variants (sweep, ripple, zoom), never the same twice in a row; the identity climax zooms into one lit cell.
+- Everything that moves makes a sound (ADR-0009), quieter than the music: pops for things appearing, ticks while a number counts, a landing thump when it settles, climbing blips for bars and rows, a shimmer for graphs, an impact for the archetype. Groups get one sound, not one per item.
 - After each count-up, the final number holds still for at least 1.5 s.
 - No endless loops. Motion stops once the scene's beat is delivered.
 

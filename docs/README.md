@@ -16,12 +16,13 @@
 
 ## ADRs
 
-| #                                                                        | Decision                                                     | Status                         |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------ |
-| [0001](architecture/decisions/0001-bun-workspaces-monorepo.md)           | Bun workspaces monorepo, packages ship TS source             | Accepted                       |
-| [0002](architecture/decisions/0002-one-composition-for-web-and-video.md) | One Remotion composition powers the web story and MP4 export | Accepted                       |
-| [0003](architecture/decisions/0003-layout-families.md)                   | Four aspect ratios, three layout families                    | Accepted                       |
-| [0004](architecture/decisions/0004-render-on-remotion-lambda.md)         | Render MP4 on Remotion Lambda (AWS)                          | Accepted                       |
-| [0005](architecture/decisions/0005-environments-and-hosting.md)          | Vercel + Neon for dev/staging, AWS for production            | Accepted, cost review pending  |
-| [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions     | Accepted                       |
-| [0007](architecture/decisions/0007-soundtrack-sourcing.md)               | Soundtrack: CC0/royalty-free tracks first, generated later   | Accepted (synth track for MVP) |
+| #                                                                        | Decision                                                          | Status                         |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------ |
+| [0001](architecture/decisions/0001-bun-workspaces-monorepo.md)           | Bun workspaces monorepo, packages ship TS source                  | Accepted                       |
+| [0002](architecture/decisions/0002-one-composition-for-web-and-video.md) | One Remotion composition powers the web story and MP4 export      | Accepted                       |
+| [0003](architecture/decisions/0003-layout-families.md)                   | Four aspect ratios, three layout families                         | Accepted                       |
+| [0004](architecture/decisions/0004-render-on-remotion-lambda.md)         | Render MP4 on Remotion Lambda (AWS)                               | Accepted                       |
+| [0005](architecture/decisions/0005-environments-and-hosting.md)          | Vercel + Neon for dev/staging, AWS for production                 | Accepted, cost review pending  |
+| [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions          | Accepted                       |
+| [0007](architecture/decisions/0007-soundtrack-sourcing.md)               | Soundtrack: CC0/royalty-free tracks first, generated later        | Accepted (synth track for MVP) |
+| [0009](architecture/decisions/0009-sound-design.md)                      | Effects in the composition, music on Web Audio outside the Player | Accepted                       |

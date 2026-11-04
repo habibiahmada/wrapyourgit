@@ -1,6 +1,6 @@
 # Story motion and sound: design
 
-Date: 2026-11-05. Status: proposed.
+Date: 2026-11-05. Status: accepted (maintainer), implemented in #20.
 
 ## Intent
 
@@ -28,10 +28,10 @@ The story should feel like a produced video, the way GitHub Unwrapped does, not 
 
 ## Approaches
 
-| Approach                                                                                                                                      | Trade-off                                                                                                       | Picked |
-| --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------ |
-| **A. Cell-themed transitions.** The old scene leaves through the cell grid: a directional sweep, a zoom through one cell, a ripple from the centre; varied per cut. | Keeps WrapYourGit's own look; more custom code than library presets.                                           | **Yes** (maintainer) |
-| B. Camera-style transitions (push, zoom, spin) from `@remotion/transitions`.                                                                  | Cinematic and cheap, but generic and unrelated to the contribution motif.                                       | No     |
+| Approach                                                                                                                                                            | Trade-off                                                                 | Picked               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------- |
+| **A. Cell-themed transitions.** The old scene leaves through the cell grid: a directional sweep, a zoom through one cell, a ripple from the centre; varied per cut. | Keeps WrapYourGit's own look; more custom code than library presets.      | **Yes** (maintainer) |
+| B. Camera-style transitions (push, zoom, spin) from `@remotion/transitions`.                                                                                        | Cinematic and cheap, but generic and unrelated to the contribution motif. | No                   |
 
 ## Design
 

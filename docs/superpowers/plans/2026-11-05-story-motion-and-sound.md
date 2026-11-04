@@ -24,7 +24,7 @@
 
 1. **Frozen previous scene plays its own effects again.** Expect silence from it: `SfxContext` disabled inside the frozen copy (Task 3 test).
 2. **Web hold frame.** A chapter that stops on its last frame must not replay or loop an effect; the Player is paused there (manual check, Task 6).
-3. **Sound off.** The mute button silences music *and* effects, including effects already scheduled (Task 6 check).
+3. **Sound off.** The mute button silences music _and_ effects, including effects already scheduled (Task 6 check).
 4. **Unavailable metrics.** A skipped beat renders no `Slam`, so it emits no sound; verify with `emptyRecap` in Studio (Task 4 check).
 5. **Loop seam.** The web loop region starts and ends on bars of the same chord, with no riser or rest inside it (Task 1 test).
 

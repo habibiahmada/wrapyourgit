@@ -19,7 +19,7 @@ describe("timeline and soundtrack", () => {
     expect(seconds).toBeLessThanOrEqual(120);
   });
 
-  test("neighbouring scenes never share a field, so every cell wipe shows", () => {
+  test("neighbouring scenes never share a field, so every cell transition shows", () => {
     for (let i = 1; i < TIMELINE.length; i++) {
       expect(TIMELINE[i]?.field).not.toBe(TIMELINE[i - 1]?.field);
     }
