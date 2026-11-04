@@ -512,7 +512,7 @@ function ComicArt({
         height={900}
         preload={priority}
         sizes="(min-width: 1024px) 45vw, 90vw"
-        className="h-auto w-full motion-safe:animate-[rise_700ms_ease-out_both]"
+        className="h-auto w-full origin-bottom scale-[1.3] motion-safe:animate-[rise_700ms_ease-out_both]"
       />
     </div>
   );
@@ -533,8 +533,6 @@ const MONTHS = [
   "December",
 ];
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const FIELDS = ["rounded-xl border border-line bg-surface"] as const;
 
 /**
  * The warm-up: three short hellos before the chapters. Friendly, but still about this person's
@@ -577,9 +575,7 @@ function Warmup({ index, data }: { index: number; data: RecapData }) {
   const slide = slides[index] ?? slides[0];
   if (!slide) return null;
   return (
-    <div
-      className={`grid w-full max-w-5xl items-center gap-6 overflow-hidden rounded-[6px] p-6 sm:p-10 lg:grid-cols-[1fr_1.1fr] ${FIELDS[index % FIELDS.length]}`}
-    >
+    <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1fr_1.1fr]">
       <ComicArt art={slide.art} alt="" />
       <div className="motion-safe:animate-[rise_700ms_200ms_ease-out_both]">
         <p className="text-5xl leading-[0.95] font-extrabold tracking-tight sm:text-6xl">

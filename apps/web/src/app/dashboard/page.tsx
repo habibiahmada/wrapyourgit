@@ -9,6 +9,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { LanguageBadge } from "@/components/language-badge";
 import { LoadingCell } from "@/components/loading-cell";
+import { AccountHeader } from "@/components/site/account-header";
 import { CellField, calendarLevels } from "@/components/site/cell-field";
 import {
   FallbackTransition,
@@ -63,44 +64,11 @@ async function Dashboard({
   const recap = await getRecap(user.id);
   const retryAt = nextSyncAt(recap?.syncedAt ?? null, new Date());
   const shared = recap ? await isShared(user.id) : false;
-  const { delete: deleteFlag, share: shareFlag } = await searchParams;
+  const { share: shareFlag } = await searchParams;
 
   return (
     <>
-      <header
-        className="sticky top-0 z-40 border-b border-line bg-[#010409]"
-        style={{ viewTransitionName: "site-header" }}
-      >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
-          <Link
-            href="/"
-            transitionTypes={["nav-back"]}
-            className="inline-flex min-h-11 items-center gap-2 text-lg font-bold hover:text-muted"
-          >
-            WrapYourGit
-            <span className="rounded-full border border-line px-2 text-xs font-semibold text-muted tabular-nums">
-              {EDITION_YEAR}
-            </span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <span className="hidden items-center gap-2 font-semibold sm:flex">
-              <Image
-                src={user.avatarUrl}
-                alt=""
-                width={32}
-                height={32}
-                className="rounded-full border border-line"
-              />
-              @{user.login}
-            </span>
-            <form action="/api/auth/signout" method="post">
-              <button type="submit" className={button.quiet}>
-                Sign out
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+      <AccountHeader user={user} current="dashboard" />
 
       <PageTransition>
         <main id="main" className="flex flex-1 flex-col">
@@ -138,7 +106,6 @@ async function Dashboard({
             <EmptyState />
           )}
           {recap && <InstallPrivate />}
-          <DeleteSection login={user.login} unconfirmed={deleteFlag === "unconfirmed"} />
         </main>
       </PageTransition>
     </>
@@ -413,49 +380,6 @@ function ShareSection({
         <a href="/api/card" download className={button.quiet}>
           Download share card (PNG)
         </a>
-      </div>
-    </section>
-  );
-}
-
-function DeleteSection({ login, unconfirmed }: { login: string; unconfirmed: boolean }) {
-  return (
-    <section aria-labelledby="delete-title" className="mt-auto px-4 pb-12 sm:px-8">
-      <div className="mx-auto max-w-7xl rounded-xl border border-[#f8514966] p-6">
-        <h2 id="delete-title" className="text-xl font-bold">
-          Delete my data
-        </h2>
-        <p className="mt-2 max-w-2xl text-muted">
-          Deletes your account, your recap and your stored GitHub tokens, and revokes
-          WrapYourGit&apos;s access on GitHub. This can&apos;t be undone.
-        </p>
-        <form
-          action="/api/account/delete"
-          method="post"
-          className="mt-4 flex flex-col items-start gap-3"
-        >
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              name="confirm"
-              value="delete"
-              required
-              className="size-5 accent-[#da3633]"
-            />
-            I understand this deletes everything WrapYourGit stored for @{login}.
-          </label>
-          {unconfirmed && (
-            <p role="alert" className="font-semibold text-[#ff7b72]">
-              Tick the box to confirm, then delete.
-            </p>
-          )}
-          <button
-            type="submit"
-            className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] border border-line bg-overlay px-5 font-semibold text-[#ff7b72] hover:border-[#f85149] hover:bg-[#da3633] hover:text-white active:bg-[#b62324]"
-          >
-            Delete my data
-          </button>
-        </form>
       </div>
     </section>
   );

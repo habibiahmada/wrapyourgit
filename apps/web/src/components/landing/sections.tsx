@@ -196,7 +196,17 @@ export function LetterSection() {
             A relentless one is told to rest.
           </p>
         </div>
-        <div className="reveal-right flex flex-col gap-5">
+        <div className="reveal-right relative flex flex-col gap-5 lg:pl-40">
+          {/* Cell stands beside its letters, unframed. The PNG has room around the character,
+              so negative margins pull it close to the first comment. */}
+          <Image
+            src="/art/cutout-cell-wave.png"
+            alt=""
+            width={1200}
+            height={900}
+            sizes="(min-width: 1024px) 30rem, 22rem"
+            className="pointer-events-none mx-auto -mt-16 -mb-24 h-auto w-[22rem] lg:absolute lg:top-1/2 lg:-left-44 lg:m-0 lg:w-[30rem] lg:-translate-y-[58%] motion-safe:animate-[bob_2.4s_ease-in-out_infinite]"
+          />
           <Comment label="for a quiet year">{quiet}</Comment>
           <Comment label="for a year that barely stopped" className="sm:ml-12">
             {relentless}
@@ -218,18 +228,8 @@ function Comment({
   children: ReactNode;
 }) {
   return (
-    <figure className={`flex max-w-xl gap-3 ${className}`}>
-      <span className="mt-1 size-12 shrink-0 overflow-hidden rounded-full border border-line bg-surface">
-        <Image
-          src="/art/cutout-cell-wave.png"
-          alt=""
-          width={1200}
-          height={900}
-          sizes="8rem"
-          className="h-full w-full scale-[2.3] object-cover object-[50%_40%]"
-        />
-      </span>
-      <div className={`min-w-0 flex-1 overflow-hidden ${box}`}>
+    <figure className={`relative max-w-xl ${className}`}>
+      <div className={`min-w-0 overflow-hidden ${box}`}>
         <figcaption className="border-b border-line bg-overlay px-4 py-2 text-sm text-muted">
           <span className="font-semibold text-fg">Cell</span> wrote, {label}
         </figcaption>
@@ -338,7 +338,7 @@ const PRIVACY = [
   },
   {
     term: "How to leave",
-    detail: "Delete my data on your dashboard removes everything and revokes our access to GitHub.",
+    detail: "Delete my data in Settings removes everything and revokes our access to GitHub.",
   },
 ];
 
@@ -420,7 +420,7 @@ const FAQ = [
   },
   {
     q: "How do I delete my data?",
-    a: "Open your dashboard and choose Delete my data. It removes your recap and account and revokes WrapYourGit's access to GitHub.",
+    a: "Sign in, open Settings and choose Delete my data. It removes your recap and account and revokes WrapYourGit's access to GitHub.",
   },
 ];
 

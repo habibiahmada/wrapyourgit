@@ -156,7 +156,7 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     body: (
       <ul>
         <li>
-          <strong>Delete my data</strong> on your dashboard removes your account, recap, tokens and
+          <strong>Delete my data</strong> in Settings removes your account, recap, tokens and
           sessions, and revokes WrapYourGit's access to GitHub.
         </li>
         <li>You can also revoke access at any time on GitHub, under Settings, Applications.</li>
