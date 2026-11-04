@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./copy": "./src/copy.ts",
     "./heat": "./src/heat.ts",
+    "./timeline": "./src/timeline.ts",
     "./three": "./src/three/index.ts",
     "./letter": "./src/letter.ts"
   },
