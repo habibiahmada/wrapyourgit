@@ -10,6 +10,10 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore(deps)
+    ignore:
+      # Node's types follow the Node runtime (22), not the newest Node release.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       # Remotion packages must stay on the same exact version.
       remotion:
