@@ -48,34 +48,52 @@ Why these colors: the green is the color of the user's own contribution graph, s
 
 ## Web (landing, dashboard, story page)
 
-Dial for web chrome: ENERGY 3 / RHYTHM 2 / MOTION 1 on signed-in pages, where the story player is where the motion lives. The public pages (landing, `/u/<login>`, 404) are marketing and run at ENERGY 3 / RHYTHM 3 / MOTION 2.
+Decided by the maintainer on 2026-11-04: the web pages should feel like GitHub ("GitHub-able"). The brand fields above (ink, paper, persimmon, cobalt) stay with the story, the video, the letter and the exports; the pages around them use a GitHub-dark set. Dark is the reason here, not a trend: it is the look of the product people are coming from (R-21).
 
-- Pages use the same fields as the video. The landing opens on ink, the dashboard sits on paper, and calls to action use persimmon with ink text (5.05:1). Because every surface is a brand field shared with the exported video, there is no separate light/dark theme. A toggle would break the match between the page and the video people share.
-- Type is Bricolage Grotesque (`next/font`), with the same weights as the video. Headlines are 800, and body text is 400 at 16px or more.
-- The motif shows up in a single place per page, as a row of lit contribution cells beside the main number. Cells are never used as bullets or decoration elsewhere.
-- Radius is 6px on buttons and cards and 4px on cells, with no pills. There are no shadows, because fields are flat.
-- Focus is a 3px ink outline offset by 3px (paper on ink fields), which gives at least 3:1 on every field.
+| Token        | Hex       | Use                                | Contrast                    |
+| ------------ | --------- | ---------------------------------- | --------------------------- |
+| canvas       | `#0d1117` | page background                    |                             |
+| header       | `#010409` | header, footer, alternate sections |                             |
+| surface      | `#161b22` | boxes and cards                    |                             |
+| overlay      | `#21262d` | buttons, comment headers, hover    |                             |
+| line         | `#30363d` | hairline borders and dividers      |                             |
+| fg           | `#e6edf3` | text                               | 16.0:1 on canvas            |
+| muted        | `#8b949e` | secondary text                     | 6.2:1 canvas, 5.6:1 surface |
+| green        | `#3fb950` | accent text and checks             | 7.5:1 on canvas             |
+| green-button | `#238636` | the one primary button, white text | 4.63:1                      |
+| blue         | `#4493f8` | links and the focus ring           | 6.1:1 on canvas             |
+
+- Type is **Mona Sans** (GitHub's open-source face, `next/font`): headlines 700 with tight tracking, body 400.
+- The contribution greens (`#0e4429 #006d32 #26a641 #39d353`, empty `#161b22`) are the one accent, used where they mean activity.
+- Boxes are GitHub boxes: `surface`, 1px `line` border, 12px radius, dividers between rows. No hard shadows, no coloured full-bleed fields, no comic elements, no gradients.
+- Focus is GitHub's: a 2px blue ring with 2px offset (ink inside the light letter).
+- No scrollbars are drawn anywhere (the maintainer's call); scrolling itself is unchanged.
 
 ### Public pages
 
 - **Structure follows the product, not a template.** The landing runs: hero, the nine chapters (a timeline bar whose segments are as wide as each chapter's share of the music, then real frames from a sample recap, labelled as sample data), archetypes (each with its rule from `metrics.md`), the letter (two real tier openings from `letter.ts`), what you keep (MP4 marked "Coming soon"), privacy facts, a product-specific FAQ, and a closing call to action. No statistics, logos or testimonials: there are none to show yet.
-- **Backgrounds are the motif, not decoration.** A year of contribution cells (`CellField`) runs along the bottom of the hero and the top of the closing section, so the page opens and closes on the same graph. On `/u/<login>` it is the owner's real calendar. Cells light up once, week by week, when motion is allowed. No gradients, grids or orbs.
-- **Each section has its own field and composition**: ink hero, paper chapters, persimmon archetypes in an editorial list, paper letter notes, cobalt "what you keep" with fanned slides (the one shadow on the page, marking printed objects), ink privacy with Cell asleep in the corner, paper FAQ with a sticky heading, ink closing with Cell leaning in from the bottom edge.
-- **Light by default.** Only the hero runs WebGL, lazily over its baked poster. Everything else is baked cutouts through `next/image` and inline SVG. Scroll reveals use CSS `animation-timeline: view()` with no JavaScript; browsers without it, and reduced motion, just show the content.
+- **Backgrounds are the motif, not decoration.** A year of contribution cells (`CellField`, in GitHub's dark graph colours) runs along the bottom of the hero and the top of the closing section, so the page opens and closes on the same graph. On `/u/<login>` and the dashboard it is the owner's real calendar. Cells light up once, week by week, when motion is allowed.
+- **Each section has its own composition** on alternating canvas and header-black bands: hero, the chapter strip and sample reel, archetype cards with the 3D skins, the letter as two GitHub-style comments from Cell, "what you keep" as a list box beside fanned slides (the one shadow, marking printed objects), privacy as a checklist box with Cell asleep, a FAQ box with a sticky heading, and the closing with Cell leaning in from the bottom edge.
+- **Light by default.** No WebGL on public pages: the illustrations are baked PNGs through `next/image`, the cells are inline SVG. Scroll motion is CSS `animation-timeline: view()` with no JavaScript: elements fade and rise (or slide in from a side, or zoom) as they enter and fade out as they leave. Browsers without scroll timelines, and reduced motion, just show the content. `body` clips horizontal overflow so a sliding element never widens the page.
+- **The sample reel** drifts on its own to the end and back, loops, and can be dragged with a mouse or swiped. It stops while hovered, focused or held and resumes a moment after. Reduced motion never starts it. **R-39 override, recorded:** the maintainer asked for the visible Pause button to be removed; hover, focus, touch and reduced motion remain the ways to stop it.
+- **Headline**: "Every green square has a story. Here's yours, in motion." The old "Your year in code" is retired because many similar products use it.
 - **Navigation**: a solid ink sticky header (no blur) with links only to sections that exist, a disclosure menu on small screens that closes on Escape, and a skip link.
 
 ## Illustration (3D)
 
-Chosen by the maintainer on 2026-11-04, after flat SVG and isometric SVG were judged too plain.
+Chosen by the maintainer on 2026-11-04. Flat SVG and isometric SVG were judged too plain; a cel-shaded cartoon look with ink outlines and comic bursts was tried the same day and rejected ("like a kindergarten drawing"). Everything is glossy 3D.
 
-- **Cell**, the mascot, is a rounded 3D contribution cell with a sculpted face (eyes, cheeks, mouth, arms and feet as geometry, no textures). Poses: idle, wave, cheer, proud (crown of cells), think and sleep. Friends in group scenes use heat-ramp body colours.
-- **One diorama per archetype**, built from the same parts. Builder has a crane placing a cell on a contribution city. Consistent has seven steps rising day by day. Explorer has floating islands, a flag and a telescope. Collaborator has two Cells passing a block. Night owl has a moon, a desk, a glowing laptop and a lamp. Open sourcer has Cell handing blocks to friends.
-- **Stage and background are flat and solid**: an ink background and an unlit stage with one glowing green rim. There is no gradient backdrop; the maintainer rejected a lit cove as "slop". Colour and volume come from the lit objects only.
-- **Light**: a warm key light with shadows, a cobalt rim, a persimmon kicker and a spotlight on the objects, plus contact shadows to ground them. Bloom only affects emissive things (the stage rim, the busiest cells, the moon, screens), plus a light vignette. No depth of field, because it blurred Cell.
-- **Code**: `packages/video/src/three` (React Three Fiber). Every motion is a function of `t` seconds: the render clock on the web, `frame / fps` in Remotion.
-- **Delivery on the web**: `Scene3D` shows the baked PNG (`packages/video/public/art`, symlinked into `apps/web/public/art`, made by `bun scripts/render-art.ts`) first, then lazy-loads the live scene when it is visible. Reduced motion or no WebGL keeps the still. Small screens skip post effects. One WebGL canvas per view: browsers run out of contexts after a few.
-- **Loading** uses the baked "Cell thinking" image with a gentle motion-safe bob, never WebGL.
-- **Variety inside the story.** The full diorama appears once (landing, dashboard, public page), not in every chapter. Inside the story each scene gets its own _accent_: a baked transparent cutout (`cutout-*.png`, Cell in one pose or an archetype prop set without its stage) placed differently per scene. Some peek in from an edge, some sit in a corner, and some are a faint silhouette behind the text (ink at 7-8% on light fields, paper at 8% on ink). The table lives in `docs/video/scene-system.md`. Accents always sit behind the text and never cover a number.
+- **One finish.** Characters, costumes, animals and the world share the lacquered physical material (`three/toon.tsx` keeps its old name but paints glossy; its `Ink` is a no-op).
+- **Cell**, the mascot, is a rounded contribution cell with big cartoon eyes, cheeks, ink arms with paper hands and feet. Poses: idle, wave, cheer, proud, think and sleep.
+- **A costume per archetype** (`three/outfits.tsx`): Builder wears a hard hat and tool belt with a hammer; Consistent a sweatband, a gold medal and persimmon shoes; Explorer a safari hat, a backpack and a rolled map; Collaborator a headset with a mic; Night owl a hood with owl tufts and round glasses; Open sourcer a propeller beanie.
+- **A sidekick per archetype** (`three/animals.tsx`): beaver (builder, in its own hard hat), ant (consistent), fox (explorer), bee (collaborator), owl (night owl) and octopus (open sourcer).
+- **Skins** (`three/skins.tsx`, `art/skin-<archetype>.png`) are the character-first illustrations: costumed Cell, the sidekick and one or two props, framed close so they read big. The **hero cast** (`art/hero-cast.png`) is Cell the builder with the beaver, the owl and the bee in front of a city. Neither has a stage or plinth: the maintainer asked for the cut-off base to go.
+- **Backgrounds stay flat**: no gradients anywhere (rejected as slop). Depth comes from the lit 3D objects.
+- **Code**: `packages/video/src/three` (React Three Fiber). Every motion is a function of `t` seconds: the render clock on the web, `frame / fps` in Remotion. Stills come from `bun scripts/render-art.ts` (angle-egl, post effects off).
+- **Delivery on the web**: baked transparent PNGs through `next/image` on every public page and the dashboard, so no page needs WebGL to look finished. `Scene3D` (live WebGL over a poster) remains available but is no longer used by default.
+- **Loading** (`components/loading-cell.tsx`): the 3D Cell thinking, with a week of cells in GitHub greens lighting up in turn. Used by the dashboard and story `loading.tsx` routes and every Suspense fallback.
+- **Variety inside the story.** Each scene gets its own accent (`src/accents.tsx`): Cell waving in from an edge on the intro, cheering on contributions, thinking in a corner on languages, and **giant silhouettes** (about twice the frame's short side, cut off by an edge, tilted, at 9-10% ink or paper) behind rhythm, projects and engineering. The archetype climax shows the person's own skin in full colour. Accents always sit behind the text and never cover a number.
+- **Languages have faces**: Devicon logos (MIT, `public/lang`, see its LICENSES.md) on a paper sticker with an ink rim, so every logo reads on every field. Languages without a logo get their initials in the language's GitHub colour.
 - **The letter** is stationery, not a slide: a paper sheet with a measure of about 62 characters, a dashed persimmon "stamp" holding Cell proud, and Cell waving from the side of the sheet on wide screens. The PNG/PDF version keeps the same text with the cutout in the top corner.
 
 ## Words

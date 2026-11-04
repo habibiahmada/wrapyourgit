@@ -43,19 +43,19 @@ Order, length and field color live in `src/timeline.ts`; `timeline.test.ts` chec
 | 8   | identity      | 16    | persimmon | archetype reveal (heavier spring) and its reasons; honest line when null        | climax: crash      |
 | 9   | closing       | 14    | ink       | handle, four headline facts, the year as a small graph, "Made with WrapYourGit" | outro, fade        |
 
-Accents (`src/accents.tsx`, cutouts from `bun scripts/render-art.ts`):
+Accents (`src/accents.tsx`, art from `bun scripts/render-art.ts`):
 
-| Scene         | Accent                                                      |
-| ------------- | ----------------------------------------------------------- |
-| intro         | none (the cells are the illustration)                       |
-| contributions | Cell cheering, peeking in from the right edge, tilted       |
-| rhythm        | Consistent steps as a faint ink silhouette                  |
-| tech-dna      | Cell thinking, bottom-right corner                          |
-| projects      | Builder crane as a faint ink silhouette                     |
-| community     | Open sourcer group beside the counters                      |
-| engineering   | Collaborators as a faint paper silhouette on ink            |
-| identity      | the person's archetype props, rising from the bottom, large |
-| closing       | Cell proud, bottom corner                                   |
+| Scene         | Accent                                                                         |
+| ------------- | ------------------------------------------------------------------------------ |
+| intro         | Cell waving in from the right edge                                             |
+| contributions | Cell cheering, peeking in from the right edge, tilted                          |
+| rhythm        | `skin-consistent` as a giant ink silhouette, cut off by the right edge         |
+| tech-dna      | Cell thinking, bottom-right corner (plus a logo sticker per language)          |
+| projects      | `skin-builder` as a giant ink silhouette leaning in from the right             |
+| community     | Open sourcer group beside the counters                                         |
+| engineering   | `skin-collaborator` as a giant paper silhouette rising from the bottom, on ink |
+| identity      | the person's own `skin-<archetype>` in full colour, rising from the bottom     |
+| closing       | Cell proud, bottom corner                                                      |
 
 Accents use a CSS filter for silhouettes (not a mask image), because Remotion waits for `<Img>` to load but not for CSS masks.
 
