@@ -25,7 +25,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         compact: { x: 0.8, y: 0.4, size: 0.9, rotate: -10 },
         landscape: { x: 0.78, y: 0.46, size: 0.85, rotate: -10 },
       });
-      return <Accent art="cutout-cell-wave" at={beats(1)} enter="right" {...spot} />;
+      return <Accent art="cutout-cell-wave" at={beats(1)} enter="right" idle="wave" {...spot} />;
     }
     case "contributions": {
       // Cell cheers the big number from the empty side, clear of the stat chips.
@@ -34,7 +34,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         compact: { x: 0.78, y: 0.48, size: 0.85, rotate: -12 },
         landscape: { x: 0.82, y: 0.8, size: 0.62, rotate: -10 },
       });
-      return <Accent art="cutout-cell-cheer" at={beats(2)} enter="right" {...spot} />;
+      return <Accent art="cutout-cell-cheer" at={beats(2)} enter="right" idle="hop" {...spot} />;
     }
     case "rhythm": {
       // Cell the runner and the ant, in the gap between the calendar and the month.
@@ -43,7 +43,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         compact: { x: 0.64, y: 0.46, size: 0.78 },
         landscape: { x: 0.5, y: 0.55, size: 0.78 },
       });
-      return <Accent art="skin-consistent" at={beats(8)} enter="bottom" {...spot} />;
+      return <Accent art="skin-consistent" at={beats(8)} enter="bottom" idle="run" {...spot} />;
     }
     case "tech-dna": {
       // Thinking Cell between the language name and the list.
@@ -52,7 +52,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         compact: { x: 0.84, y: 0.47, size: 0.5, rotate: 6 },
         landscape: { x: 0.24, y: 0.82, size: 0.5, rotate: 6 },
       });
-      return <Accent art="cutout-cell-think" at={beats(6)} enter="bottom" {...spot} />;
+      return <Accent art="cutout-cell-think" at={beats(6)} enter="bottom" idle="think" {...spot} />;
     }
     case "projects": {
       // The builder and the beaver, between the top repository and the list.
@@ -61,7 +61,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         compact: { x: 0.62, y: 0.42, size: 0.75 },
         landscape: { x: 0.22, y: 0.8, size: 0.5 },
       });
-      return <Accent art="skin-builder" at={beats(1)} enter="bottom" {...spot} />;
+      return <Accent art="skin-builder" at={beats(1)} enter="bottom" idle="hammer" {...spot} />;
     }
     case "community": {
       // Cell handing blocks to friends, in the open space beside the star count.
@@ -70,7 +70,9 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         compact: { x: 0.66, y: 0.56, size: 0.9 },
         landscape: { x: 0.76, y: 0.36, size: 0.72 },
       });
-      return <Accent art="cutout-open-sourcer" at={beats(4)} enter="right" {...spot} />;
+      return (
+        <Accent art="cutout-open-sourcer" at={beats(4)} enter="right" idle="float" {...spot} />
+      );
     }
     case "engineering": {
       // Cell with its headset and the bee, below or beside the counters.
@@ -79,7 +81,9 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         compact: { x: 0.74, y: 0.8, size: 0.68 },
         landscape: { x: 0.84, y: 0.84, size: 0.46 },
       });
-      return <Accent art="skin-collaborator" at={beats(2)} enter="bottom" {...spot} />;
+      return (
+        <Accent art="skin-collaborator" at={beats(2)} enter="bottom" idle="groove" {...spot} />
+      );
     }
     case "identity": {
       // The climax: the person's own archetype, big and in full colour.
@@ -93,6 +97,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
           art={data.identity.archetype ? `skin-${data.identity.archetype}` : "cutout-cell-sleep"}
           at={beats(3)}
           enter="bottom"
+          idle={data.identity.archetype ? "celebrate" : "breathe"}
           {...spot}
         />
       );
@@ -104,7 +109,9 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         compact: { x: 0.8, y: 0.86, size: 0.58, rotate: -6 },
         landscape: { x: 0.88, y: 0.84, size: 0.5, rotate: -6 },
       });
-      return <Accent art="cutout-cell-proud" at={beats(7)} enter="bottom" {...spot} />;
+      return (
+        <Accent art="cutout-cell-proud" at={beats(7)} enter="bottom" idle="breathe" {...spot} />
+      );
     }
     default:
       return null;

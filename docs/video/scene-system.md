@@ -58,6 +58,8 @@ Accents (`src/accents.tsx`, art from `bun scripts/render-art.ts`). Each is full 
 | identity      | the person's own `skin-<archetype>`, rising from the bottom             |
 | closing       | Cell proud, bottom corner                                               |
 
+Each accent also has an `idle` motion (`idleTransform` in `src/components/Accent.tsx`): it fades in a beat after the entrance and loops in time with the track, pivoting at the feet. Intro waves, contributions hops on every beat, rhythm runs, tech-dna sways while thinking, projects hammers, community floats, engineering grooves, identity celebrates (breathes when there is no archetype), closing breathes.
+
 Accents use a CSS filter for silhouettes (not a mask image), because Remotion waits for `<Img>` to load but not for CSS masks.
 
 Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`), which turns every private repo into "Private repository", because the MP4 is shareable. Metrics go through `metricValue()`: unavailable skips the beat, estimates get "~" and a footnote.

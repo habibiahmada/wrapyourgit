@@ -45,7 +45,7 @@ Why these colors: the green is the color of the user's own contribution graph, s
 - Every cut has its own camera-like move, never repeated: dive into a cell, tilt, whip pan, iris, contribution-row blinds, card flip, a flash with camera shake for the archetype, and a pull-back into the closing (scene-system.md, Transitions).
 - Everything that moves makes a sound (ADR-0009), quieter than the music: pops for things appearing, ticks while a number counts, a landing thump when it settles, climbing blips for bars and rows, a shimmer for graphs, an impact for the archetype. Groups get one sound, not one per item.
 - After each count-up, the final number holds still for at least 1.5 s.
-- No endless loops. Motion stops once the scene's beat is delivered.
+- Text and numbers stop once their beat is delivered. Characters don't: each mascot keeps an idle motion in time with the music (hop, wave, sway, groove, hammer, float, breathe), so it reads as alive, like the cast of GitHub Unwrapped. Motion stays inside the character's spot and never crosses a number or label.
 
 ## Web (landing, dashboard, story page)
 
