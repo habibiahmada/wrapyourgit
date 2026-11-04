@@ -14,6 +14,19 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
   const wide = layout === "landscape";
   const tall = layout === "portrait";
   switch (id) {
+    case "intro":
+      // Cell waves hello from the right edge while the first week lights up.
+      return (
+        <Accent
+          art="cutout-cell-wave"
+          at={beats(1)}
+          enter="right"
+          x={wide ? 0.86 : 0.84}
+          y={tall ? 0.36 : 0.4}
+          size={tall ? 1 : 0.72}
+          rotate={-10}
+        />
+      );
     case "contributions":
       // Cell leans in from the right edge to cheer the big number.
       return (
@@ -28,16 +41,17 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         />
       );
     case "rhythm":
-      // The steady staircase as a faint silhouette under the weekday bars.
+      // Cell the runner and the ant as a huge silhouette, cut off by the right edge.
       return (
         <Accent
-          art="cutout-consistent"
+          art="skin-consistent"
           at={beats(8)}
-          x={0.7}
-          y={tall ? 0.86 : 0.8}
-          size={tall ? 1.3 : 1}
+          x={0.86}
+          y={tall ? 0.5 : 0.55}
+          size={tall ? 2.1 : 1.7}
+          rotate={-8}
           silhouette="dark"
-          opacity={0.07}
+          opacity={0.1}
         />
       );
     case "tech-dna":
@@ -47,23 +61,24 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
           art="cutout-cell-think"
           at={beats(6)}
           enter="bottom"
-          x={wide ? 0.9 : 0.86}
-          y={tall ? 0.9 : 0.86}
-          size={tall ? 0.8 : 0.55}
+          x={wide ? 0.93 : 0.92}
+          y={tall ? 0.94 : 0.93}
+          size={tall ? 0.6 : 0.42}
           rotate={8}
         />
       );
     case "projects":
-      // The builder's crane and city, as a skyline silhouette behind the list.
+      // The builder and the beaver as a giant silhouette leaning in from the right edge.
       return (
         <Accent
-          art="cutout-builder"
+          art="skin-builder"
           at={beats(1)}
-          x={0.72}
-          y={tall ? 0.36 : 0.5}
-          size={tall ? 1.4 : 1.1}
+          x={0.9}
+          y={tall ? 0.42 : 0.5}
+          size={tall ? 2.3 : 1.8}
+          rotate={7}
           silhouette="dark"
-          opacity={0.08}
+          opacity={0.09}
         />
       );
     case "community":
@@ -79,28 +94,29 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
         />
       );
     case "engineering":
-      // Two Cells passing work along, faint, behind the counters.
+      // Cell with its headset and the bee, a big pale silhouette rising from the bottom edge.
       return (
         <Accent
-          art="cutout-collaborator"
+          art="skin-collaborator"
           at={beats(2)}
-          x={0.62}
-          y={0.6}
-          size={tall ? 1.4 : 1.05}
+          x={0.7}
+          y={tall ? 0.78 : 0.72}
+          size={tall ? 2.2 : 1.7}
+          rotate={-5}
           silhouette="light"
-          opacity={0.08}
+          opacity={0.1}
         />
       );
     case "identity":
       // The climax: the archetype's own scene, big and in full colour.
       return data.identity.archetype ? (
         <Accent
-          art={`cutout-${data.identity.archetype}`}
+          art={`skin-${data.identity.archetype}`}
           at={beats(3)}
           enter="bottom"
-          x={wide ? 0.74 : 0.6}
-          y={tall ? 0.8 : 0.72}
-          size={tall ? 1.15 : 0.85}
+          x={wide ? 0.76 : 0.68}
+          y={tall ? 0.84 : 0.84}
+          size={tall ? 1.1 : 0.78}
         />
       ) : (
         <Accent art="cutout-cell-sleep" at={beats(3)} enter="bottom" x={0.7} y={0.8} size={0.7} />

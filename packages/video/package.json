@@ -9,7 +9,9 @@
     "./heat": "./src/heat.ts",
     "./timeline": "./src/timeline.ts",
     "./three": "./src/three/index.ts",
-    "./letter": "./src/letter.ts"
+    "./letter": "./src/letter.ts",
+    "./languages": "./src/languages.ts",
+    "./present": "./src/present.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

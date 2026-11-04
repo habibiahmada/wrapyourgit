@@ -2,6 +2,7 @@ import type { RecapData } from "@wyg/schema";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { beats } from "../audio/track";
 import { Field } from "../components/Field";
+import { LanguageMark } from "../components/LanguageMark";
 import { Slam } from "../components/Slam";
 import { fitFontSize } from "../heat";
 import { useLayout } from "../layout";
@@ -60,8 +61,19 @@ export function TechDnaScene({ data }: { data: RecapData }) {
               fontWeight: 700,
             }}
           >
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {language.name}
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: u * 1.4,
+                minWidth: 0,
+                overflow: "hidden",
+              }}
+            >
+              <LanguageMark name={language.name} color={language.color} size={u * 5} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {language.name}
+              </span>
             </span>
             <span style={{ fontVariantNumeric: "tabular-nums" }}>{percent(language.share)}</span>
           </div>
@@ -101,6 +113,11 @@ export function TechDnaScene({ data }: { data: RecapData }) {
       <div style={{ minWidth: 0 }}>
         <Slam at={0}>
           <div style={{ fontSize: u * 4.5, fontWeight: 700 }}>your top language</div>
+        </Slam>
+        <Slam at={beats(1, fps)}>
+          <div style={{ margin: `${u * 2}px 0`, transform: "rotate(-6deg)", width: "fit-content" }}>
+            <LanguageMark name={top.name} color={top.color} size={u * (side ? 16 : 18)} />
+          </div>
         </Slam>
         <Slam at={beats(1, fps)}>
           <div
