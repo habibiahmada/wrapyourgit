@@ -1,15 +1,22 @@
 import { EDITION_YEAR } from "@wyg/schema";
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
+import { LogoMark } from "./logo-mark";
 import { SiteNav } from "./site-nav";
 
+type AppPage = "dashboard" | "settings" | "recap";
+
 /**
- * Sticky header for the public pages, in GitHub's header colour with a hairline border. Solid, no
- * blur (R-10).
+ * The one header for every page, in GitHub's header colour with a hairline border. Solid, no blur
+ * (R-10). Public pages get the section links and a sign-in or dashboard button; signed-in pages
+ * (`variant="app"`) get the account: avatar to the dashboard, Settings and Sign out.
  */
-export function SiteHeader({ base = "" }: { base?: "" | "/" }) {
+export function SiteHeader(
+  props: { variant?: "public"; base?: "" | "/" } | { variant: "app"; current: AppPage },
+) {
   return (
     <header
       className="sticky top-0 z-40 border-b border-line bg-[#010409]"
@@ -28,26 +35,27 @@ export function SiteHeader({ base = "" }: { base?: "" | "/" }) {
           transitionTypes={["nav-back"]}
           className="inline-flex min-h-11 items-center gap-2 text-lg font-bold hover:text-muted"
         >
-          {/* A week of contribution cells as the mark: the product is the graph. */}
-          <span aria-hidden className="grid grid-cols-3 gap-[2px]">
-            {["#0e4429", "#26a641", "#39d353", "#006d32", "#39d353", "#26a641"].map((c, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: fixed six-cell mark
-              <span key={i} className="size-[6px] rounded-[1.5px]" style={{ background: c }} />
-            ))}
-          </span>
+          <LogoMark />
           WrapYourGit
-          <span className="rounded-full border border-line px-2 text-xs font-semibold text-muted tabular-nums">
+          {/* The edition badge gives way on the narrowest phones so the account buttons fit. */}
+          <span className="hidden rounded-full border border-line px-2 text-xs font-semibold text-muted tabular-nums min-[400px]:inline">
             {EDITION_YEAR}
           </span>
         </Link>
-        <SiteNav
-          base={base}
-          action={
-            <Suspense fallback={<SignInButton />}>
-              <HeaderAction />
-            </Suspense>
-          }
-        />
+        {props.variant === "app" ? (
+          <Suspense fallback={null}>
+            <AccountNav current={props.current} />
+          </Suspense>
+        ) : (
+          <SiteNav
+            base={props.base ?? ""}
+            action={
+              <Suspense fallback={<SignInButton />}>
+                <HeaderAction />
+              </Suspense>
+            }
+          />
+        )}
       </div>
     </header>
   );
@@ -69,5 +77,43 @@ async function HeaderAction() {
     <Link href="/dashboard" transitionTypes={["nav-forward"]} className={button.primary}>
       Your dashboard
     </Link>
+  );
+}
+
+/** `current` marks the page the user is on, for screen readers and the active style. */
+async function AccountNav({ current }: { current: AppPage }) {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  return (
+    <nav aria-label="Account" className="flex items-center gap-1 sm:gap-3">
+      <Link
+        href="/dashboard"
+        transitionTypes={["nav-back"]}
+        aria-current={current === "dashboard" ? "page" : undefined}
+        className="hidden min-h-11 items-center gap-2 rounded-[var(--radius-control)] px-2 font-semibold hover:bg-overlay sm:inline-flex"
+      >
+        <Image
+          src={user.avatarUrl}
+          alt=""
+          width={32}
+          height={32}
+          className="rounded-full border border-line"
+        />
+        @{user.login}
+      </Link>
+      <Link
+        href="/settings"
+        transitionTypes={["nav-forward"]}
+        aria-current={current === "settings" ? "page" : undefined}
+        className={`${button.quiet} whitespace-nowrap max-sm:px-3 aria-[current=page]:border-muted`}
+      >
+        Settings
+      </Link>
+      <form action="/api/auth/signout" method="post">
+        <button type="submit" className={`${button.quiet} whitespace-nowrap max-sm:px-3`}>
+          Sign out
+        </button>
+      </form>
+    </nav>
   );
 }
