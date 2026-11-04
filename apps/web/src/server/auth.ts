@@ -2,6 +2,7 @@ import "server-only";
 import { fetchViewer } from "@wyg/github";
 import { and, eq, gt, lt, ne, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { decrypt, encrypt, hashToken, parseKey, randomToken } from "./crypto";
 import { db, githubTokens, sessions, users } from "./db";
 import { requireEnv } from "./env";
@@ -118,8 +119,11 @@ export async function startSession(userId: string): Promise<void> {
   });
 }
 
-/** The signed-in user, or null. Reads cookies, so callers in pages sit behind <Suspense>. */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+/**
+ * The signed-in user, or null. Reads cookies, so callers in pages sit behind <Suspense>. Cached
+ * per request: the header and the page both ask, and that should be one query, not two.
+ */
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const [row] = await db
@@ -130,7 +134,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     .where(and(eq(sessions.tokenHash, hashToken(token)), gt(sessions.expiresAt, sql`now()`)))
     .limit(1);
   return row ?? null;
-}
+});
 
 /** Deletes the session row and cookie. Call only from a route handler or server action. */
 export async function endSession(): Promise<void> {

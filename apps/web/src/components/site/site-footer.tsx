@@ -1,5 +1,6 @@
 import { EDITION_YEAR } from "@wyg/schema";
 import Link from "next/link";
+import { SITE } from "@/site";
 import { NAV_LINKS } from "./nav-links";
 
 /** One row of the same links as the header: the site has one page of sections, not four groups. */
@@ -37,6 +38,20 @@ export function SiteFooter({ base = "" }: { base?: "" | "/" }) {
             </li>
           </ul>
         </nav>
+      </div>
+      <div className="border-t border-line">
+        <p className="mx-auto max-w-7xl px-4 py-5 text-sm text-muted sm:px-8">
+          {/* The edition year, not new Date(): reading the clock would make every page dynamic. */}
+          © {EDITION_YEAR} WrapYourGit. Made by{" "}
+          <a
+            href={SITE.author.url}
+            rel="author"
+            className="inline-flex min-h-11 items-center font-semibold text-fg underline underline-offset-4 hover:text-blue"
+          >
+            {SITE.author.handle}
+          </a>
+          .
+        </p>
       </div>
     </footer>
   );

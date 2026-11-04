@@ -3,15 +3,15 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { LoadingCell } from "@/components/loading-cell";
-import { AccountHeader } from "@/components/site/account-header";
 import {
   FallbackTransition,
   PageTransition,
   RevealTransition,
 } from "@/components/site/page-transition";
+import { SiteHeader } from "@/components/site/site-header";
 import { getCurrentUser } from "@/server/auth";
 
-export const metadata: Metadata = { title: "Settings", robots: { index: false } };
+export const metadata: Metadata = { title: "Settings", robots: { index: false, follow: false } };
 
 /*
  * Account settings. "Delete my data" lives here, not on the dashboard: the dashboard is where
@@ -47,7 +47,7 @@ async function Settings({
 
   return (
     <>
-      <AccountHeader user={user} current="settings" />
+      <SiteHeader variant="app" current="settings" />
       <PageTransition>
         <main
           id="main"

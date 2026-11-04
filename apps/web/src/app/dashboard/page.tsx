@@ -2,6 +2,7 @@ import type { RecapData } from "@wyg/schema";
 import { EDITION_YEAR } from "@wyg/schema";
 import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "@wyg/video/copy";
 import { runnerUps } from "@wyg/video/present";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -9,13 +10,13 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { LanguageBadge } from "@/components/language-badge";
 import { LoadingCell } from "@/components/loading-cell";
-import { AccountHeader } from "@/components/site/account-header";
 import { CellField, calendarLevels } from "@/components/site/cell-field";
 import {
   FallbackTransition,
   PageTransition,
   RevealTransition,
 } from "@/components/site/page-transition";
+import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 import { getRecap, isShared } from "@/server/recaps";
@@ -29,6 +30,9 @@ import { SyncForm } from "./sync-form";
  * The signed-in home, laid out like a GitHub profile (DESIGN.md web): avatar and handle on the
  * left, the year's contribution graph, then boxes with hairline borders on the dark canvas.
  */
+
+/** Signed-in only: nothing here for search engines. */
+export const metadata: Metadata = { title: "Dashboard", robots: { index: false, follow: false } };
 
 export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   return (
@@ -68,7 +72,7 @@ async function Dashboard({
 
   return (
     <>
-      <AccountHeader user={user} current="dashboard" />
+      <SiteHeader variant="app" current="dashboard" />
 
       <PageTransition>
         <main id="main" className="flex flex-1 flex-col">

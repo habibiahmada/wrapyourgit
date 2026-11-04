@@ -4,12 +4,27 @@ import type { ReactNode } from "react";
 import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
+import { OPEN_GRAPH } from "@/site";
+
+const TITLE = "Privacy policy";
+const DESCRIPTION =
+  "What WrapYourGit reads from GitHub, what it stores, what goes public and how to delete it all.";
 
 export const metadata: Metadata = {
-  title: "Privacy policy",
-  description:
-    "What WrapYourGit reads from GitHub, what it stores, what goes public and how to delete it all.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/privacy" },
+  openGraph: {
+    ...OPEN_GRAPH,
+    url: "/privacy",
+    title: `${TITLE} · WrapYourGit`,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${TITLE} · WrapYourGit`,
+    description: DESCRIPTION,
+  },
 };
 
 const UPDATED = "4 November 2026";
