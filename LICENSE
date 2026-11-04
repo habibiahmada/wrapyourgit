@@ -1,0 +1,39 @@
+MIT License
+
+Copyright (c) 2026 Habibi Ahmad Aziz
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+Third-party notices
+
+This license covers WrapYourGit's own source code, illustrations and soundtrack.
+It does not change the licences of its dependencies. Notably:
+
+- Remotion (video rendering) is not MIT licensed. It is free for individuals
+  and for companies with up to three employees; larger companies need a
+  company licence. See https://www.remotion.dev/license before reusing the
+  video parts commercially.
+- Language logos in apps/web/public/lang are from Devicon (MIT); the logos
+  themselves are trademarks of their owners. See that folder's LICENSES.md.
+- The soundtrack in packages/video/public/audio is CC0 1.0; see LICENSES.md
+  there.
+- GitHub and the contribution graph are trademarks of GitHub, Inc.
+  WrapYourGit is not affiliated with or endorsed by GitHub.

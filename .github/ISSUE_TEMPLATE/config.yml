@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/habibiahmada/wrapyourgit/security/advisories/new
+    about: Please report security issues privately, not in a public issue.
+  - name: Privacy policy
+    url: https://wrapyourgit.habibiahmada.dev/privacy
+    about: What WrapYourGit reads, stores and shares.
