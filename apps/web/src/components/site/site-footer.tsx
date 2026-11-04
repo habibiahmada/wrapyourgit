@@ -1,0 +1,33 @@
+import { EDITION_YEAR } from "@wyg/schema";
+import Link from "next/link";
+import { NAV_LINKS } from "./nav-links";
+
+/** One row of the same links as the header: the site has one page of sections, not four groups. */
+export function SiteFooter({ base = "" }: { base?: "" | "/" }) {
+  return (
+    <footer className="on-dark border-t-2 border-paper/15 bg-ink text-paper">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <Link href="/" className="inline-flex min-h-11 items-center text-2xl font-extrabold">
+            WrapYourGit {EDITION_YEAR}
+          </Link>
+          <p className="max-w-md text-base">Built on the GitHub API. Not affiliated with GitHub.</p>
+        </div>
+        <nav aria-label="Footer">
+          <ul className="flex flex-wrap gap-x-2">
+            {NAV_LINKS.map(({ id, label }) => (
+              <li key={id}>
+                <a
+                  href={`${base}#${id}`}
+                  className="inline-flex min-h-11 items-center px-2 font-bold underline underline-offset-4 hover:text-cell"
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    </footer>
+  );
+}

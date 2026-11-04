@@ -39,6 +39,43 @@
   }
 }
 
+/* Contribution cells light up once, week by week (cell-field.tsx). The motif, not decoration. */
+@keyframes light {
+  from {
+    opacity: 0.12;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cell-light {
+    animation: light 520ms ease-out both;
+  }
+
+  /* Sections rise in as they scroll into view. CSS only (no JS), and browsers without scroll
+     timelines simply show the content. */
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Anchored sections land below the sticky header instead of under it. */
+  scroll-padding-top: 5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 @layer base {
   body {
     background: var(--color-paper);
