@@ -55,12 +55,16 @@ export default function Home({ searchParams }: PageProps<"/">) {
       <SiteHeader />
       <PageTransition>
         <main id="main" className="flex flex-1 flex-col">
-          <section aria-labelledby="hero-title" className="relative overflow-hidden">
-            <div className="mx-auto max-w-7xl px-4 sm:px-8">
+          {/* 90svh, not vh: on phones vh counts the space behind the address bar, which hides the graph. */}
+          <section
+            aria-labelledby="hero-title"
+            className="relative flex min-h-[90svh] flex-col overflow-hidden bg-linear-to-b from-canvas to-surface"
+          >
+            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 sm:px-8">
               <Suspense fallback={null}>
                 <Notice searchParams={searchParams} />
               </Suspense>
-              <div className="grid items-center gap-10 pt-12 pb-10 sm:pt-16 lg:grid-cols-[1fr_1.05fr]">
+              <div className="grid flex-1 items-center gap-10 pt-12 pb-16 sm:pt-16 lg:grid-cols-[1fr_1.05fr]">
                 <div>
                   <h1
                     id="hero-title"
@@ -98,7 +102,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
               </div>
             </div>
             {/* A year of cells along the bottom of the hero: the motif the whole product is built on. */}
-            <CellField levels={HERO_CELLS} className="block h-24 w-full sm:h-32" />
+            <CellField levels={HERO_CELLS} className="block h-24 w-full sm:h-32 -mb-15" />
           </section>
 
           <StorySection />
