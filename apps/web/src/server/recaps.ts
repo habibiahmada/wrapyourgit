@@ -1,10 +1,11 @@
 import "server-only";
 import { buildRecap, toPublicRecap } from "@wyg/analytics";
-import { fetchYearActivity } from "@wyg/github";
+import { fetchPreviousYear, fetchYearActivity } from "@wyg/github";
 import { EDITION_YEAR, type RecapData, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { getGithubToken } from "./auth";
 import { db, recapShares, recaps, users } from "./db";
+import { errorSummary } from "./log";
 import { SYNC_COOLDOWN_MS, safeTimezone, yearRange } from "./sync-policy";
 
 export interface StoredRecap {
@@ -72,8 +73,19 @@ async function runSync(userId: string, timezone: unknown): Promise<StoredRecap> 
   const token = await getGithubToken(userId);
   const { from, to } = yearRange(EDITION_YEAR);
   const activity = await fetchYearActivity(token, from, to);
+  // Same day of the year, last year: the comparison is like for like until the year is over.
+  const spanTo = new Date(Math.min(now.getTime(), to.getTime()));
+  spanTo.setUTCFullYear(EDITION_YEAR - 1);
+  // A failed comparison never fails the sync: the recap marks last year as unavailable instead.
+  const previous = await fetchPreviousYear(token, EDITION_YEAR - 1, spanTo).catch((error) => {
+    console.warn(`previous year fetch failed: ${errorSummary(error)}`);
+    return null;
+  });
   const data = recapDataSchema.parse(
-    buildRecap(activity, { year: EDITION_YEAR, timezone: safeTimezone(timezone), now }),
+    buildRecap(
+      { ...activity, previous },
+      { year: EDITION_YEAR, timezone: safeTimezone(timezone), now },
+    ),
   );
 
   const row = {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type RecapData, type RepoRef, recapDataSchema } from "@wyg/schema";
+import { type RecapData, type RepoRef, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
 import { toPublicRecap } from "./public";
 
 const repo = (nameWithOwner: string, isPrivate: boolean): RepoRef => ({
@@ -14,7 +14,7 @@ const repo = (nameWithOwner: string, isPrivate: boolean): RepoRef => ({
 
 const recap = (): RecapData => ({
   meta: {
-    schemaVersion: 1,
+    schemaVersion: SCHEMA_VERSION,
     year: 2026,
     periodStart: "2026-01-01",
     periodEnd: "2026-11-04",
@@ -62,6 +62,7 @@ const recap = (): RecapData => ({
     reviews: 0,
     externalRepos: 1,
   },
+  previousYear: { status: "unavailable", reason: "Not fetched in this test" },
   identity: { archetype: "builder", scores: { builder: 0.7 }, reasons: ["80 commits"] },
 });
 
