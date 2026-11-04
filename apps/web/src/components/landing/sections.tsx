@@ -338,7 +338,7 @@ const PRIVACY = [
   },
   {
     term: "How to leave",
-    detail: "Delete my data on your dashboard removes everything and revokes our access to GitHub.",
+    detail: "Delete my data in Settings removes everything and revokes our access to GitHub.",
   },
 ];
 
@@ -420,7 +420,7 @@ const FAQ = [
   },
   {
     q: "How do I delete my data?",
-    a: "Open your dashboard and choose Delete my data. It removes your recap and account and revokes WrapYourGit's access to GitHub.",
+    a: "Sign in, open Settings and choose Delete my data. It removes your recap and account and revokes WrapYourGit's access to GitHub.",
   },
 ];
 

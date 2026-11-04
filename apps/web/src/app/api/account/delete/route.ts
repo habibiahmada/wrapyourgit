@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
 
   const form = await request.formData();
   if (form.get("confirm") !== "delete") {
-    return NextResponse.redirect(new URL("/dashboard?delete=unconfirmed", appUrl()), 303);
+    return NextResponse.redirect(new URL("/settings?delete=unconfirmed", appUrl()), 303);
   }
   const { revoked } = await deleteAccount(user.id);
   return NextResponse.redirect(new URL(`/?deleted=${revoked ? "1" : "unrevoked"}`, appUrl()), 303);
