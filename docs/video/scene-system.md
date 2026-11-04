@@ -14,6 +14,7 @@ How the story and the exported video are built. Code: `packages/video`.
 | Fixtures      | `src/fixtures/`               | `sampleRecap` for Studio; `emptyRecap` and `busyRecap` (long names, five-digit totals) for edge checks |
 | Track         | `src/audio/track.ts`          | BPM, sections and `beats(n)`; scene durations are whole beats                                          |
 | Motif         | `src/components/CellWipe.tsx` | Contribution-cell transition that opens every scene after the intro                                    |
+| Accent        | `src/accents.tsx`             | Per-scene illustration (baked cutout) passed to `Field` through `AccentContext`, drawn behind the text |
 
 ## Rules
 
@@ -42,6 +43,22 @@ Order, length and field color live in `src/timeline.ts`; `timeline.test.ts` chec
 | 8   | identity      | 16    | persimmon | archetype reveal (heavier spring) and its reasons; honest line when null        | climax: crash      |
 | 9   | closing       | 14    | ink       | handle, four headline facts, the year as a small graph, "Made with WrapYourGit" | outro, fade        |
 
+Accents (`src/accents.tsx`, cutouts from `bun scripts/render-art.ts`):
+
+| Scene         | Accent                                                      |
+| ------------- | ----------------------------------------------------------- |
+| intro         | none (the cells are the illustration)                       |
+| contributions | Cell cheering, peeking in from the right edge, tilted       |
+| rhythm        | Consistent steps as a faint ink silhouette                  |
+| tech-dna      | Cell thinking, bottom-right corner                          |
+| projects      | Builder crane as a faint ink silhouette                     |
+| community     | Open sourcer group beside the counters                      |
+| engineering   | Collaborators as a faint paper silhouette on ink            |
+| identity      | the person's archetype props, rising from the bottom, large |
+| closing       | Cell proud, bottom corner                                   |
+
+Accents use a CSS filter for silhouettes (not a mask image), because Remotion waits for `<Img>` to load but not for CSS masks.
+
 Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`), which turns every private repo into "Private repository", because the MP4 is shareable. Metrics go through `metricValue()`: unavailable skips the beat, estimates get "~" and a footnote.
 
 ## Audio
@@ -50,7 +67,7 @@ Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`),
 - `<Html5Audio>` (`<Audio>` is deprecated in Remotion 4.0.540) with a volume curve that fades the last two beats; SFX via `<Sequence>`-scoped `<Html5Audio>`.
 - Track: `wrapyourgit-120bpm.m4a` (AAC, 66 s), synthesised by `bun scripts/synth-track.ts` from `TRACK` (120 BPM = 15 frames per beat). Sections: intro (pad, riser), drop at contributions (kick, hats, bass; claps from beat 24, arpeggio from beat 40), two beats of rest and a crash at the identity climax, half-time outro over closing. Regenerate it whenever `TRACK` or the timeline changes.
 - Track metadata (`bpm`, `offsetMs`, sections) drives scene durations: each scene snaps to a whole number of beats.
-- Web: Player starts muted or waits for a tap; never autoplay sound.
+- Web: the guided story plays the track through its own looping `<audio>` element, started by the first "Start my story" tap, so music keeps going across chapters. The Player itself is always muted, plays one scene between `inFrame`/`outFrame` and holds its last frame (`moveToBeginningWhenEnded={false}`). Replay and sound are icon buttons at the top right.
 
 ## Export
 

@@ -1,30 +1,53 @@
 import { ThreeCanvas } from "@remotion/three";
 import type { ArchetypeId } from "@wyg/schema";
 import { useCurrentFrame, useVideoConfig } from "remotion";
-import type { Pose } from "./CellCharacter";
-import { ArchetypeDiorama } from "./Dioramas";
+import { CellCharacter, type Pose } from "./CellCharacter";
+import { ArchetypeDiorama, ArchetypeProps } from "./Dioramas";
 import { HeroScene } from "./HeroScene";
+import { CutoutLights } from "./World";
 
-export type ArtId = ArchetypeId | "hero" | `cell-${Pose}`;
+export type ArtId =
+  | ArchetypeId
+  | "hero"
+  | `cell-${Pose}`
+  | `cutout-cell-${Pose}`
+  | `cutout-${ArchetypeId}`;
 
 /**
  * A 3D scene rendered by Remotion, used to bake still PNGs (scripts/render-art.ts) for places that
- * can't run WebGL: the PNG/PDF exports (next/og), reduced-motion fallbacks and loading states.
- * Time comes from the frame, so a given frame always renders the same image.
+ * can't run WebGL: the PNG/PDF exports (next/og), the story scenes, reduced-motion fallbacks and
+ * loading states. "cutout-*" ids render on a transparent background with no stage, so the 2D
+ * layouts can crop, tint and place them freely. Time comes from the frame, so a given frame always
+ * renders the same image.
  */
 export function ArtStill({ art }: { art: ArtId }) {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const t = frame / fps;
+  const cutout = art.startsWith("cutout-");
+  const cellOnly = art.startsWith("cutout-cell-");
   return (
     <ThreeCanvas
       width={width}
       height={height}
-      shadows
-      camera={{ position: [10, 7.5, 13], fov: 28 }}
-      onCreated={({ camera }) => camera.lookAt(0, 1.1, 0)}
+      shadows={!cutout}
+      gl={{ alpha: true, preserveDrawingBuffer: true }}
+      camera={
+        cellOnly ? { position: [3.2, 2.6, 5.2], fov: 30 } : { position: [10, 7.5, 13], fov: 28 }
+      }
+      onCreated={({ camera }) => camera.lookAt(0, cellOnly ? 1 : 1.1, 0)}
     >
-      {art === "hero" ? (
+      {cellOnly ? (
+        <>
+          <CutoutLights />
+          <CellCharacter pose={art.slice("cutout-cell-".length) as Pose} t={t} rotationY={0.55} />
+        </>
+      ) : cutout ? (
+        <>
+          <CutoutLights />
+          <ArchetypeProps archetype={art.slice("cutout-".length) as ArchetypeId} t={t} />
+        </>
+      ) : art === "hero" ? (
         <HeroScene t={t} pose="wave" builder effects={false} />
       ) : art.startsWith("cell-") ? (
         <HeroScene t={t} pose={art.slice(5) as Pose} levels={[]} effects={false} />

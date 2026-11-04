@@ -4,7 +4,7 @@
  *
  *   bun scripts/render-art.ts
  *
- * Writes apps/web/public/art/<id>.png. Re-run after changing anything in packages/video/src/three.
+ * Writes packages/video/public/art/<id>.png (apps/web/public/art links there). Re-run after changing anything in packages/video/src/three.
  * Uses angle-egl: headless `angle` can't create a WebGL context on Linux. Post effects are off
  * for stills because EffectComposer draws to its own buffer and the capture comes out empty.
  */
@@ -15,7 +15,7 @@ import { $ } from "bun";
 import { ART_IDS } from "../packages/video/src/Root";
 
 const videoDir = resolve(import.meta.dir, "../packages/video");
-const outDir = resolve(import.meta.dir, "../apps/web/public/art");
+const outDir = resolve(import.meta.dir, "../packages/video/public/art");
 await mkdir(outDir, { recursive: true });
 
 for (const id of ART_IDS) {

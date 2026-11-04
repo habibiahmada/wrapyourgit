@@ -15,6 +15,19 @@ export const ART_IDS = [
   "cell-think",
   "cell-proud",
   "cell-sleep",
+  // Transparent cutouts for the story scenes: Cell peeking, cheering, thinking, and the
+  // archetype props alone, used as silhouettes and runner-up badges.
+  "cutout-cell-wave",
+  "cutout-cell-cheer",
+  "cutout-cell-think",
+  "cutout-cell-proud",
+  "cutout-cell-sleep",
+  "cutout-builder",
+  "cutout-consistent",
+  "cutout-explorer",
+  "cutout-collaborator",
+  "cutout-night-owl",
+  "cutout-open-sourcer",
 ] as const;
 
 /** One composition per export format. Composition id = `wrap-<format>`, e.g. `wrap-9x16`. */

@@ -6,6 +6,7 @@ import { Slam } from "../components/Slam";
 import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "../copy";
 import { fitFontSize } from "../heat";
 import { useLayout } from "../layout";
+import { runnerUps } from "../present";
 import { palette, useUnit } from "../theme";
 
 /**
@@ -19,6 +20,8 @@ export function IdentityScene({ data }: { data: RecapData }) {
   const layout = useLayout();
   const u = useUnit();
   const { archetype, reasons } = data.identity;
+  // Everyone gets one archetype; runner-ups show the other sides of their year.
+  const also = archetype ? runnerUps(data.identity) : [];
   const title = archetype ? ARCHETYPE_LABELS[archetype] : NO_ARCHETYPE;
   // A label is one word and fills the line; the no-archetype sentence wraps at a fixed size.
   const titleSize = archetype
@@ -87,6 +90,13 @@ export function IdentityScene({ data }: { data: RecapData }) {
             </div>
           </Slam>
         ))}
+        {also.length > 0 && (
+          <Slam at={beats(6 + reasons.length * 2, fps)} from="left">
+            <div style={{ fontSize: u * (layout === "landscape" ? 4 : 4.4), fontWeight: 700 }}>
+              also part {also.map((id) => ARCHETYPE_LABELS[id]).join(" and part ")}
+            </div>
+          </Slam>
+        )}
       </div>
     </Field>
   );

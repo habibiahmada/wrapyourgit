@@ -185,3 +185,35 @@ export function Stage({ radius = 6.2 }: { radius?: number }) {
     </group>
   );
 }
+
+/**
+ * Lights only, no background, fog or stage: for transparent cutouts that sit on top of 2D
+ * layouts (peeking from an edge, silhouettes behind text).
+ */
+export function CutoutLights() {
+  return (
+    <>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[-6, 9, 7]} intensity={2.6} color="#fff3e2" />
+      <pointLight position={[0, 5, -7]} intensity={60} color={C.cobalt} distance={20} />
+      <pointLight position={[7, 2, 3]} intensity={18} color={C.persimmon} distance={14} />
+      <Environment resolution={256}>
+        <Lightformer
+          form="rect"
+          intensity={2}
+          position={[0, 6, 6]}
+          scale={[10, 4, 1]}
+          color="#fff3e2"
+        />
+        <Lightformer
+          form="rect"
+          intensity={1.5}
+          position={[-8, 2, 0]}
+          rotation-y={Math.PI / 2}
+          scale={[6, 4, 1]}
+          color={C.cobalt}
+        />
+      </Environment>
+    </>
+  );
+}

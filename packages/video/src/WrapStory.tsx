@@ -1,7 +1,10 @@
 import type { RecapData } from "@wyg/schema";
 import { AbsoluteFill, Html5Audio, interpolate, Series, staticFile } from "remotion";
+import { sceneAccent } from "./accents";
 import { beats, TRACK } from "./audio/track";
 import { CellWipe } from "./components/CellWipe";
+import { AccentContext } from "./components/Field";
+import { useLayout } from "./layout";
 import { ClosingScene } from "./scenes/ClosingScene";
 import { CommunityScene } from "./scenes/CommunityScene";
 import { ContributionsScene } from "./scenes/ContributionsScene";
@@ -43,6 +46,7 @@ export const STORY_DURATION_IN_FRAMES = SCENES.reduce((sum, s) => sum + s.durati
 export type WrapStoryProps = { data: RecapData };
 
 export function WrapStory({ data }: WrapStoryProps) {
+  const layout = useLayout();
   // Fade the music over the last two beats so the export never ends on a hard cut-off.
   const fadeStart = STORY_DURATION_IN_FRAMES - beats(2);
   return (
@@ -61,7 +65,9 @@ export function WrapStory({ data }: WrapStoryProps) {
           const previous = SCENES[index - 1];
           return (
             <Series.Sequence key={id} durationInFrames={durationInFrames} name={id}>
-              <Component data={data} />
+              <AccentContext value={sceneAccent(id, data, layout)}>
+                <Component data={data} />
+              </AccentContext>
               {previous && <CellWipe from={previous.field} seed={id} />}
             </Series.Sequence>
           );

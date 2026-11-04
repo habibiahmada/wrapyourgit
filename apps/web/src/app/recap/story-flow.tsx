@@ -3,8 +3,8 @@
 import { Player, type PlayerRef } from "@remotion/player";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
 import { SCENES, STORY_DURATION_IN_FRAMES, WrapStory } from "@wyg/video";
-import { ARCHETYPE_LABELS } from "@wyg/video/copy";
 import { congratsLetter } from "@wyg/video/letter";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Scene3D } from "@/components/scene3d/scene-3d";
@@ -64,6 +64,9 @@ export function StoryFlow({ data }: { data: RecapData }) {
   const [muted, setMuted] = useState(false);
   const [format, setFormat] = useState<keyof typeof VIDEO_FORMATS>("9x16");
   const player = useRef<PlayerRef>(null);
+  // The soundtrack runs on its own element, so it plays straight through while the player is
+  // remounted for each scene (the player itself is always muted).
+  const music = useRef<HTMLAudioElement>(null);
   const current = STEPS[step] ?? STEPS[0];
   const letter = useMemo(() => congratsLetter(data), [data]);
   const year = data.meta.year;
@@ -90,12 +93,16 @@ export function StoryFlow({ data }: { data: RecapData }) {
   }, [inFrame]);
 
   useEffect(() => {
-    player.current?.[muted ? "mute" : "unmute"]();
+    if (music.current) music.current.muted = muted;
   }, [muted]);
 
-  const go = useCallback((delta: number) => {
-    setStep((s) => Math.min(STEPS.length - 1, Math.max(0, s + delta)));
+  /** Starts the music on the first move past the welcome (a user gesture, so autoplay allows it). */
+  const goTo = useCallback((next: number) => {
+    const target = Math.min(STEPS.length - 1, Math.max(0, next));
+    if (target > 0 && music.current?.paused) void music.current.play().catch(() => {});
+    setStep(target);
   }, []);
+  const go = useCallback((delta: number) => goTo(step + delta), [goTo, step]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -132,7 +139,7 @@ export function StoryFlow({ data }: { data: RecapData }) {
             type="button"
             aria-label={`Go to step ${i + 1} of ${STEPS.length}`}
             aria-current={i === step ? "step" : undefined}
-            onClick={() => setStep(i)}
+            onClick={() => goTo(i)}
             // A 44px tall hit area (R-03 touch target) around a thin visible bar.
             className="group flex h-11 min-w-0 flex-1 items-center"
           >
@@ -143,13 +150,36 @@ export function StoryFlow({ data }: { data: RecapData }) {
         ))}
       </nav>
 
-      <div className="flex items-baseline justify-between gap-4">
+      {/* biome-ignore lint/a11y/useMediaCaption: instrumental music with no speech to caption */}
+      <audio ref={music} src="/audio/wrapyourgit-120bpm.m4a" loop preload="auto" />
+
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-3xl font-extrabold sm:text-4xl" aria-live="polite">
           {title}
         </h1>
-        <p className="text-base tabular-nums">
-          {step + 1} / {STEPS.length}
-        </p>
+        <div className="flex gap-2">
+          {current?.kind === "scene" && (
+            <button
+              type="button"
+              aria-label="Replay this chapter"
+              className={iconButton}
+              onClick={replay}
+            >
+              <ReplayIcon />
+            </button>
+          )}
+          {step > 0 && (
+            <button
+              type="button"
+              aria-label={muted ? "Turn sound on" : "Turn sound off"}
+              aria-pressed={!muted}
+              className={iconButton}
+              onClick={() => setMuted((m) => !m)}
+            >
+              <SoundIcon muted={muted} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-6">
@@ -168,7 +198,7 @@ export function StoryFlow({ data }: { data: RecapData }) {
               </p>
               <p className="max-w-md text-lg">
                 Nine short chapters about the year you had. Each one waits for you, so take your
-                time. There&apos;s sound: you can mute it any time.
+                time. Music plays along; the speaker at the top right turns it off.
               </p>
               <button type="button" className={button.primary} onClick={() => go(1)}>
                 Start my story
@@ -183,16 +213,16 @@ export function StoryFlow({ data }: { data: RecapData }) {
             current?.kind === "scene" ? "flex w-full flex-col items-center gap-4" : "hidden"
           }
         >
-          <div
-            className={`grid w-full items-center gap-6 ${current?.kind === "scene" && SCENES[current.index]?.id === "identity" && data.identity.archetype ? "max-w-6xl lg:grid-cols-2" : "max-w-5xl"}`}
-          >
+          <div className="w-full max-w-5xl">
             <Player
               ref={player}
               // One mount per scene: starts at the scene's first frame and plays inside its fence.
               key={sceneIndex}
               initialFrame={inFrame}
               autoPlay={current?.kind === "scene"}
-              initiallyMuted={muted}
+              initiallyMuted
+              // Stay on the last frame when the scene ends; jumping back showed an empty wipe frame.
+              moveToBeginningWhenEnded={false}
               component={WrapStory}
               inputProps={{ data }}
               durationInFrames={STORY_DURATION_IN_FRAMES}
@@ -205,48 +235,54 @@ export function StoryFlow({ data }: { data: RecapData }) {
               clickToPlay={false}
               style={{ width: "100%", maxHeight: "62svh", aspectRatio: `${width} / ${height}` }}
             />
-            {current?.kind === "scene" &&
-              SCENES[current.index]?.id === "identity" &&
-              data.identity.archetype && (
-                <Scene3D
-                  art={data.identity.archetype}
-                  alt={`A 3D diorama of the ${ARCHETYPE_LABELS[data.identity.archetype]} archetype`}
-                  className="rounded-[var(--radius-control)]"
-                />
-              )}
-          </div>
-          <div className="flex gap-3">
-            <button type="button" className={button.quiet} onClick={replay}>
-              Replay
-            </button>
-            <button
-              type="button"
-              className={button.quiet}
-              aria-pressed={muted}
-              onClick={() => setMuted((m) => !m)}
-            >
-              {muted ? "Sound off" : "Sound on"}
-            </button>
           </div>
         </div>
 
         {current?.kind === "letter" && (
-          <article className="grid w-full max-w-5xl items-start gap-8 rounded-[var(--radius-control)] bg-paper p-6 text-ink sm:p-10 lg:grid-cols-[1.4fr_1fr]">
-            <div className="flex flex-col gap-4">
-              <p className="text-3xl font-extrabold">{letter.greeting}</p>
-              {letter.paragraphs.map((paragraph, i) => (
-                <p
-                  key={paragraph}
-                  className="text-lg leading-relaxed motion-safe:animate-[rise_600ms_ease-out_both]"
-                  style={{ animationDelay: `${150 + i * 220}ms` }}
-                >
-                  {paragraph}
-                </p>
-              ))}
-              <p className="mt-2 text-lg font-bold">{letter.signOff}</p>
-            </div>
-            <Scene3D art="cell-proud" alt="Cell wearing a crown of lit cells, proud of your year" />
-          </article>
+          <div className="relative w-full max-w-3xl pt-4 sm:pl-24">
+            {/* Cell peeks in from the left edge of the letter, waving. */}
+            <Image
+              src="/art/cutout-cell-wave.png"
+              alt=""
+              width={1200}
+              height={900}
+              className="pointer-events-none absolute top-24 -left-6 hidden w-40 -rotate-12 sm:block motion-safe:animate-[bob_2.4s_ease-in-out_infinite]"
+            />
+            <article className="relative rounded-[var(--radius-control)] bg-paper px-6 py-10 text-ink sm:px-12 sm:py-14">
+              {/* A stamp in the corner, the way a real letter arrives. */}
+              <div className="absolute top-5 right-5 w-24 rotate-3 rounded-sm border-4 border-dashed border-persimmon bg-paper p-1 sm:w-28">
+                <Image
+                  src="/art/cutout-cell-proud.png"
+                  alt=""
+                  width={1200}
+                  height={900}
+                  className="h-auto w-full bg-persimmon/15"
+                />
+                <p className="text-center text-xs font-bold">{year}</p>
+              </div>
+              <p className="pr-28 text-base font-bold text-ink-soft">From Cell, at WrapYourGit</p>
+              <p className="mt-6 text-3xl font-extrabold sm:text-4xl">{letter.greeting}</p>
+              <div className="mt-6 flex max-w-[62ch] flex-col gap-5">
+                {letter.paragraphs.map((paragraph, i) => (
+                  <p
+                    key={paragraph}
+                    className={`leading-[1.7] motion-safe:animate-[rise_700ms_ease-out_both] ${i === 0 ? "text-xl" : "text-lg"}`}
+                    style={{ animationDelay: `${200 + i * 260}ms` }}
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+              <div className="mt-10 flex items-end justify-between gap-4 border-t-2 border-ink/15 pt-6">
+                <div>
+                  <p className="text-lg">With pride,</p>
+                  <p className="text-3xl font-extrabold">Cell</p>
+                  <p className="text-base text-ink-soft">your WrapYourGit guide</p>
+                </div>
+                <p className="text-base text-ink-soft">{data.meta.periodEnd}</p>
+              </div>
+            </article>
+          </div>
         )}
 
         {current?.kind === "export" && (
@@ -319,5 +355,53 @@ export function StoryFlow({ data }: { data: RecapData }) {
         )}
       </div>
     </div>
+  );
+}
+
+const iconButton =
+  "inline-flex size-11 items-center justify-center rounded-[var(--radius-control)] border-2 border-paper/40 text-paper hover:border-paper hover:bg-paper/10 active:bg-paper/20 motion-safe:transition-colors";
+
+function ReplayIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v5h5" />
+    </svg>
+  );
+}
+
+function SoundIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+      {muted ? (
+        <path d="M17 9l5 6M22 9l-5 6" />
+      ) : (
+        <>
+          <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+          <path d="M19.5 5.5a9 9 0 0 1 0 13" />
+        </>
+      )}
+    </svg>
   );
 }

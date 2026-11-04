@@ -1,4 +1,4 @@
-import type { Metric, RepoRef } from "@wyg/schema";
+import type { ArchetypeId, Metric, RecapData, RepoRef } from "@wyg/schema";
 
 /*
  * Presentation rules shared by scenes. Pure, so they're unit-tested without Remotion.
@@ -30,4 +30,16 @@ export function metricValue(
     text: `${metric.estimated ? "~" : ""}${format(metric.value)}`,
     estimated: metric.estimated,
   };
+}
+
+/**
+ * Archetypes the person also qualified for, strongest first, excluding the winner: at most two,
+ * and only those within reach of the winner (score at least 0.55), so "also" means something.
+ */
+export function runnerUps(identity: RecapData["identity"]): ArchetypeId[] {
+  return (Object.entries(identity.scores) as [ArchetypeId, number][])
+    .filter(([id, score]) => id !== identity.archetype && score >= 0.55)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([id]) => id);
 }

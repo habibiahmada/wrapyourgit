@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { metricValue, repoLabel } from "./present";
+import { metricValue, repoLabel, runnerUps } from "./present";
 
 describe("repoLabel", () => {
   test("public repos show name and owner", () => {
@@ -32,5 +32,29 @@ describe("metricValue", () => {
 
   test("unavailable skips the beat instead of showing 0", () => {
     expect(metricValue({ status: "unavailable", reason: "no access" }, fmt)).toBeNull();
+  });
+});
+
+describe("runnerUps", () => {
+  test("strongest qualifying archetypes after the winner, at most two, above 0.55", () => {
+    expect(
+      runnerUps({
+        archetype: "builder",
+        scores: {
+          builder: 0.8,
+          explorer: 0.6,
+          consistent: 0.62,
+          collaborator: 0.35,
+          "open-sourcer": 0.58,
+        },
+        reasons: [],
+      }),
+    ).toEqual(["consistent", "explorer"]);
+  });
+
+  test("none when nobody else is close", () => {
+    expect(
+      runnerUps({ archetype: "builder", scores: { builder: 0.8, explorer: 0.4 }, reasons: [] }),
+    ).toEqual([]);
   });
 });
