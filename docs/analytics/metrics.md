@@ -75,6 +75,25 @@ Copy rule: "Your projects gained 128 stars in 2026" vs "Your projects have 412 s
 
 `prsMerged` / `issuesClosed` are `estimated` when GitHub returned fewer detail nodes than the total (restricted items are left out of the list), and `unavailable` when it returned none.
 
+## Previous year (comparison)
+
+`previousYear` (schema v2) compares this year with last year like for like. One GraphQL request (`fetchPreviousYear` in @wyg/github) reads two `contributionsCollection` ranges: all of last year (for its calendar) and 1 January to the **same day of the year** as this recap's period end (`sameSpan.through`). While this year is still running, the comparison is "this year so far" against "last year up to the same date"; once the year is final, the span is the whole year.
+
+| Field                                                      | Definition                                                 | Source                                    |
+| ---------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------- |
+| `sameSpan.contributions`                                   | Calendar total for the span                                | `contributionCalendar.totalContributions` |
+| `sameSpan.commits` / `pullRequests` / `issues` / `reviews` | Totals for the span                                        | `total*Contributions`                     |
+| `sameSpan.reposWithCommits`                                | Repositories with commits in the span                      | `totalRepositoriesWithContributedCommits` |
+| `sameSpan.privateCount`                                    | Private contributions in the span (count only)             | `restrictedContributionsCount`            |
+| `sameSpan.activeDays` / `longestStreak`                    | Same functions as this year, on the span's days            | full calendar, cut at `through`           |
+| `fullYear.*`                                               | Total, active days and longest streak for all of last year | full calendar                             |
+
+If the request fails, the sync still succeeds and `previousYear` is **unavailable** (never zeros). Compared with this year's `contributions.total`, `commits`, `activeDays`, `longestStreak.days`, `engineering.prsOpened`, `issuesOpened`, `reviews`, `repositories.contributedTo` and `privateCount`.
+
+## Private repositories
+
+Without an installation the sign-in token has no repository permissions (ADR-0006). Private **contributions** are still counted (totals, calendar, per-repository commits including organisation repositories the user contributes to); private repository **names** never appear in anything shareable. What needs the optional installation (ADR-0008, Metadata: read on chosen repositories or organisations): private repositories the user **owns** (`repositories.ownedTotal`, `createdThisYear`) and `community.starsGained`.
+
 ## Spike A results (2026-11-04, one account, classic token with `repo` scope)
 
 - `scripts/spike-github.ts` builds RecapData that passes `recapDataSchema.parse()`.

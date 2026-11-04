@@ -5,7 +5,7 @@ import { z } from "zod";
  * presentation surface (web story, video, PNG, public page).
  * Change it deliberately: bump SCHEMA_VERSION and update docs/analytics/metrics.md.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const EDITION_YEAR = 2026;
 
 /**
@@ -37,6 +37,24 @@ export const repoRefSchema = z.object({
   stars: z.number().int().nonnegative(),
   forks: z.number().int().nonnegative(),
   createdAt: z.iso.datetime(),
+});
+
+const count = z.number().int().nonnegative();
+
+/** The same counts for a span of the previous year, so years compare like for like. */
+export const periodTotalsSchema = z.object({
+  /** Last day included (inclusive). */
+  through: isoDate,
+  contributions: count,
+  commits: count,
+  pullRequests: count,
+  issues: count,
+  reviews: count,
+  reposWithCommits: count,
+  /** Contributions to private repos (count only), as GitHub reports them for the span. */
+  privateCount: count,
+  activeDays: count,
+  longestStreak: count,
 });
 
 export const archetypeIdSchema = z.enum([
@@ -116,6 +134,18 @@ export const recapDataSchema = z.object({
     /** Repos not owned by the user that received their PRs/commits. */
     externalRepos: z.number().int().nonnegative(),
   }),
+  /**
+   * Last year for comparison. `sameSpan` stops on the same day of the year as this recap's
+   * `periodEnd`, so a recap in November compares with last January to November. `fullYear` is
+   * all of last year. Unavailable when GitHub could not be asked (metrics.md).
+   */
+  previousYear: metric(
+    z.object({
+      year: z.number().int(),
+      sameSpan: periodTotalsSchema,
+      fullYear: z.object({ contributions: count, activeDays: count, longestStreak: count }),
+    }),
+  ),
   identity: z.object({
     /** Null when there is not enough activity to classify fairly. */
     archetype: archetypeIdSchema.nullable(),
@@ -128,4 +158,5 @@ export const recapDataSchema = z.object({
 export type RecapData = z.infer<typeof recapDataSchema>;
 export type CalendarDay = z.infer<typeof calendarDaySchema>;
 export type RepoRef = z.infer<typeof repoRefSchema>;
+export type PeriodTotals = z.infer<typeof periodTotalsSchema>;
 export type ArchetypeId = z.infer<typeof archetypeIdSchema>;

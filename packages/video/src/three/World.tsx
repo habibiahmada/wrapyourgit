@@ -25,8 +25,11 @@ export function ContributionCity({
   t = 0,
   grow = 1,
   position = [0, 0, 0],
+  plinth = true,
 }: {
   levels: number[][];
+  /** The cobalt base under the columns; off when the city stands on a 2D page. */
+  plinth?: boolean;
   t?: number;
   /** 0..1: columns rise in order from the back, for build-in moments. */
   grow?: number;
@@ -36,15 +39,16 @@ export function ContributionCity({
   const weeks = levels.length;
   return (
     <group position={position}>
-      {/* plinth */}
-      <RoundedBox
-        args={[weeks * pitch + 0.5, 0.24, 7 * pitch + 0.5]}
-        radius={0.08}
-        position={[0, -0.12, 0]}
-        receiveShadow
-      >
-        <meshStandardMaterial color={C.cobalt} roughness={0.55} metalness={0.1} />
-      </RoundedBox>
+      {plinth && (
+        <RoundedBox
+          args={[weeks * pitch + 0.5, 0.24, 7 * pitch + 0.5]}
+          radius={0.08}
+          position={[0, -0.12, 0]}
+          receiveShadow
+        >
+          <meshStandardMaterial color={C.cobalt} roughness={0.55} metalness={0.1} />
+        </RoundedBox>
+      )}
       {levels.flatMap((week, w) =>
         week.map((level, d) => {
           const order = (w + d) / (weeks + 7);

@@ -33,6 +33,14 @@ export interface ActivityInput {
   stars: { nameWithOwner: string; starredAt: string[]; complete: boolean }[] | null;
   forks: { nameWithOwner: string; createdAt: string[]; complete: boolean }[];
   commitSample: { authoredAt: string[]; reposSampled: number; complete: boolean };
+  /** Last year for comparison (fetchPreviousYear); null or missing when it could not be fetched. */
+  previous?: PreviousInput | null;
+}
+
+export interface PreviousInput {
+  year: number;
+  calendar: { date: string; count: number }[];
+  span: ActivityInput["totals"] & { through: string };
 }
 
 interface RepoInput {
@@ -151,6 +159,7 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
       reviews: input.totals.reviews,
       externalRepos: external.all.size,
     },
+    previousYear: previousYear(input.previous ?? null),
     identity: classifyArchetype({
       reposCreated: reposCreated.length,
       ownRepoCommits: sum(
@@ -306,4 +315,36 @@ function localDate(date: Date, timezone: string): string {
 }
 
 const ok = <T>(value: T): Metric<T> => ({ status: "ok", value, estimated: false });
+
+/**
+ * Last year, shaped for comparison: totals for the same span (1 January to the same day of the
+ * year) and for the whole year. Days, streaks and totals use the same functions as this year.
+ */
+export function previousYear(previous: PreviousInput | null): RecapData["previousYear"] {
+  if (!previous)
+    return { status: "unavailable", reason: "Last year could not be read from GitHub" };
+  const { year, calendar, span } = previous;
+  const fullYear = calendar.filter((day) => day.date.startsWith(`${year}-`));
+  const spanDays = fullYear.filter((day) => day.date <= span.through);
+  return ok({
+    year,
+    sameSpan: {
+      through: span.through,
+      contributions: span.contributions,
+      commits: span.commits,
+      pullRequests: span.pullRequests,
+      issues: span.issues,
+      reviews: span.reviews,
+      reposWithCommits: span.reposWithCommits,
+      privateCount: span.restricted,
+      activeDays: countActiveDays(spanDays),
+      longestStreak: longestStreak(spanDays).days,
+    },
+    fullYear: {
+      contributions: fullYear.reduce((sum, day) => sum + day.count, 0),
+      activeDays: countActiveDays(fullYear),
+      longestStreak: longestStreak(fullYear).days,
+    },
+  });
+}
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);

@@ -43,19 +43,19 @@ Order, length and field color live in `src/timeline.ts`; `timeline.test.ts` chec
 | 8   | identity      | 16    | persimmon | archetype reveal (heavier spring) and its reasons; honest line when null        | climax: crash      |
 | 9   | closing       | 14    | ink       | handle, four headline facts, the year as a small graph, "Made with WrapYourGit" | outro, fade        |
 
-Accents (`src/accents.tsx`, cutouts from `bun scripts/render-art.ts`):
+Accents (`src/accents.tsx`, art from `bun scripts/render-art.ts`). Each is full colour and sits in the space its scene leaves empty, with its own position per layout family, tuned from rendered stills so it never covers a number or label. Re-check with stills of all three families after changing a scene's layout.
 
-| Scene         | Accent                                                      |
-| ------------- | ----------------------------------------------------------- |
-| intro         | none (the cells are the illustration)                       |
-| contributions | Cell cheering, peeking in from the right edge, tilted       |
-| rhythm        | Consistent steps as a faint ink silhouette                  |
-| tech-dna      | Cell thinking, bottom-right corner                          |
-| projects      | Builder crane as a faint ink silhouette                     |
-| community     | Open sourcer group beside the counters                      |
-| engineering   | Collaborators as a faint paper silhouette on ink            |
-| identity      | the person's archetype props, rising from the bottom, large |
-| closing       | Cell proud, bottom corner                                   |
+| Scene         | Accent                                                                  |
+| ------------- | ----------------------------------------------------------------------- |
+| intro         | Cell waving in from the right edge                                      |
+| contributions | Cell cheering on the side away from the stat chips                      |
+| rhythm        | `skin-consistent` in the gap between the calendar and the busiest month |
+| tech-dna      | Cell thinking between the language name and the list                    |
+| projects      | `skin-builder` between the top repository and the list                  |
+| community     | Open sourcer group in the open space beside the star count              |
+| engineering   | `skin-collaborator` below (portrait) or beside (landscape) the counters |
+| identity      | the person's own `skin-<archetype>`, rising from the bottom             |
+| closing       | Cell proud, bottom corner                                               |
 
 Accents use a CSS filter for silhouettes (not a mask image), because Remotion waits for `<Img>` to load but not for CSS masks.
 
@@ -67,7 +67,7 @@ Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`),
 - `<Html5Audio>` (`<Audio>` is deprecated in Remotion 4.0.540) with a volume curve that fades the last two beats; SFX via `<Sequence>`-scoped `<Html5Audio>`.
 - Track: `wrapyourgit-120bpm.m4a` (AAC, 66 s), synthesised by `bun scripts/synth-track.ts` from `TRACK` (120 BPM = 15 frames per beat). Sections: intro (pad, riser), drop at contributions (kick, hats, bass; claps from beat 24, arpeggio from beat 40), two beats of rest and a crash at the identity climax, half-time outro over closing. Regenerate it whenever `TRACK` or the timeline changes.
 - Track metadata (`bpm`, `offsetMs`, sections) drives scene durations: each scene snaps to a whole number of beats.
-- Web: the guided story plays the track through its own looping `<audio>` element, started by the first "Start my story" tap, so music keeps going across chapters. The Player itself is always muted, plays one scene between `inFrame`/`outFrame` and holds its last frame (`moveToBeginningWhenEnded={false}`). Replay and sound are icon buttons at the top right.
+- Web: the guided story plays the track through its own looping `<audio>` element from the warm-up through the last chapter, so music keeps going across chapters. When the last chapter's animation ends, or the story moves past it (comparison, letter, downloads), the music fades out over 1.4 s and stops; stepping back into a chapter starts it again. The fade runs on a timer because requestAnimationFrame stops in background tabs. The Player itself is always muted, plays one scene between `inFrame`/`outFrame` and holds its last frame (`moveToBeginningWhenEnded={false}`). Replay and sound are icon buttons at the top right.
 
 ## Export
 

@@ -37,6 +37,7 @@ export const emptyRecap: RecapData = {
     reviews: 0,
     externalRepos: 0,
   },
+  previousYear: { status: "unavailable", reason: "Last year could not be read from GitHub" },
   identity: { archetype: null, scores: {}, reasons: [] },
 };
 

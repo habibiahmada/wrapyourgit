@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { recapDataSchema } from "@wyg/schema";
-import { type ActivityInput, buildRecap, hourlyCommits, languageShares } from "./recap";
+import {
+  type ActivityInput,
+  buildRecap,
+  hourlyCommits,
+  languageShares,
+  previousYear,
+} from "./recap";
 
 const repo = (
   nameWithOwner: string,
@@ -209,5 +215,59 @@ describe("hourlyCommits", () => {
   test("unavailable when nothing was sampled", () => {
     const hourly = hourlyCommits({ authoredAt: [], reposSampled: 0, complete: true }, "UTC");
     expect(hourly.status).toBe("unavailable");
+  });
+});
+
+describe("previousYear", () => {
+  const day = (date: string, count: number) => ({ date, count });
+  const previous = {
+    year: 2025,
+    calendar: [
+      day("2025-01-01", 3),
+      day("2025-01-02", 1),
+      day("2025-01-03", 0),
+      day("2025-11-03", 2),
+      day("2025-11-04", 1),
+      day("2025-11-05", 4),
+      day("2025-12-31", 5),
+    ],
+    span: {
+      through: "2025-11-04",
+      contributions: 7,
+      commits: 5,
+      issues: 1,
+      pullRequests: 1,
+      reviews: 0,
+      reposWithCommits: 2,
+      restricted: 3,
+    },
+  };
+
+  test("is unavailable, not zero, when last year could not be read", () => {
+    expect(previousYear(null).status).toBe("unavailable");
+  });
+
+  test("counts days and streaks only up to the same day of the year", () => {
+    const result = previousYear(previous);
+    if (result.status !== "ok") throw new Error("expected ok");
+    expect(result.value.sameSpan.activeDays).toBe(4);
+    expect(result.value.sameSpan.longestStreak).toBe(2);
+    expect(result.value.sameSpan.privateCount).toBe(3);
+    expect(result.value.sameSpan.through).toBe("2025-11-04");
+  });
+
+  test("the full year covers every day of last year", () => {
+    const result = previousYear(previous);
+    if (result.status !== "ok") throw new Error("expected ok");
+    expect(result.value.fullYear).toEqual({ contributions: 16, activeDays: 6, longestStreak: 3 });
+  });
+
+  test("buildRecap passes it through and the result validates", () => {
+    const recap = buildRecap(
+      { ...baseInput(), previous },
+      { year: 2026, timezone: "UTC", now: new Date("2026-11-04T12:00:00Z") },
+    );
+    expect(recap.previousYear.status).toBe("ok");
+    expect(() => recapDataSchema.parse(recap)).not.toThrow();
   });
 });

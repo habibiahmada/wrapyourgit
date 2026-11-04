@@ -15,7 +15,7 @@ export function IntroScene({ data }: { data: RecapData }) {
   const u = useUnit();
   const firstWeek = heatLevels(data.contributions.calendar).slice(0, 7);
   const cell = u * (layout === "landscape" ? 7 : 8);
-  const title = u * (layout === "portrait" ? 15 : 13);
+  const title = u * (layout === "portrait" ? 12 : 10.5);
 
   const week = (
     <div
@@ -58,8 +58,9 @@ export function IntroScene({ data }: { data: RecapData }) {
         </div>
       </Slam>
       <div style={{ fontSize: title, fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.02em" }}>
-        <Slam at={beats(5, fps)}>Your year</Slam>
-        <Slam at={beats(6, fps)}>in code.</Slam>
+        <Slam at={beats(5, fps)}>Every green</Slam>
+        <Slam at={beats(5.5, fps)}>square has</Slam>
+        <Slam at={beats(6, fps)}>a story.</Slam>
       </div>
     </div>
   );

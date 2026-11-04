@@ -513,3 +513,89 @@ export async function fetchYearActivity(
     commitSample: { authoredAt, reposSampled: sampledRepos.length, complete: sampleComplete },
   };
 }
+
+const PREVIOUS_YEAR_QUERY = /* GraphQL */ `
+  query PreviousYear($from: DateTime!, $to: DateTime!, $spanTo: DateTime!) {
+    viewer {
+      full: contributionsCollection(from: $from, to: $to) {
+        contributionCalendar {
+          totalContributions
+          weeks { contributionDays { date contributionCount } }
+        }
+      }
+      span: contributionsCollection(from: $from, to: $spanTo) {
+        totalCommitContributions
+        totalIssueContributions
+        totalPullRequestContributions
+        totalPullRequestReviewContributions
+        totalRepositoriesWithContributedCommits
+        restrictedContributionsCount
+        contributionCalendar { totalContributions }
+      }
+    }
+  }
+`;
+
+interface RawPreviousYear {
+  viewer: {
+    full: {
+      contributionCalendar: {
+        totalContributions: number;
+        weeks: { contributionDays: { date: string; contributionCount: number }[] }[];
+      };
+    };
+    span: {
+      totalCommitContributions: number;
+      totalIssueContributions: number;
+      totalPullRequestContributions: number;
+      totalPullRequestReviewContributions: number;
+      totalRepositoriesWithContributedCommits: number;
+      restrictedContributionsCount: number;
+      contributionCalendar: { totalContributions: number };
+    };
+  };
+}
+
+export interface PreviousYearActivity {
+  year: number;
+  /** All of last year, day by day. */
+  calendar: { date: string; count: number }[];
+  /** Totals from 1 January to `spanTo` last year. */
+  span: YearActivity["totals"] & { through: string };
+}
+
+/**
+ * Last year's counts for comparison, in one request: the full calendar, plus the totals from
+ * 1 January to `spanTo` (the same day of the year as the current recap). The token sees the same
+ * kinds of data as for this year, so the two years compare like for like.
+ */
+export async function fetchPreviousYear(
+  token: string,
+  year: number,
+  spanTo: Date,
+): Promise<PreviousYearActivity> {
+  const from = new Date(Date.UTC(year, 0, 1));
+  const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
+  const data = await githubGraphql<RawPreviousYear>(token, PREVIOUS_YEAR_QUERY, {
+    from: from.toISOString(),
+    to: to.toISOString(),
+    spanTo: spanTo.toISOString(),
+  });
+  const { full, span } = data.viewer;
+  return {
+    year,
+    calendar: full.contributionCalendar.weeks.flatMap((week) =>
+      week.contributionDays.map((day) => ({ date: day.date, count: day.contributionCount })),
+    ),
+    span: {
+      through: spanTo.toISOString().slice(0, 10),
+      contributions: span.contributionCalendar.totalContributions,
+      commits: span.totalCommitContributions,
+      issues: span.totalIssueContributions,
+      pullRequests: span.totalPullRequestContributions,
+      reviews: span.totalPullRequestReviewContributions,
+      reposWithCommits: span.totalRepositoriesWithContributedCommits,
+      restricted: span.restrictedContributionsCount,
+    },
+  };
+}

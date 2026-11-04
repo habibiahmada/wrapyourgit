@@ -79,6 +79,26 @@ export const sampleRecap: RecapData = {
     reviews: 40,
     externalRepos: 5,
   },
+  previousYear: {
+    status: "ok",
+    estimated: false,
+    value: {
+      year: 2025,
+      sameSpan: {
+        through: "2025-12-31",
+        contributions: 1031,
+        commits: 640,
+        pullRequests: 48,
+        issues: 21,
+        reviews: 33,
+        reposWithCommits: 9,
+        privateCount: 210,
+        activeDays: 162,
+        longestStreak: 14,
+      },
+      fullYear: { contributions: 1031, activeDays: 162, longestStreak: 14 },
+    },
+  },
   identity: {
     archetype: "builder",
     scores: { builder: 0.72, consistent: 0.55 },

@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { ClosingSection } from "@/components/landing/sections";
 import { LoadingCell } from "@/components/loading-cell";
 import { CellField, calendarLevels } from "@/components/site/cell-field";
+import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
@@ -16,12 +17,13 @@ import { StoryPlayer } from "../../recap/story-player";
 export async function generateMetadata({ params }: PageProps<"/u/[login]">): Promise<Metadata> {
   const { login } = await params;
   const recap = (await getPublicRecap(login))?.data;
-  if (!recap) return { title: "Recap not found · WrapYourGit" };
-  const title = `@${recap.profile.login}'s ${recap.meta.year} in code · WrapYourGit`;
+  if (!recap) return { title: "Recap not found", robots: { index: false } };
+  const title = `@${recap.profile.login}'s ${recap.meta.year} on GitHub`;
   const description = `${recap.contributions.total.toLocaleString("en-US")} contributions, a ${recap.contributions.longestStreak.days}-day streak${recap.identity.archetype ? `, ${ARCHETYPE_LABELS[recap.identity.archetype]}` : ""}.`;
   return {
     title,
     description,
+    alternates: { canonical: `/u/${recap.profile.login}` },
     openGraph: { title, description },
     twitter: { card: "summary_large_image" },
   };
@@ -32,25 +34,27 @@ export default function PublicRecapPage({ params }: PageProps<"/u/[login]">) {
   return (
     <>
       <SiteHeader base="/" />
-      <main id="main" className="flex flex-1 flex-col">
-        <Suspense
-          fallback={
-            <div className="on-dark bg-ink text-paper">
-              <LoadingCell label="Loading this recap…" />
-            </div>
-          }
-        >
-          <PublicRecap params={params} />
-        </Suspense>
-        <ClosingSection
-          action={
-            <a href="/" className={button.primary}>
-              Make your own recap
-            </a>
-          }
-        />
-      </main>
-      <SiteFooter base="/" />
+      <PageTransition>
+        <main id="main" className="flex flex-1 flex-col">
+          <Suspense
+            fallback={
+              <div>
+                <LoadingCell label="Loading this recap…" />
+              </div>
+            }
+          >
+            <PublicRecap params={params} />
+          </Suspense>
+          <ClosingSection
+            action={
+              <a href="/" className={button.primary}>
+                Make your own recap
+              </a>
+            }
+          />
+        </main>
+        <SiteFooter base="/" />
+      </PageTransition>
     </>
   );
 }
@@ -71,7 +75,7 @@ function Summary({ data }: { data: RecapData }) {
   ];
   return (
     <>
-      <section aria-labelledby="recap-title" className="on-dark overflow-hidden bg-ink text-paper">
+      <section aria-labelledby="recap-title" className="overflow-hidden border-b border-line">
         <div className="mx-auto max-w-7xl px-4 pt-12 pb-10 sm:px-8 sm:pt-16">
           <p className="text-lg font-bold">
             @{profile.login} · {meta.isFinal ? meta.year : `${meta.year} so far`}
@@ -81,7 +85,7 @@ function Summary({ data }: { data: RecapData }) {
             className="mt-2 text-7xl leading-[0.9] font-extrabold tracking-tight tabular-nums sm:text-[10rem]"
           >
             {contributions.total.toLocaleString("en-US")}
-            <span className="block text-3xl tracking-normal text-cell sm:text-4xl">
+            <span className="block text-3xl tracking-normal text-green sm:text-4xl">
               contributions
             </span>
           </h1>
@@ -103,7 +107,7 @@ function Summary({ data }: { data: RecapData }) {
 
       <section
         aria-labelledby="archetype-title"
-        className="relative overflow-hidden bg-persimmon px-4 py-16 text-ink sm:px-8 sm:py-24"
+        className="relative overflow-hidden border-b border-line bg-[#010409] px-4 py-16 sm:px-8 sm:py-24"
       >
         <div className="mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-[1fr_1fr]">
           <div>
@@ -120,7 +124,7 @@ function Summary({ data }: { data: RecapData }) {
               <ul className="mt-8 space-y-2 text-lg">
                 {identity.reasons.map((reason) => (
                   <li key={reason} className="flex gap-3">
-                    <span aria-hidden className="mt-2 size-3 shrink-0 rounded-[2px] bg-ink" />
+                    <span aria-hidden className="mt-2 size-3 shrink-0 rounded-[2px] bg-green" />
                     {reason}
                   </li>
                 ))}
