@@ -1,0 +1,36 @@
+# Weekly and grouped, so updates arrive as a handful of pull requests instead of dozens, and each
+# one goes through CI.
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      # Remotion packages must stay on the same exact version.
+      remotion:
+        patterns: ["remotion", "@remotion/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      next:
+        patterns: ["next", "@next/*"]
+      dev-tooling:
+        dependency-type: development
+      production:
+        dependency-type: production
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore(ci)
+    groups:
+      actions:
+        patterns: ["*"]
