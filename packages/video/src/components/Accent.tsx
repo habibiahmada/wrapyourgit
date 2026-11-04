@@ -7,6 +7,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { beats } from "../audio/track";
+import { Sfx } from "./Sfx";
 
 /*
  * A baked 3D cutout (public/art/cutout-*.png) placed in a scene: peeking in from an edge, sitting
@@ -87,6 +89,10 @@ export function Accent({
           }}
         />
       </div>
+      {/* Entrances under the transition's own sound stay quiet. */}
+      {at >= beats(1, fps) && (
+        <Sfx at={at} sound={enter === "fade" ? "pop" : "whoosh"} volume={0.25} />
+      )}
     </AbsoluteFill>
   );
 }

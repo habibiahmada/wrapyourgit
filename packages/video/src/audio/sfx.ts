@@ -14,8 +14,11 @@ export const SFX = {
   tick: { file: "audio/sfx/tick.wav", volume: 0.25, seconds: 0.03 },
   /** A big number or title settles. */
   land: { file: "audio/sfx/land.wav", volume: 0.55, seconds: 0.25 },
-  /** A bar or row grows; callers raise the pitch along a list. */
-  blip: { file: "audio/sfx/blip.wav", volume: 0.35, seconds: 0.1 },
+  /**
+   * A bar or row grows. Comes in BLIP_STEPS pitches up the A minor pentatonic, so a list climbs
+   * (playbackRate can't do it: browsers keep the pitch when the rate changes).
+   */
+  blip: { file: "audio/sfx/blip-0.wav", volume: 0.35, seconds: 0.1 },
   /** A graph or heatmap draws in (one sound for the whole sweep). */
   shimmer: { file: "audio/sfx/shimmer.wav", volume: 0.4, seconds: 1.2 },
   /** The archetype reveal. */
@@ -23,3 +26,13 @@ export const SFX = {
 } as const satisfies Record<string, { file: string; volume: number; seconds: number }>;
 
 export type SfxName = keyof typeof SFX;
+
+/** Pitches of `blip`, as frequency ratios of A5 (A minor pentatonic). */
+export const BLIP_STEPS = [1, 1.189, 1.335, 1.498, 1.782, 2, 2.378, 2.67] as const;
+
+/** File of a sound; `step` picks a `blip` pitch and is clamped to the top note. */
+export function sfxFile(name: SfxName, step = 0): string {
+  if (name !== "blip") return SFX[name].file;
+  const index = Math.max(0, Math.min(BLIP_STEPS.length - 1, Math.floor(step)));
+  return `audio/sfx/blip-${index}.wav`;
+}
