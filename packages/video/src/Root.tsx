@@ -28,6 +28,15 @@ export const ART_IDS = [
   "cutout-collaborator",
   "cutout-night-owl",
   "cutout-open-sourcer",
+  // Cartoon characters (toon-shaded Cell in costume with the archetype's animal) and the
+  // stage-less hero cast, for the web pages, the identity scene and the exports.
+  "hero-cast",
+  "skin-builder",
+  "skin-consistent",
+  "skin-explorer",
+  "skin-collaborator",
+  "skin-night-owl",
+  "skin-open-sourcer",
 ] as const;
 
 /** One composition per export format. Composition id = `wrap-<format>`, e.g. `wrap-9x16`. */

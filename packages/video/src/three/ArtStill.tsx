@@ -1,9 +1,12 @@
+import { useThree } from "@react-three/fiber";
 import { ThreeCanvas } from "@remotion/three";
 import type { ArchetypeId } from "@wyg/schema";
-import { useCurrentFrame, useVideoConfig } from "remotion";
+import { useEffect, useState } from "react";
+import { continueRender, delayRender, useCurrentFrame, useVideoConfig } from "remotion";
 import { CellCharacter, type Pose } from "./CellCharacter";
 import { ArchetypeDiorama, ArchetypeProps } from "./Dioramas";
 import { HeroScene } from "./HeroScene";
+import { ArchetypeSkin, HeroCast } from "./skins";
 import { CutoutLights } from "./World";
 
 export type ArtId =
@@ -11,7 +14,9 @@ export type ArtId =
   | "hero"
   | `cell-${Pose}`
   | `cutout-cell-${Pose}`
-  | `cutout-${ArchetypeId}`;
+  | `cutout-${ArchetypeId}`
+  | `skin-${ArchetypeId}`
+  | "hero-cast";
 
 /**
  * A 3D scene rendered by Remotion, used to bake still PNGs (scripts/render-art.ts) for places that
@@ -20,24 +25,59 @@ export type ArtId =
  * layouts can crop, tint and place them freely. Time comes from the frame, so a given frame always
  * renders the same image.
  */
+/**
+ * drei's Outlines attach their ink meshes in a layout effect, after ThreeCanvas has drawn the
+ * frame. Draw once more, then let Remotion take the picture, or the ink never shows.
+ */
+function Settle() {
+  const { gl, scene, camera } = useThree();
+  const [handle] = useState(() => delayRender("Drawing ink outlines"));
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      gl.render(scene, camera);
+      continueRender(handle);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [gl, scene, camera, handle]);
+  return null;
+}
+
 export function ArtStill({ art }: { art: ArtId }) {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const t = frame / fps;
-  const cutout = art.startsWith("cutout-");
+  const skin = art.startsWith("skin-");
+  const cast = art === "hero-cast";
+  const cutout = art.startsWith("cutout-") || skin || cast;
   const cellOnly = art.startsWith("cutout-cell-");
+  const camera = cellOnly
+    ? { position: [3.2, 2.6, 5.2] as const, fov: 30, look: 1 }
+    : skin
+      ? { position: [3, 2.3, 6.1] as const, fov: 33, look: 1 }
+      : cast
+        ? { position: [6.4, 4.2, 9.4] as const, fov: 32, look: 0.95 }
+        : { position: [10, 7.5, 13] as const, fov: 28, look: 1.1 };
   return (
     <ThreeCanvas
       width={width}
       height={height}
       shadows={!cutout}
       gl={{ alpha: true, preserveDrawingBuffer: true }}
-      camera={
-        cellOnly ? { position: [3.2, 2.6, 5.2], fov: 30 } : { position: [10, 7.5, 13], fov: 28 }
-      }
-      onCreated={({ camera }) => camera.lookAt(0, cellOnly ? 1 : 1.1, 0)}
+      camera={{ position: [...camera.position], fov: camera.fov }}
+      onCreated={(state) => state.camera.lookAt(0, camera.look, 0)}
     >
-      {cellOnly ? (
+      <Settle />
+      {skin ? (
+        <>
+          <CutoutLights />
+          <ArchetypeSkin archetype={art.slice("skin-".length) as ArchetypeId} t={t} />
+        </>
+      ) : cast ? (
+        <>
+          <CutoutLights />
+          <HeroCast t={t} />
+        </>
+      ) : cellOnly ? (
         <>
           <CutoutLights />
           <CellCharacter pose={art.slice("cutout-cell-".length) as Pose} t={t} rotationY={0.55} />
