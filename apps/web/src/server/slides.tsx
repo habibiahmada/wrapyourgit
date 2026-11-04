@@ -191,14 +191,14 @@ async function slide(data: RecapData, index: number): Promise<ReactElement> {
         PAPER,
         <div style={{ display: "flex", flexDirection: "column" }}>
           <img
-            src={await art("hero")}
+            src={await art("hero-cast")}
             width={912}
             height={684}
             style={{ borderRadius: 24 }}
             alt=""
           />
           <span style={{ fontSize: 120, fontWeight: 800, lineHeight: 0.95, marginTop: 40 }}>
-            Your year in code.
+            Every green square has a story.
           </span>
         </div>,
       );

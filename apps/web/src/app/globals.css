@@ -1,7 +1,18 @@
 @import "tailwindcss";
 
-/* Tokens from DESIGN.md. Text pairings are limited to the measured ones listed there. */
+/* Tokens from DESIGN.md. Text pairings are limited to the measured ones listed there.
+   Web pages use the GitHub-dark set (canvas ... blue); the brand set (ink ... heat) belongs to
+   the story, the video, the letter and the exports. */
 @theme {
+  --color-canvas: #0d1117;
+  --color-surface: #161b22;
+  --color-overlay: #21262d;
+  --color-line: #30363d;
+  --color-fg: #e6edf3;
+  --color-muted: #8b949e;
+  --color-green: #3fb950;
+  --color-green-button: #238636;
+  --color-blue: #4493f8;
   --color-ink: #14130f;
   --color-paper: #f4efe3;
   --color-ink-soft: #5c584e;
@@ -12,7 +23,8 @@
   --color-heat-2: #40c463;
   --color-heat-3: #30a14e;
   --color-heat-4: #216e39;
-  --font-sans: var(--font-bricolage), system-ui, sans-serif;
+  --font-sans: var(--font-mona), system-ui, sans-serif;
+  --font-brand: var(--font-bricolage), system-ui, sans-serif;
   --radius-control: 6px;
 }
 
@@ -39,6 +51,19 @@
   }
 }
 
+/* Loading cells (loading-cell.tsx): a week lighting up in turn while data is on its way. */
+@keyframes pulse-cell {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.85);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Contribution cells light up once, week by week (cell-field.tsx). The motif, not decoration. */
 @keyframes light {
   from {
@@ -54,15 +79,101 @@
     animation: light 520ms ease-out both;
   }
 
-  /* Sections rise in as they scroll into view. CSS only (no JS), and browsers without scroll
-     timelines simply show the content. */
+  /* Scroll motion, CSS only: elements fade and rise in as they enter the viewport and fade out
+     as they leave, so the page breathes while scrolling. Browsers without scroll timelines,
+     and reduced motion, simply show the content. */
   @supports (animation-timeline: view()) {
-    .reveal {
-      animation: rise linear both;
+    .reveal,
+    .reveal-left,
+    .reveal-right,
+    .reveal-zoom {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
       animation-timeline: view();
-      animation-range: entry 0% entry 55%;
+      animation-range: entry 0% exit 100%;
+    }
+    .reveal {
+      animation-name: in-out-rise;
+    }
+    .reveal-left {
+      animation-name: in-out-left;
+    }
+    .reveal-right {
+      animation-name: in-out-right;
+    }
+    .reveal-zoom {
+      animation-name: in-out-zoom;
     }
   }
+}
+
+@keyframes in-out-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  22%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-32px);
+  }
+}
+@keyframes in-out-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-64px) rotate(-3deg);
+  }
+  24%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateX(-24px);
+  }
+}
+@keyframes in-out-right {
+  0% {
+    opacity: 0;
+    transform: translateX(64px) rotate(3deg);
+  }
+  24%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateX(24px);
+  }
+}
+@keyframes in-out-zoom {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) rotate(-4deg);
+  }
+  26%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+
+/* No visible scrollbars anywhere (the maintainer's call); scrolling itself is unchanged. */
+* {
+  scrollbar-width: none;
+}
+::-webkit-scrollbar {
+  display: none;
 }
 
 html {
@@ -78,8 +189,11 @@ html {
 
 @layer base {
   body {
-    background: var(--color-paper);
-    color: var(--color-ink);
+    /* Scroll reveals slide elements sideways while they enter; clip (not hidden) keeps that from
+       ever widening the page without breaking the sticky header. */
+    overflow-x: clip;
+    background: var(--color-canvas);
+    color: var(--color-fg);
     font-family: var(--font-sans);
   }
 
@@ -98,12 +212,13 @@ html {
     cursor: not-allowed;
   }
 
-  /* Ink outline on light fields; .on-dark flips it to paper on ink and cobalt. */
+  /* GitHub's focus ring: blue, 2px, offset. 6.1:1 on the canvas. Inside the light letter
+     (.on-light) it turns ink. */
   :focus-visible {
-    outline: 3px solid var(--color-ink);
-    outline-offset: 3px;
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
   }
-  .on-dark :focus-visible {
-    outline-color: var(--color-paper);
+  .on-light :focus-visible {
+    outline-color: var(--color-ink);
   }
 }

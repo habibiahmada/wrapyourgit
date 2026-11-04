@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { NAV_LINKS } from "./nav-links";
 
 const link =
-  "inline-flex min-h-11 items-center rounded-[var(--radius-control)] px-3 font-bold underline-offset-4 hover:underline active:text-cell";
+  "inline-flex min-h-11 items-center rounded-[var(--radius-control)] px-3 font-semibold text-fg hover:bg-overlay active:bg-line";
 
 /**
  * The site header's navigation. On the landing page links are in-page anchors; elsewhere they go
@@ -48,7 +48,7 @@ export function SiteNav({ base = "", action }: { base?: "" | "/"; action: ReactN
           aria-expanded={open}
           aria-controls={menuId}
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex size-11 items-center justify-center rounded-[var(--radius-control)] border-2 border-paper/70 hover:bg-paper/10 active:bg-paper/20 lg:hidden"
+          className="inline-flex size-11 items-center justify-center rounded-[var(--radius-control)] border border-line hover:bg-overlay active:bg-line lg:hidden"
         >
           <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
           <svg aria-hidden viewBox="0 0 20 20" className="size-5" fill="currentColor">
@@ -68,7 +68,7 @@ export function SiteNav({ base = "", action }: { base?: "" | "/"; action: ReactN
         id={menuId}
         aria-label="Main"
         hidden={!open}
-        className="absolute inset-x-0 top-full border-t-2 border-paper/15 bg-ink px-4 pt-2 pb-6 lg:hidden"
+        className="absolute inset-x-0 top-full border-b border-line bg-[#010409] px-4 pt-2 pb-6 lg:hidden"
       >
         <ul className="flex flex-col">
           {NAV_LINKS.map(({ id, label }) => (
