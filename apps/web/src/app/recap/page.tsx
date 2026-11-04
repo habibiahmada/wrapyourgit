@@ -10,7 +10,7 @@ import { StoryFlow } from "./story-flow";
 
 export default function RecapPage() {
   return (
-    <main className="on-dark flex flex-1 flex-col items-center gap-6 bg-ink px-4 py-8 text-paper sm:px-10">
+    <main className="flex flex-1 flex-col items-center gap-6 px-4 py-8 sm:px-10">
       <div className="flex w-full max-w-5xl items-center justify-between gap-4">
         <p className="text-lg font-extrabold">WrapYourGit · {EDITION_YEAR}</p>
         <Link href="/dashboard" className="font-bold underline underline-offset-4">
