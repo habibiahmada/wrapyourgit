@@ -15,6 +15,6 @@
     "@wyg/schema": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "typescript": "^7"
   }
 }
