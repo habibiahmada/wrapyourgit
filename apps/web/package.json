@@ -24,8 +24,8 @@
     "next": "16.4.5",
     "pdf-lib": "^1.17.1",
     "postgres": "^4.0.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "remotion": "4.0.540",
     "server-only": "^0.0.1",
     "three": "^0.187.0"

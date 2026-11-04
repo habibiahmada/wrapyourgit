@@ -237,7 +237,7 @@ Contributions are welcome, from a wrong number you spotted to a new scene. Start
 
 ## License and credits
 
-WrapYourGit is released under the [MIT License](LICENSE). Its dependencies keep their own licences; notably **Remotion is not MIT** and needs a company licence for companies with more than three employees ([remotion.dev/license](https://www.remotion.dev/license)).
+WrapYourGit is released under the [MIT License](LICENSE). Its dependencies keep their own licences ([third-party notices](THIRD_PARTY_NOTICES.md)); notably **Remotion is not MIT** and needs a company licence for companies with more than three employees ([remotion.dev/license](https://www.remotion.dev/license)).
 
 - Language logos from [Devicon](https://github.com/devicons/devicon) (MIT); the logos are trademarks of their owners.
 - The soundtrack is synthesised by `scripts/synth-track.ts` and released as CC0.
