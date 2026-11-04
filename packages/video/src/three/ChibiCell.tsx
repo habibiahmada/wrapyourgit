@@ -1,6 +1,6 @@
 import { RoundedBox } from "@react-three/drei";
 import { C } from "./palette";
-import { Blush, Gloss, MouthPaint, Sparkle, Toon } from "./toon";
+import { Gloss, Toon } from "./toon";
 
 /*
  * Cell as a soft chibi toy (2026-11-05): a big pillowy head on a small egg body, stubby limbs on
@@ -27,6 +27,8 @@ export type ChibiPose = {
   legR: number;
   /** 1 open, 0 shut. */
   eyes: number;
+  /** Brow lift, raised a little on the wave. */
+  brows: number;
   sprout: number;
 };
 
@@ -60,12 +62,14 @@ export function chibiPose(motion: ChibiMotion, t: number): ChibiPose {
         legL: 0.14 * Math.sin(Math.PI * beat),
         legR: -0.14 * Math.sin(Math.PI * beat),
         eyes: blink(t),
+        brows: 0.02 + 0.015 * Math.sin(TAU * beat),
         sprout: -0.35 * Math.sin(Math.PI * beat - 0.7),
       };
   }
 }
 
 const BELLY = C.heat[0];
+const GLOW = "#9BE9A8";
 const LIMB = "#2fb84a";
 
 function Arm({ side, angle }: { side: 1 | -1; angle: number }) {
@@ -98,26 +102,29 @@ function Leg({ side, swing }: { side: 1 | -1; swing: number }) {
   );
 }
 
+/** The face lights: unlit and untoned, so they glow the same green at any exposure. */
+function Glow() {
+  return <meshBasicMaterial color={GLOW} toneMapped={false} />;
+}
+
+/** An eye is a lit contribution cell on the face panel; it blinks by squashing shut. */
 function Eye({ x, open }: { x: number; open: number }) {
   return (
-    <group position={[x, 0.06, 0.47]} scale={[1, Math.max(0.08, open), 1]}>
-      <mesh scale={[1, 1.15, 0.5]}>
-        <sphereGeometry args={[0.165, 40, 40]} />
-        <Gloss color="#fbfaf5" />
-      </mesh>
-      <mesh position={[0.01, -0.02, 0.06]} scale={[1, 1.12, 0.45]}>
-        <sphereGeometry args={[0.112, 32, 32]} />
-        <Gloss color="#0d0d10" />
-      </mesh>
-      <mesh position={[0.045, 0.045, 0.11]}>
-        <sphereGeometry args={[0.034, 16, 16]} />
-        <Sparkle />
-      </mesh>
-      <mesh position={[-0.03, -0.06, 0.105]}>
-        <sphereGeometry args={[0.016, 12, 12]} />
-        <Sparkle />
-      </mesh>
+    <group position={[x, 0.03, 0.485]} scale={[1, Math.max(0.12, open), 1]}>
+      <RoundedBox args={[0.16, 0.2, 0.03]} radius={0.012} smoothness={4}>
+        <Glow />
+      </RoundedBox>
     </group>
+  );
+}
+
+/** Brows: short lit bars, angled in a little, so the look is sure of itself rather than sweet. */
+function Brow({ x, lift }: { x: number; lift: number }) {
+  return (
+    <mesh position={[x, 0.2 + lift, 0.485]} rotation={[0, 0, Math.sign(x) * -0.18]}>
+      <boxGeometry args={[0.15, 0.03, 0.02]} />
+      <Glow />
+    </mesh>
   );
 }
 
@@ -136,37 +143,48 @@ export function ChibiCell({
       <group position={[0, pose.rootY, 0]} rotation={[0, 0, pose.rootTilt]}>
         <Leg side={-1} swing={pose.legL} />
         <Leg side={1} swing={pose.legR} />
-        {/* Egg body with a lighter belly, squashing a touch on the beat. */}
-        <group position={[0, 0.56, 0]} scale={[2 - pose.squash, pose.squash, 2 - pose.squash]}>
-          <mesh scale={[1, 1.08, 0.9]}>
-            <sphereGeometry args={[0.33, 48, 48]} />
+        {/* A rounded-box torso with a lighter belly panel, squashing a touch on the beat. */}
+        <group position={[0, 0.58, 0]} scale={[2 - pose.squash, pose.squash, 2 - pose.squash]}>
+          <RoundedBox args={[0.6, 0.6, 0.5]} radius={0.2} smoothness={10}>
             <Toon color={C.green} />
-          </mesh>
-          <mesh position={[0, -0.04, 0.25]} scale={[1, 1.15, 0.4]}>
-            <sphereGeometry args={[0.2, 40, 40]} />
+          </RoundedBox>
+          <RoundedBox
+            args={[0.36, 0.36, 0.2]}
+            radius={0.09}
+            smoothness={8}
+            position={[0, -0.03, 0.22]}
+            scale={[1, 1, 0.4]}
+          >
             <Toon color={BELLY} />
-          </mesh>
+          </RoundedBox>
         </group>
         <Arm side={-1} angle={pose.armL} />
         <Arm side={1} angle={pose.armR} />
         {/* Neck joint: the head tilts, turns and nods around it. */}
         <group position={[0, 0.84, 0]} rotation={[pose.head.nod, pose.head.turn, pose.head.tilt]}>
           <group position={[0, 0.5, 0]}>
-            {/* Pillowy, not boxy: the corner radius is almost half the size. */}
-            <RoundedBox args={[1.2, 1.0, 0.95]} radius={0.42} smoothness={14} bevelSegments={14}>
+            {/* A soft squircle: rounder than the old cube, still clearly a cell, not a ball. */}
+            <RoundedBox args={[1.15, 1.0, 0.9]} radius={0.3} smoothness={12} bevelSegments={12}>
               <Toon color={C.green} />
             </RoundedBox>
-            <Eye x={-0.24} open={pose.eyes} />
-            <Eye x={0.24} open={pose.eyes} />
-            {[-0.42, 0.42].map((x) => (
-              <mesh key={x} position={[x, -0.15, 0.44]} scale={[1, 0.6, 0.25]}>
-                <sphereGeometry args={[0.08, 24, 24]} />
-                <Blush />
-              </mesh>
-            ))}
-            <mesh position={[0, -0.16, 0.475]} rotation={[0, 0, Math.PI]}>
-              <torusGeometry args={[0.075, 0.022, 12, 32, Math.PI]} />
-              <MouthPaint />
+            {/* Face panel: dark and smooth like a screen, so the face is lights, not a baby face. */}
+            <RoundedBox
+              args={[0.86, 0.62, 0.3]}
+              radius={0.14}
+              smoothness={10}
+              position={[0, -0.02, 0.43]}
+              scale={[1, 1, 0.2]}
+            >
+              <Gloss color={C.ink} />
+            </RoundedBox>
+            <Eye x={-0.19} open={pose.eyes} />
+            <Eye x={0.19} open={pose.eyes} />
+            <Brow x={-0.2} lift={pose.brows} />
+            <Brow x={0.2} lift={pose.brows} />
+            {/* A small, flat smile: friendly, not cute. */}
+            <mesh position={[0, -0.17, 0.485]} rotation={[0, 0, Math.PI]} scale={[1, 0.55, 1]}>
+              <torusGeometry args={[0.07, 0.016, 8, 24, Math.PI]} />
+              <Glow />
             </mesh>
             {/* The sprout: a tiny contribution cell on a stalk, trailing the head's motion. */}
             <group position={[0, 0.48, 0]} rotation={[0, 0, pose.sprout]}>

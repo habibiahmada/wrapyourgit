@@ -30,7 +30,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
       });
       return (
         <LiveAccent at={beats(1)} enter="right" x={spot.x} y={spot.y} size={spot.size}>
-          {(t) => <ChibiCell motion="wave" t={t} rotationY={-0.35} />}
+          {(t) => <ChibiCell motion="wave" t={t} />}
         </LiveAccent>
       );
     }

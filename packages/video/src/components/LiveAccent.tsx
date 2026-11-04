@@ -54,7 +54,8 @@ export function LiveAccent({
           width={w}
           height={h}
           gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
-          camera={{ position: [1.6, 1.9, 5.4], fov: 30 }}
+          // Straight on, a little above: the character faces the viewer.
+          camera={{ position: [0, 1.5, 5.6], fov: 30 }}
           onCreated={(state) => {
             state.camera.lookAt(0, 0.95, 0);
             state.gl.toneMapping = NeutralToneMapping;
