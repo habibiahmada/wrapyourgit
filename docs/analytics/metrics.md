@@ -62,6 +62,18 @@ Rationale: raw repo bytes over-weights large repos the user barely touched.
 
 Copy rule: "Your projects gained 128 stars in 2026" vs "Your projects have 412 stars". Never mix current totals with gains.
 
+## Starred by you
+
+Repositories the user starred during the period, anyone's (their own included). This is the opposite direction from community impact: what caught the user's eye, not who noticed the user's work.
+
+| Field               | Definition                                                                                                                                                       | Source                                                                                                                                                          |                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `starred.count`     | Repositories with `starredAt` inside the period                                                                                                                  | `viewer.starredRepositories(orderBy: {field: STARRED_AT, direction: DESC}) { edges { starredAt node { … } } }`, paginated until an edge falls before the period | ✅ (page cap reached → `estimated`) |
+| `starred.top`       | The five starred-in-period repositories with the most stargazers (ties: earlier `starredAt` first). Private ones are dropped from public recaps; the count stays | same, node `stargazerCount`                                                                                                                                     | ✅                                  |
+| `starred.languages` | Starred-in-period repositories per `primaryLanguage`, most first (ties alphabetical), at most five; repositories without a language are left out                 | same, node `primaryLanguage`                                                                                                                                    | ✅                                  |
+
+Unavailable when GitHub does not allow listing the stars. Spike on 2026-11-04 for the maintainer: 95 repositories starred in 2026 (of 103 ever), all public; languages Python 24, TypeScript 22, JavaScript 17, Rust 9, Go 8.
+
 ## Engineering
 
 | Field                       | Definition                                                     | Source                                                                                     |     |

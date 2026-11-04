@@ -35,6 +35,13 @@ export interface ActivityInput {
   commitSample: { authoredAt: string[]; reposSampled: number; complete: boolean };
   /** Last year for comparison (fetchPreviousYear); null or missing when it could not be fetched. */
   previous?: PreviousInput | null;
+  /** Repositories the viewer starred, newest first; null or missing when GitHub refused. */
+  starred?: StarredInput | null;
+}
+
+export interface StarredInput {
+  items: { starredAt: string; repo: RepoInput }[];
+  complete: boolean;
 }
 
 export interface PreviousInput {
@@ -160,6 +167,7 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
       externalRepos: external.all.size,
     },
     previousYear: previousYear(input.previous ?? null),
+    starred: starredSummary(input.starred ?? null, inPeriod),
     identity: classifyArchetype({
       reposCreated: reposCreated.length,
       ownRepoCommits: sum(
@@ -315,6 +323,40 @@ function localDate(date: Date, timezone: string): string {
 }
 
 const ok = <T>(value: T): Metric<T> => ({ status: "ok", value, estimated: false });
+
+/**
+ * What the user starred this period: how many, the five with the most stargazers (ties: starred
+ * earlier first) and the languages they were in (ties: alphabetical). A capped walk is a lower
+ * bound, so it is marked estimated.
+ */
+export function starredSummary(
+  starred: StarredInput | null,
+  inPeriod: (iso: string) => boolean,
+): RecapData["starred"] {
+  if (!starred) {
+    return { status: "unavailable", reason: "GitHub did not allow listing starred repositories" };
+  }
+  const items = starred.items.filter((item) => inPeriod(item.starredAt));
+  const top = [...items]
+    .sort((a, b) => b.repo.stars - a.repo.stars || a.starredAt.localeCompare(b.starredAt))
+    .slice(0, 5)
+    .map((item) => toRepoRef(item.repo));
+  const perLanguage = new Map<string, number>();
+  for (const { repo } of items) {
+    if (repo.primaryLanguage) {
+      perLanguage.set(repo.primaryLanguage, (perLanguage.get(repo.primaryLanguage) ?? 0) + 1);
+    }
+  }
+  const languages = [...perLanguage]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, 5);
+  return {
+    status: "ok",
+    value: { count: items.length, top, languages },
+    estimated: !starred.complete,
+  };
+}
 
 /**
  * Last year, shaped for comparison: totals for the same span (1 January to the same day of the

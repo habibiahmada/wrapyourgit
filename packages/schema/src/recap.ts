@@ -5,7 +5,7 @@ import { z } from "zod";
  * presentation surface (web story, video, PNG, public page).
  * Change it deliberately: bump SCHEMA_VERSION and update docs/analytics/metrics.md.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const EDITION_YEAR = 2026;
 
 /**
@@ -125,6 +125,18 @@ export const recapDataSchema = z.object({
     mostStarredNew: repoRefSchema.nullable(),
     mostForked: repoRefSchema.nullable(),
   }),
+  /**
+   * Repositories the user starred during the period, anyone's. `top` are the five with the most
+   * stargazers; `languages` counts starred repositories per primary language, most first.
+   * Estimated when the page cap stopped the walk before the start of the period.
+   */
+  starred: metric(
+    z.object({
+      count,
+      top: z.array(repoRefSchema).max(5),
+      languages: z.array(z.object({ name: z.string(), count })).max(5),
+    }),
+  ),
   engineering: z.object({
     prsOpened: z.number().int().nonnegative(),
     prsMerged: metric(z.number().int().nonnegative()),

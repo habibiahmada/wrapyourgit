@@ -63,6 +63,15 @@ const recap = (): RecapData => ({
     externalRepos: 1,
   },
   previousYear: { status: "unavailable", reason: "Not fetched in this test" },
+  starred: {
+    status: "ok",
+    estimated: false,
+    value: {
+      count: 3,
+      top: [repo("someone/secret-tool", true), repo("vercel/next.js", false)],
+      languages: [{ name: "TypeScript", count: 2 }],
+    },
+  },
   identity: { archetype: "builder", scores: { builder: 0.7 }, reasons: ["80 commits"] },
 });
 
@@ -82,6 +91,14 @@ describe("toPublicRecap", () => {
     expect(community.mostStarred).toBeNull();
     expect(community.mostForked).toBeNull();
     expect(community.mostStarredNew?.nameWithOwner).toBe("octo/public-lib");
+  });
+
+  test("private repositories you starred are dropped from the list; the count stays", () => {
+    const { starred } = toPublicRecap(recap());
+    expect(starred.status).toBe("ok");
+    if (starred.status !== "ok") return;
+    expect(starred.value.top.map((r) => r.nameWithOwner)).toEqual(["vercel/next.js"]);
+    expect(starred.value.count).toBe(3);
   });
 
   test("aggregate counts are kept: they never name a repo", () => {
