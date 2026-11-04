@@ -1,5 +1,32 @@
 {
   "name": "wrapyourgit",
+  "version": "0.1.0",
+  "description": "Your GitHub year as an animated story: contributions, streaks, languages, projects and your developer archetype, with a soundtrack.",
+  "keywords": [
+    "github-wrapped",
+    "github",
+    "year-in-review",
+    "wrapped",
+    "github-stats",
+    "contribution-graph",
+    "developer-tools",
+    "remotion",
+    "nextjs",
+    "storytelling"
+  ],
+  "homepage": "https://wrapyourgit.habibiahmada.dev",
+  "bugs": {
+    "url": "https://github.com/habibiahmada/wrapyourgit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/habibiahmada/wrapyourgit.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Habibi Ahmad Aziz",
+    "url": "https://habibiahmada.dev"
+  },
   "private": true,
   "packageManager": "bun@1.4.2",
   "workspaces": [
