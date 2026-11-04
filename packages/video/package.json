@@ -8,6 +8,7 @@
     "./copy": "./src/copy.ts",
     "./heat": "./src/heat.ts",
     "./timeline": "./src/timeline.ts",
+    "./track": "./src/audio/track.ts",
     "./three": "./src/three/index.ts",
     "./letter": "./src/letter.ts",
     "./languages": "./src/languages.ts",
