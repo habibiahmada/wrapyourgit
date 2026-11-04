@@ -3,6 +3,7 @@
 import { Player, type PlayerRef } from "@remotion/player";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
 import { SCENES, STORY_DURATION_IN_FRAMES, WrapStory } from "@wyg/video";
+import { SCENE_TITLES } from "@wyg/video/copy";
 import { congratsLetter } from "@wyg/video/letter";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,17 +11,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Scene3D } from "@/components/scene3d/scene-3d";
 import { button } from "@/components/ui";
 
-const SCENE_TITLES: Record<string, string> = {
-  intro: "Hello",
-  contributions: "Contributions",
-  rhythm: "Your rhythm",
-  "tech-dna": "Languages",
-  projects: "Projects",
-  community: "Community",
-  engineering: "Engineering",
-  identity: "Your archetype",
-  closing: "Summary",
-};
 const SLIDES = [
   "Intro",
   "Contributions",
@@ -121,7 +111,7 @@ export function StoryFlow({ data }: { data: RecapData }) {
   const { width, height } = VIDEO_FORMATS[format];
   const title =
     current?.kind === "scene"
-      ? (SCENE_TITLES[SCENES[current.index]?.id ?? ""] ?? "")
+      ? SCENE_TITLES[SCENES[current.index]?.id ?? "intro"]
       : current?.kind === "letter"
         ? "A letter for you"
         : current?.kind === "export"

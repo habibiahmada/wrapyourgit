@@ -77,6 +77,7 @@ export function Scene3D({
         height={900}
         sizes="(min-width: 1024px) 50vw, 100vw"
         preload={priority}
+        fetchPriority={priority ? "high" : undefined}
         className={`absolute inset-0 h-full w-full object-cover motion-safe:transition-opacity motion-safe:duration-700 ${ready ? "opacity-0" : "opacity-100"}`}
       />
       {live && (

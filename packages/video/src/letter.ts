@@ -75,7 +75,7 @@ function picker(seed: string) {
   };
 }
 
-const OPENINGS: Record<ActivityTier, readonly string[]> = {
+export const OPENINGS: Record<ActivityTier, readonly string[]> = {
   blank: [
     "Some years are for building, and some years are for getting ready to build. This one was quiet on GitHub, and that is completely fine.",
     "Not every year leaves a trail of green squares. Sometimes the work happens somewhere else: in learning, in planning, in living. That counts too.",

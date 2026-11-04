@@ -48,13 +48,21 @@ Why these colors: the green is the color of the user's own contribution graph, s
 
 ## Web (landing, dashboard, story page)
 
-Dial for web chrome: ENERGY 3 / RHYTHM 2 / MOTION 1. The story player is where the motion lives, so the pages around it use hover and focus states only and never compete with it.
+Dial for web chrome: ENERGY 3 / RHYTHM 2 / MOTION 1 on signed-in pages, where the story player is where the motion lives. The public pages (landing, `/u/<login>`, 404) are marketing and run at ENERGY 3 / RHYTHM 3 / MOTION 2.
 
 - Pages use the same fields as the video. The landing opens on ink, the dashboard sits on paper, and calls to action use persimmon with ink text (5.05:1). Because every surface is a brand field shared with the exported video, there is no separate light/dark theme. A toggle would break the match between the page and the video people share.
 - Type is Bricolage Grotesque (`next/font`), with the same weights as the video. Headlines are 800, and body text is 400 at 16px or more.
 - The motif shows up in a single place per page, as a row of lit contribution cells beside the main number. Cells are never used as bullets or decoration elsewhere.
 - Radius is 6px on buttons and cards and 4px on cells, with no pills. There are no shadows, because fields are flat.
 - Focus is a 3px ink outline offset by 3px (paper on ink fields), which gives at least 3:1 on every field.
+
+### Public pages
+
+- **Structure follows the product, not a template.** The landing runs: hero, the nine chapters (a timeline bar whose segments are as wide as each chapter's share of the music, then real frames from a sample recap, labelled as sample data), archetypes (each with its rule from `metrics.md`), the letter (two real tier openings from `letter.ts`), what you keep (MP4 marked "Coming soon"), privacy facts, a product-specific FAQ, and a closing call to action. No statistics, logos or testimonials: there are none to show yet.
+- **Backgrounds are the motif, not decoration.** A year of contribution cells (`CellField`) runs along the bottom of the hero and the top of the closing section, so the page opens and closes on the same graph. On `/u/<login>` it is the owner's real calendar. Cells light up once, week by week, when motion is allowed. No gradients, grids or orbs.
+- **Each section has its own field and composition**: ink hero, paper chapters, persimmon archetypes in an editorial list, paper letter notes, cobalt "what you keep" with fanned slides (the one shadow on the page, marking printed objects), ink privacy with Cell asleep in the corner, paper FAQ with a sticky heading, ink closing with Cell leaning in from the bottom edge.
+- **Light by default.** Only the hero runs WebGL, lazily over its baked poster. Everything else is baked cutouts through `next/image` and inline SVG. Scroll reveals use CSS `animation-timeline: view()` with no JavaScript; browsers without it, and reduced motion, just show the content.
+- **Navigation**: a solid ink sticky header (no blur) with links only to sections that exist, a disclosure menu on small screens that closes on Escape, and a skip link.
 
 ## Illustration (3D)
 
