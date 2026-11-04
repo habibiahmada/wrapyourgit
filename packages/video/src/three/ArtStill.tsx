@@ -3,6 +3,8 @@ import { ThreeCanvas } from "@remotion/three";
 import type { ArchetypeId } from "@wyg/schema";
 import { useEffect, useState } from "react";
 import { continueRender, delayRender, useCurrentFrame, useVideoConfig } from "remotion";
+import { NeutralToneMapping } from "three";
+import { BlobShadow } from "./BlobShadow";
 import { CellCharacter, type Pose } from "./CellCharacter";
 import { ArchetypeDiorama, ArchetypeProps } from "./Dioramas";
 import { HeroScene } from "./HeroScene";
@@ -64,9 +66,19 @@ export function ArtStill({ art }: { art: ArtId }) {
       shadows={!cutout}
       gl={{ alpha: true, preserveDrawingBuffer: true }}
       camera={{ position: [...camera.position], fov: camera.fov }}
-      onCreated={(state) => state.camera.lookAt(0, camera.look, 0)}
+      onCreated={(state) => {
+        state.camera.lookAt(0, camera.look, 0);
+        // Khronos PBR Neutral keeps brand colours as picked; ACES shifted the green toward yellow.
+        state.gl.toneMapping = NeutralToneMapping;
+        state.gl.toneMappingExposure = 1.05;
+      }}
     >
       <Settle />
+      {cutout && (
+        // A soft shadow where the feet meet the ground, so characters stand instead of float.
+        // It is not a stage: nothing is drawn but the shadow itself.
+        <BlobShadow size={cellOnly ? [1.9, 1.4] : cast ? [9, 4] : [5, 2.6]} opacity={0.45} />
+      )}
       {skin ? (
         <>
           <CutoutLights />

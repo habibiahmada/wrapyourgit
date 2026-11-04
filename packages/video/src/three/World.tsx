@@ -194,28 +194,63 @@ export function Stage({ radius = 6.2 }: { radius?: number }) {
  * Lights only, no background, fog or stage: for transparent cutouts that sit on top of 2D
  * layouts (peeking from an edge, silhouettes behind text).
  */
+/**
+ * Studio light for characters on a transparent background. Neutral on purpose: the earlier rig
+ * lit everything with cobalt and persimmon point lights, which tinted every character purple and
+ * orange. The environment is a small photo studio (one big overhead softbox, a key, a fill, two
+ * rim strips and a warm floor bounce) so glossy surfaces have real highlights to reflect.
+ */
 export function CutoutLights() {
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[-6, 9, 7]} intensity={2.6} color="#fff3e2" />
-      <pointLight position={[0, 5, -7]} intensity={60} color={C.cobalt} distance={20} />
-      <pointLight position={[7, 2, 3]} intensity={18} color={C.persimmon} distance={14} />
-      <Environment resolution={256}>
+      <ambientLight intensity={0.12} />
+      <directionalLight position={[-4, 7, 6]} intensity={1.9} color="#fff4e6" />
+      <directionalLight position={[5, 3, 4]} intensity={0.55} color="#eef4ff" />
+      <directionalLight position={[1, 5, -6]} intensity={1.4} color="#e6eeff" />
+      <Environment resolution={512} frames={1}>
+        <color attach="background" args={["#2a2d33"]} />
         <Lightformer
           form="rect"
-          intensity={2}
-          position={[0, 6, 6]}
-          scale={[10, 4, 1]}
+          intensity={2.4}
+          position={[0, 7, 1]}
+          rotation-x={Math.PI / 2}
+          scale={[9, 9, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={3}
+          position={[-5, 3, 5]}
+          scale={[4, 5, 1]}
           color="#fff3e2"
         />
         <Lightformer
           form="rect"
-          intensity={1.5}
-          position={[-8, 2, 0]}
-          rotation-y={Math.PI / 2}
-          scale={[6, 4, 1]}
-          color={C.cobalt}
+          intensity={1}
+          position={[6, 2, 4]}
+          scale={[3, 4, 1]}
+          color="#eef4ff"
+        />
+        <Lightformer
+          form="rect"
+          intensity={2}
+          position={[-6, 2, -4]}
+          rotation-y={Math.PI / 3}
+          scale={[1, 6, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={2}
+          position={[6, 2, -4]}
+          rotation-y={-Math.PI / 3}
+          scale={[1, 6, 1]}
+        />
+        <Lightformer
+          form="rect"
+          intensity={0.6}
+          position={[0, -3, 2]}
+          rotation-x={-Math.PI / 2}
+          scale={[10, 10, 1]}
+          color="#f2e6d0"
         />
       </Environment>
     </>

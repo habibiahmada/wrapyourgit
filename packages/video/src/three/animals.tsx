@@ -3,7 +3,7 @@ import type { ArchetypeId } from "@wyg/schema";
 import type { ReactNode } from "react";
 import { HardHat } from "./outfits";
 import { C } from "./palette";
-import { Ink, Toon } from "./toon";
+import { Blush, Gloss, Ink, Sparkle, Toon } from "./toon";
 
 /*
  * One cartoon animal per archetype, Cell's sidekick in that archetype's illustration:
@@ -42,7 +42,7 @@ function Blob({
 }) {
   return (
     <mesh position={position} scale={scale}>
-      <sphereGeometry args={[r, 28, 28]} />
+      <sphereGeometry args={[r, 48, 48]} />
       <Toon color={color} />
       {ink > 0 && <Ink width={ink} />}
     </mesh>
@@ -65,17 +65,21 @@ function Eyes({
     <>
       {[-gap, gap].map((x) => (
         <group key={x} position={[x, y, z]}>
-          <mesh scale={[1, 1.15, 0.5]}>
-            <sphereGeometry args={[size, 16, 16]} />
-            <meshBasicMaterial color="#ffffff" />
+          <mesh scale={[1, 1.15, 0.55]}>
+            <sphereGeometry args={[size, 36, 36]} />
+            <Gloss color="#fbfaf5" />
           </mesh>
-          <mesh position={[0, -size * 0.1, size * 0.4]} scale={[1, 1.15, 0.5]}>
-            <sphereGeometry args={[size * 0.58, 14, 14]} />
-            <meshBasicMaterial color={C.ink} />
+          <mesh position={[0, -size * 0.1, size * 0.42]} scale={[1, 1.15, 0.5]}>
+            <sphereGeometry args={[size * 0.6, 28, 28]} />
+            <Gloss color="#0d0d10" />
           </mesh>
-          <mesh position={[size * 0.25, size * 0.3, size * 0.7]}>
-            <sphereGeometry args={[size * 0.2, 8, 8]} />
-            <meshBasicMaterial color="#ffffff" />
+          <mesh position={[size * 0.25, size * 0.3, size * 0.75]}>
+            <sphereGeometry args={[size * 0.2, 16, 16]} />
+            <Sparkle />
+          </mesh>
+          <mesh position={[-size * 0.15, -size * 0.35, size * 0.72]}>
+            <sphereGeometry args={[size * 0.09, 12, 12]} />
+            <Sparkle />
           </mesh>
         </group>
       ))}
@@ -123,15 +127,14 @@ export function Beaver({ t = 0, ...place }: Placement) {
         r={0.14}
         ink={0.02}
       />
-      <mesh position={[0, 1.15, 0.36]}>
-        <sphereGeometry args={[0.05, 10, 10]} />
-        <meshBasicMaterial color={C.ink} />
+      <mesh position={[0, 1.15, 0.36]} scale={[1.2, 0.9, 0.9]}>
+        <sphereGeometry args={[0.05, 24, 24]} />
+        <Gloss color="#1a1210" />
       </mesh>
       {[-0.035, 0.035].map((x) => (
-        <mesh key={x} position={[x, 0.98, 0.33]}>
-          <boxGeometry args={[0.06, 0.1, 0.03]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
+        <RoundedBox key={x} args={[0.06, 0.1, 0.035]} radius={0.012} position={[x, 0.98, 0.33]}>
+          <Toon color="#fbf6ea" />
+        </RoundedBox>
       ))}
       <Eyes y={1.27} z={0.27} gap={0.12} size={0.075} />
       <group position={[0, 1.42, 0]} scale={0.75}>
@@ -281,12 +284,12 @@ export function Owl({ t = 0, ...place }: Placement) {
               <Ink width={0.02} />
             </mesh>
             <mesh position={[0, 0, 0.025]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1, blink]}>
-              <cylinderGeometry args={[0.13, 0.13, 0.02, 28]} />
-              <meshBasicMaterial color="#ffffff" />
+              <cylinderGeometry args={[0.13, 0.13, 0.02, 48]} />
+              <Gloss color="#fbfaf5" />
             </mesh>
             <mesh position={[0, 0, 0.05]} scale={[1, blink, 0.4]}>
-              <sphereGeometry args={[0.075, 14, 14]} />
-              <meshBasicMaterial color={C.ink} />
+              <sphereGeometry args={[0.075, 28, 28]} />
+              <Gloss color="#0d0d10" />
             </mesh>
           </group>
         </group>
@@ -301,6 +304,29 @@ export function Owl({ t = 0, ...place }: Placement) {
   );
 }
 
+/**
+ * One tentacle as a single tapered limb: overlapping spheres along an outward arc that curls up
+ * at the tip. Separate beads read as a pile of balls; packed this close they read as one shape.
+ */
+function Tentacle({ color, curl }: { color: string; curl: number }) {
+  const steps = 40;
+  return (
+    <>
+      {Array.from({ length: steps }, (_, k) => {
+        const u = k / (steps - 1);
+        const x = 0.3 + u * 0.5;
+        const y = -0.12 - Math.sin(u * Math.PI * 0.6) * 0.42 + u * u * curl * 0.35;
+        return (
+          <mesh key={u} position={[x, y, 0]}>
+            <sphereGeometry args={[0.13 * (1 - u * 0.68), 20, 20]} />
+            <Toon color={color} />
+          </mesh>
+        );
+      })}
+    </>
+  );
+}
+
 export function Octopus({ t = 0, ...place }: Placement) {
   const pink = "#F07A9A";
   return (
@@ -308,33 +334,16 @@ export function Octopus({ t = 0, ...place }: Placement) {
       <Blob color={pink} position={[0, 0.95, -0.05]} scale={[1, 1.05, 1]} r={0.45} />
       <Eyes y={0.88} z={0.36} gap={0.15} size={0.09} />
       {[-0.32, 0.32].map((x) => (
-        <Blob
-          key={x}
-          color="#ff8a7a"
-          position={[x, 0.76, 0.33]}
-          scale={[1, 0.5, 0.3]}
-          r={0.07}
-          ink={0}
-        />
+        <mesh key={x} position={[x, 0.76, 0.33]} scale={[1, 0.5, 0.3]}>
+          <sphereGeometry args={[0.07, 24, 24]} />
+          <Blush />
+        </mesh>
       ))}
       {Array.from({ length: 6 }, (_, i) => {
         const a = (i / 6) * Math.PI * 2 + 0.3;
-        const curl = Math.sin(t * 2.4 + i) * 0.3;
         return (
-          <group
-            key={a}
-            position={[Math.cos(a) * 0.32, 0.55, Math.sin(a) * 0.32]}
-            rotation={[0, -a, 0]}
-          >
-            {[0, 1, 2].map((k) => (
-              <Blob
-                key={k}
-                color={pink}
-                position={[0.12 + k * 0.16, -0.18 - k * 0.12 + (k === 2 ? curl * 0.4 : 0), 0]}
-                r={0.13 - k * 0.025}
-                ink={0.02}
-              />
-            ))}
+          <group key={a} position={[0, 0.6, 0]} rotation={[0, -a, 0]}>
+            <Tentacle color={pink} curl={0.9 + Math.sin(t * 2.4 + i) * 0.25} />
           </group>
         );
       })}

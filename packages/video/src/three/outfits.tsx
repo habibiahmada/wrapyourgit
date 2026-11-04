@@ -1,7 +1,7 @@
 import { RoundedBox } from "@react-three/drei";
 import type { ArchetypeId } from "@wyg/schema";
 import { C } from "./palette";
-import { Ink, Toon } from "./toon";
+import { Gloss, Ink, Toon } from "./toon";
 
 /*
  * Cell's costume for each archetype, so the archetype reads at a glance even as a small sticker.
@@ -169,13 +169,13 @@ function NightOwl() {
       ))}
       {[-0.21, 0.21].map((x) => (
         <mesh key={x} position={[x, 0.12, 0.6]}>
-          <torusGeometry args={[0.16, 0.025, 8, 28]} />
-          <meshBasicMaterial color={C.ink} />
+          <torusGeometry args={[0.16, 0.025, 16, 48]} />
+          <Gloss color="#1b1b1f" />
         </mesh>
       ))}
       <mesh position={[0, 0.12, 0.6]}>
         <boxGeometry args={[0.1, 0.025, 0.02]} />
-        <meshBasicMaterial color={C.ink} />
+        <Gloss color="#1b1b1f" />
       </mesh>
     </>
   );
