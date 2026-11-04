@@ -62,23 +62,28 @@ function Builder() {
 }
 
 function Consistent() {
+  // Sweatband on the forehead above the brows, and a medal on a short V of ribbon below the
+  // mouth. An earlier version ran the ribbon up the face and the band over the eyes.
   return (
     <>
-      {/* sweatband and a gold medal: the one who shows up every day */}
-      <RoundedBox args={[1.16, 0.16, 1.16]} radius={0.05} position={[0, 0.34, 0]}>
+      <RoundedBox args={[1.14, 0.12, 1.14]} radius={0.05} smoothness={6} position={[0, 0.44, 0]}>
         <Toon color={C.persimmon} />
         <Ink width={0.025} />
       </RoundedBox>
-      {[-0.16, 0.16].map((x) => (
-        <mesh key={x} position={[x * 0.6, -0.08, 0.565]} rotation={[0, 0, x > 0 ? -0.35 : 0.35]}>
-          <boxGeometry args={[0.1, 0.36, 0.02]} />
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 0.17, -0.31, 0.56]} rotation={[0, 0, side * -0.85]}>
+          <boxGeometry args={[0.07, 0.26, 0.015]} />
           <Toon color={C.cobalt} />
         </mesh>
       ))}
-      <mesh position={[0, -0.3, 0.6]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.15, 0.15, 0.05, 32]} />
-        <Toon color="#F2C14E" emissive="#F2C14E" />
-        <Ink width={0.02} />
+      <mesh position={[0, -0.44, 0.585]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.035, 48]} />
+        <meshPhysicalMaterial
+          color="#f0c24b"
+          metalness={0.6}
+          roughness={0.32}
+          envMapIntensity={1.4}
+        />
       </mesh>
     </>
   );

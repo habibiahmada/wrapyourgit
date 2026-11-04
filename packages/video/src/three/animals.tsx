@@ -1,6 +1,7 @@
 import { RoundedBox } from "@react-three/drei";
 import type { ArchetypeId } from "@wyg/schema";
 import type { ReactNode } from "react";
+import { Quaternion, Vector3 } from "three";
 import { HardHat } from "./outfits";
 import { C } from "./palette";
 import { Blush, Gloss, Ink, Sparkle, Toon } from "./toon";
@@ -145,9 +146,36 @@ export function Beaver({ t = 0, ...place }: Placement) {
   );
 }
 
+/** A capsule from one point to another: limbs that bend at a joint instead of straight sticks. */
+function Limb({
+  from,
+  to,
+  radius,
+  color,
+}: {
+  from: [number, number, number];
+  to: [number, number, number];
+  radius: number;
+  color: string;
+}) {
+  const a = new Vector3(...from);
+  const b = new Vector3(...to);
+  const dir = b.clone().sub(a);
+  const length = dir.length();
+  const mid = a.clone().add(b).multiplyScalar(0.5);
+  const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), dir.normalize());
+  return (
+    <mesh position={mid} quaternion={quaternion}>
+      <capsuleGeometry args={[radius, Math.max(length - radius * 2, 0.001), 8, 16]} />
+      <Toon color={color} />
+    </mesh>
+  );
+}
+
 export function Ant({ t = 0, ...place }: Placement) {
-  const step = Math.sin(t * 6) * 0.25;
+  const step = Math.sin(t * 6) * 0.04;
   const red = "#B23A2A";
+  const leg = "#3a1d16";
   return (
     <Body {...place}>
       <Blob color={red} position={[0, 0.42, -0.38]} scale={[1, 0.9, 1.25]} r={0.3} />
@@ -156,21 +184,41 @@ export function Ant({ t = 0, ...place }: Placement) {
       <Eyes y={0.88} z={0.4} gap={0.11} size={0.075} />
       {[-1, 1].map((side) => (
         <group key={side}>
-          <mesh position={[side * 0.1, 1.12, 0.22]} rotation={[0.3, 0, side * -0.35]}>
-            <cylinderGeometry args={[0.018, 0.018, 0.32, 6]} />
-            <Toon color={C.ink} />
-          </mesh>
-          <Blob color={C.ink} position={[side * 0.17, 1.27, 0.28]} r={0.045} ink={0} />
-          {[-0.15, 0, 0.15].map((z, i) => (
-            <mesh
-              key={z}
-              position={[side * 0.22, 0.25, z]}
-              rotation={[i === 1 ? step : -step, 0, side * 0.6]}
-            >
-              <cylinderGeometry args={[0.022, 0.022, 0.5, 6]} />
-              <Toon color={C.ink} />
-            </mesh>
-          ))}
+          {/* Antennae bend once, like the real thing, and end in a small knob. */}
+          <Limb
+            from={[side * 0.08, 1.04, 0.22]}
+            to={[side * 0.13, 1.2, 0.26]}
+            radius={0.022}
+            color={leg}
+          />
+          <Limb
+            from={[side * 0.13, 1.2, 0.26]}
+            to={[side * 0.24, 1.27, 0.38]}
+            radius={0.02}
+            color={leg}
+          />
+          <Blob color={leg} position={[side * 0.24, 1.27, 0.38]} r={0.04} ink={0} />
+          {/* Six legs, each a thigh rising to a knee and a shin down to the ground. */}
+          {[-0.16, 0, 0.16].map((z, i) => {
+            const swing = i === 1 ? step : -step;
+            return (
+              <group key={z}>
+                <Limb
+                  from={[side * 0.1, 0.48, z * 0.6]}
+                  to={[side * 0.34, 0.52, z + swing]}
+                  radius={0.034}
+                  color={leg}
+                />
+                <Limb
+                  from={[side * 0.34, 0.52, z + swing]}
+                  to={[side * 0.56, 0.04, z * 1.7 + swing]}
+                  radius={0.03}
+                  color={leg}
+                />
+                <Blob color={leg} position={[side * 0.34, 0.52, z + swing]} r={0.04} ink={0} />
+              </group>
+            );
+          })}
         </group>
       ))}
     </Body>
