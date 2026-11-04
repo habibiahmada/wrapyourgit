@@ -7,8 +7,9 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
-import { getRecap } from "@/server/recaps";
+import { getRecap, isShared } from "@/server/recaps";
 import { nextSyncAt } from "@/server/sync-policy";
+import { setShareAction } from "./actions";
 import { SyncForm } from "./sync-form";
 
 export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
@@ -38,6 +39,7 @@ async function Dashboard({
   if (!user) redirect("/");
   const recap = await getRecap(user.id);
   const retryAt = nextSyncAt(recap?.syncedAt ?? null, new Date());
+  const shared = recap ? await isShared(user.id) : false;
   const { delete: deleteFlag } = await searchParams;
 
   return (
@@ -73,6 +75,8 @@ async function Dashboard({
             </div>
           )}
         </section>
+
+        {recap && <ShareSection login={user.login} shared={shared} />}
 
         <section className="mt-auto border-t-2 border-ink px-4 py-10 sm:px-10">
           <h2 className="text-2xl font-extrabold">Delete my data</h2>
@@ -210,5 +214,39 @@ function RecapSummary({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Publishing is opt-in. The public page and the PNG card show the public projection: counts
+ * only, private repositories never named.
+ */
+function ShareSection({ login, shared }: { login: string; shared: boolean }) {
+  const path = `/u/${login}`;
+  return (
+    <section className="border-t-2 border-ink px-4 py-10 sm:px-10">
+      <h2 className="text-2xl font-extrabold">Share your recap</h2>
+      <p className="mt-2 max-w-2xl text-base">
+        {shared
+          ? "Your recap page is public. Anyone with the link can see your counts and play your story. Private repositories are never named."
+          : "Publish a page anyone can open, with your counts and your story. Private repositories are never named. It stays off until you turn it on."}
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-4">
+        <form action={setShareAction}>
+          <input type="hidden" name="share" value={shared ? "off" : "on"} />
+          <button type="submit" className={button.secondary}>
+            {shared ? "Stop sharing" : "Publish my recap page"}
+          </button>
+        </form>
+        {shared && (
+          <a href={path} className="font-bold underline underline-offset-4">
+            Open {path}
+          </a>
+        )}
+        <a href="/api/card" download className={button.quiet}>
+          Download share card (PNG)
+        </a>
+      </div>
+    </section>
   );
 }

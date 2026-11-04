@@ -1,6 +1,6 @@
 import "server-only";
 import { fetchViewer } from "@wyg/github";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, ne, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { decrypt, encrypt, hashToken, parseKey, randomToken } from "./crypto";
 import { db, githubTokens, sessions, users } from "./db";
@@ -46,19 +46,34 @@ export const githubApp = () => ({
 /** Creates or updates the user from their GitHub identity and stores their tokens encrypted. */
 export async function signInWithTokens(tokens: TokenSet): Promise<string> {
   const viewer = await fetchViewer(tokens.accessToken);
-  const [user] = await db
-    .insert(users)
-    .values({
-      githubId: viewer.databaseId,
-      login: viewer.login,
-      name: viewer.name,
-      avatarUrl: viewer.avatarUrl,
-    })
-    .onConflictDoUpdate({
-      target: users.githubId,
-      set: { login: viewer.login, name: viewer.name, avatarUrl: viewer.avatarUrl },
-    })
-    .returning({ id: users.id });
+  const user = await db.transaction(async (tx) => {
+    // GitHub logins can be renamed and reused. Whoever signs in with a login now owns it; an
+    // older row still holding it gets a placeholder ("~" never appears in GitHub logins) until
+    // that person signs in again and their current login is written back.
+    await tx
+      .update(users)
+      .set({ login: sql`'~' || ${users.githubId}::text` })
+      .where(
+        and(
+          eq(sql`lower(${users.login})`, viewer.login.toLowerCase()),
+          ne(users.githubId, viewer.databaseId),
+        ),
+      );
+    const [row] = await tx
+      .insert(users)
+      .values({
+        githubId: viewer.databaseId,
+        login: viewer.login,
+        name: viewer.name,
+        avatarUrl: viewer.avatarUrl,
+      })
+      .onConflictDoUpdate({
+        target: users.githubId,
+        set: { login: viewer.login, name: viewer.name, avatarUrl: viewer.avatarUrl },
+      })
+      .returning({ id: users.id });
+    return row;
+  });
   if (!user) throw new Error("User upsert returned no row");
   await saveTokens(user.id, tokens);
   return user.id;

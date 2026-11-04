@@ -30,7 +30,7 @@ export const calendarDaySchema = z.object({
 
 export const repoRefSchema = z.object({
   nameWithOwner: z.string(),
-  /** Private repos must be redacted before anything becomes public. See toPublicRecap (TODO). */
+  /** Private repos must be redacted before anything becomes public: see toPublicRecap in @wyg/analytics. */
   isPrivate: z.boolean(),
   isFork: z.boolean(),
   primaryLanguage: z.string().nullable(),

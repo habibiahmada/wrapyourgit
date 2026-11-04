@@ -1,10 +1,10 @@
 import "server-only";
-import { buildRecap } from "@wyg/analytics";
+import { buildRecap, toPublicRecap } from "@wyg/analytics";
 import { fetchYearActivity } from "@wyg/github";
 import { EDITION_YEAR, type RecapData, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getGithubToken } from "./auth";
-import { db, recaps } from "./db";
+import { db, recapShares, recaps, users } from "./db";
 import { nextSyncAt, safeTimezone, yearRange } from "./sync-policy";
 
 export interface StoredRecap {
@@ -57,4 +57,42 @@ export async function syncRecap(userId: string, timezone: unknown): Promise<Stor
     .values({ userId, year: EDITION_YEAR, ...row })
     .onConflictDoUpdate({ target: [recaps.userId, recaps.year], set: row });
   return { data, syncedAt: now };
+}
+
+/** Whether the user has published this year's recap. */
+export async function isShared(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ userId: recapShares.userId })
+    .from(recapShares)
+    .where(and(eq(recapShares.userId, userId), eq(recapShares.year, EDITION_YEAR)));
+  return Boolean(row);
+}
+
+export async function setShared(userId: string, shared: boolean): Promise<void> {
+  if (shared) {
+    await db.insert(recapShares).values({ userId, year: EDITION_YEAR }).onConflictDoNothing();
+  } else {
+    await db
+      .delete(recapShares)
+      .where(and(eq(recapShares.userId, userId), eq(recapShares.year, EDITION_YEAR)));
+  }
+}
+
+/**
+ * The public projection of a shared recap, looked up by GitHub login (case-insensitive), or null
+ * when that login has no recap or hasn't shared it. Never returns the stored document.
+ */
+export async function getPublicRecap(login: string): Promise<RecapData | null> {
+  const [row] = await db
+    .select({ data: recaps.data, schemaVersion: recaps.schemaVersion })
+    .from(users)
+    .innerJoin(
+      recapShares,
+      and(eq(recapShares.userId, users.id), eq(recapShares.year, EDITION_YEAR)),
+    )
+    .innerJoin(recaps, and(eq(recaps.userId, users.id), eq(recaps.year, EDITION_YEAR)))
+    .where(eq(sql`lower(${users.login})`, login.toLowerCase()))
+    .limit(1);
+  if (!row || row.schemaVersion !== SCHEMA_VERSION) return null;
+  return toPublicRecap(row.data);
 }

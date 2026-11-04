@@ -8,6 +8,20 @@
       "when": 1793761660266,
       "tag": "0000_early_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793767563618,
+      "tag": "0001_serious_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793768098105,
+      "tag": "0002_perpetual_supernaut",
+      "breakpoints": true
     }
   ]
 }

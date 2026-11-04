@@ -3,7 +3,7 @@
 import { GitHubApiError } from "@wyg/github";
 import { refresh } from "next/cache";
 import { getCurrentUser, ReauthorizeError } from "@/server/auth";
-import { SyncTooSoonError, syncRecap } from "@/server/recaps";
+import { SyncTooSoonError, setShared, syncRecap } from "@/server/recaps";
 
 export type SyncState =
   | { status: "idle" }
@@ -30,4 +30,12 @@ export async function syncAction(_previous: SyncState, form: FormData): Promise<
   }
   refresh();
   return { status: "done" };
+}
+
+/** Publishes or unpublishes the recap page. Re-checks the session; sharing is always opt-in. */
+export async function setShareAction(form: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) return;
+  await setShared(user.id, form.get("share") === "on");
+  refresh();
 }

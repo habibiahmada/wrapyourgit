@@ -35,13 +35,15 @@
 
 **Export:** user picks format + soundtrack → API creates a render job row → `startRender()` → poll `getRenderStatus()` → MP4 in S3 (private, signed download URL, lifecycle expiry).
 
-**Public page:** `/u/<login>` reads a _public projection_ of `RecapData` (private repos redacted) only if the user enabled sharing.
+**Public page:** `/u/<login>` (login matched case-insensitively) renders `toPublicRecap()` from `@wyg/analytics` only when a `recap_shares` row exists. Private repos are removed from every named field; aggregate counts stay. The same projection feeds `opengraph-image` and the downloadable card at `/api/card` (`server/card.tsx`, `next/og`, 1200×630). An unknown or unshared login gets `notFound()`: the OG image returns a real 404, while the page streams a 404 view with HTTP 200 because the lookup sits behind `<Suspense>` (Cache Components).
+
+**Logins:** GitHub logins can be renamed and later reused by someone else. A unique index on `lower(login)` guarantees `/u/<login>` resolves to one person, and sign-in hands the login over in one transaction: an older row still holding it gets the placeholder `~<github_id>` (`~` never appears in GitHub logins) until that person signs in again.
 
 ## Data model (Drizzle, `apps/web/src/server/db/schema.ts`)
 
 Built in M2: `users` (GitHub identity keyed by numeric `github_id`; one GitHub account per user, so there is no separate accounts table) · `github_tokens` (access + refresh token, AES-256-GCM, with expiry times) · `sessions` (SHA-256 of the cookie token, 30 days) · `recaps` (user, year, schemaVersion, data JSONB, isFinal, syncedAt; a row from an older schema version reads as missing). Every child table cascades on user delete.
 
-Planned for M5: `render_jobs` (recap, format, soundtrack, status, renderId, s3Key, error) · `recap_shares` (public toggle, slug).
+Added in M5: `recap_shares` (user, year; a row means published, so sharing is off by default). Planned with the Lambda export: `render_jobs` (recap, format, soundtrack, status, renderId, s3Key, error, attempts). Spike B saw one local render fail once and pass on retry, so jobs need retries and a stored error.
 
 ## Auth and sync (M2)
 

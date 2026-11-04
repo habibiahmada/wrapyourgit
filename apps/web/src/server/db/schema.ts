@@ -1,4 +1,5 @@
 import type { RecapData } from "@wyg/schema";
+import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
@@ -8,6 +9,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -15,14 +17,19 @@ import {
  * One row per GitHub account that signed in. The GitHub identity lives here directly (one GitHub
  * account per user in MVP), keyed by GitHub's numeric id because logins can be renamed.
  */
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  githubId: bigint("github_id", { mode: "number" }).notNull().unique(),
-  login: text("login").notNull(),
-  name: text("name"),
-  avatarUrl: text("avatar_url").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    githubId: bigint("github_id", { mode: "number" }).notNull().unique(),
+    login: text("login").notNull(),
+    name: text("name"),
+    avatarUrl: text("avatar_url").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // /u/<login> must resolve to exactly one person, case-insensitively (see signInWithTokens).
+  (table) => [uniqueIndex("users_login_lower_unique").on(sql`lower(${table.login})`)],
+);
 
 /**
  * GitHub App user tokens, AES-256-GCM encrypted (server/crypto.ts). Access tokens expire after
@@ -65,6 +72,22 @@ export const recaps = pgTable(
     data: jsonb("data").$type<RecapData>().notNull(),
     isFinal: boolean("is_final").notNull(),
     syncedAt: timestamp("synced_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.year] })],
+);
+
+/**
+ * A row means the user chose to publish that year's recap at /u/<login>. Sharing is opt-in and
+ * off by default; deleting the row (or the user) takes the page down.
+ */
+export const recapShares = pgTable(
+  "recap_shares",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    year: integer("year").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.year] })],
 );
