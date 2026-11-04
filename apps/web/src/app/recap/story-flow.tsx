@@ -220,7 +220,7 @@ export function StoryFlow({ data }: { data: RecapData }) {
       </nav>
 
       {/* biome-ignore lint/a11y/useMediaCaption: instrumental music with no speech to caption */}
-      <audio ref={music} src="/audio/wrapyourgit-120bpm.m4a" loop preload="auto" />
+      <audio ref={music} src="/audio/wrapyourgit-120bpm-v2.m4a" loop preload="auto" />
 
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-3xl font-extrabold sm:text-4xl" aria-live="polite">
