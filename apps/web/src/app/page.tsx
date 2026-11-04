@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import {
   ArchetypesSection,
   ClosingSection,
+  FAQ,
   FaqSection,
   KeepSection,
   LetterSection,
@@ -18,6 +19,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { SignInButton, SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
+import { OPEN_GRAPH, SITE, siteUrl } from "@/site";
 
 const NOTICES: Record<string, string> = {
   "signin=cancelled": "Sign-in was cancelled on GitHub. Nothing was saved.",
@@ -30,27 +32,80 @@ const NOTICES: Record<string, string> = {
 
 const HERO_CELLS = demoLevels(53);
 
-export const metadata: Metadata = { alternates: { canonical: "/" } };
-
-/** Structured data so search engines know this is a free web app, not an article. */
-const JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "WrapYourGit",
-  applicationCategory: "DeveloperApplication",
-  operatingSystem: "Any (web browser)",
-  description:
-    "Turns your GitHub year into an animated story with your contributions, streaks, languages and developer archetype.",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { ...OPEN_GRAPH, url: "/" },
 };
+
+/**
+ * Structured data: the site, the free web app it is, and the FAQ shown on the page (taken from
+ * the same array, so the two never disagree). One @graph so the nodes can reference each other.
+ */
+function structuredData() {
+  const url = siteUrl();
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${url}/#website`,
+        url,
+        name: SITE.name,
+        description: SITE.description,
+        inLanguage: "en",
+        publisher: { "@id": `${url}/#author` },
+      },
+      {
+        "@type": "Person",
+        "@id": `${url}/#author`,
+        name: SITE.author.name,
+        alternateName: SITE.author.handle,
+        url: SITE.author.url,
+        sameAs: [SITE.author.github],
+      },
+      {
+        "@type": "WebApplication",
+        "@id": `${url}/#app`,
+        name: SITE.name,
+        url,
+        description: SITE.description,
+        image: `${url}/opengraph-image`,
+        applicationCategory: "DeveloperApplication",
+        operatingSystem: "Any (web browser)",
+        browserRequirements: "Requires a modern web browser and a GitHub account",
+        isAccessibleForFree: true,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        author: { "@id": `${url}/#author` },
+        featureList: [
+          `Your ${EDITION_YEAR} GitHub contributions, active days and longest streak`,
+          "Languages weighted by what you actually committed",
+          "Top repositories, stars and forks gained this year",
+          "Pull requests, reviews and issues",
+          "A developer archetype with the facts behind it",
+          "Comparison with the same span of last year",
+          "Slides as PNG, a PDF and an opt-in public page",
+        ],
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${url}/#faq`,
+        mainEntity: FAQ.map(({ q, a }) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      },
+    ],
+  };
+}
 
 export default function Home({ searchParams }: PageProps<"/">) {
   return (
     <>
       <script
         type="application/ld+json"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: static JSON we wrote ourselves, no user input
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON we build from our own constants, no user input
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData()) }}
       />
       <SiteHeader />
       <PageTransition>

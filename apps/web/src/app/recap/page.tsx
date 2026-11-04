@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -12,6 +13,9 @@ import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 import { getRecap } from "@/server/recaps";
 import { StoryFlow } from "./story-flow";
+
+/** Signed-in only: nothing here for search engines. */
+export const metadata: Metadata = { title: "Your story", robots: { index: false, follow: false } };
 
 export default function RecapPage() {
   return (

@@ -11,7 +11,7 @@ import {
 import { SiteHeader } from "@/components/site/site-header";
 import { getCurrentUser } from "@/server/auth";
 
-export const metadata: Metadata = { title: "Settings", robots: { index: false } };
+export const metadata: Metadata = { title: "Settings", robots: { index: false, follow: false } };
 
 /*
  * Account settings. "Delete my data" lives here, not on the dashboard: the dashboard is where

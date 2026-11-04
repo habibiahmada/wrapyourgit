@@ -12,6 +12,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getPublicRecap } from "@/server/recaps";
+import { OPEN_GRAPH } from "@/site";
 import { StoryPlayer } from "../../recap/story-player";
 
 export async function generateMetadata({ params }: PageProps<"/u/[login]">): Promise<Metadata> {
@@ -24,8 +25,14 @@ export async function generateMetadata({ params }: PageProps<"/u/[login]">): Pro
     title,
     description,
     alternates: { canonical: `/u/${recap.profile.login}` },
-    openGraph: { title, description },
-    twitter: { card: "summary_large_image" },
+    openGraph: {
+      ...OPEN_GRAPH,
+      type: "profile",
+      url: `/u/${recap.profile.login}`,
+      title,
+      description,
+    },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 

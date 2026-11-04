@@ -393,7 +393,8 @@ export function PrivacySection() {
   );
 }
 
-const FAQ = [
+/** Also the source of the FAQPage structured data on the landing page, so both always match. */
+export const FAQ = [
   {
     q: "Does WrapYourGit read my code?",
     a: "No. Signing in asks GitHub for no repository permissions, and it only reads the counts GitHub keeps about your activity.",
