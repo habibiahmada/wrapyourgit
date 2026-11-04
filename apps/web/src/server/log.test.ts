@@ -19,6 +19,15 @@ describe("errorSummary", () => {
     );
   });
 
+  test("network failures keep the socket code, not the message", () => {
+    const cause = Object.assign(new Error("connect ETIMEDOUT 185.199.108.133:443"), {
+      code: "ETIMEDOUT",
+    });
+    const summary = errorSummary(new TypeError("fetch failed", { cause }));
+    expect(summary).toBe("NetworkError code=ETIMEDOUT");
+    expect(summary).not.toContain("185.199");
+  });
+
   test("anything else is reduced to its name", () => {
     expect(errorSummary(new TypeError("octo/secret-client"))).toBe("TypeError");
     expect(errorSummary("octo/secret-client")).toBe("string");
