@@ -69,8 +69,9 @@ const STEPS: Step[] = [
 
 /**
  * The story as a guided walk instead of one long video: each scene plays, stops on its last frame
- * and waits for Next. Then the letter, then the exports. One WebGL canvas at a time: 3D appears
- * only on the welcome, archetype, letter and export steps, and unmounts when the step changes.
+ * and waits for Next. Then the letter, then the exports. One WebGL scene at a time: each step
+ * mounts its own 3D (the story's live cast inside the Player, ADR-0010) and unmounts it when the
+ * step changes.
  */
 export function StoryFlow({ data }: { data: RecapData }) {
   const [step, setStep] = useState(0);

@@ -1,125 +1,165 @@
 import type { LayoutFamily, RecapData } from "@wyg/schema";
 import type { ReactNode } from "react";
 import { beats } from "./audio/track";
-import { Accent } from "./components/Accent";
+import { archetypeRole, CAST, CREW, type Role } from "./cast";
 import { LiveAccent } from "./components/LiveAccent";
-import { ChibiCell } from "./three/ChibiCell";
+import { Chibi, TossedBlock } from "./three/ChibiCell";
 import type { SceneId } from "./timeline";
 
 /*
- * One illustration per scene, placed in the space that scene's layout leaves empty, so it is
- * large without covering a number or a label. Positions are tuned per layout family from rendered
- * stills of the sample and edge recaps (docs/video/scene-system.md). Full colour everywhere: the
- * faint silhouettes this replaced ended up hidden behind the numbers.
+ * One character per scene (cast.ts), rendered live in 3D so its limbs, head and face move,
+ * placed in the space that scene's layout leaves empty: large, without covering a number or a
+ * label. Positions are tuned per layout family from rendered stills of the sample and edge
+ * recaps (docs/video/scene-system.md).
  */
 
-type Spot = { x: number; y: number; size: number; rotate?: number };
+type Spot = { x: number; y: number; size: number };
 type PerLayout = Record<LayoutFamily, Spot>;
 
-const at = (layout: LayoutFamily, spots: PerLayout): Spot => spots[layout];
+function solo(
+  spots: PerLayout,
+  layout: LayoutFamily,
+  role: Role,
+  at: number,
+  enter: "right" | "bottom" = "bottom",
+): ReactNode {
+  const { x, y, size } = spots[layout];
+  return (
+    <LiveAccent at={at} enter={enter} x={x} y={y} size={size}>
+      {(t) => <Chibi look={role.look} motion={role.motion} t={t} />}
+    </LiveAccent>
+  );
+}
 
 export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily): ReactNode {
   switch (id) {
-    case "intro": {
-      // Cell waves hello from the right while the first week lights up: live 3D, so the arm,
-      // head, legs and eyes really move.
-      const spot = at(layout, {
-        portrait: { x: 0.72, y: 0.4, size: 0.95 },
-        compact: { x: 0.76, y: 0.42, size: 0.75 },
-        landscape: { x: 0.76, y: 0.46, size: 0.72 },
-      });
+    case "intro":
+      return solo(
+        {
+          portrait: { x: 0.72, y: 0.4, size: 0.95 },
+          compact: { x: 0.76, y: 0.42, size: 0.75 },
+          landscape: { x: 0.76, y: 0.46, size: 0.72 },
+        },
+        layout,
+        CAST.intro,
+        beats(1),
+        "right",
+      );
+    case "contributions":
+      return solo(
+        {
+          portrait: { x: 0.7, y: 0.5, size: 0.9 },
+          compact: { x: 0.76, y: 0.5, size: 0.66 },
+          landscape: { x: 0.82, y: 0.74, size: 0.5 },
+        },
+        layout,
+        CAST.contributions,
+        beats(2),
+        "right",
+      );
+    case "rhythm":
+      return solo(
+        {
+          portrait: { x: 0.66, y: 0.78, size: 0.8 },
+          compact: { x: 0.64, y: 0.46, size: 0.6 },
+          landscape: { x: 0.56, y: 0.55, size: 0.5 },
+        },
+        layout,
+        CAST.rhythm,
+        beats(8),
+      );
+    case "tech-dna":
+      return solo(
+        {
+          portrait: { x: 0.66, y: 0.53, size: 0.72 },
+          compact: { x: 0.84, y: 0.47, size: 0.42 },
+          landscape: { x: 0.45, y: 0.76, size: 0.36 },
+        },
+        layout,
+        CAST["tech-dna"],
+        beats(6),
+      );
+    case "projects":
+      return solo(
+        {
+          portrait: { x: 0.58, y: 0.45, size: 0.85 },
+          compact: { x: 0.62, y: 0.42, size: 0.6 },
+          landscape: { x: 0.44, y: 0.8, size: 0.34 },
+        },
+        layout,
+        CAST.projects,
+        beats(1),
+      );
+    case "community": {
+      // Three friends passing a contribution cell, one throw per beat.
+      const { x, y, size } = {
+        portrait: { x: 0.54, y: 0.52, size: 1.0 },
+        compact: { x: 0.66, y: 0.56, size: 0.75 },
+        landscape: { x: 0.74, y: 0.36, size: 0.66 },
+      }[layout];
       return (
-        <LiveAccent at={beats(1)} enter="right" x={spot.x} y={spot.y} size={spot.size}>
-          {(t) => <ChibiCell motion="wave" t={t} />}
+        <LiveAccent
+          at={beats(4)}
+          enter="right"
+          x={x}
+          y={y}
+          size={size}
+          aspect={1.5}
+          camera={{ z: 7.4, y: 1.7, look: 1 }}
+        >
+          {(t) => (
+            <>
+              {CREW.map((member) => (
+                <Chibi
+                  key={member.x}
+                  look={member.look}
+                  motion="pass"
+                  t={t}
+                  seed={member.seed}
+                  position={[member.x, 0, 0]}
+                  rotationY={-member.x * 0.25}
+                  scale={0.82}
+                />
+              ))}
+              <TossedBlock from={[-1.2, 1.0, 0.45]} to={[1.2, 1.0, 0.45]} t={t} />
+            </>
+          )}
         </LiveAccent>
       );
     }
-    case "contributions": {
-      // Cell cheers the big number from the empty side, clear of the stat chips.
-      const spot = at(layout, {
-        portrait: { x: 0.74, y: 0.5, size: 1.2, rotate: -12 },
-        compact: { x: 0.78, y: 0.48, size: 0.85, rotate: -12 },
-        landscape: { x: 0.82, y: 0.8, size: 0.62, rotate: -10 },
-      });
-      return <Accent art="cutout-cell-cheer" at={beats(2)} enter="right" idle="hop" {...spot} />;
-    }
-    case "rhythm": {
-      // Cell the runner and the ant, in the gap between the calendar and the month.
-      const spot = at(layout, {
-        portrait: { x: 0.64, y: 0.82, size: 1.05 },
-        compact: { x: 0.64, y: 0.46, size: 0.78 },
-        landscape: { x: 0.5, y: 0.55, size: 0.78 },
-      });
-      return <Accent art="skin-consistent" at={beats(8)} enter="bottom" idle="run" {...spot} />;
-    }
-    case "tech-dna": {
-      // Thinking Cell between the language name and the list.
-      const spot = at(layout, {
-        portrait: { x: 0.62, y: 0.5, size: 1.05, rotate: 6 },
-        compact: { x: 0.84, y: 0.47, size: 0.5, rotate: 6 },
-        landscape: { x: 0.24, y: 0.82, size: 0.5, rotate: 6 },
-      });
-      return <Accent art="cutout-cell-think" at={beats(6)} enter="bottom" idle="think" {...spot} />;
-    }
-    case "projects": {
-      // The builder and the beaver, between the top repository and the list.
-      const spot = at(layout, {
-        portrait: { x: 0.56, y: 0.46, size: 1.15 },
-        compact: { x: 0.62, y: 0.42, size: 0.75 },
-        landscape: { x: 0.22, y: 0.8, size: 0.5 },
-      });
-      return <Accent art="skin-builder" at={beats(1)} enter="bottom" idle="hammer" {...spot} />;
-    }
-    case "community": {
-      // Cell handing blocks to friends, in the open space beside the star count.
-      const spot = at(layout, {
-        portrait: { x: 0.56, y: 0.52, size: 1.45 },
-        compact: { x: 0.66, y: 0.56, size: 0.9 },
-        landscape: { x: 0.76, y: 0.36, size: 0.72 },
-      });
-      return (
-        <Accent art="cutout-open-sourcer" at={beats(4)} enter="right" idle="float" {...spot} />
+    case "engineering":
+      return solo(
+        {
+          portrait: { x: 0.6, y: 0.82, size: 0.8 },
+          compact: { x: 0.74, y: 0.78, size: 0.55 },
+          landscape: { x: 0.84, y: 0.8, size: 0.4 },
+        },
+        layout,
+        CAST.engineering,
+        beats(2),
       );
-    }
-    case "engineering": {
-      // Cell with its headset and the bee, below or beside the counters.
-      const spot = at(layout, {
-        portrait: { x: 0.58, y: 0.85, size: 1.1 },
-        compact: { x: 0.74, y: 0.8, size: 0.68 },
-        landscape: { x: 0.84, y: 0.84, size: 0.46 },
-      });
-      return (
-        <Accent art="skin-collaborator" at={beats(2)} enter="bottom" idle="groove" {...spot} />
+    case "identity":
+      return solo(
+        {
+          portrait: { x: 0.64, y: 0.8, size: 0.85 },
+          compact: { x: 0.7, y: 0.8, size: 0.62 },
+          landscape: { x: 0.76, y: 0.66, size: 0.72 },
+        },
+        layout,
+        archetypeRole(data.identity.archetype),
+        beats(3),
       );
-    }
-    case "identity": {
-      // The climax: the person's own archetype, big and in full colour.
-      const spot = at(layout, {
-        portrait: { x: 0.62, y: 0.84, size: 1.1 },
-        compact: { x: 0.68, y: 0.84, size: 0.78 },
-        landscape: { x: 0.76, y: 0.72, size: 0.9 },
-      });
-      return (
-        <Accent
-          art={data.identity.archetype ? `skin-${data.identity.archetype}` : "cutout-cell-sleep"}
-          at={beats(3)}
-          enter="bottom"
-          idle={data.identity.archetype ? "celebrate" : "breathe"}
-          {...spot}
-        />
+    case "closing":
+      return solo(
+        {
+          portrait: { x: 0.74, y: 0.42, size: 0.62 },
+          compact: { x: 0.8, y: 0.4, size: 0.46 },
+          landscape: { x: 0.88, y: 0.8, size: 0.4 },
+        },
+        layout,
+        CAST.closing,
+        beats(7),
       );
-    }
-    case "closing": {
-      // A proud Cell rises from the bottom edge to sign off.
-      const spot = at(layout, {
-        portrait: { x: 0.78, y: 0.88, size: 0.9, rotate: -6 },
-        compact: { x: 0.8, y: 0.86, size: 0.58, rotate: -6 },
-        landscape: { x: 0.88, y: 0.84, size: 0.5, rotate: -6 },
-      });
-      return (
-        <Accent art="cutout-cell-proud" at={beats(7)} enter="bottom" idle="breathe" {...spot} />
-      );
-    }
     default:
       return null;
   }

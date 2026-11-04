@@ -44,23 +44,21 @@ Order, length and field color live in `src/timeline.ts`; `timeline.test.ts` chec
 | 8   | identity      | 16    | persimmon | archetype reveal (heavier spring) and its reasons; honest line when null        | climax: crash      |
 | 9   | closing       | 14    | ink       | handle, four headline facts, the year as a small graph, "Made with WrapYourGit" | outro, fade        |
 
-Accents (`src/accents.tsx`, art from `bun scripts/render-art.ts`). Each is full colour and sits in the space its scene leaves empty, with its own position per layout family, tuned from rendered stills so it never covers a number or label. Re-check with stills of all three families after changing a scene's layout.
+Cast (`src/cast.ts`, drawn by `src/three/ChibiCell.tsx`, ADR-0010). Every scene has its own live 3D character with real joints, rendered each frame by `LiveAccent` in the space its scene leaves empty, with its own position per layout family, tuned from rendered stills so it never covers a number or label. Re-check with stills of all three families after changing a scene's layout.
 
-| Scene         | Accent                                                                  |
-| ------------- | ----------------------------------------------------------------------- |
-| intro         | Cell waving in from the right edge                                      |
-| contributions | Cell cheering on the side away from the stat chips                      |
-| rhythm        | `skin-consistent` in the gap between the calendar and the busiest month |
-| tech-dna      | Cell thinking between the language name and the list                    |
-| projects      | `skin-builder` between the top repository and the list                  |
-| community     | Open sourcer group in the open space beside the star count              |
-| engineering   | `skin-collaborator` below (portrait) or beside (landscape) the counters |
-| identity      | the person's own `skin-<archetype>`, rising from the bottom             |
-| closing       | Cell proud, bottom corner                                               |
+| Scene         | Character                                                       | Motion                          |
+| ------------- | --------------------------------------------------------------- | ------------------------------- |
+| intro         | Cell: green squircle, lit-cell eyes, sprout                     | waves                           |
+| contributions | round cobalt fan with antennas and happy eyes                   | jumps with both arms up         |
+| rhythm        | slim dark-green runner, visor eyes, sweatband                   | runs on the spot                |
+| tech-dna      | cream boxy thinker with glasses and a ball antenna              | hand to chin, eyes drifting     |
+| projects      | wide persimmon builder in a hard hat with a hammer              | hammers on every beat           |
+| community     | three friends (mint, Cell, dark green) and a tossed cell        | pass the cell, one throw a beat |
+| engineering   | mint collaborator in a headset                                  | nods to the beat                |
+| identity      | Cell in the person's archetype gear (asleep when there is none) | celebrates                      |
+| closing       | Cell with a crown and happy eyes                                | proud, arms akimbo              |
 
-Each accent also has an `idle` motion (`idleTransform` in `src/components/Accent.tsx`): it fades in a beat after the entrance and loops in time with the track, pivoting at the feet. Intro waves, contributions hops on every beat, rhythm runs, tech-dna sways while thinking, projects hammers, community floats, engineering grooves, identity celebrates (breathes when there is no archetype), closing breathes.
-
-Accents use a CSS filter for silhouettes (not a mask image), because Remotion waits for `<Img>` to load but not for CSS masks.
+Local renders: use `--gl=angle-egl --concurrency=2` (parallel tabs contend for WebGL, ADR-0010).
 
 Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`), which turns every private repo into "Private repository", because the MP4 is shareable. Metrics go through `metricValue()`: unavailable skips the beat, estimates get "~" and a footnote.
 

@@ -21,6 +21,9 @@ export async function startRender(data: RecapData, format: VideoFormatId) {
     inputProps: { data },
     codec: "h264",
     audioCodec: "aac",
+    // The cast is live 3D (ADR-0010). Lambda has no GPU: SwiftShader through ANGLE renders WebGL
+    // on the CPU, one tab per function, which is what the cast was tested with.
+    chromiumOptions: { gl: "swangle" },
     privacy: "private",
     downloadBehavior: { type: "download", fileName: `wrapyourgit-${data.meta.year}-${format}.mp4` },
   });
