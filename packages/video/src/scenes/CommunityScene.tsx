@@ -12,7 +12,8 @@ import { formatCount, palette, useUnit } from "../theme";
 /**
  * Cobalt field, paper text. Leads with stars gained this year; when GitHub didn't allow counting
  * them, it says "stars across your projects" instead. Gains and current totals are never mixed
- * under one label (metrics.md copy rule).
+ * under one label (metrics.md copy rule). The last fact chip turns it around: the repositories
+ * the user starred this year.
  */
 export function CommunityScene({ data }: { data: RecapData }) {
   const { fps, width } = useVideoConfig();
@@ -33,6 +34,11 @@ export function CommunityScene({ data }: { data: RecapData }) {
         ? { value: totalStars, label: "stars across your projects", estimated: false }
         : null;
   const counted = useCountUp(lead?.value ?? 0, beats(1, fps), beats(3, fps));
+  // The other direction: what the user starred this year (metrics.md, "Starred by you").
+  const eyed =
+    data.starred.status === "ok" && data.starred.value.count > 0
+      ? `${data.starred.estimated ? "~" : ""}${formatCount(data.starred.value.count)} ${data.starred.value.count === 1 ? "repo" : "repos"} you starred${data.starred.value.languages[0] ? ` · mostly ${data.starred.value.languages[0].name}` : ""}`
+      : null;
 
   if (!lead) {
     return (
@@ -42,6 +48,13 @@ export function CommunityScene({ data }: { data: RecapData }) {
             No stars on your projects yet.
           </div>
         </Slam>
+        {eyed && (
+          <Slam at={beats(4, fps)}>
+            <div style={{ fontSize: u * 5.5, fontWeight: 700, marginTop: u * 4 }}>
+              But you handed out a few: {eyed}.
+            </div>
+          </Slam>
+        )}
       </Field>
     );
   }
@@ -55,6 +68,7 @@ export function CommunityScene({ data }: { data: RecapData }) {
       ? `${forks.text} new ${forksGained.value === 1 ? "fork" : "forks"} this year`
       : null,
     starred ? `most starred: ${repoLabel(starred).name} · ${formatCount(starred.stars)}` : null,
+    eyed,
   ].filter((fact) => fact !== null);
 
   return (
