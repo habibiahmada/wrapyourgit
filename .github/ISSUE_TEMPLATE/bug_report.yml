@@ -1,0 +1,46 @@
+name: Bug report
+description: Something is wrong, including a number that disagrees with GitHub.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Never paste tokens, cookies or private repository names.** Security problems go through [SECURITY.md](https://github.com/habibiahmada/wrapyourgit/security/policy) instead.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - A number in my recap
+        - The story or video
+        - Dashboard or settings
+        - Sign-in or sync
+        - Public page, card or downloads
+        - Landing page or docs
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: For a wrong number, name the metric, what WrapYourGit shows and what you expected (and where you saw it, for example your GitHub profile for 2026).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Sign in
+        2. Press Sync again
+        3. ...
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 140 on Android, Safari on macOS, ...
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or anything else
