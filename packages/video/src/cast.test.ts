@@ -24,10 +24,9 @@ describe("cast", () => {
     }
   });
 
-  test("every scene has its own motion and its own photo", () => {
+  test("every scene has its own motion", () => {
     const roles = Object.values(CAST);
     expect(new Set(roles.map((role) => role.motion)).size).toBe(roles.length);
-    expect(new Set(roles.map((role) => role.photo)).size).toBe(roles.length);
   });
 
   test("every archetype has its own colour, pose and photo; no archetype dozes", () => {

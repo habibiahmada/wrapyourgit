@@ -6,48 +6,44 @@ import type { SceneId } from "./timeline";
 
 /*
  * Who appears in each scene, and where. One mascot: Cell, the host, in every scene, so the story
- * reads as one character's tour of the year. Variety comes from what Cell does and wears and
- * from the place behind it: every scene has its own pose, gear and backdrop photo.
+ * reads as one character's tour of the year. Variety comes from what Cell does and wears: every
+ * scene has its own motion and gear; some show Cell as a giant silhouette instead (accents.tsx).
  */
 
-export type Role = {
-  look: Look;
-  motion: ChibiMotion;
-  photo: PhotoId /** Card tilt, degrees. */;
+export type Role = { look: Look; motion: ChibiMotion };
+
+/** An archetype's Cell also has a place: the photo behind it in the baked art (`skin-*`). */
+export type ArchetypeRole = Role & {
+  photo: PhotoId;
+  /** Card tilt, degrees. */
   tilt: number;
 };
 
 export const CAST: Record<Exclude<SceneId, "identity">, Role> = {
-  // At the desk where the year happened. Hello.
-  intro: { look: CELL, motion: "wave", photo: "desk", tilt: -3 },
-  // The big number gets fireworks.
+  // Hello, waving.
+  intro: { look: CELL, motion: "wave" },
+  // The big number gets a jump.
   contributions: {
     look: { ...CELL, eyes: "happy" },
     motion: "cheer",
-    photo: "fireworks",
-    tilt: 4,
   },
-  // On the track, keeping the streak.
-  rhythm: { look: { ...CELL, gear: ["sweatband"] }, motion: "run", photo: "track", tilt: -4 },
-  // In the stacks, working out the languages.
-  "tech-dna": { look: { ...CELL, gear: ["glasses"] }, motion: "think", photo: "library", tilt: 3 },
-  // In the workshop, hammering on the beat.
+  // Keeping the streak, in a sweatband.
+  rhythm: { look: { ...CELL, gear: ["sweatband"] }, motion: "run" },
+  // Working out the languages, glasses on.
+  "tech-dna": { look: { ...CELL, gear: ["glasses"] }, motion: "think" },
+  // Hammering on the beat, hard hat on.
   projects: {
     look: { ...CELL, gear: ["hardhat", "hammer"] },
     motion: "hammer",
-    photo: "workshop",
-    tilt: -2,
   },
-  // In a garden people tend together.
-  community: { look: { ...CELL, gear: ["scarf"] }, motion: "celebrate", photo: "garden", tilt: 3 },
-  // Among the gears, headset on.
-  engineering: { look: { ...CELL, gear: ["headset"] }, motion: "groove", photo: "gears", tilt: -3 },
-  // Sunset, crowned, proud of the year.
+  // Celebrating the stars, in a scarf.
+  community: { look: { ...CELL, gear: ["scarf"] }, motion: "celebrate" },
+  // Grooving, headset on.
+  engineering: { look: { ...CELL, gear: ["headset"] }, motion: "groove" },
+  // Crowned, proud of the year.
   closing: {
     look: { ...CELL, eyes: "happy", gear: ["crown"] },
     motion: "proud",
-    photo: "sunset",
-    tilt: 2,
   },
 };
 
@@ -68,12 +64,12 @@ export const ARCHETYPE_COLORS: Record<ArchetypeId, string> = {
  * Identity: Cell as the person's archetype, with that archetype's colour, gear, pose and place;
  * asleep at the desk when there is none.
  */
-export function archetypeRole(archetype: ArchetypeId | null): Role {
+export function archetypeRole(archetype: ArchetypeId | null): ArchetypeRole {
   if (!archetype) {
     return { look: { ...CELL, eyes: "sleepy" }, motion: "sleep", photo: "desk", tilt: -2 };
   }
   const body = ARCHETYPE_COLORS[archetype];
-  const roles: Record<ArchetypeId, Role> = {
+  const roles: Record<ArchetypeId, ArchetypeRole> = {
     builder: {
       look: { ...CELL, body, gear: ["hardhat", "hammer"] },
       motion: "hammer",

@@ -3,18 +3,14 @@ import type { ReactNode } from "react";
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { NeutralToneMapping } from "three";
 import { beats } from "../audio/track";
-import type { PhotoId } from "../photos";
 import { BlobShadow } from "../three/BlobShadow";
 import { CutoutLights } from "../three/World";
-import { PhotoCard } from "./PhotoCard";
 import { Sfx } from "./Sfx";
 
 /**
  * A character rendered live in 3D, frame by frame, placed like an Accent: the picture is not a
  * baked PNG, so arms, legs, head and eyes really move. `children` gets the time in seconds and
- * returns the posed character. Costs a WebGL draw per frame (ADR-0010). With `photo`, the character
- * stands in front of a snapshot of a place (PhotoCard) that fills the upper part of the same box,
- * so the footprint, and every tuned position, stays the same.
+ * returns the posed character. Costs a WebGL draw per frame (ADR-0010).
  */
 export function LiveAccent({
   at = 0,
@@ -24,8 +20,6 @@ export function LiveAccent({
   enter = "bottom",
   aspect = 1,
   camera = { z: 5.6, y: 1.5, look: 0.95 },
-  photo,
-  tilt = 0,
   children,
 }: {
   at?: number;
@@ -39,10 +33,6 @@ export function LiveAccent({
   aspect?: number;
   /** Camera distance, height and the height it looks at, for bigger or taller casts. */
   camera?: { z: number; y: number; look: number };
-  /** A backdrop photo behind the character. */
-  photo?: PhotoId;
-  /** Tilt of the photo, degrees. */
-  tilt?: number;
   children: (t: number) => ReactNode;
 }) {
   const frame = useCurrentFrame();
@@ -66,30 +56,22 @@ export function LiveAccent({
           transform: enter === "right" ? `translateX(${offset}px)` : `translateY(${offset}px)`,
         }}
       >
-        {photo && (
-          <div style={{ position: "absolute", left: w * 0.03, top: h * 0.02 }}>
-            <PhotoCard photo={photo} width={w * 0.94} height={w * 0.94 * 0.72} tilt={tilt} t={t} />
-          </div>
-        )}
-        {/* Positioned, so it paints over the absolutely placed photo. */}
-        <div style={{ position: "relative" }}>
-          <ThreeCanvas
-            width={w}
-            height={h}
-            gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
-            // Straight on, a little above: the character faces the viewer.
-            camera={{ position: [0, camera.y, camera.z], fov: 30 }}
-            onCreated={(state) => {
-              state.camera.lookAt(0, camera.look, 0);
-              state.gl.toneMapping = NeutralToneMapping;
-              state.gl.toneMappingExposure = 1.05;
-            }}
-          >
-            <CutoutLights />
-            <BlobShadow size={[1.6 * aspect, 1.2]} opacity={0.4} />
-            {children(t)}
-          </ThreeCanvas>
-        </div>
+        <ThreeCanvas
+          width={w}
+          height={h}
+          gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
+          // Straight on, a little above: the character faces the viewer.
+          camera={{ position: [0, camera.y, camera.z], fov: 30 }}
+          onCreated={(state) => {
+            state.camera.lookAt(0, camera.look, 0);
+            state.gl.toneMapping = NeutralToneMapping;
+            state.gl.toneMappingExposure = 1.05;
+          }}
+        >
+          <CutoutLights />
+          <BlobShadow size={[1.6 * aspect, 1.2]} opacity={0.4} />
+          {children(t)}
+        </ThreeCanvas>
       </div>
       {at >= beats(1, fps) && <Sfx at={at} sound="whoosh" volume={0.25} />}
     </AbsoluteFill>

@@ -1,17 +1,13 @@
 /**
- * Backdrop photos behind Cell (public/photos, credits in public/photos/CREDITS.md). Real places
- * instead of 3D props: each scene and each archetype gets its own, so no two look alike. All are
- * public domain, 960 × 720 centre crops.
+ * Photos behind Cell in the baked archetype art and the landing hero (public/photos, credits in
+ * public/photos/CREDITS.md): real places instead of 3D props, one per archetype. All are public
+ * domain, 960 × 720 centre crops. The story itself keeps Cell on the field, without a photo.
  */
 export const PHOTO_IDS = [
   "desk",
   "fireworks",
   "track",
-  "library",
   "workshop",
-  "garden",
-  "gears",
-  "sunset",
   "mountains",
   "map",
   "skyline",
