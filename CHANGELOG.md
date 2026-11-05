@@ -21,6 +21,9 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- Cell moves everywhere as baked 3D loops instead of live WebGL: animated WebP on the pages (a still under reduced motion) and sprite sheets in the story; the web app no longer ships three.js (ADR-0013) ([#24](https://github.com/habibiahmada/wrapyourgit/issues/24)).
+- The Projects chapter shows the year's commits as a 10 × 10 waffle coloured by repository, with names, commits and shares ([#24](https://github.com/habibiahmada/wrapyourgit/issues/24)).
+- The letter has a letterhead with Cell's head, a postmark, the person's own contribution strip as the rule, a motif on the paper and a signature flourish, on the web and in the letter slide ([#24](https://github.com/habibiahmada/wrapyourgit/issues/24)).
 - Cell is the story's only mascot: live in five scenes with its own pose and gear, a giant faint silhouette in four, GitHub motifs (contribution cells, a branch graph) on every field, and Cell running sideways across each cut. Each archetype has its own colour, pose and public-domain photo in the web art; the 3D block cities, moon and floating cubes are gone (ADR-0012) ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
 - Slide exports (PNG, ZIP, PDF) are frames of the story composition, so they match the story exactly (ADR-0011) ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
 - Every page, the landing sample reel, the README and the docs show the chibi Cell; the old cube mascot is retired ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).

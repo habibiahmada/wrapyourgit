@@ -4,18 +4,18 @@ How the story and the exported video are built. Code: `packages/video`.
 
 ## Building blocks
 
-| Concept       | Where                                | Notes                                                                                                  |
-| ------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| `WrapStory`   | `src/WrapStory.tsx`                  | `<Series>` of all scenes, takes `{ data: RecapData }`                                                  |
-| `SCENES`      | `src/WrapStory.tsx`                  | Ordered list `{ id, durationInFrames, Component }`. Also used by the web Player to seek scene-by-scene |
-| Compositions  | `src/Root.tsx`                       | `wrap-9x16`, `wrap-4x5`, `wrap-1x1`, `wrap-16x9`                                                       |
-| Layout family | `useLayout()`                        | `portrait` / `compact` / `landscape` ([ADR-0003](../architecture/decisions/0003-layout-families.md))   |
-| Theme         | `src/theme.ts`                       | Tokens from [DESIGN.md](../../DESIGN.md): palette, allowed text pairings, font, `useUnit()`            |
-| Fixtures      | `src/fixtures/`                      | `sampleRecap` for Studio; `emptyRecap` and `busyRecap` (long names, five-digit totals) for edge checks |
-| Track         | `src/audio/track.ts`                 | BPM, sections and `beats(n)`; scene durations are whole beats                                          |
-| Transition    | `src/components/SceneTransition.tsx` | Opens every scene after the intro; each cut has its own move, set per scene in `timeline.ts`           |
-| Sound effects | `src/components/Sfx.tsx`             | `<Sfx>`, `CountTicks`; rendered by the components that move (`Slam`, bars, transitions)                |
-| Accent        | `src/accents.tsx`                    | Per-scene live 3D character (`cast.ts`, `LiveAccent`) passed to `Field` through `AccentContext`        |
+| Concept       | Where                                | Notes                                                                                                   |
+| ------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `WrapStory`   | `src/WrapStory.tsx`                  | `<Series>` of all scenes, takes `{ data: RecapData }`                                                   |
+| `SCENES`      | `src/WrapStory.tsx`                  | Ordered list `{ id, durationInFrames, Component }`. Also used by the web Player to seek scene-by-scene  |
+| Compositions  | `src/Root.tsx`                       | `wrap-9x16`, `wrap-4x5`, `wrap-1x1`, `wrap-16x9`                                                        |
+| Layout family | `useLayout()`                        | `portrait` / `compact` / `landscape` ([ADR-0003](../architecture/decisions/0003-layout-families.md))    |
+| Theme         | `src/theme.ts`                       | Tokens from [DESIGN.md](../../DESIGN.md): palette, allowed text pairings, font, `useUnit()`             |
+| Fixtures      | `src/fixtures/`                      | `sampleRecap` for Studio; `emptyRecap` and `busyRecap` (long names, five-digit totals) for edge checks  |
+| Track         | `src/audio/track.ts`                 | BPM, sections and `beats(n)`; scene durations are whole beats                                           |
+| Transition    | `src/components/SceneTransition.tsx` | Opens every scene after the intro; each cut has its own move, set per scene in `timeline.ts`            |
+| Sound effects | `src/components/Sfx.tsx`             | `<Sfx>`, `CountTicks`; rendered by the components that move (`Slam`, bars, transitions)                 |
+| Accent        | `src/accents.tsx`                    | Per-scene Cell sprite (`SpriteAccent`) or silhouette, plus field motifs, passed through `AccentContext` |
 
 ## Rules
 
@@ -44,23 +44,25 @@ Order, length and field color live in `src/timeline.ts`; `timeline.test.ts` chec
 | 8   | identity      | 16    | persimmon | archetype reveal (heavier spring) and its reasons; honest line when null        | climax: crash      |
 | 9   | closing       | 14    | ink       | handle, four headline facts, the year as a small graph, "Made with WrapYourGit" | outro, fade        |
 
-Cast (`src/cast.ts`, drawn by `src/three/ChibiCell.tsx`, ADR-0010 and ADR-0012). Cell is the only mascot. Five scenes draw it live in 3D with `LiveAccent`, on the field with no backdrop, in the space the scene leaves empty, with a position per layout family tuned from rendered stills so it never covers a number or label. Four scenes show it as a giant faint silhouette instead. Every scene has GitHub motifs on its field (`components/Backdrop.tsx`): contribution cells in the frame margin, and a branch graph along a free edge where marked. Re-check with stills of all three families after changing a scene's layout.
+Cast (`src/cast.ts`, drawn by `src/three/ChibiCell.tsx`, ADR-0010 and ADR-0012). Cell is the only mascot. Five scenes show it standing, looping a baked sprite sheet with `SpriteAccent` (ADR-0013), on the field with no backdrop, in the space the scene leaves empty, with a position per layout family tuned from rendered stills so it never covers a number or label. Four scenes show it as a giant faint silhouette instead. Every scene has GitHub motifs on its field (`components/Backdrop.tsx`): contribution cells in the frame margin, and a branch graph along a free edge where marked. Re-check with stills of all three families after changing a scene's layout.
 
 | Scene         | Cell                                                                 | Motion                  | Field motifs       |
 | ------------- | -------------------------------------------------------------------- | ----------------------- | ------------------ |
-| intro         | live: green squircle, lit-cell eyes, sprout                          | waves                   | cells              |
-| contributions | live, happy eyes                                                     | jumps with both arms up | cells, branch top  |
+| intro         | standing: green squircle, lit-cell eyes, sprout                      | waves                   | cells              |
+| contributions | standing, happy eyes                                                 | jumps with both arms up | cells, branch top  |
 | rhythm        | silhouette, running (sweatband)                                      | rises, sways            | cells              |
 | tech-dna      | silhouette, thinking                                                 | rises, sways            | cells, branch foot |
-| projects      | live, hard hat and hammer                                            | hammers on every beat   | cells, branch foot |
+| projects      | standing, hard hat and hammer                                        | hammers on every beat   | cells, branch foot |
 | community     | silhouette, cheering                                                 | rises, sways            | cells, branch top  |
 | engineering   | silhouette, headset                                                  | rises, sways            | cells, branch foot |
-| identity      | live, the archetype's own colour, gear and pose (asleep without one) | per archetype           | cells, branch top  |
-| closing       | live, crown and happy eyes                                           | proud, arms akimbo      | cells              |
+| identity      | standing, the archetype's own colour, gear and pose (asleep without) | per archetype           | cells, branch top  |
+| closing       | standing, crown and happy eyes                                       | proud, arms akimbo      | cells              |
 
-**Cell between chapters** (`CellDash`): for the first three beats after every cut except into identity, Cell runs sideways across the frame in the next scene's gear (alternating direction; into tech-dna and community it hops), leaving a trail of contribution cells. Live accents enter after it has left, and a chapter's last frame never shows it.
+**Cell between chapters** (`CellDash`): for the first three beats after every cut except into identity, Cell runs sideways across the frame in the next scene's gear (alternating direction; into tech-dna and community it hops), leaving a trail of contribution cells. Standing accents enter after it has left, and a chapter's last frame never shows it.
 
-Local renders: use `--gl=angle-egl --concurrency=2` (parallel tabs contend for WebGL, ADR-0010).
+Characters are sprite sheets (`components/Sprite.tsx`, `src/art.ts`): the story itself needs no WebGL. Re-bake after changing a look or motion: `bun scripts/render-art.ts sprite-<id>` (ADR-0013).
+
+**Projects** shows the year's commits as a 10 × 10 waffle, 1 square = 1%, coloured by repository (top four plus every other repository, `src/share.ts`, defined in `docs/analytics/metrics.md`), with a legend of names, commits and shares; the four colours pass the dataviz palette checks on paper.
 
 Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`), which turns every private repo into "Private repository", because the MP4 is shareable. Metrics go through `metricValue()`: unavailable skips the beat, estimates get "~" and a footnote.
 

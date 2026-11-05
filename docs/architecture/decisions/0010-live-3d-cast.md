@@ -1,6 +1,6 @@
 # 0010. The story's cast is live 3D, rendered every frame
 
-- Status: Accepted; point 3 superseded by [0012](0012-one-mascot-photo-backdrops.md)
+- Status: Accepted; point 3 superseded by [0012](0012-one-mascot-photo-backdrops.md), points 4-5 by [0013](0013-baked-animation-no-webgl.md)
 - Date: 2026-11-05
 
 ## Context

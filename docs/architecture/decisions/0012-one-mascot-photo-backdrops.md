@@ -15,7 +15,7 @@ ADR-0010 gave every scene a different live 3D character. Reviewing the result, t
 ## Decision
 
 1. **Cell is the only mascot.** `src/cast.ts` keeps one `Role` per scene, all Cell (green, squircle head, lit-cell eyes, sprout), each with its own motion and gear. `cast.test.ts` keeps Cell's colour in every scene and every motion distinct.
-2. **Not every scene shows Cell standing.** Intro, contributions, projects, identity and closing draw Cell live in 3D, on the field with no backdrop. Rhythm, tech-dna, community and engineering show it as a giant flat silhouette in the field's text colour at about 8% opacity, bleeding off an edge (`Silhouette` in `components/Backdrop.tsx`, from the baked cutouts).
+2. **Not every scene shows Cell standing.** Intro, contributions, projects, identity and closing show Cell standing and moving (live 3D at first, baked loops since ADR-0013), on the field with no backdrop. Rhythm, tech-dna, community and engineering show it as a giant flat silhouette in the field's text colour at about 8% opacity, bleeding off an edge (`Silhouette` in `components/Backdrop.tsx`).
 3. **Fields carry GitHub motifs.** Every scene scatters contribution cells in the frame margin, outside the content box (a few lit in GitHub greens), and six scenes draw a git branch graph along a free edge (`CellScatter`, `BranchLine`). Both use the field's text colour at low opacity, so DESIGN.md's measured text contrast holds.
 4. **Cell runs across every cut.** For the first three beats of each scene after a cut (not the archetype flash), `CellDash` runs Cell sideways across the frame in that scene's gear, alternating direction, some cuts in hops, leaving a trail of contribution cells. Live accents that would meet it enter after it has left. The chapter's last frame, where slides come from, never shows it.
 5. **Every archetype has its own colour, pose and place** (`archetypeRole`, `ARCHETYPE_COLORS`): Builder orange, hammering in a workshop; Consistent green, running on a track; Explorer sky blue, waving from the mountains; Collaborator pink, handing work on over a shared map; Night owl lavender, grooving over a city at night; Open sourcer teal, cheering by a community mural.
@@ -32,6 +32,6 @@ ADR-0010 gave every scene a different live 3D character. Reviewing the result, t
 ## Consequences
 
 - One mascot across the story, the pages and the exports; colour changes only for the archetype.
-- Each cut adds one WebGL canvas for three beats (the dash) on top of the scene and its frozen predecessor; measure frame rate on mid-range phones and Lambda render time with it.
+- Each cut adds one more character for three beats (the dash) on top of the scene and its frozen predecessor.
 - A new photo must be public domain: check the source page, add it to `photos.ts` and `CREDITS.md`.
 - After moving a scene's layout, re-render stills of all three layout families and check that no accent covers a number or label.
