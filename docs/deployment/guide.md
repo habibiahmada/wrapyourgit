@@ -72,7 +72,7 @@ What is set up, and how to set it up again:
 
 Verified on 2026-11-05: the site, the copied static folders (`/art`, `/sprites`, `/photos`, `/lang`), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
 
-Also verified on 2026-11-05: the export routes answer `503 Slide exports can't be rendered on this server right now`, not 500. The story's export step still offers the PNG, ZIP and PDF buttons there; they need hiding or a Lambda backend.
+Also verified on 2026-11-05: the export routes answer `503 Slide exports can't be rendered on this server right now`, not 500. Since #39 the story's export step there offers only the share card and the letter slide, and says why.
 
 ## Later: production on an AWS VPS
 
