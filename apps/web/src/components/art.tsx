@@ -33,6 +33,7 @@ export function Art({
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : undefined}
         decoding="async"
+        draggable={false}
         className={className}
       />
     </picture>

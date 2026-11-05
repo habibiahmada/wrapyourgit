@@ -317,6 +317,22 @@ html {
     cursor: not-allowed;
   }
 
+  /* Illustrations and images are part of the page, not files to grab: they take no clicks (a
+     click passes through to the link or button around them, so those still work), can't be
+     selected or dragged, and get no "save image" menu on right-click or long-press. Screen
+     readers still read their alt text. This deters casual copying; it can't stop a determined one. */
+  img,
+  picture,
+  svg,
+  video,
+  canvas {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+  }
+
   /* GitHub's focus ring: blue, 2px, offset. 6.1:1 on the canvas. Inside the light letter
      (.on-light) it turns ink. */
   :focus-visible {
