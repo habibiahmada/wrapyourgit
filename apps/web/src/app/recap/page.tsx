@@ -11,6 +11,7 @@ import {
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
+import { slideExportsAvailable } from "@/server/exports";
 import { getRecap } from "@/server/recaps";
 import { StoryFlow } from "./story-flow";
 
@@ -57,7 +58,7 @@ async function Story() {
   }
   return (
     <div className="flex w-full max-w-6xl flex-1 flex-col">
-      <StoryFlow data={recap.data} />
+      <StoryFlow data={recap.data} slideExports={slideExportsAvailable()} />
     </div>
   );
 }
