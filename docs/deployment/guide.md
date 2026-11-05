@@ -10,12 +10,12 @@ How to run WrapYourGit outside a laptop. For local development see [development/
 | -------------------------------------- | ------------------------------------------------- | ---------------------------------------- |
 | Web app (`apps/web`, Next.js 16)       | Vercel Hobby, functions in Singapore (`sin1`)     | `next start` behind Caddy (HTTPS)        |
 | Database (Postgres)                    | Neon `wrapyourgit-db`, Singapore, free plan       | Postgres container on the same VPS       |
-| Slide exports (PNG, ZIP, PDF)          | **Unavailable** (503)                             | On the VPS: Bun worker + headless Chrome |
+| Slide exports (PNG, ZIP, PDF)          | **Hidden** (routes answer 503)                    | On the VPS: Bun worker + headless Chrome |
 | MP4 export (Remotion Lambda, ADR-0004) | Not wired to the UI yet                           | Not wired to the UI yet                  |
 | GitHub sign-in                         | GitHub App `wrapyourgit` (public)                 | The same app                             |
 | DNS                                    | Cloudflare `CNAME wrapyourgit` → Vercel, DNS only | `A` record → the VPS                     |
 
-Why slide exports differ: slides are frames of the story composition, rendered by a separate Bun process with headless Chrome ([ADR-0011](../architecture/decisions/0011-slides-from-the-composition.md)). A serverless function has neither, so on Vercel the export routes answer `503 Slide exports can't be rendered on this server right now`. Everything else works there. Moving the slides to `renderStillOnLambda` is the planned fix.
+Why slide exports differ: slides are frames of the story composition, rendered by a separate Bun process with headless Chrome ([ADR-0011](../architecture/decisions/0011-slides-from-the-composition.md)). A serverless function has neither, so on Vercel the story's export step offers only the share card and the letter slide (both next/og, which works there) and says why the PDF and chapter slides are missing. The PDF, ZIP and chapter slide routes answer `503 Slide exports can't be rendered on this server right now` without trying a render. The switch is `SLIDE_EXPORTS` (table below); Vercel needs no setting. Everything else works there. Moving the slides to `renderStillOnLambda` is the planned fix.
 
 ## Environment variables
 
@@ -30,6 +30,7 @@ The template is [`.env.example`](../../.env.example). The web app reads these; s
 | `GITHUB_APP_SLUG`                                                                                                                   | no       | The app's URL slug; enables the optional install for private repositories (ADR-0008).                                                                         |
 | `BUN_BIN`                                                                                                                           | no       | Path to `bun` for the slide worker when it isn't on `PATH` (VPS only).                                                                                        |
 | `REMOTION_GL`                                                                                                                       | no       | WebGL backend for slide renders. Set `swangle` on a server without a GPU.                                                                                     |
+| `SLIDE_EXPORTS`                                                                                                                     | no       | `on` or `off`: whether this host renders chapter slides. Unset: off on Vercel (`VERCEL=1`), on elsewhere.                                                     |
 | `AWS_REGION`, `REMOTION_AWS_ACCESS_KEY_ID`, `REMOTION_AWS_SECRET_ACCESS_KEY`, `REMOTION_LAMBDA_FUNCTION_NAME`, `REMOTION_SERVE_URL` | not yet  | For MP4 rendering on Lambda, once it is wired to the UI.                                                                                                      |
 
 `GITHUB_TOKEN` in `.env.example` is for local spikes only; don't set it on a server.

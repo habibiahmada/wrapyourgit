@@ -72,8 +72,10 @@ const STEPS: Step[] = [
  * The story as a guided walk instead of one long video: each scene plays, stops on its last frame
  * and waits for Next. Then the letter, then the exports. Characters are baked loops (sprite
  * sheets in the Player, animated WebP elsewhere, ADR-0013), so no step needs WebGL.
+ * `slideExports` is false where the server can't render chapter slides (server/exports.ts): the
+ * export step then offers only the share card and the letter, and says why.
  */
-export function StoryFlow({ data }: { data: RecapData }) {
+export function StoryFlow({ data, slideExports }: { data: RecapData; slideExports: boolean }) {
   const [step, setStep] = useState(0);
   const [muted, setMuted] = useState(false);
   const [format, setFormat] = useState<keyof typeof VIDEO_FORMATS>("9x16");
@@ -329,17 +331,39 @@ export function StoryFlow({ data }: { data: RecapData }) {
                   <p className="text-lg">
                     Your story as files you can keep and post. Private repositories are never named.
                   </p>
-                  <div className="flex flex-wrap gap-3">
-                    <a href="/api/story/pdf" download className={button.primary}>
-                      Download PDF
-                    </a>
-                    <a href="/api/story/zip" download className={button.secondary}>
-                      All slides (PNG, ZIP)
-                    </a>
-                    <a href="/api/card" download className={button.quiet}>
-                      Share card (PNG)
-                    </a>
-                  </div>
+                  {slideExports ? (
+                    <div className="flex flex-wrap gap-3">
+                      <a href="/api/story/pdf" download className={button.primary}>
+                        Download PDF
+                      </a>
+                      <a href="/api/story/zip" download className={button.secondary}>
+                        All slides (PNG, ZIP)
+                      </a>
+                      <a href="/api/card" download className={button.quiet}>
+                        Share card (PNG)
+                      </a>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-3">
+                        <a href="/api/card" download className={button.primary}>
+                          Share card (PNG)
+                        </a>
+                        <a
+                          href={`/api/story/slide/${SLIDES.length}?download`}
+                          download
+                          className={button.secondary}
+                        >
+                          Letter (PNG)
+                        </a>
+                      </div>
+                      <p className="text-base">
+                        The PDF and the chapter slides aren't available on this site yet: drawing
+                        them needs a render server that isn't set up here. The share card and your
+                        letter work now.
+                      </p>
+                    </>
+                  )}
                   <button
                     type="button"
                     disabled
@@ -353,28 +377,30 @@ export function StoryFlow({ data }: { data: RecapData }) {
                   </p>
                 </div>
               </div>
-              <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {SLIDES.map((name, i) => (
-                  <li key={name} className="flex flex-col gap-2">
-                    {/* biome-ignore lint/performance/noImgElement: cookie-authenticated API image; the next/image optimizer would fetch it without the session */}
-                    <img
-                      src={`/api/story/slide/${i + 1}`}
-                      alt={`Slide ${i + 1}: ${name}`}
-                      width={1080}
-                      height={1350}
-                      loading="lazy"
-                      className="h-auto w-full rounded-lg border border-line bg-surface"
-                    />
-                    <a
-                      href={`/api/story/slide/${i + 1}?download`}
-                      download
-                      className="font-bold underline underline-offset-4"
-                    >
-                      Download {name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              {slideExports && (
+                <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                  {SLIDES.map((name, i) => (
+                    <li key={name} className="flex flex-col gap-2">
+                      {/* biome-ignore lint/performance/noImgElement: cookie-authenticated API image; the next/image optimizer would fetch it without the session */}
+                      <img
+                        src={`/api/story/slide/${i + 1}`}
+                        alt={`Slide ${i + 1}: ${name}`}
+                        width={1080}
+                        height={1350}
+                        loading="lazy"
+                        className="h-auto w-full rounded-lg border border-line bg-surface"
+                      />
+                      <a
+                        href={`/api/story/slide/${i + 1}?download`}
+                        download
+                        className="font-bold underline underline-offset-4"
+                      >
+                        Download {name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>
