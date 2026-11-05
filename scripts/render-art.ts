@@ -1,32 +1,79 @@
 /**
- * Bakes the art (Cell cutouts, Cell in front of photos for each archetype, the hero) into PNGs for
- * places that don't run WebGL: the web pages, loading states, the OG image and the letter slide.
+ * Bakes every animation of Cell (ADR-0013): one LOOP_SECONDS loop per composition in Root.tsx.
  *
- *   bun scripts/render-art.ts            # every id in ART_IDS
- *   bun scripts/render-art.ts skin-builder hero-cast
+ *   bun scripts/render-art.ts                      # everything
+ *   bun scripts/render-art.ts skin-builder sprite-wave
  *
- * Writes packages/video/public/art/<id>.png (apps/web/public/art links there). Re-run after
- * changing anything in packages/video/src/three, cast.ts or photos. Bundles the composition once
- * and renders every still with one browser (apps/renderer/src/still.ts), on angle-egl: headless
- * `angle` can't create a WebGL context on Linux.
+ * Web art and the letterhead head go to packages/video/public/art as `<id>.webp` (looping
+ * animated WebP for the pages) and `<id>.png` (one frame at the motion's peak, for reduced motion,
+ * Open Graph and the letter slide). Sprites go to packages/video/public/sprites/<id>.webp as a
+ * grid of frames the story steps through. apps/web/public links both folders.
+ *
+ * Renders with the still renderer (apps/renderer/src/still.ts: one bundle, one browser,
+ * angle-egl) and assembles with ffmpeg (libwebp_anim) and ImageMagick (montage).
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { renderSceneStill } from "../apps/renderer/src/still";
-import { sampleRecap } from "../packages/video/src/fixtures/sample-recap";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import type { ArchetypeId } from "@wyg/schema";
+import { $ } from "bun";
+import { renderCompositionFrames } from "../apps/renderer/src/still";
+import {
+  BAKE_FPS,
+  CELL_POSES,
+  type CellPose,
+  HEAD_ART_ID,
+  LOOP_FRAMES,
+  peakFrame,
+  SPRITE_SHEET,
+  SPRITES,
+  type SpriteId,
+} from "../packages/video/src/art";
+import { archetypeRole } from "../packages/video/src/cast";
 import { ART_IDS } from "../packages/video/src/Root";
+import type { ChibiMotion } from "../packages/video/src/three/pose";
 
-const outDir = resolve(import.meta.dir, "../packages/video/public/art");
-await mkdir(outDir, { recursive: true });
+const publicDir = resolve(import.meta.dir, "../packages/video/public");
+const artDir = join(publicDir, "art");
+const spriteDir = join(publicDir, "sprites");
+await mkdir(artDir, { recursive: true });
+await mkdir(spriteDir, { recursive: true });
 
 const wanted = process.argv.slice(2);
 const ids = wanted.length > 0 ? ART_IDS.filter((id) => wanted.includes(id)) : ART_IDS;
+const frames = Array.from({ length: LOOP_FRAMES }, (_, i) => i);
+
+/** The motion an art id shows, to pick its still frame. */
+function motionOf(id: string): ChibiMotion {
+  if (id === "hero-cast") return "wave";
+  if (id === HEAD_ART_ID) return "groove";
+  if (id.startsWith("cutout-cell-")) return CELL_POSES[id.slice(12) as CellPose].motion;
+  if (id.startsWith("sprite-")) return SPRITES[id.slice(7) as SpriteId].motion;
+  return archetypeRole(id.replace(/^(cutout|skin)-/, "") as ArchetypeId).motion;
+}
 
 for (const id of ids) {
-  // Frame 45 (1.5 s): characters are mid-gesture. The art composition ignores the recap data.
-  const png = await renderSceneStill(sampleRecap, `art-${id}`, 45);
-  await writeFile(resolve(outDir, `${id}.png`), png);
-  console.log(`art/${id}.png`);
+  const work = await mkdtemp(join(tmpdir(), "wyg-art-"));
+  const rendered = await renderCompositionFrames(`art-${id}`, frames);
+  for (const [frame, png] of rendered) {
+    await writeFile(join(work, `${String(frame).padStart(2, "0")}.png`), png);
+  }
+
+  if (id.startsWith("sprite-")) {
+    const { size, cols, rows } = SPRITE_SHEET;
+    const sheet = join(work, "sheet.png");
+    await $`montage ${join(work, "[0-9][0-9].png")} -tile ${cols}x${rows} -geometry ${size}x${size}+0+0 -background none ${sheet}`.quiet();
+    await $`convert ${sheet} -quality 82 -define webp:alpha-quality=90 -define webp:method=6 ${join(spriteDir, `${id.slice(7)}.webp`)}`.quiet();
+    console.log(`sprites/${id.slice(7)}.webp`);
+  } else {
+    // Pages show the art at most ~600 CSS px wide: 720 px covers that at 1.2x without the weight.
+    const width = id === HEAD_ART_ID ? 360 : 720;
+    await $`ffmpeg -y -loglevel error -framerate ${BAKE_FPS} -i ${join(work, "%02d.png")} -vf scale=${width}:-1:flags=lanczos -c:v libwebp_anim -lossless 0 -quality 72 -compression_level 4 -loop 0 -pix_fmt yuva420p ${join(artDir, `${id}.webp`)}`.quiet();
+    const still = rendered.get(peakFrame(motionOf(id)));
+    if (still) await writeFile(join(artDir, `${id}.png`), still);
+    console.log(`art/${id}.webp + .png`);
+  }
+  await rm(work, { recursive: true, force: true });
 }
 process.exit(0);

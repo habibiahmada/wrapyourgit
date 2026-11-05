@@ -5,8 +5,7 @@
  *
  * Runs inside the still worker (still-worker.ts), a separate Bun process, never inside Next: the
  * composition is bundled once per worker and one headless browser is shared. Frames render one at
- * a time: parallel tabs on one machine contend for WebGL and time out on the live 3D cast
- * (ADR-0010).
+ * a time: parallel tabs on one machine contend for WebGL when baking the 3D loops (ADR-0013).
  */
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -17,6 +16,7 @@ import {
   ensureBrowser,
   type HeadlessBrowser,
   openBrowser,
+  renderFrames,
   renderStill,
   selectComposition,
 } from "@remotion/renderer";
@@ -113,10 +113,52 @@ export function renderSceneStill(
       imageFormat: "png",
       puppeteerInstance,
       chromiumOptions,
-      // The live cast loads fonts and draws WebGL before the frame is ready.
+      // Fonts, sprite sheets and photos load before the frame is ready.
       timeoutInMilliseconds: 60_000,
     });
     if (!buffer) throw new Error(`renderStill returned no image for frame ${frame}`);
     return new Uint8Array(buffer);
+  });
+}
+
+/**
+ * Several frames of `composition` as PNG bytes, in one pass with one tab: used to bake the
+ * looping art (scripts/render-art.ts). `frames` are composition frame numbers.
+ */
+export function renderCompositionFrames(
+  composition: string,
+  frames: number[],
+  inputProps: Record<string, unknown> = {},
+  /** Tabs in parallel: two is safe for one small canvas; story frames render one at a time. */
+  concurrency = 2,
+): Promise<Map<number, Uint8Array>> {
+  return serial(async () => {
+    const [url, puppeteerInstance] = await Promise.all([serveUrl(), sharedBrowser()]);
+    const target = await selectComposition({
+      serveUrl: url,
+      id: composition,
+      inputProps,
+      puppeteerInstance,
+      chromiumOptions,
+    });
+    const out = new Map<number, Uint8Array>();
+    await renderFrames({
+      serveUrl: url,
+      composition: target,
+      frames,
+      inputProps,
+      imageFormat: "png",
+      outputDir: null,
+      concurrency,
+      puppeteerInstance,
+      chromiumOptions,
+      timeoutInMilliseconds: 60_000,
+      onStart: () => undefined,
+      onFrameUpdate: () => undefined,
+      onFrameBuffer: (buffer, frame) => {
+        out.set(frame, new Uint8Array(buffer));
+      },
+    });
+    return out;
   });
 }
