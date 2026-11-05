@@ -11,8 +11,6 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.9",
-    "@react-three/fiber": "^9.8.2",
     "@remotion/player": "4.0.540",
     "@wyg/analytics": "workspace:*",
     "@wyg/github": "workspace:*",
@@ -27,15 +25,13 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "remotion": "4.0.540",
-    "server-only": "^0.0.1",
-    "three": "^0.187.0"
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.187.0",
     "drizzle-kit": "^0.31.11",
     "tailwindcss": "^4",
     "typescript": "^7"

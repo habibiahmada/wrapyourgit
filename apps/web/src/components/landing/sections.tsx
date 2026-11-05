@@ -4,6 +4,7 @@ import { OPENINGS } from "@wyg/video/letter";
 import { TIMELINE } from "@wyg/video/timeline";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { Art } from "@/components/art";
 import { CellField, demoLevels } from "@/components/site/cell-field";
 import { FrameReel } from "./frame-reel";
 
@@ -162,12 +163,9 @@ export function ArchetypesSection() {
           {ARCHETYPES.map(({ id, wears, rule }) => (
             <li key={id} className={`reveal-zoom overflow-hidden ${box} hover:border-muted`}>
               <div className="border-b border-line bg-canvas px-4 pt-4">
-                <Image
-                  src={`/art/skin-${id}.png`}
+                <Art
+                  id={`skin-${id}`}
                   alt={`Cell as the ${ARCHETYPE_LABELS[id]}: ${wears}`}
-                  width={1200}
-                  height={900}
-                  sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 90vw"
                   className="h-auto w-full"
                 />
               </div>
@@ -203,12 +201,9 @@ export function LetterSection() {
         <div className="reveal-right relative flex flex-col gap-5 lg:pl-40">
           {/* Cell stands beside its letters, unframed. The PNG has room around the character,
               so negative margins pull it close to the first comment. */}
-          <Image
-            src="/art/cutout-cell-wave.png"
+          <Art
+            id="cutout-cell-wave"
             alt=""
-            width={1200}
-            height={900}
-            sizes="(min-width: 1024px) 30rem, 22rem"
             className="pointer-events-none mx-auto -mt-16 -mb-24 h-auto w-[22rem] lg:absolute lg:top-1/2 lg:-left-44 lg:m-0 lg:w-[30rem] lg:-translate-y-[58%] motion-safe:animate-[bob_2.4s_ease-in-out_infinite]"
           />
           <Comment label="for a quiet year">{quiet}</Comment>
@@ -384,12 +379,9 @@ export function PrivacySection() {
             Read the full privacy policy
           </a>
         </div>
-        <Image
-          src="/art/cutout-cell-sleep.png"
+        <Art
+          id="cutout-cell-sleep"
           alt="Cell asleep: nothing is shared until you say so"
-          width={1200}
-          height={900}
-          sizes="(min-width: 1024px) 38vw, 90vw"
           className="reveal-right h-auto w-full"
         />
       </div>
@@ -441,14 +433,7 @@ export function FaqSection() {
           <h2 id="faq-title" className={heading}>
             Questions people ask.
           </h2>
-          <Image
-            src="/art/cutout-cell-think.png"
-            alt=""
-            width={1200}
-            height={900}
-            sizes="18rem"
-            className="mt-6 hidden h-auto w-72 lg:block"
-          />
+          <Art id="cutout-cell-think" alt="" className="mt-6 hidden h-auto w-72 lg:block" />
         </div>
         <div className={`divide-y divide-line ${box}`}>
           {FAQ.map(({ q, a }) => (
@@ -493,12 +478,9 @@ export function ClosingSection({ action }: { action: ReactNode }) {
           <div className="mt-10">{action}</div>
         </div>
         {/* Cell leans in from the bottom edge, cut off by the section. */}
-        <Image
-          src="/art/cutout-cell-cheer.png"
+        <Art
+          id="cutout-cell-cheer"
           alt=""
-          width={1200}
-          height={900}
-          sizes="(min-width: 1024px) 32rem, 80vw"
           className="mx-auto -mb-16 h-auto w-80 sm:w-[28rem] lg:-mb-20 lg:w-[34rem]"
         />
       </div>

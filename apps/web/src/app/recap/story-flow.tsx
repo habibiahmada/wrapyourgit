@@ -6,7 +6,6 @@ import { SCENES, STORY_DURATION_IN_FRAMES, WrapStory } from "@wyg/video";
 import { SCENE_TITLES } from "@wyg/video/copy";
 import { congratsLetter } from "@wyg/video/letter";
 import { loopSeconds, TRACK } from "@wyg/video/track";
-import Image from "next/image";
 import Link from "next/link";
 import {
   addTransitionType,
@@ -18,7 +17,9 @@ import {
   useState,
   ViewTransition,
 } from "react";
+import { Art } from "@/components/art";
 import { button } from "@/components/ui";
+import { LetterSheet } from "./letter-sheet";
 import { useMusic } from "./use-music";
 
 const SLIDES = [
@@ -69,9 +70,8 @@ const STEPS: Step[] = [
 
 /**
  * The story as a guided walk instead of one long video: each scene plays, stops on its last frame
- * and waits for Next. Then the letter, then the exports. One WebGL scene at a time: each step
- * mounts its own 3D (the story's live cast inside the Player, ADR-0010) and unmounts it when the
- * step changes.
+ * and waits for Next. Then the letter, then the exports. Characters are baked loops (sprite
+ * sheets in the Player, animated WebP elsewhere, ADR-0013), so no step needs WebGL.
  */
 export function StoryFlow({ data }: { data: RecapData }) {
   const [step, setStep] = useState(0);
@@ -316,49 +316,8 @@ export function StoryFlow({ data }: { data: RecapData }) {
           {current?.kind === "versus" && <Versus data={data} />}
 
           {current?.kind === "letter" && (
-            <div className="relative w-full max-w-3xl pt-4 sm:pl-24">
-              {/* Cell peeks in from the left edge of the letter, waving. */}
-              <Image
-                src="/art/cutout-cell-wave.png"
-                alt=""
-                width={1200}
-                height={900}
-                className="pointer-events-none absolute top-24 -left-6 hidden w-40 -rotate-12 sm:block motion-safe:animate-[bob_2.4s_ease-in-out_infinite]"
-              />
-              <article className="on-light relative rounded-xl bg-paper px-6 py-10 text-ink sm:px-12 sm:py-14">
-                {/* A stamp in the corner, the way a real letter arrives. */}
-                <div className="absolute top-5 right-5 w-24 rotate-3 rounded-sm border-4 border-dashed border-persimmon bg-paper p-1 sm:w-28">
-                  <Image
-                    src="/art/cutout-cell-proud.png"
-                    alt=""
-                    width={1200}
-                    height={900}
-                    className="h-auto w-full bg-persimmon/15"
-                  />
-                  <p className="text-center text-xs font-bold">{year}</p>
-                </div>
-                <p className="pr-28 text-base font-bold text-ink-soft">From Cell, at WrapYourGit</p>
-                <p className="mt-6 text-3xl font-extrabold sm:text-4xl">{letter.greeting}</p>
-                <div className="mt-6 flex max-w-[62ch] flex-col gap-5">
-                  {letter.paragraphs.map((paragraph, i) => (
-                    <p
-                      key={paragraph}
-                      className={`leading-[1.7] motion-safe:animate-[rise_700ms_ease-out_both] ${i === 0 ? "text-xl" : "text-lg"}`}
-                      style={{ animationDelay: `${200 + i * 260}ms` }}
-                    >
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-                <div className="mt-10 flex items-end justify-between gap-4 border-t-2 border-ink/15 pt-6">
-                  <div>
-                    <p className="text-lg">With pride,</p>
-                    <p className="text-3xl font-extrabold">Cell</p>
-                    <p className="text-base text-ink-soft">your WrapYourGit guide</p>
-                  </div>
-                  <p className="text-base text-ink-soft">{data.meta.periodEnd}</p>
-                </div>
-              </article>
+            <div className="w-full max-w-3xl pt-4">
+              <LetterSheet data={data} letter={letter} />
             </div>
           )}
 
@@ -503,13 +462,10 @@ function ComicArt({
     // The art is scaled up for presence; clip the sides (transparent margin) so it never widens
     // the page on a phone. `clip`, not `hidden`, so it can still grow upwards.
     <div className="mx-auto w-full max-w-xl overflow-x-clip lg:max-w-none">
-      <Image
-        src={`/art/${art}.png`}
+      <Art
+        id={art}
         alt={alt}
-        width={1200}
-        height={900}
-        preload={priority}
-        sizes="(min-width: 1024px) 45vw, 90vw"
+        priority={priority}
         className="h-auto w-full origin-bottom scale-[1.3] motion-safe:animate-[rise_700ms_ease-out_both]"
       />
     </div>

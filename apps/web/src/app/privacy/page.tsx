@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import type { ReactNode } from "react";
+import { Art } from "@/components/art";
 import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
@@ -208,16 +208,7 @@ export default function PrivacyPage() {
                 </p>
                 <p className="mt-4 text-base">Last updated {UPDATED}</p>
               </div>
-              <Image
-                src="/art/skin-night-owl.png"
-                alt=""
-                width={1200}
-                height={900}
-                preload
-                fetchPriority="high"
-                sizes="(min-width: 1024px) 40vw, 90vw"
-                className="h-auto w-full"
-              />
+              <Art id="skin-night-owl" alt="" priority className="h-auto w-full" />
             </div>
           </section>
           <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[16rem_1fr]">

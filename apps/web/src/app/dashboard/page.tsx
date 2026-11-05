@@ -8,6 +8,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { Art } from "@/components/art";
 import { LanguageBadge } from "@/components/language-badge";
 import { LoadingCell } from "@/components/loading-cell";
 import { CellField, calendarLevels } from "@/components/site/cell-field";
@@ -133,13 +134,10 @@ function EmptyState() {
             <SyncForm label={`Build my ${EDITION_YEAR} recap`} retryAt={null} />
           </div>
         </div>
-        <Image
-          src="/art/cutout-cell-sleep.png"
+        <Art
+          id="cutout-cell-sleep"
           alt="Cell asleep, waiting for your first recap"
-          width={1200}
-          height={900}
-          preload
-          sizes="(min-width: 1024px) 45vw, 90vw"
+          priority
           className="h-auto w-full"
         />
       </div>
@@ -194,16 +192,13 @@ function Profile({
       </div>
       <div className={`overflow-hidden ${box}`}>
         <div className="border-b border-line bg-canvas px-3 pt-3">
-          <Image
-            src={`/art/${art}.png`}
+          <Art
+            id={art}
             alt={
               identity.archetype
                 ? `Cell dressed as the ${ARCHETYPE_LABELS[identity.archetype]}`
                 : "Cell, proud of your year"
             }
-            width={1200}
-            height={900}
-            sizes="18rem"
             className="h-auto w-full"
           />
         </div>

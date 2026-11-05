@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useActionState, useEffect, useState } from "react";
+import { Art } from "@/components/art";
 import { button } from "@/components/ui";
 import { type SyncState, syncAction } from "./actions";
 
@@ -47,11 +47,9 @@ export function SyncForm({
       <p role="status" aria-live="polite" className="flex min-h-6 items-center gap-3 text-base">
         {pending && (
           <>
-            <Image
-              src="/art/cutout-cell-think.png"
+            <Art
+              id="cutout-cell-think"
               alt=""
-              width={1200}
-              height={900}
               className="h-auto w-20 rounded-[var(--radius-control)] motion-safe:animate-[bob_1.6s_ease-in-out_infinite]"
             />
             Cell is reading your GitHub activity. This takes about 20 seconds.

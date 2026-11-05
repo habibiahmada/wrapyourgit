@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { Art } from "@/components/art";
 import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
@@ -25,13 +25,10 @@ export default function NotFound() {
                 Back to WrapYourGit
               </Link>
             </div>
-            <Image
-              src="/art/cutout-cell-sleep.png"
+            <Art
+              id="cutout-cell-sleep"
               alt="Cell, the WrapYourGit mascot, asleep"
-              width={1200}
-              height={900}
-              preload
-              sizes="(min-width: 1024px) 45vw, 90vw"
+              priority
               className="h-auto w-full"
             />
           </div>

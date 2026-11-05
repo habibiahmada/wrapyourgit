@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { toPublicRecap } from "@wyg/analytics";
 import { renderSceneStill } from "@wyg/renderer/still";
 import { EDITION_YEAR, type RecapData } from "@wyg/schema";
+import { heatLevels } from "@wyg/video/heat";
 import { congratsLetter } from "@wyg/video/letter";
 import { TIMELINE } from "@wyg/video/timeline";
 import { beats } from "@wyg/video/track";
@@ -18,8 +19,8 @@ import { errorSummary } from "./log";
 /*
  * The story as ten still slides (4:5, Instagram feed size) for the PNG, ZIP and PDF exports.
  * Slides 1-9 are each chapter's finished last frame, rendered from the same Remotion composition
- * the story plays (`wrap-4x5`, 1080 × 1350), so an export looks exactly like the story, live 3D
- * cast included (ADR-0011). Slide 10 is the letter, which lives on the web page rather than in
+ * the story plays (`wrap-4x5`, 1080 × 1350), so an export looks exactly like the story, Cell's
+ * pose included (ADR-0011). Slide 10 is the letter, which lives on the web page rather than in
  * the composition, drawn here with next/og. Every slide uses the PUBLIC projection: these files
  * are made to be shared.
  * Plain <img> is correct in the letter (Satori renders the JSX, not a browser); biome.json turns
@@ -63,9 +64,30 @@ async function art(id: string): Promise<string> {
   return `data:image/png;base64,${bytes.toString("base64")}`;
 }
 
-/** The letter slide, in the story's letter design: paper, Cell proud, the full text. */
+const GREENS = ["#9BE9A8", "#40C463", "#30A14E", "#216E39"] as const;
+const HEAT = ["rgba(20, 19, 15, 0.08)", ...GREENS] as const;
+const FAINT = "rgba(20, 19, 15, 0.12)";
+
+/** Margin cells of the paper's motif, as in the web letter (recap/letter-sheet.tsx). */
+const MOTIF: { x: number; y: number; s: number; lit?: boolean }[] = [
+  { x: 18, y: 380, s: 22 },
+  { x: 40, y: 430, s: 14, lit: true },
+  { x: 14, y: 700, s: 18 },
+  { x: 1040, y: 520, s: 20 },
+  { x: 1022, y: 580, s: 12, lit: true },
+  { x: 1044, y: 880, s: 16 },
+  { x: 26, y: 1060, s: 14 },
+  { x: 1030, y: 1180, s: 22 },
+];
+
+/**
+ * The letter slide, the same stationery as the web letter: Cell's head in the letterhead, a
+ * postmark, the person's last weeks of contributions as the rule, a motif of cells and a branch
+ * graph on the paper, and the signature with a row of lit cells.
+ */
 async function renderLetter(data: RecapData): Promise<ImageResponse> {
   const letter = congratsLetter(data);
+  const strip = heatLevels(data.contributions.calendar).slice(-53);
   return new ImageResponse(
     <div
       style={{
@@ -75,28 +97,150 @@ async function renderLetter(data: RecapData): Promise<ImageResponse> {
         flexDirection: "column",
         background: PAPER,
         color: INK,
-        padding: "80px 84px",
+        padding: "72px 84px 96px",
         fontFamily: "Bricolage",
+        position: "relative",
       }}
     >
-      <div
-        style={{ display: "flex", justifyContent: "space-between", fontSize: 30, fontWeight: 700 }}
-      >
-        <span>
-          @{data.profile.login} · {data.meta.year}
-        </span>
-        <span>
-          {SLIDE_TITLES.length}/{SLIDE_TITLES.length}
-        </span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
-        <img
-          src={await art("cutout-cell-proud")}
-          width={320}
-          height={240}
-          style={{ alignSelf: "flex-end", flexShrink: 0 }}
-          alt=""
+      {MOTIF.map(({ x, y, s, lit }) => (
+        <div
+          key={`${x}-${y}`}
+          style={{
+            position: "absolute",
+            left: x,
+            top: y,
+            width: s,
+            height: s,
+            borderRadius: 4,
+            background: lit ? "rgba(64, 196, 99, 0.45)" : "transparent",
+            border: lit ? "none" : `3px solid ${FAINT}`,
+          }}
         />
+      ))}
+      {/* Branch graph along the foot: a trunk, a branch that splits off and merges back. */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 48,
+          height: 3,
+          background: FAINT,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: 300,
+          width: 260,
+          bottom: 48,
+          height: 34,
+          borderTop: `3px solid ${FAINT}`,
+          borderLeft: `3px solid ${FAINT}`,
+          borderRight: `3px solid ${FAINT}`,
+          borderRadius: "18px 18px 0 0",
+        }}
+      />
+      {[90, 210, 700, 860, 980].map((x) => (
+        <div
+          key={x}
+          style={{
+            position: "absolute",
+            left: x - 8,
+            bottom: 41,
+            width: 17,
+            height: 17,
+            borderRadius: 999,
+            background: PAPER,
+            border: "3px solid rgba(20, 19, 15, 0.2)",
+          }}
+        />
+      ))}
+      {[380, 470].map((x) => (
+        <div
+          key={x}
+          style={{
+            position: "absolute",
+            left: x - 8,
+            bottom: 74,
+            width: 17,
+            height: 17,
+            borderRadius: 999,
+            background: "rgba(64, 196, 99, 0.6)",
+          }}
+        />
+      ))}
+
+      {/* Letterhead: Cell's head, the sender, a postmark. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+        <div
+          style={{
+            display: "flex",
+            width: 120,
+            height: 120,
+            borderRadius: 28,
+            overflow: "hidden",
+            background: "rgba(155, 233, 168, 0.4)",
+          }}
+        >
+          <img src={await art("head-cell")} width={120} height={120} alt="" />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 40, fontWeight: 800 }}>WrapYourGit</span>
+          <span style={{ fontSize: 26, fontWeight: 700, color: "#5C584E" }}>
+            From Cell · {data.meta.year} · @{data.profile.login}
+          </span>
+        </div>
+        <div
+          style={{
+            marginLeft: "auto",
+            width: 150,
+            height: 150,
+            borderRadius: 999,
+            border: "5px solid #E4572E",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: "rotate(-8deg)",
+          }}
+        >
+          <div
+            style={{
+              width: 112,
+              height: 112,
+              borderRadius: 999,
+              border: "3px solid #E4572E",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#E4572E",
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2 }}>DELIVERED</span>
+            <span style={{ fontSize: 32, fontWeight: 800, lineHeight: 1 }}>{data.meta.year}</span>
+            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2 }}>BY CELL</span>
+          </div>
+        </div>
+      </div>
+
+      {/* The rule: the last weeks of this person's own graph. */}
+      <div style={{ display: "flex", gap: 3, marginTop: 28 }}>
+        {strip.map((level, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: one square per day, in order
+            key={i}
+            style={{
+              width: 14.5,
+              height: 14.5,
+              borderRadius: 3,
+              background: HEAT[level] ?? HEAT[0],
+            }}
+          />
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
         {/* flexShrink 0: Satori squeezes flex children instead of overflowing, which stacks them. */}
         <span style={{ fontSize: 44, fontWeight: 800, flexShrink: 0 }}>{letter.greeting}</span>
         {letter.paragraphs.map((paragraph) => (
@@ -107,11 +251,31 @@ async function renderLetter(data: RecapData): Promise<ImageResponse> {
             {paragraph}
           </span>
         ))}
-        <span style={{ fontSize: 28, fontWeight: 700, marginTop: 22, flexShrink: 0 }}>
-          {letter.signOff}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          borderTop: "3px solid rgba(20, 19, 15, 0.15)",
+          paddingTop: 20,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 24 }}>{letter.signOff}</span>
+          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+            {GREENS.map((colour) => (
+              <div
+                key={colour}
+                style={{ width: 18, height: 18, borderRadius: 4, background: colour }}
+              />
+            ))}
+          </div>
+        </div>
+        <span style={{ fontSize: 24, fontWeight: 700 }}>
+          {SLIDE_TITLES.length}/{SLIDE_TITLES.length}
         </span>
       </div>
-      <div style={{ display: "flex", fontSize: 26, fontWeight: 700 }}>WrapYourGit</div>
     </div>,
     { ...SLIDE_SIZE, fonts: await cardFonts() },
   );
