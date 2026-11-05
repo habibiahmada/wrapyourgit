@@ -1,6 +1,6 @@
 # 0005. Vercel + Neon for dev/staging, AWS for production
 
-- Status: Accepted, cost review pending
+- Status: Accepted, cost review pending; production hosting amended by [0015](0015-production-on-vercel-first.md) (Vercel first)
 - Date: 2026-11-04
 
 ## Context
