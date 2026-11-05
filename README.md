@@ -34,7 +34,7 @@ contributions, streaks, the languages you lived in, the projects you built, and 
 
 <br>
 
-<img src="packages/video/public/art/hero-cast.png" alt="Cell, the WrapYourGit mascot, waving in a hard hat in front of a 3D contribution graph, with a beaver, a bee and an owl" width="720">
+<img src="packages/video/public/art/hero-cast.png" alt="Cell, the WrapYourGit mascot, waving in front of snapshots of a workshop, fireworks and mountains" width="720">
 
 </div>
 
@@ -98,14 +98,14 @@ The climax of the story names your archetype, with the facts that earned it. You
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="packages/video/public/art/skin-builder.png" alt="Cell as the Builder, with a beaver" width="220"><br><b>Builder</b> · with the beaver<br><sub>Created two or more repositories, or made 50+ commits to your own.</sub></td>
-    <td align="center" width="33%"><img src="packages/video/public/art/skin-consistent.png" alt="Cell as the Consistent one, with an ant" width="220"><br><b>Consistent</b> · with the ant<br><sub>Active on at least 30% of the days so far.</sub></td>
-    <td align="center" width="33%"><img src="packages/video/public/art/skin-explorer.png" alt="Cell as the Explorer, with a fox" width="220"><br><b>Explorer</b> · with the fox<br><sub>Wrote in four or more languages.</sub></td>
+    <td align="center" width="33%"><img src="packages/video/public/art/skin-builder.png" alt="Cell as the Builder: orange, in a hard hat, hammering in the workshop" width="220"><br><b>Builder</b> · orange, in a hard hat, hammering in the workshop<br><sub>Created two or more repositories, or made 50+ commits to your own.</sub></td>
+    <td align="center" width="33%"><img src="packages/video/public/art/skin-consistent.png" alt="Cell as the Consistent one: green, in a sweatband, running laps on the track" width="220"><br><b>Consistent</b> · green, in a sweatband, running laps on the track<br><sub>Active on at least 30% of the days so far.</sub></td>
+    <td align="center" width="33%"><img src="packages/video/public/art/skin-explorer.png" alt="Cell as the Explorer: sky blue, cap and backpack, waving from the mountains" width="220"><br><b>Explorer</b> · sky blue, cap and backpack, waving from the mountains<br><sub>Wrote in four or more languages.</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="packages/video/public/art/skin-collaborator.png" alt="Cell as the Collaborator, with a bee" width="220"><br><b>Collaborator</b> · with the bee<br><sub>Ten or more reviews, or ten or more pull requests to other people's repositories.</sub></td>
-    <td align="center"><img src="packages/video/public/art/skin-night-owl.png" alt="Cell as the Night owl, with an owl" width="220"><br><b>Night owl</b> · with the owl<br><sub>40%+ of sampled commits between 22:00 and 04:00. Estimated, and labelled so.</sub></td>
-    <td align="center"><img src="packages/video/public/art/skin-open-sourcer.png" alt="Cell as the Open sourcer, with an octopus" width="220"><br><b>Open sourcer</b> · with the octopus<br><sub>Contributed to three or more public repositories you don't own.</sub></td>
+    <td align="center"><img src="packages/video/public/art/skin-collaborator.png" alt="Cell as the Collaborator: pink, in a headset, handing work on over a shared map" width="220"><br><b>Collaborator</b> · pink, in a headset, handing work on over a shared map<br><sub>Ten or more reviews, or ten or more pull requests to other people's repositories.</sub></td>
+    <td align="center"><img src="packages/video/public/art/skin-night-owl.png" alt="Cell as the Night owl: lavender, owl tufts and glasses, grooving over the city at night" width="220"><br><b>Night owl</b> · lavender, owl tufts and glasses, grooving over the city at night<br><sub>40%+ of sampled commits between 22:00 and 04:00. Estimated, and labelled so.</sub></td>
+    <td align="center"><img src="packages/video/public/art/skin-open-sourcer.png" alt="Cell as the Open sourcer: teal, in a scarf, cheering by a community mural" width="220"><br><b>Open sourcer</b> · teal, in a scarf, cheering by a community mural<br><sub>Contributed to three or more public repositories you don't own.</sub></td>
   </tr>
 </table>
 

@@ -8,7 +8,7 @@ The 2026 edition, before its first release.
 
 ### Added
 
-- A live 3D cast for the story: a different chibi character in every scene, with arms, legs, head and face that move on the beat (ADR-0010) ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
+- A live 3D chibi Cell for the story, with arms, legs, head and face that move on the beat (ADR-0010) ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
 - A different camera-like transition for every cut (dive, tilt, whip pan, iris, blinds, card flip, a flash for the archetype, pull-back), a sound for every animation, and a gap-free looping soundtrack on the web; the MP4 carries the same effects on the same frames ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
 - Repositories you starred this year: count, the five most popular and their languages, on the dashboard and in the story's Community scene ([#14](https://github.com/habibiahmada/wrapyourgit/pull/14)).
 - One header for every page, a favicon and app icons from the six-cell mark, complete SEO for wrapyourgit.habibiahmada.dev (metadata, Open Graph, JSON-LD, sitemap, robots, manifest), `llms.txt` and `llms-full.txt`, and an author credit in the footer ([#12](https://github.com/habibiahmada/wrapyourgit/pull/12)).
@@ -21,6 +21,9 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- Cell hosts every scene of the story instead of a different character per scene, each time with its own pose, gear and place, in front of a public-domain photo; each archetype has its own colour, pose and photo; the 3D block cities, moon and floating cubes are gone (ADR-0012) ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
+- Slide exports (PNG, ZIP, PDF) are frames of the story composition, so they match the story exactly (ADR-0011) ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
+- Every page, the landing sample reel, the README and the docs show the chibi Cell; the old cube mascot is retired ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
 - The soundtrack is more energetic: four-on-the-floor kick, sixteenth hats, a driving bass and a lead hook, on the same 120 BPM grid ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
 - Illustrations use a matte, studio-lit finish ([#10](https://github.com/habibiahmada/wrapyourgit/pull/10)).
 - The landing hero fills 90% of the viewport with the contribution graph at its base ([#10](https://github.com/habibiahmada/wrapyourgit/pull/10)).
