@@ -1,4 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The still worker and client use Node's child_process and streams.
+    "types": ["bun", "node"]
+  },
   "include": ["src"]
 }
