@@ -55,14 +55,14 @@ Migrations only add; to roll back the code, keep the schema and deploy the previ
 
 1. **Neon:** create a project (Postgres 16), copy the pooled connection string, and run the migrations against it (above).
 2. **Vercel:** import the GitHub repository and set:
-   - Root Directory: `apps/web` (keep "Include files outside the root directory" on: the app imports `packages/*` and `apps/renderer`, and `public/art`, `audio`, `lang`, `photos` and `sprites` are symlinks into `packages/video/public`).
+   - Root Directory: `apps/web` (keep "Include files outside the root directory" on: the app imports `packages/*` and `apps/renderer`). `apps/web` copies `art`, `audio`, `lang`, `photos` and `sprites` from `packages/video/public` into its `public` folder before `dev` and `build` (`scripts/sync-web-public.ts`); they used to be symlinks, which Vercel's output step can't copy.
    - Install command: `bun install --frozen-lockfile`. Build command: `bun run build`.
    - Environment variables from the table above, with `APP_URL` set to the staging URL.
 3. Deploy, then sign in with the staging GitHub App.
 
 **Check on first deploy:**
 
-- Vercel installs from the repository root (Bun workspaces) and the symlinked `public` folders resolve: `/art/hero-cast.webp`, `/sprites/wave.webp` and `/audio/` files load with 200.
+- Vercel installs from the repository root (Bun workspaces) and the copied `public` folders are served: `/art/hero-cast.webp`, `/sprites/wave.webp` and `/audio/` files load with 200.
 - A sync (about 20 seconds against GitHub) finishes within the plan's function time limit.
 - The export routes answer 503 with the message above, not 500.
 
