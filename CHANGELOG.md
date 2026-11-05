@@ -8,6 +8,7 @@ The 2026 edition, before its first release.
 
 ### Added
 
+- The contribution workflow is enforced: git hooks installed by `bun install`, a CI `Policy` check, merge-commit-only repository settings, and rulesets ready for when the repository is public (ADR-0014) ([#28](https://github.com/habibiahmada/wrapyourgit/issues/28)).
 - A live 3D chibi Cell for the story, with arms, legs, head and face that move on the beat (ADR-0010) ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
 - A different camera-like transition for every cut (dive, tilt, whip pan, iris, blinds, card flip, a flash for the archetype, pull-back), a sound for every animation, and a gap-free looping soundtrack on the web; the MP4 carries the same effects on the same frames ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
 - Repositories you starred this year: count, the five most popular and their languages, on the dashboard and in the story's Community scene ([#14](https://github.com/habibiahmada/wrapyourgit/pull/14)).
