@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PDFDocument } from "pdf-lib";
 import { getCurrentUser } from "@/server/auth";
+import { slideExportsAvailable } from "@/server/exports";
 import { getRecap } from "@/server/recaps";
 import { SLIDE_SIZE, SLIDE_TITLES, slidePng, slidesUnavailable } from "@/server/slides";
 
@@ -8,6 +9,8 @@ import { SLIDE_SIZE, SLIDE_TITLES, slidePng, slidesUnavailable } from "@/server/
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return new NextResponse("Sign in first", { status: 401 });
+  // Both need every chapter slide; don't start renders that can't finish here.
+  if (!slideExportsAvailable()) return slidesUnavailable();
   const recap = await getRecap(user.id);
   if (!recap) return new NextResponse("Build your recap first", { status: 404 });
 
