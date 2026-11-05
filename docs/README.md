@@ -10,6 +10,7 @@
 | [video/scene-system.md](video/scene-system.md)       | Scenes, layouts, animation rules, audio, export       | Scenes, formats or the audio approach change       |
 | [../DESIGN.md](../DESIGN.md)                         | Visual direction: palette, type, motif, dials         | The look of the story changes                      |
 | [development/setup.md](development/setup.md)         | Local setup, env vars, GitHub App, AWS                | Setup steps change                                 |
+| [deployment/guide.md](deployment/guide.md)           | Staging (Vercel + Neon), production (VPS), backups    | Hosting, env vars or the release steps change      |
 | [security/](security/)                               | Security reviews: findings, fixes, what stays open    | After each review                                  |
 
 **Source of truth order:** code + tests > metrics.md / ADRs > PRD. If they disagree, fix the doc in the same change.

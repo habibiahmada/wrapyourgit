@@ -182,7 +182,7 @@ bun run --filter @wyg/web db:migrate
 bun run dev                             # http://localhost:3000
 ```
 
-Just want to see the video? `bun run studio` opens Remotion Studio with sample data, no sign-in needed. The full guide, including creating your own GitHub App, is in [docs/development/setup.md](docs/development/setup.md).
+Just want to see the video? `bun run studio` opens Remotion Studio with sample data, no sign-in needed. The full guide, including creating your own GitHub App, is in [docs/development/setup.md](docs/development/setup.md); running it on a server is in [docs/deployment/guide.md](docs/deployment/guide.md).
 
 | Command             | What it does                                         |
 | ------------------- | ---------------------------------------------------- |

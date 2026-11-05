@@ -25,4 +25,4 @@ Users will want their **final** 2026 recap in early January, exactly when credit
 
 ## Consequences
 
-Two deployment targets to keep working; production Dockerfile + deploy docs needed in M7.
+Two deployment targets to keep working. The steps are in [docs/deployment/guide.md](../../deployment/guide.md) (a systemd service on the VPS for now; a Dockerfile is still open for M7).
