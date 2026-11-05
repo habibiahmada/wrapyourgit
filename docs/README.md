@@ -26,4 +26,6 @@
 | [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions          | Accepted                       |
 | [0007](architecture/decisions/0007-soundtrack-sourcing.md)               | Soundtrack: CC0/royalty-free tracks first, generated later        | Accepted (synth track for MVP) |
 | [0009](architecture/decisions/0009-sound-design.md)                      | Effects in the composition, music on Web Audio outside the Player | Accepted                       |
-| [0010](architecture/decisions/0010-live-3d-cast.md)                      | The story cast is live 3D chibi characters, rendered every frame  | Accepted                       |
+| [0010](architecture/decisions/0010-live-3d-cast.md)                      | The story cast is live 3D chibi characters, rendered every frame  | Accepted, point 3 superseded   |
+| [0011](architecture/decisions/0011-slides-from-the-composition.md)       | Exported slides are frames of the story composition               | Accepted                       |
+| [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art    | Accepted                       |

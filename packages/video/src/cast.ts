@@ -1,82 +1,111 @@
 import type { ArchetypeId } from "@wyg/schema";
+import type { PhotoId } from "./photos";
 import { C } from "./three/palette";
 import { CELL, type ChibiMotion, type Look } from "./three/pose";
 import type { SceneId } from "./timeline";
 
 /*
- * Who appears in each scene, and what they do. A different character for every scene (colour,
- * head, eyes, what it wears) so the story has a cast, not one mascot pasted nine times. Colours
- * are picked against the scene's field so every character stands out from it. Cell, the host,
- * opens, takes the archetype and closes.
+ * Who appears in each scene, and where. One mascot: Cell, the host, in every scene, so the story
+ * reads as one character's tour of the year. Variety comes from what Cell does and wears: every
+ * scene has its own motion and gear; some show Cell as a giant silhouette instead (accents.tsx).
  */
 
 export type Role = { look: Look; motion: ChibiMotion };
 
-export const CAST: Record<Exclude<SceneId, "community" | "identity">, Role> = {
-  // Ink field. The host says hello.
+/** An archetype's Cell also has a place: the photo behind it in the baked art (`skin-*`). */
+export type ArchetypeRole = Role & {
+  photo: PhotoId;
+  /** Card tilt, degrees. */
+  tilt: number;
+};
+
+export const CAST: Record<Exclude<SceneId, "identity">, Role> = {
+  // Hello, waving.
   intro: { look: CELL, motion: "wave" },
-  // Persimmon field. A round blue fan with antennas, jumping for the big number.
+  // The big number gets a jump.
   contributions: {
-    look: { body: C.cobalt, head: "round", eyes: "happy", top: "antennas" },
+    look: { ...CELL, eyes: "happy" },
     motion: "cheer",
   },
-  // Paper field. A slim dark-green runner with a visor and a sweatband, keeping the streak.
-  rhythm: {
-    look: {
-      body: C.heat[3],
-      head: "tall",
-      eyes: "visor",
-      top: "none",
-      gear: ["sweatband"],
-      slim: true,
-    },
-    motion: "run",
-  },
-  // Cobalt field. A cream boxy thinker with glasses, working out the languages.
-  "tech-dna": {
-    look: { body: C.paper, head: "cube", eyes: "dots", top: "ball", gear: ["glasses"] },
-    motion: "think",
-  },
-  // Paper field. A wide persimmon builder in a hard hat, hammering on the beat.
+  // Keeping the streak, in a sweatband.
+  rhythm: { look: { ...CELL, gear: ["sweatband"] }, motion: "run" },
+  // Working out the languages, glasses on.
+  "tech-dna": { look: { ...CELL, gear: ["glasses"] }, motion: "think" },
+  // Hammering on the beat, hard hat on.
   projects: {
-    look: {
-      body: C.persimmon,
-      head: "wide",
-      eyes: "cells",
-      top: "none",
-      gear: ["hardhat", "hammer"],
-    },
+    look: { ...CELL, gear: ["hardhat", "hammer"] },
     motion: "hammer",
   },
-  // Ink field. A mint collaborator in a headset, nodding along.
-  engineering: {
-    look: { body: C.heat[0], head: "squircle", eyes: "dots", top: "none", gear: ["headset"] },
-    motion: "groove",
-  },
-  // Ink field. Cell again, crowned, proud of the year.
+  // Celebrating the stars, in a scarf.
+  community: { look: { ...CELL, gear: ["scarf"] }, motion: "celebrate" },
+  // Grooving, headset on.
+  engineering: { look: { ...CELL, gear: ["headset"] }, motion: "groove" },
+  // Crowned, proud of the year.
   closing: {
     look: { ...CELL, eyes: "happy", gear: ["crown"] },
     motion: "proud",
   },
 };
 
-/** Community: three friends passing a contribution cell, Cell in the middle. */
-export const CREW: { look: Look; x: number; seed: number }[] = [
-  { look: { body: C.heat[0], head: "round", eyes: "dots", top: "antennas" }, x: -1.35, seed: 1 },
-  { look: CELL, x: 0, seed: 0 },
-  { look: { body: C.heat[2], head: "cube", eyes: "happy", top: "ball" }, x: 1.35, seed: 2 },
-];
+/**
+ * Each archetype's colour for Cell's body. Distinct from each other and from the photo behind
+ * it; Consistent keeps Cell's own green.
+ */
+export const ARCHETYPE_COLORS: Record<ArchetypeId, string> = {
+  builder: "#FF8A3D",
+  consistent: C.green,
+  explorer: "#38BDF8",
+  collaborator: "#FF7AB6",
+  "night-owl": "#A78BFA",
+  "open-sourcer": "#2DD4BF",
+};
 
-/** Identity: Cell dressed as the person's archetype, celebrating; asleep when there is none. */
-export function archetypeRole(archetype: ArchetypeId | null): Role {
-  if (!archetype) return { look: { ...CELL, eyes: "sleepy" }, motion: "sleep" };
-  const gear: Record<ArchetypeId, Look> = {
-    builder: { ...CELL, gear: ["hardhat", "hammer"] },
-    consistent: { ...CELL, gear: ["sweatband"] },
-    explorer: { ...CELL, gear: ["cap", "backpack"] },
-    collaborator: { ...CELL, gear: ["headset"] },
-    "night-owl": { ...CELL, top: "tufts", eyes: "happy" },
-    "open-sourcer": { ...CELL, gear: ["scarf"] },
+/**
+ * Identity: Cell as the person's archetype, with that archetype's colour, gear, pose and place;
+ * asleep at the desk when there is none.
+ */
+export function archetypeRole(archetype: ArchetypeId | null): ArchetypeRole {
+  if (!archetype) {
+    return { look: { ...CELL, eyes: "sleepy" }, motion: "sleep", photo: "desk", tilt: -2 };
+  }
+  const body = ARCHETYPE_COLORS[archetype];
+  const roles: Record<ArchetypeId, ArchetypeRole> = {
+    builder: {
+      look: { ...CELL, body, gear: ["hardhat", "hammer"] },
+      motion: "hammer",
+      photo: "workshop",
+      tilt: -3,
+    },
+    consistent: {
+      look: { ...CELL, body, gear: ["sweatband"] },
+      motion: "run",
+      photo: "track",
+      tilt: 3,
+    },
+    explorer: {
+      look: { ...CELL, body, eyes: "happy", gear: ["cap", "backpack"] },
+      motion: "wave",
+      photo: "mountains",
+      tilt: -2,
+    },
+    collaborator: {
+      look: { ...CELL, body, eyes: "happy", gear: ["headset"] },
+      motion: "pass",
+      photo: "map",
+      tilt: 2,
+    },
+    "night-owl": {
+      look: { ...CELL, body, top: "tufts", gear: ["glasses"] },
+      motion: "groove",
+      photo: "skyline",
+      tilt: -3,
+    },
+    "open-sourcer": {
+      look: { ...CELL, body, eyes: "happy", gear: ["scarf"] },
+      motion: "cheer",
+      photo: "mural",
+      tilt: 3,
+    },
   };
-  return { look: gear[archetype], motion: "celebrate" };
+  return roles[archetype];
 }

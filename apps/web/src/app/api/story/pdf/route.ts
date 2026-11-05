@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { PDFDocument } from "pdf-lib";
 import { getCurrentUser } from "@/server/auth";
 import { getRecap } from "@/server/recaps";
-import { SLIDE_SIZE, SLIDE_TITLES, slidePng } from "@/server/slides";
+import { SLIDE_SIZE, SLIDE_TITLES, slidePng, slidesUnavailable } from "@/server/slides";
 
 /** The whole story, letter included, as a PDF: one 4:5 page per slide. */
 export async function GET() {
@@ -12,7 +12,12 @@ export async function GET() {
   if (!recap) return new NextResponse("Build your recap first", { status: 404 });
 
   const syncedAt = recap.syncedAt.toISOString();
-  const slides = await Promise.all(SLIDE_TITLES.map((_, i) => slidePng(user.id, syncedAt, i)));
+  let slides: (Uint8Array<ArrayBuffer> | null)[];
+  try {
+    slides = await Promise.all(SLIDE_TITLES.map((_, i) => slidePng(user.id, syncedAt, i)));
+  } catch (error) {
+    return slidesUnavailable(error);
+  }
   const pdf = await PDFDocument.create();
   pdf.setTitle(`WrapYourGit ${recap.data.meta.year}: @${user.login}`);
   pdf.setCreator("WrapYourGit");

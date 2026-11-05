@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { archetypeIdSchema } from "@wyg/schema";
-import { archetypeRole, CAST, CREW } from "./cast";
-import { type ChibiMotion, chibiPose } from "./three/pose";
+import { ARCHETYPE_COLORS, archetypeRole, CAST } from "./cast";
+import { CELL, type ChibiMotion, chibiPose } from "./three/pose";
 
 const MOTIONS: ChibiMotion[] = [
   "wave",
@@ -17,24 +17,25 @@ const MOTIONS: ChibiMotion[] = [
 ];
 
 describe("cast", () => {
-  test("the scenes with a guest each have a different character", () => {
-    const guests = Object.entries(CAST).filter(([id]) => id !== "intro" && id !== "closing");
-    const looks = guests.map(([, role]) => JSON.stringify(role.look));
-    expect(new Set(looks).size).toBe(looks.length);
+  test("Cell hosts every scene: one mascot, green throughout", () => {
+    for (const role of Object.values(CAST)) {
+      expect(role.look.body).toBe(CELL.body);
+      expect(role.look.head).toBe(CELL.head);
+    }
   });
 
-  test("every solo scene has its own motion", () => {
-    const motions = Object.values(CAST).map((role) => role.motion);
-    expect(new Set(motions).size).toBe(motions.length);
+  test("every scene has its own motion", () => {
+    const roles = Object.values(CAST);
+    expect(new Set(roles.map((role) => role.motion)).size).toBe(roles.length);
   });
 
-  test("the crew is three different friends", () => {
-    expect(new Set(CREW.map((member) => JSON.stringify(member.look))).size).toBe(3);
-  });
-
-  test("every archetype dresses Cell differently; no archetype dozes", () => {
-    const looks = archetypeIdSchema.options.map((id) => JSON.stringify(archetypeRole(id).look));
-    expect(new Set(looks).size).toBe(archetypeIdSchema.options.length);
+  test("every archetype has its own colour, pose and photo; no archetype dozes", () => {
+    const ids = archetypeIdSchema.options;
+    const roles = ids.map((id) => archetypeRole(id));
+    expect(new Set(ids.map((id) => ARCHETYPE_COLORS[id])).size).toBe(ids.length);
+    expect(new Set(roles.map((role) => role.motion)).size).toBe(ids.length);
+    expect(new Set(roles.map((role) => role.photo)).size).toBe(ids.length);
+    for (const id of ids) expect(archetypeRole(id).look.body).toBe(ARCHETYPE_COLORS[id]);
     expect(archetypeRole(null).motion).toBe("sleep");
   });
 });

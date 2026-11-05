@@ -1,22 +1,13 @@
 import { VIDEO_FORMATS, VIDEO_FPS, type VideoFormatId } from "@wyg/schema";
 import { Composition } from "remotion";
 import { sampleRecap } from "./fixtures/sample-recap";
-import { ArtStill } from "./three/ArtStill";
+import { type ArtId, ArtStill } from "./three/ArtStill";
 import { STORY_DURATION_IN_FRAMES, WrapStory } from "./WrapStory";
 
 export const ART_IDS = [
-  "hero",
-  "builder",
-  "consistent",
-  "explorer",
-  "collaborator",
-  "night-owl",
-  "open-sourcer",
-  "cell-think",
-  "cell-proud",
-  "cell-sleep",
-  // Transparent cutouts for the story scenes: Cell peeking, cheering, thinking, and the
-  // archetype props alone, used as silhouettes and runner-up badges.
+  // Baked stills of the story's chibi cast (three/ArtStill.tsx), for the web pages, loading
+  // states, the OG image and the letter slide. Same rig and looks as the live story.
+  "hero-cast",
   "cutout-cell-wave",
   "cutout-cell-cheer",
   "cutout-cell-think",
@@ -28,16 +19,13 @@ export const ART_IDS = [
   "cutout-collaborator",
   "cutout-night-owl",
   "cutout-open-sourcer",
-  // Cartoon characters (toon-shaded Cell in costume with the archetype's animal) and the
-  // stage-less hero cast, for the web pages, the identity scene and the exports.
-  "hero-cast",
   "skin-builder",
   "skin-consistent",
   "skin-explorer",
   "skin-collaborator",
   "skin-night-owl",
   "skin-open-sourcer",
-] as const;
+] as const satisfies readonly ArtId[];
 
 /** One composition per export format. Composition id = `wrap-<format>`, e.g. `wrap-9x16`. */
 export function Root() {

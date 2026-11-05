@@ -15,7 +15,7 @@ How the story and the exported video are built. Code: `packages/video`.
 | Track         | `src/audio/track.ts`                 | BPM, sections and `beats(n)`; scene durations are whole beats                                          |
 | Transition    | `src/components/SceneTransition.tsx` | Opens every scene after the intro; each cut has its own move, set per scene in `timeline.ts`           |
 | Sound effects | `src/components/Sfx.tsx`             | `<Sfx>`, `CountTicks`; rendered by the components that move (`Slam`, bars, transitions)                |
-| Accent        | `src/accents.tsx`                    | Per-scene illustration (baked cutout) passed to `Field` through `AccentContext`, drawn behind the text |
+| Accent        | `src/accents.tsx`                    | Per-scene live 3D character (`cast.ts`, `LiveAccent`) passed to `Field` through `AccentContext`        |
 
 ## Rules
 
@@ -44,19 +44,21 @@ Order, length and field color live in `src/timeline.ts`; `timeline.test.ts` chec
 | 8   | identity      | 16    | persimmon | archetype reveal (heavier spring) and its reasons; honest line when null        | climax: crash      |
 | 9   | closing       | 14    | ink       | handle, four headline facts, the year as a small graph, "Made with WrapYourGit" | outro, fade        |
 
-Cast (`src/cast.ts`, drawn by `src/three/ChibiCell.tsx`, ADR-0010). Every scene has its own live 3D character with real joints, rendered each frame by `LiveAccent` in the space its scene leaves empty, with its own position per layout family, tuned from rendered stills so it never covers a number or label. Re-check with stills of all three families after changing a scene's layout.
+Cast (`src/cast.ts`, drawn by `src/three/ChibiCell.tsx`, ADR-0010 and ADR-0012). Cell is the only mascot. Five scenes draw it live in 3D with `LiveAccent`, on the field with no backdrop, in the space the scene leaves empty, with a position per layout family tuned from rendered stills so it never covers a number or label. Four scenes show it as a giant faint silhouette instead. Every scene has GitHub motifs on its field (`components/Backdrop.tsx`): contribution cells in the frame margin, and a branch graph along a free edge where marked. Re-check with stills of all three families after changing a scene's layout.
 
-| Scene         | Character                                                       | Motion                          |
-| ------------- | --------------------------------------------------------------- | ------------------------------- |
-| intro         | Cell: green squircle, lit-cell eyes, sprout                     | waves                           |
-| contributions | round cobalt fan with antennas and happy eyes                   | jumps with both arms up         |
-| rhythm        | slim dark-green runner, visor eyes, sweatband                   | runs on the spot                |
-| tech-dna      | cream boxy thinker with glasses and a ball antenna              | hand to chin, eyes drifting     |
-| projects      | wide persimmon builder in a hard hat with a hammer              | hammers on every beat           |
-| community     | three friends (mint, Cell, dark green) and a tossed cell        | pass the cell, one throw a beat |
-| engineering   | mint collaborator in a headset                                  | nods to the beat                |
-| identity      | Cell in the person's archetype gear (asleep when there is none) | celebrates                      |
-| closing       | Cell with a crown and happy eyes                                | proud, arms akimbo              |
+| Scene         | Cell                                                                 | Motion                  | Field motifs       |
+| ------------- | -------------------------------------------------------------------- | ----------------------- | ------------------ |
+| intro         | live: green squircle, lit-cell eyes, sprout                          | waves                   | cells              |
+| contributions | live, happy eyes                                                     | jumps with both arms up | cells, branch top  |
+| rhythm        | silhouette, running (sweatband)                                      | rises, sways            | cells              |
+| tech-dna      | silhouette, thinking                                                 | rises, sways            | cells, branch foot |
+| projects      | live, hard hat and hammer                                            | hammers on every beat   | cells, branch foot |
+| community     | silhouette, cheering                                                 | rises, sways            | cells, branch top  |
+| engineering   | silhouette, headset                                                  | rises, sways            | cells, branch foot |
+| identity      | live, the archetype's own colour, gear and pose (asleep without one) | per archetype           | cells, branch top  |
+| closing       | live, crown and happy eyes                                           | proud, arms akimbo      | cells              |
+
+**Cell between chapters** (`CellDash`): for the first three beats after every cut except into identity, Cell runs sideways across the frame in the next scene's gear (alternating direction; into tech-dna and community it hops), leaving a trail of contribution cells. Live accents enter after it has left, and a chapter's last frame never shows it.
 
 Local renders: use `--gl=angle-egl --concurrency=2` (parallel tabs contend for WebGL, ADR-0010).
 
@@ -97,3 +99,5 @@ See [ADR-0009](../architecture/decisions/0009-sound-design.md). Files in `packag
 | Where   | Remotion Lambda ([ADR-0004](../architecture/decisions/0004-render-on-remotion-lambda.md)) |
 
 Local test render: `bun run --filter @wyg/video render wrap-9x16 out/test-9x16.mp4`
+
+**Slides (PNG, ZIP, PDF)** are frames of this composition, not a separate design: slide _n_ is the last frame of chapter _n_ in `wrap-4x5` (1080 × 1350), rendered by `renderSceneStill` (`@wyg/renderer/still`), and slide 10 is the letter ([ADR-0011](../architecture/decisions/0011-slides-from-the-composition.md)). A change to a scene changes its slide automatically.

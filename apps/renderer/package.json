@@ -4,17 +4,21 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./still": "./src/still-client.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "deploy": "bun src/deploy.ts"
   },
   "dependencies": {
+    "@remotion/bundler": "4.0.540",
     "@remotion/lambda": "4.0.540",
+    "@remotion/renderer": "4.0.540",
     "@wyg/schema": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "typescript": "^7"
   }
 }

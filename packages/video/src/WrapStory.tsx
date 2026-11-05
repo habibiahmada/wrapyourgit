@@ -1,6 +1,6 @@
 import type { RecapData } from "@wyg/schema";
 import { AbsoluteFill, Freeze, Html5Audio, interpolate, Series, staticFile } from "remotion";
-import { sceneAccent } from "./accents";
+import { sceneAccent, sceneDash } from "./accents";
 import { beats, TRACK } from "./audio/track";
 import { AccentContext } from "./components/Field";
 import { SceneTransition } from "./components/SceneTransition";
@@ -96,6 +96,7 @@ export function WrapStory({ data, music = true }: WrapStoryProps) {
                   <AccentContext value={sceneAccent(id, data, layout)}>
                     <Component data={data} />
                   </AccentContext>
+                  {sceneDash(id)}
                 </SceneTransition>
               ) : (
                 <AccentContext value={sceneAccent(id, data, layout)}>

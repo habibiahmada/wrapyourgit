@@ -2,7 +2,7 @@ import { zipSync } from "fflate";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/server/auth";
 import { getRecap } from "@/server/recaps";
-import { SLIDE_TITLES, slideFileName, slidePng } from "@/server/slides";
+import { SLIDE_TITLES, slideFileName, slidePng, slidesUnavailable } from "@/server/slides";
 
 /** Every story slide as PNG in one ZIP. PNGs are already compressed, so entries are stored. */
 export async function GET() {
@@ -13,12 +13,16 @@ export async function GET() {
 
   const syncedAt = recap.syncedAt.toISOString();
   const files: Record<string, Uint8Array> = {};
-  await Promise.all(
-    SLIDE_TITLES.map(async (_, i) => {
-      const png = await slidePng(user.id, syncedAt, i);
-      if (png) files[slideFileName(recap.data.meta.year, user.login, i)] = png;
-    }),
-  );
+  try {
+    await Promise.all(
+      SLIDE_TITLES.map(async (_, i) => {
+        const png = await slidePng(user.id, syncedAt, i);
+        if (png) files[slideFileName(recap.data.meta.year, user.login, i)] = png;
+      }),
+    );
+  } catch (error) {
+    return slidesUnavailable(error);
+  }
   const zip = zipSync(files, { level: 0 });
   return new NextResponse(new Uint8Array(zip), {
     headers: {
