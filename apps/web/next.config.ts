@@ -6,7 +6,14 @@ const nextConfig: NextConfig = {
   images: { remotePatterns: [{ protocol: "https", hostname: "avatars.githubusercontent.com" }] },
   partialPrefetching: true,
   // Workspace packages ship TypeScript source (no build step), so Next must compile them.
-  transpilePackages: ["@wyg/schema", "@wyg/analytics", "@wyg/github", "@wyg/video", "three"],
+  transpilePackages: [
+    "@wyg/schema",
+    "@wyg/analytics",
+    "@wyg/github",
+    "@wyg/video",
+    "@wyg/renderer",
+    "three",
+  ],
   turbopack: {
     rules: {
       "*.css": {

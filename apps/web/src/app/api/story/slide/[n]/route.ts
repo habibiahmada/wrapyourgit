@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/server/auth";
 import { getRecap } from "@/server/recaps";
-import { SLIDE_TITLES, slideFileName, slidePng } from "@/server/slides";
+import { SLIDE_TITLES, slideFileName, slidePng, slidesUnavailable } from "@/server/slides";
 
 /**
  * One story slide as PNG. `?download` sends it as an attachment; without it the image is shown
@@ -15,7 +15,12 @@ export async function GET(request: Request, { params }: RouteContext<"/api/story
     return new NextResponse("No such slide", { status: 404 });
   }
   const recap = await getRecap(user.id);
-  const png = recap && (await slidePng(user.id, recap.syncedAt.toISOString(), index));
+  let png: Uint8Array<ArrayBuffer> | null = null;
+  try {
+    png = recap && (await slidePng(user.id, recap.syncedAt.toISOString(), index));
+  } catch (error) {
+    return slidesUnavailable(error);
+  }
   if (!recap || !png) return new NextResponse("Build your recap first", { status: 404 });
 
   const headers: Record<string, string> = {
