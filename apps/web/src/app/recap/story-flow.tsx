@@ -99,6 +99,18 @@ export function StoryFlow({ data }: { data: RecapData }) {
   const inFrame = SCENE_STARTS[sceneIndex] ?? 0;
   const outFrame = inFrame + (SCENES[sceneIndex]?.durationInFrames ?? 1) - 1;
 
+  // Reduced motion (scene-system rule 7, R-39): each chapter opens on its finished last frame and
+  // never plays by itself, so the live cast and the cuts stay still. Replay still plays it, on
+  // request. Tracked live, so changing the OS setting mid-story applies to the next chapter.
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
   const replay = useCallback(() => {
     const ref = player.current;
     if (!ref) return;
@@ -274,10 +286,11 @@ export function StoryFlow({ data }: { data: RecapData }) {
             <div className="w-full max-w-5xl">
               <Player
                 ref={player}
-                // One mount per scene: starts at the scene's first frame and plays inside its fence.
-                key={sceneIndex}
-                initialFrame={inFrame}
-                autoPlay={current?.kind === "scene"}
+                // One mount per scene: starts at the scene's first frame and plays inside its fence,
+                // or, with reduced motion, opens on the finished last frame and waits.
+                key={`${sceneIndex}-${reduceMotion}`}
+                initialFrame={reduceMotion ? outFrame : inFrame}
+                autoPlay={!reduceMotion && current?.kind === "scene"}
                 initiallyMuted={muted}
                 // Stay on the last frame when the scene ends; jumping back showed an empty wipe frame.
                 moveToBeginningWhenEnded={false}
