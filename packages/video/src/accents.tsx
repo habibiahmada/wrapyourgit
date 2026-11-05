@@ -1,14 +1,14 @@
 import type { LayoutFamily, RecapData } from "@wyg/schema";
 import type { ReactNode } from "react";
 import { beats } from "./audio/track";
-import { archetypeRole, CAST, CREW, type Role } from "./cast";
+import { archetypeRole, CAST, type Role } from "./cast";
 import { LiveAccent } from "./components/LiveAccent";
-import { Chibi, TossedBlock } from "./three/ChibiCell";
+import { Chibi } from "./three/ChibiCell";
 import type { SceneId } from "./timeline";
 
 /*
- * One character per scene (cast.ts), rendered live in 3D so its limbs, head and face move,
- * placed in the space that scene's layout leaves empty: large, without covering a number or a
+ * Cell in every scene (cast.ts), rendered live in 3D so its limbs, head and face move, in
+ * front of that scene's backdrop photo, placed in the space that scene's layout leaves empty: large, without covering a number or a
  * label. Positions are tuned per layout family from rendered stills of the sample and edge
  * recaps (docs/video/scene-system.md).
  */
@@ -25,7 +25,7 @@ function solo(
 ): ReactNode {
   const { x, y, size } = spots[layout];
   return (
-    <LiveAccent at={at} enter={enter} x={x} y={y} size={size}>
+    <LiveAccent at={at} enter={enter} x={x} y={y} size={size} photo={role.photo} tilt={role.tilt}>
       {(t) => <Chibi look={role.look} motion={role.motion} t={t} />}
     </LiveAccent>
   );
@@ -48,8 +48,8 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
     case "contributions":
       return solo(
         {
-          portrait: { x: 0.7, y: 0.5, size: 0.9 },
-          compact: { x: 0.76, y: 0.5, size: 0.66 },
+          portrait: { x: 0.62, y: 0.52, size: 0.7 },
+          compact: { x: 0.76, y: 0.55, size: 0.48 },
           landscape: { x: 0.82, y: 0.74, size: 0.5 },
         },
         layout,
@@ -60,7 +60,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
     case "rhythm":
       return solo(
         {
-          portrait: { x: 0.66, y: 0.78, size: 0.8 },
+          portrait: { x: 0.58, y: 0.84, size: 0.72 },
           compact: { x: 0.64, y: 0.46, size: 0.6 },
           landscape: { x: 0.56, y: 0.55, size: 0.5 },
         },
@@ -72,8 +72,8 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
       return solo(
         {
           portrait: { x: 0.66, y: 0.53, size: 0.72 },
-          compact: { x: 0.84, y: 0.47, size: 0.42 },
-          landscape: { x: 0.45, y: 0.76, size: 0.36 },
+          compact: { x: 0.74, y: 0.17, size: 0.4 },
+          landscape: { x: 0.48, y: 0.84, size: 0.36 },
         },
         layout,
         CAST["tech-dna"],
@@ -82,56 +82,31 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
     case "projects":
       return solo(
         {
-          portrait: { x: 0.58, y: 0.45, size: 0.85 },
-          compact: { x: 0.62, y: 0.42, size: 0.6 },
-          landscape: { x: 0.44, y: 0.8, size: 0.34 },
+          portrait: { x: 0.56, y: 0.47, size: 0.72 },
+          compact: { x: 0.6, y: 0.465, size: 0.38 },
+          landscape: { x: 0.2, y: 0.84, size: 0.34 },
         },
         layout,
         CAST.projects,
         beats(1),
       );
-    case "community": {
-      // Three friends passing a contribution cell, one throw per beat.
-      const { x, y, size } = {
-        portrait: { x: 0.54, y: 0.52, size: 1.0 },
-        compact: { x: 0.66, y: 0.56, size: 0.75 },
-        landscape: { x: 0.74, y: 0.36, size: 0.66 },
-      }[layout];
-      return (
-        <LiveAccent
-          at={beats(4)}
-          enter="right"
-          x={x}
-          y={y}
-          size={size}
-          aspect={1.5}
-          camera={{ z: 7.4, y: 1.7, look: 1 }}
-        >
-          {(t) => (
-            <>
-              {CREW.map((member) => (
-                <Chibi
-                  key={member.x}
-                  look={member.look}
-                  motion="pass"
-                  t={t}
-                  seed={member.seed}
-                  position={[member.x, 0, 0]}
-                  rotationY={-member.x * 0.25}
-                  scale={0.82}
-                />
-              ))}
-              <TossedBlock from={[-1.2, 1.0, 0.45]} to={[1.2, 1.0, 0.45]} t={t} />
-            </>
-          )}
-        </LiveAccent>
+    case "community":
+      return solo(
+        {
+          portrait: { x: 0.56, y: 0.5, size: 0.68 },
+          compact: { x: 0.72, y: 0.56, size: 0.5 },
+          landscape: { x: 0.74, y: 0.36, size: 0.6 },
+        },
+        layout,
+        CAST.community,
+        beats(4),
+        "right",
       );
-    }
     case "engineering":
       return solo(
         {
-          portrait: { x: 0.6, y: 0.82, size: 0.8 },
-          compact: { x: 0.74, y: 0.78, size: 0.55 },
+          portrait: { x: 0.6, y: 0.885, size: 0.6 },
+          compact: { x: 0.8, y: 0.76, size: 0.42 },
           landscape: { x: 0.84, y: 0.8, size: 0.4 },
         },
         layout,
@@ -141,9 +116,9 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
     case "identity":
       return solo(
         {
-          portrait: { x: 0.64, y: 0.8, size: 0.85 },
-          compact: { x: 0.7, y: 0.8, size: 0.62 },
-          landscape: { x: 0.76, y: 0.66, size: 0.72 },
+          portrait: { x: 0.6, y: 0.865, size: 0.62 },
+          compact: { x: 0.8, y: 0.87, size: 0.42 },
+          landscape: { x: 0.8, y: 0.66, size: 0.66 },
         },
         layout,
         archetypeRole(data.identity.archetype),
@@ -153,7 +128,7 @@ export function sceneAccent(id: SceneId, data: RecapData, layout: LayoutFamily):
       return solo(
         {
           portrait: { x: 0.74, y: 0.42, size: 0.62 },
-          compact: { x: 0.8, y: 0.4, size: 0.46 },
+          compact: { x: 0.78, y: 0.25, size: 0.36 },
           landscape: { x: 0.88, y: 0.8, size: 0.4 },
         },
         layout,

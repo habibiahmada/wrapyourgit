@@ -514,37 +514,6 @@ export function Chibi({
   );
 }
 
-/** A contribution cell tossed back and forth between two characters, one throw per beat. */
-export function TossedBlock({
-  from,
-  to,
-  t,
-}: {
-  from: [number, number, number];
-  to: [number, number, number];
-  t: number;
-}) {
-  const beat = t * 2;
-  const forward = Math.floor(beat) % 2 === 0;
-  const p = beat % 1;
-  const a = forward ? from : to;
-  const b = forward ? to : from;
-  const x = a[0] + (b[0] - a[0]) * p;
-  const z = a[2] + (b[2] - a[2]) * p;
-  const y = a[1] + (b[1] - a[1]) * p + Math.sin(Math.PI * p) * 0.9;
-  return (
-    <RoundedBox
-      args={[0.24, 0.24, 0.24]}
-      radius={0.06}
-      smoothness={6}
-      position={[x, y, z]}
-      rotation={[p * 4, p * 3, 0]}
-    >
-      <Toon color={C.heat[1]} />
-    </RoundedBox>
-  );
-}
-
 /** Cell itself. */
 export function ChibiCell({ motion = "wave", t = 0 }: { motion?: ChibiMotion; t?: number }) {
   return <Chibi look={CELL} motion={motion} t={t} />;
