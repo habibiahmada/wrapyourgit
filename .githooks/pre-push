@@ -1,0 +1,3 @@
+#!/bin/sh
+# Never push to main, and branch names follow <type>/<issue>-<slug> (scripts/policy).
+exec bun scripts/policy/cli.ts pre-push

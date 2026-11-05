@@ -1,0 +1,7 @@
+#!/bin/sh
+# No commits on main: every change goes issue -> branch -> pull request (CONTRIBUTING.md).
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "✗ You are on $branch. Create a branch first: gh issue develop <issue> --name <type>/<issue>-<slug> --base main --checkout" >&2
+  exit 1
+fi
