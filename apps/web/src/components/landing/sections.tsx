@@ -107,31 +107,35 @@ export function StorySection() {
   );
 }
 
-const ARCHETYPES: { id: ArchetypeId; sidekick: string; rule: string }[] = [
+const ARCHETYPES: { id: ArchetypeId; wears: string; rule: string }[] = [
   {
     id: "builder",
-    sidekick: "the beaver",
+    wears: "orange, in a hard hat, hammering in the workshop",
     rule: "You created at least two repositories, or made 50 or more commits to your own.",
   },
   {
     id: "consistent",
-    sidekick: "the ant",
+    wears: "green, in a sweatband, running laps on the track",
     rule: "You were active on at least 30% of the days so far.",
   },
-  { id: "explorer", sidekick: "the fox", rule: "You wrote in four or more languages." },
+  {
+    id: "explorer",
+    wears: "sky blue, cap and backpack, waving from the mountains",
+    rule: "You wrote in four or more languages.",
+  },
   {
     id: "collaborator",
-    sidekick: "the bee",
+    wears: "pink, in a headset, handing work on over a shared map",
     rule: "You left ten or more reviews, or opened ten or more pull requests on other people's repositories.",
   },
   {
     id: "night-owl",
-    sidekick: "the owl",
+    wears: "lavender, owl tufts and glasses, grooving over the city at night",
     rule: "At least 40% of your sampled commits landed between 22:00 and 04:00. Estimated, and labelled as such.",
   },
   {
     id: "open-sourcer",
-    sidekick: "the octopus",
+    wears: "teal, in a scarf, cheering by a community mural",
     rule: "You contributed to three or more public repositories you don't own.",
   },
 ];
@@ -150,17 +154,17 @@ export function ArchetypesSection() {
           </h2>
           <p className={`reveal mt-6 max-w-2xl ${lead}`}>
             The climax of the story names your archetype, with the facts that earned it. Each one
-            comes with Cell in costume and a sidekick. You get one, plus up to two runner-ups you
-            came close to. If none fits yet, the story says so honestly.
+            comes with its own Cell: its colour, its pose, its place. You get one, plus up to two
+            runner-ups you came close to. If none fits yet, the story says so honestly.
           </p>
         </div>
         <ul className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {ARCHETYPES.map(({ id, sidekick, rule }) => (
+          {ARCHETYPES.map(({ id, wears, rule }) => (
             <li key={id} className={`reveal-zoom overflow-hidden ${box} hover:border-muted`}>
               <div className="border-b border-line bg-canvas px-4 pt-4">
                 <Image
                   src={`/art/skin-${id}.png`}
-                  alt={`Cell dressed as the ${ARCHETYPE_LABELS[id]}, with ${sidekick}`}
+                  alt={`Cell as the ${ARCHETYPE_LABELS[id]}: ${wears}`}
                   width={1200}
                   height={900}
                   sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 90vw"
@@ -169,7 +173,7 @@ export function ArchetypesSection() {
               </div>
               <div className="p-5">
                 <h3 className="text-2xl font-bold">{ARCHETYPE_LABELS[id]}</h3>
-                <p className="text-sm text-muted">with {sidekick}</p>
+                <p className="text-sm text-muted">{wears}</p>
                 <p className="mt-3 text-base text-muted">{rule}</p>
               </div>
             </li>

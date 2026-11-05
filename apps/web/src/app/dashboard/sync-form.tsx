@@ -48,7 +48,7 @@ export function SyncForm({
         {pending && (
           <>
             <Image
-              src="/art/cell-think.png"
+              src="/art/cutout-cell-think.png"
               alt=""
               width={1200}
               height={900}

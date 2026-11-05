@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
 import { CARD_SIZE, cardFonts } from "@/server/card";
 
 export const alt =
-  "WrapYourGit: every green square has a story. Cell and friends in front of a contribution graph.";
+  "WrapYourGit: every green square has a story. Cell waving in front of snapshots of a workshop, fireworks and mountains.";
 export const size = CARD_SIZE;
 export const contentType = "image/png";
 

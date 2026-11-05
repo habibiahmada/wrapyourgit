@@ -257,7 +257,7 @@ export function StoryFlow({ data }: { data: RecapData }) {
             <div className="grid w-full max-w-5xl items-center gap-8 lg:grid-cols-[1.1fr_1fr]">
               <ComicArt
                 art="hero-cast"
-                alt="Cell the builder waving in front of a 3D contribution graph, with a beaver, an owl and a bee"
+                alt="Cell, the WrapYourGit mascot, waving in front of snapshots of a workshop, fireworks and mountains"
                 priority
               />
               <div className="flex flex-col items-start gap-5">

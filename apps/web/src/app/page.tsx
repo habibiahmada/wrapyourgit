@@ -145,7 +145,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
                 <div>
                   <Image
                     src="/art/hero-cast.png"
-                    alt="Cell the builder waving in front of a 3D contribution graph, with a beaver, an owl and a bee"
+                    alt="Cell, the WrapYourGit mascot, waving in front of snapshots of a workshop, fireworks and mountains"
                     width={1200}
                     height={900}
                     preload
