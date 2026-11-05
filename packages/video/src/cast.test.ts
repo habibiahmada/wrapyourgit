@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { archetypeIdSchema } from "@wyg/schema";
 import { ARCHETYPE_COLORS, archetypeRole, CAST } from "./cast";
-import { CELL, type ChibiMotion, chibiPose } from "./three/pose";
+import { CELL, type ChibiMotion, chibiPose, LOOP_SECONDS } from "./three/pose";
 
 const MOTIONS: ChibiMotion[] = [
   "wave",
@@ -41,6 +41,20 @@ describe("cast", () => {
 });
 
 describe("chibiPose", () => {
+  test("repeats exactly every loop, so baked animations loop without a jump", () => {
+    for (const motion of MOTIONS) {
+      for (const t of [0, 0.37, 1.1, 1.93]) {
+        const flat = (pose: object): number[] =>
+          Object.values(pose).flatMap((v) => (typeof v === "number" ? [v] : flat(v)));
+        const a = flat(chibiPose(motion, t, 1));
+        const b = flat(chibiPose(motion, t + LOOP_SECONDS, 1));
+        a.forEach((value, i) => {
+          expect(b[i] ?? Number.NaN).toBeCloseTo(value, 6);
+        });
+      }
+    }
+  });
+
   test("is a pure function of time", () => {
     for (const motion of MOTIONS) {
       expect(chibiPose(motion, 1.37, 2)).toEqual(chibiPose(motion, 1.37, 2));

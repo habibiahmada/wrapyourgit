@@ -74,8 +74,17 @@ export type ChibiPose = {
 
 const TAU = Math.PI * 2;
 
-/** Eyes shut for ~0.12 s every `period` s, offset by `seed`, so a cast never blinks in unison. */
-function blink(t: number, seed = 0, period = 2.6): number {
+/**
+ * Every motion repeats exactly after this many seconds (four beats at 120 BPM): the baked
+ * animations (scripts/render-art.ts) are one loop of it.
+ */
+export const LOOP_SECONDS = 2;
+
+/**
+ * Eyes shut for ~0.12 s every `period` s, offset by `seed`. Two seconds, like every other cycle
+ * here, so a pose repeats exactly every LOOP_SECONDS and baked loops play seamlessly.
+ */
+function blink(t: number, seed = 0, period = LOOP_SECONDS): number {
   const local = (t + 0.9 + seed * 0.83) % period;
   return local < 0.12 ? Math.abs(1 - 2 * (local / 0.12)) : 1;
 }
@@ -114,7 +123,7 @@ export function chibiPose(motion: ChibiMotion, t: number, seed = 0): ChibiPose {
         squash: 1 - 0.035 * land,
         head: {
           tilt: 0.1 * Math.sin(Math.PI * beat + 0.6),
-          turn: 0.12 * s(1 / 8),
+          turn: 0.12 * s(1 / 4),
           nod: 0.05 * s(1),
         },
         armR: arm(2.45 + 0.42 * s(1)),
@@ -156,7 +165,7 @@ export function chibiPose(motion: ChibiMotion, t: number, seed = 0): ChibiPose {
       return {
         ...base,
         rootY: 0.02 * Math.sin((TAU * beat) / 4),
-        head: { tilt: 0.18 + 0.05 * s(1 / 4), turn: 0.1 * s(1 / 8), nod: 0.06 },
+        head: { tilt: 0.18 + 0.05 * s(1 / 4), turn: 0.1 * s(1 / 4), nod: 0.06 },
         armR: arm(2.25, -0.95 + 0.06 * s(1)),
         armL: arm(0.3 + 0.05 * s(1 / 4)),
         glance: 0.05 * Math.sign(s(1 / 4)) * Math.min(1, Math.abs(s(1 / 4)) * 4),
@@ -231,7 +240,7 @@ export function chibiPose(motion: ChibiMotion, t: number, seed = 0): ChibiPose {
         rootY: 0.015 * s(0.5),
         rootTilt: 0.04 * s(0.25),
         squash: 1.03 + 0.02 * s(0.5),
-        head: { tilt: 0.06 * s(0.25), turn: 0.08 * s(1 / 8), nod: -0.08 + 0.04 * land },
+        head: { tilt: 0.06 * s(0.25), turn: 0.08 * s(1 / 4), nod: -0.08 + 0.04 * land },
         armL: arm(0.85, 0.35),
         armR: arm(0.85, 0.35),
         brows: 0.04,
