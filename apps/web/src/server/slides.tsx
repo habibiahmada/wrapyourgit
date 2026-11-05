@@ -318,10 +318,13 @@ export function slideFileName(year: number, login: string, index: number): strin
  * The export routes' answer when this server cannot render chapter frames: no Chrome or no WebGL,
  * e.g. on a serverless host (ADR-0011). Says so plainly instead of failing with a bare 500.
  */
-export function slidesUnavailable(error: unknown): NextResponse {
-  console.error(`slide render failed: ${errorSummary(error)}`);
-  // The full error only in development: in production logs stay free of request data.
-  if (process.env.NODE_ENV !== "production") console.error(error);
+export function slidesUnavailable(error?: unknown): NextResponse {
+  // No error: the host is known not to render slides (server/exports.ts), so nothing was tried.
+  if (error !== undefined) {
+    console.error(`slide render failed: ${errorSummary(error)}`);
+    // The full error only in development: in production logs stay free of request data.
+    if (process.env.NODE_ENV !== "production") console.error(error);
+  }
   return new NextResponse(
     "Slide exports can't be rendered on this server right now. Try again later.",
     { status: 503, headers: { "Retry-After": "300", "Cache-Control": "no-store" } },
