@@ -42,9 +42,10 @@ Why these colors: the green is the color of the user's own contribution graph, s
 
 - Everything is frame-driven (`interpolate`, `spring`, `random(seed)`).
 - Cuts and the start of each count-up land on beats of the track. Scene lengths are whole beats.
-- A cell wipe opens every scene: the previous scene's color breaks into cells that fall away in a seeded order.
+- Every cut has its own camera-like move, never repeated: dive into a cell, tilt, whip pan, iris, contribution-row blinds, card flip, a flash with camera shake for the archetype, and a pull-back into the closing (scene-system.md, Transitions).
+- Everything that moves makes a sound (ADR-0009), quieter than the music: pops for things appearing, ticks while a number counts, a landing thump when it settles, climbing blips for bars and rows, a shimmer for graphs, an impact for the archetype. Groups get one sound, not one per item.
 - After each count-up, the final number holds still for at least 1.5 s.
-- No endless loops. Motion stops once the scene's beat is delivered.
+- Text and numbers stop once their beat is delivered. Characters don't: each scene has its own live 3D chibi (screen face made of light, stubby limbs on real joints) that keeps moving on the beat: waving, jumping, running, thinking, hammering, passing a cell, nodding, celebrating (ADR-0010). Characters never cross a number or label.
 
 ## Web (landing, dashboard, story page)
 

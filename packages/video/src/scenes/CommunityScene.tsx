@@ -2,6 +2,7 @@ import type { RecapData } from "@wyg/schema";
 import { useVideoConfig } from "remotion";
 import { beats } from "../audio/track";
 import { Field } from "../components/Field";
+import { CountTicks } from "../components/Sfx";
 import { Slam } from "../components/Slam";
 import { useCountUp } from "../components/useCountUp";
 import { fitFontSize } from "../heat";
@@ -147,6 +148,7 @@ export function CommunityScene({ data }: { data: RecapData }) {
             </div>
           </Slam>
         ))}
+        <CountTicks value={lead.value} from={beats(1, fps)} to={beats(3, fps)} />
         {gained === null && lead.label !== `stars gained in ${year}` && (
           <Slam at={beats(5 + facts.length * 2, fps)}>
             <div style={{ fontSize: u * 3, maxWidth: u * 70 }}>

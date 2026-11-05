@@ -5,7 +5,7 @@
  *
  *   bun scripts/synth-track.ts
  *
- * Writes packages/video/public/audio/wrapyourgit-120bpm.m4a (AAC, mono, 44.1 kHz) via the
+ * Writes packages/video/public/audio/wrapyourgit-120bpm-v2.m4a (AAC, mono, 44.1 kHz) via the
  * FFmpeg that ships with Remotion; the intermediate WAV is not kept.
  */
 
@@ -66,6 +66,20 @@ const riser = (startBeat: number, lengthBeats: number, gain = 0.28) =>
     return gain * progress ** 2 * (noise() * 0.7 + 0.3 * sine(200 + 1800 * progress, t));
   });
 
+const openHat = (at: number, gain = 0.1) =>
+  add(at, 0.18, (t) => gain * noise() * Math.exp(-t * 16));
+const snare = (at: number, gain = 0.32) =>
+  add(at, 0.16, (t) => gain * (0.6 * noise() + 0.4 * sine(190, t)) * Math.exp(-t * 22));
+// Soft-clipped sine: a rounder square wave that cuts through without buzzing.
+const lead = (at: number, frequency: number, seconds: number, gain = 0.07) =>
+  add(at, seconds, (t) => gain * Math.tanh(3 * sine(frequency, t)) * Math.exp(-t * 5));
+// Hook over two bars: chord-tone indices (0 root, 1 third, 2 fifth, 3 octave), one per eighth.
+const HOOK = [3, 2, 0, 2, 3, 2, 1, 2, 3, 2, 0, 2, 1, 0, 1, 2];
+const sixteenth = beatSeconds / 4;
+const eighth = beatSeconds / 2;
+// Sections a fill leads into, plus every fourth bar of the drive.
+const fillBefore = new Set<number>([drop, outro]);
+
 for (let beat = 0; beat < TRACK.beats; beat++) {
   const at = beat * beatSeconds;
   const bar = Math.floor(beat / 4);
@@ -74,36 +88,60 @@ for (let beat = 0; beat < TRACK.beats; beat++) {
   const inOutro = beat >= outro;
   // Two beats of near-silence before the climax make the identity reveal land.
   const breath = beat >= climax - 2 && beat < climax;
+  const fill = fillBefore.has(beat + 1) || (beat >= drop && !inOutro && beat % 16 === 15);
 
   if (beat % 4 === 0) {
     for (const frequency of triad(root, inClimax ? 8 : 4)) {
       add(
         at,
         beatSeconds * 4,
-        (t) => (inClimax ? 0.045 : 0.05) * sine(frequency, t) * Math.min(1, t * 4),
+        (t) => (inClimax ? 0.04 : 0.035) * sine(frequency, t) * Math.min(1, t * 4),
       );
     }
   }
+  if (fill && !breath) {
+    for (let step = 0; step < 4; step++) snare(at + step * sixteenth, 0.16 + step * 0.06);
+  }
   if (beat < drop || breath) continue;
 
-  if (!inOutro || beat % 2 === 0) kick(at, inOutro ? 0.6 : 0.9);
-  if (!inOutro) hat(at + beatSeconds / 2, inClimax ? 0.2 : 0.16);
-  if (beat >= 24 && !inOutro && beat % 2 === 1) clap(at);
-  // Bass ducks under the kick so each beat reads clearly.
-  add(at, beatSeconds, (t) => {
-    const duck = 1 - 0.8 * Math.exp(-t * 18);
-    return (inOutro ? 0.14 : 0.22) * duck * Math.tanh(2 * sine(root, t));
-  });
+  // Four on the floor; the outro drops to half time.
+  if (!inOutro || beat % 2 === 0) kick(at, inOutro ? 0.6 : 0.95);
+  if (!inOutro) {
+    for (let step = 0; step < 4; step++) {
+      // Accent the off-beat sixteenths so the groove pushes forward.
+      hat(at + step * sixteenth, (step % 2 === 1 ? 0.13 : 0.07) * (inClimax ? 1.2 : 1));
+    }
+    openHat(at + eighth, inClimax ? 0.13 : 0.1);
+    if (beat >= 24 && beat % 2 === 1 && !fill) clap(at);
+  }
+  // Driving eighth-note bass, ducked under every kick (side-chain pump).
+  for (let step = 0; step < 2; step++) {
+    const octave = step === 1 && !inOutro ? 2 : 1;
+    add(at + step * eighth, eighth, (t) => {
+      const sinceKick = t + step * eighth;
+      const duck = 1 - 0.85 * Math.exp(-sinceKick * 14);
+      return (inOutro ? 0.13 : 0.2) * duck * Math.tanh(2.5 * sine(root * octave, t));
+    });
+  }
   // Arpeggio in sixteenths from the language scene on: the chord tones, plucked.
   if (beat >= 40 && !inOutro) {
     const notes = triad(root, inClimax ? 8 : 4);
     for (let step = 0; step < 4; step++) {
       const frequency = notes[(beat * 4 + step) % notes.length] ?? root;
       add(
-        at + (step * beatSeconds) / 4,
-        beatSeconds / 4,
-        (t) => 0.06 * sine(frequency * 2, t) * Math.exp(-t * 14),
+        at + step * sixteenth,
+        sixteenth,
+        (t) => 0.04 * sine(frequency * 2, t) * Math.exp(-t * 14),
       );
+    }
+  }
+  // The hook: from the language scene through the climax.
+  if (beat >= 40 && !inOutro) {
+    const tones = [...triad(root, 8), root * 16];
+    for (let step = 0; step < 2; step++) {
+      const index = HOOK[((beat % 8) * 2 + step) % HOOK.length] ?? 0;
+      const frequency = (tones[index] ?? root * 8) * (inClimax ? 2 : 1);
+      lead(at + step * eighth, frequency, eighth * 0.9, inClimax ? 0.08 : 0.065);
     }
   }
 }
@@ -112,7 +150,7 @@ riser(drop - 4, 4);
 riser(climax - 8, 6, 0.32);
 add(climax * beatSeconds, 2.5, (t) => 0.35 * noise() * Math.exp(-t * 2.2)); // crash on the reveal
 
-// Fade out across the outro section; normalise to -1 dBFS.
+// Fade out across the outro section; find the peak for the master stage.
 const outroStart = outro * beatSeconds * SAMPLE_RATE;
 let peak = 0;
 for (let i = 0; i < samples.length; i++) {
@@ -122,7 +160,10 @@ for (let i = 0; i < samples.length; i++) {
   }
   peak = Math.max(peak, Math.abs(samples[i] ?? 0));
 }
-const gain = 0.89 / peak;
+// Soft saturation on the master: kick peaks stop setting the level, so the mix sounds denser and
+// louder at the same -1 dBFS ceiling.
+const DRIVE = 2.2;
+const master = (sample: number) => (0.89 * Math.tanh((DRIVE * sample) / peak)) / Math.tanh(DRIVE);
 
 const data = new DataView(new ArrayBuffer(44 + samples.length * 2));
 const writeString = (offset: number, text: string) => {
@@ -142,7 +183,7 @@ data.setUint16(34, 16, true);
 writeString(36, "data");
 data.setUint32(40, samples.length * 2, true);
 samples.forEach((sample, i) => {
-  data.setInt16(44 + i * 2, Math.max(-1, Math.min(1, sample * gain)) * 0x7fff, true);
+  data.setInt16(44 + i * 2, master(sample) * 0x7fff, true);
 });
 
 const workDir = await mkdtemp(join(tmpdir(), "wyg-track-"));

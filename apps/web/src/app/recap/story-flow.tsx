@@ -5,6 +5,7 @@ import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/sc
 import { SCENES, STORY_DURATION_IN_FRAMES, WrapStory } from "@wyg/video";
 import { SCENE_TITLES } from "@wyg/video/copy";
 import { congratsLetter } from "@wyg/video/letter";
+import { loopSeconds, TRACK } from "@wyg/video/track";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -18,6 +19,7 @@ import {
   ViewTransition,
 } from "react";
 import { button } from "@/components/ui";
+import { useMusic } from "./use-music";
 
 const SLIDES = [
   "Intro",
@@ -50,26 +52,8 @@ type Step =
 /** Music plays from the first hello through the last chapter, then fades out (DESIGN.md). */
 const musical = (step: Step | undefined) => step?.kind === "warmup" || step?.kind === "scene";
 
-/**
- * Fades an audio element to silence over `ms`, then pauses it and restores the volume. A timer,
- * not requestAnimationFrame: rAF stops in background tabs, and the music must still stop there.
- */
-function fadeOut(audio: HTMLAudioElement, ms = 1400): () => void {
-  const start = Date.now();
-  const from = audio.volume;
-  const timer = window.setInterval(() => {
-    const t = Math.min(1, (Date.now() - start) / ms);
-    audio.volume = from * (1 - t);
-    if (t < 1) return;
-    window.clearInterval(timer);
-    audio.pause();
-    audio.volume = 1;
-  }, 50);
-  return () => {
-    window.clearInterval(timer);
-    audio.volume = 1;
-  };
-}
+const MUSIC_SRC = `/${TRACK.file}`;
+const MUSIC_LOOP = loopSeconds();
 
 /** Small talk before the numbers, like a friend saying hello before the slideshow. */
 const WARMUPS = 3;
@@ -85,17 +69,18 @@ const STEPS: Step[] = [
 
 /**
  * The story as a guided walk instead of one long video: each scene plays, stops on its last frame
- * and waits for Next. Then the letter, then the exports. One WebGL canvas at a time: 3D appears
- * only on the welcome, archetype, letter and export steps, and unmounts when the step changes.
+ * and waits for Next. Then the letter, then the exports. One WebGL scene at a time: each step
+ * mounts its own 3D (the story's live cast inside the Player, ADR-0010) and unmounts it when the
+ * step changes.
  */
 export function StoryFlow({ data }: { data: RecapData }) {
   const [step, setStep] = useState(0);
   const [muted, setMuted] = useState(false);
   const [format, setFormat] = useState<keyof typeof VIDEO_FORMATS>("9x16");
   const player = useRef<PlayerRef>(null);
-  // The soundtrack runs on its own element, so it plays straight through while the player is
-  // remounted for each scene (the player itself is always muted).
-  const music = useRef<HTMLAudioElement>(null);
+  // The soundtrack runs outside the player, so it plays straight through (looping, no gap) while
+  // the player is remounted for each scene. The player itself plays only the sound effects.
+  const music = useMusic(MUSIC_SRC, MUSIC_LOOP);
   const current = STEPS[step] ?? STEPS[0];
   const letter = useMemo(() => congratsLetter(data), [data]);
   const year = data.meta.year;
@@ -114,6 +99,18 @@ export function StoryFlow({ data }: { data: RecapData }) {
   const inFrame = SCENE_STARTS[sceneIndex] ?? 0;
   const outFrame = inFrame + (SCENES[sceneIndex]?.durationInFrames ?? 1) - 1;
 
+  // Reduced motion (scene-system rule 7, R-39): each chapter opens on its finished last frame and
+  // never plays by itself, so the live cast and the cuts stay still. Replay still plays it, on
+  // request. Tracked live, so changing the OS setting mid-story applies to the next chapter.
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
   const replay = useCallback(() => {
     const ref = player.current;
     if (!ref) return;
@@ -122,8 +119,10 @@ export function StoryFlow({ data }: { data: RecapData }) {
   }, [inFrame]);
 
   useEffect(() => {
-    if (music.current) music.current.muted = muted;
-  }, [muted]);
+    music.setMuted(muted);
+    if (muted) player.current?.mute();
+    else player.current?.unmute();
+  }, [muted, music]);
 
   /**
    * Moves to a step inside a transition, tagged with its direction, so the step's content slides
@@ -132,27 +131,26 @@ export function StoryFlow({ data }: { data: RecapData }) {
    */
   const stepRef = useRef(step);
   stepRef.current = step;
-  const goTo = useCallback((next: number) => {
-    const target = Math.min(STEPS.length - 1, Math.max(0, next));
-    const from = stepRef.current;
-    if (target === from) return;
-    if (musical(STEPS[target]) && music.current?.paused) {
-      music.current.volume = 1;
-      void music.current.play().catch(() => {});
-    }
-    startTransition(() => {
-      addTransitionType(target > from ? "story-next" : "story-prev");
-      setStep(target);
-    });
-  }, []);
+  const goTo = useCallback(
+    (next: number) => {
+      const target = Math.min(STEPS.length - 1, Math.max(0, next));
+      const from = stepRef.current;
+      if (target === from) return;
+      if (musical(STEPS[target]) && !music.isPlaying()) music.play();
+      startTransition(() => {
+        addTransitionType(target > from ? "story-next" : "story-prev");
+        setStep(target);
+      });
+    },
+    [music],
+  );
   const go = useCallback((delta: number) => goTo(stepRef.current + delta), [goTo]);
 
   // Past the last chapter (comparison, letter, downloads) the story is over: let the music go.
   useEffect(() => {
-    const audio = music.current;
-    if (!audio || audio.paused || musical(current)) return;
-    return fadeOut(audio);
-  }, [current]);
+    if (!music.isPlaying() || musical(current)) return;
+    return music.fadeOut();
+  }, [current, music]);
 
   // The last chapter fades the music out as soon as its animation finishes.
   useEffect(() => {
@@ -160,14 +158,14 @@ export function StoryFlow({ data }: { data: RecapData }) {
     if (!ref || current?.kind !== "scene" || sceneIndex !== SCENES.length - 1) return;
     let cancel: (() => void) | undefined;
     const onEnded = () => {
-      if (music.current && !music.current.paused) cancel = fadeOut(music.current);
+      if (music.isPlaying()) cancel = music.fadeOut();
     };
     ref.addEventListener("ended", onEnded);
     return () => {
       ref.removeEventListener("ended", onEnded);
       cancel?.();
     };
-  }, [current, sceneIndex]);
+  }, [current, sceneIndex, music]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -218,9 +216,6 @@ export function StoryFlow({ data }: { data: RecapData }) {
           </button>
         ))}
       </nav>
-
-      {/* biome-ignore lint/a11y/useMediaCaption: instrumental music with no speech to caption */}
-      <audio ref={music} src="/audio/wrapyourgit-120bpm.m4a" loop preload="auto" />
 
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-3xl font-extrabold sm:text-4xl" aria-live="polite">
@@ -291,15 +286,16 @@ export function StoryFlow({ data }: { data: RecapData }) {
             <div className="w-full max-w-5xl">
               <Player
                 ref={player}
-                // One mount per scene: starts at the scene's first frame and plays inside its fence.
-                key={sceneIndex}
-                initialFrame={inFrame}
-                autoPlay={current?.kind === "scene"}
-                initiallyMuted
+                // One mount per scene: starts at the scene's first frame and plays inside its fence,
+                // or, with reduced motion, opens on the finished last frame and waits.
+                key={`${sceneIndex}-${reduceMotion}`}
+                initialFrame={reduceMotion ? outFrame : inFrame}
+                autoPlay={!reduceMotion && current?.kind === "scene"}
+                initiallyMuted={muted}
                 // Stay on the last frame when the scene ends; jumping back showed an empty wipe frame.
                 moveToBeginningWhenEnded={false}
                 component={WrapStory}
-                inputProps={{ data }}
+                inputProps={{ data, music: false }}
                 durationInFrames={STORY_DURATION_IN_FRAMES}
                 fps={VIDEO_FPS}
                 compositionWidth={width}
@@ -504,7 +500,9 @@ function ComicArt({
   priority?: boolean;
 }) {
   return (
-    <div className="mx-auto w-full max-w-xl lg:max-w-none">
+    // The art is scaled up for presence; clip the sides (transparent margin) so it never widens
+    // the page on a phone. `clip`, not `hidden`, so it can still grow upwards.
+    <div className="mx-auto w-full max-w-xl overflow-x-clip lg:max-w-none">
       <Image
         src={`/art/${art}.png`}
         alt={alt}

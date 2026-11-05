@@ -43,7 +43,7 @@ export function ClosingScene({ data }: { data: RecapData }) {
       color="ink"
       style={{ flexDirection: "column", justifyContent: "space-between", gap: u * 5 }}
     >
-      <Slam at={0}>
+      <Slam at={0} sound={null}>
         <div style={{ fontSize: u * 5, fontWeight: 800 }}>
           @{profile.login} · {meta.year}
         </div>
@@ -78,7 +78,7 @@ export function ClosingScene({ data }: { data: RecapData }) {
       </div>
 
       <div>
-        <Slam at={beats(6, fps)}>
+        <Slam at={beats(6, fps)} sound="shimmer">
           <div style={{ position: "relative", width: cell * weeks, height: cell * 7 }}>
             {cells.map(({ week, weekday }, i) => {
               const level = levels[i] ?? 0;
@@ -100,7 +100,7 @@ export function ClosingScene({ data }: { data: RecapData }) {
             })}
           </div>
         </Slam>
-        <Slam at={beats(8, fps)}>
+        <Slam at={beats(8, fps)} sound="land">
           <div style={{ fontSize: u * 3.8, fontWeight: 700, marginTop: u * 3 }}>
             Made with WrapYourGit
           </div>

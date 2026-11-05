@@ -2,6 +2,7 @@ import type { RecapData } from "@wyg/schema";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { beats } from "../audio/track";
 import { Field } from "../components/Field";
+import { CountTicks } from "../components/Sfx";
 import { Slam } from "../components/Slam";
 import { fitFontSize } from "../heat";
 import { useLayout } from "../layout";
@@ -108,6 +109,7 @@ export function ContributionsScene({ data }: { data: RecapData }) {
           </Slam>
         ))}
       </div>
+      <CountTicks value={total} from={beats(1, fps)} to={beats(4, fps)} />
     </Field>
   );
 }

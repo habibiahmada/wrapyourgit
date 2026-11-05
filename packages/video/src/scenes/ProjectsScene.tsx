@@ -59,10 +59,10 @@ export function ProjectsScene({ data }: { data: RecapData }) {
       }}
     >
       <div style={{ minWidth: 0, maxWidth: spotlightWidth }}>
-        <Slam at={0}>
+        <Slam at={0} sound={null}>
           <div style={{ fontSize: u * 4.5, fontWeight: 700 }}>your top repository</div>
         </Slam>
-        <Slam at={beats(1, fps)}>
+        <Slam at={beats(1, fps)} sound="land">
           <div
             style={{
               fontSize: nameSize,
@@ -100,7 +100,8 @@ export function ProjectsScene({ data }: { data: RecapData }) {
               key={repo.nameWithOwner}
               style={{ display: "flex", flexDirection: "column", gap: u * 0.8 }}
             >
-              <Slam at={at}>
+              {/* Each row fills on its beat; the notes climb down the list. */}
+              <Slam at={at} sound="blip" step={index * 2}>
                 <div
                   style={{
                     display: "flex",
