@@ -8,6 +8,7 @@ The 2026 edition, before its first release.
 
 ### Added
 
+- Preview deployments get their own Neon database branch, and a per-IP rate limit (60 per minute, then 429) covers `/api` and `/u/` ([#36](https://github.com/habibiahmada/wrapyourgit/issues/36)).
 - Production is live on Vercel + Neon at wrapyourgit.habibiahmada.dev (ADR-0015) ([#34](https://github.com/habibiahmada/wrapyourgit/issues/34)).
 - A deployment guide: staging on Vercel + Neon, production on an AWS VPS (systemd, Caddy, Postgres), updates, rollback, backups and the pre-launch checklist ([docs/deployment/guide.md](docs/deployment/guide.md)).
 - The contribution workflow is enforced: git hooks installed by `bun install`, a CI `Policy` check, merge-commit-only repository settings, and rulesets ready for when the repository is public (ADR-0014) ([#28](https://github.com/habibiahmada/wrapyourgit/issues/28)).
