@@ -44,19 +44,21 @@ Order, length and field color live in `src/timeline.ts`; `timeline.test.ts` chec
 | 8   | identity      | 16    | persimmon | archetype reveal (heavier spring) and its reasons; honest line when null        | climax: crash      |
 | 9   | closing       | 14    | ink       | handle, four headline facts, the year as a small graph, "Made with WrapYourGit" | outro, fade        |
 
-Cast (`src/cast.ts`, drawn by `src/three/ChibiCell.tsx`, ADR-0010 and ADR-0012). Cell is in every scene: one mascot, varied by motion, gear and the photo behind it (`PhotoCard`, `src/photos.ts`). `LiveAccent` renders it live each frame in front of the photo, in the space its scene leaves empty, with its own position per layout family, tuned from rendered stills so it never covers a number or label. Re-check with stills of all three families after changing a scene's layout.
+Cast (`src/cast.ts`, drawn by `src/three/ChibiCell.tsx`, ADR-0010 and ADR-0012). Cell is the only mascot. Five scenes draw it live in 3D with `LiveAccent`, on the field with no backdrop, in the space the scene leaves empty, with a position per layout family tuned from rendered stills so it never covers a number or label. Four scenes show it as a giant faint silhouette instead. Every scene has GitHub motifs on its field (`components/Backdrop.tsx`): contribution cells in the frame margin, and a branch graph along a free edge where marked. Re-check with stills of all three families after changing a scene's layout.
 
-| Scene         | Cell                                                                                     | Motion                      | Photo         |
-| ------------- | ---------------------------------------------------------------------------------------- | --------------------------- | ------------- |
-| intro         | as is: green squircle, lit-cell eyes, sprout                                             | waves                       | desk          |
-| contributions | happy eyes                                                                               | jumps with both arms up     | fireworks     |
-| rhythm        | sweatband                                                                                | runs on the spot            | track         |
-| tech-dna      | glasses                                                                                  | hand to chin, eyes drifting | library       |
-| projects      | hard hat and hammer                                                                      | hammers on every beat       | workshop      |
-| community     | scarf                                                                                    | jumps with a quarter turn   | garden        |
-| engineering   | headset                                                                                  | nods to the beat            | gears         |
-| identity      | the archetype's own colour, gear, pose and photo (asleep at the desk when there is none) | per archetype               | per archetype |
-| closing       | crown and happy eyes                                                                     | proud, arms akimbo          | sunset        |
+| Scene         | Cell                                                                 | Motion                  | Field motifs       |
+| ------------- | -------------------------------------------------------------------- | ----------------------- | ------------------ |
+| intro         | live: green squircle, lit-cell eyes, sprout                          | waves                   | cells              |
+| contributions | live, happy eyes                                                     | jumps with both arms up | cells, branch top  |
+| rhythm        | silhouette, running (sweatband)                                      | rises, sways            | cells              |
+| tech-dna      | silhouette, thinking                                                 | rises, sways            | cells, branch foot |
+| projects      | live, hard hat and hammer                                            | hammers on every beat   | cells, branch foot |
+| community     | silhouette, cheering                                                 | rises, sways            | cells, branch top  |
+| engineering   | silhouette, headset                                                  | rises, sways            | cells, branch foot |
+| identity      | live, the archetype's own colour, gear and pose (asleep without one) | per archetype           | cells, branch top  |
+| closing       | live, crown and happy eyes                                           | proud, arms akimbo      | cells              |
+
+**Cell between chapters** (`CellDash`): for the first three beats after every cut except into identity, Cell runs sideways across the frame in the next scene's gear (alternating direction; into tech-dna and community it hops), leaving a trail of contribution cells. Live accents enter after it has left, and a chapter's last frame never shows it.
 
 Local renders: use `--gl=angle-egl --concurrency=2` (parallel tabs contend for WebGL, ADR-0010).
 

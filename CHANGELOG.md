@@ -21,7 +21,7 @@ The 2026 edition, before its first release.
 
 ### Changed
 
-- Cell hosts every scene of the story instead of a different character per scene, each time with its own pose, gear and place, in front of a public-domain photo; each archetype has its own colour, pose and photo; the 3D block cities, moon and floating cubes are gone (ADR-0012) ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
+- Cell is the story's only mascot: live in five scenes with its own pose and gear, a giant faint silhouette in four, GitHub motifs (contribution cells, a branch graph) on every field, and Cell running sideways across each cut. Each archetype has its own colour, pose and public-domain photo in the web art; the 3D block cities, moon and floating cubes are gone (ADR-0012) ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
 - Slide exports (PNG, ZIP, PDF) are frames of the story composition, so they match the story exactly (ADR-0011) ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
 - Every page, the landing sample reel, the README and the docs show the chibi Cell; the old cube mascot is retired ([#22](https://github.com/habibiahmada/wrapyourgit/issues/22)).
 - The soundtrack is more energetic: four-on-the-floor kick, sixteenth hats, a driving bass and a lead hook, on the same 120 BPM grid ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
