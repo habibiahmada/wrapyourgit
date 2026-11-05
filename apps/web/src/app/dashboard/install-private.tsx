@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { Art } from "@/components/art";
 import { button } from "@/components/ui";
 
 /**
@@ -31,14 +31,7 @@ export function InstallPrivate() {
             Choose repositories on GitHub
           </a>
         </div>
-        <Image
-          src="/art/skin-explorer.png"
-          alt=""
-          width={1200}
-          height={900}
-          sizes="(min-width: 1024px) 35vw, 80vw"
-          className="h-auto w-full"
-        />
+        <Art id="skin-explorer" alt="" className="h-auto w-full" />
       </div>
     </section>
   );

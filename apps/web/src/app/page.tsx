@@ -1,8 +1,8 @@
 import { EDITION_YEAR } from "@wyg/schema";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Art } from "@/components/art";
 import {
   ArchetypesSection,
   ClosingSection,
@@ -143,14 +143,10 @@ export default function Home({ searchParams }: PageProps<"/">) {
                   </div>
                 </div>
                 <div>
-                  <Image
-                    src="/art/hero-cast.png"
+                  <Art
+                    id="hero-cast"
                     alt="Cell, the WrapYourGit mascot, waving in front of snapshots of a workshop, fireworks and mountains"
-                    width={1200}
-                    height={900}
-                    preload
-                    fetchPriority="high"
-                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    priority
                     className="h-auto w-full motion-safe:animate-[rise_900ms_ease-out_both]"
                   />
                 </div>

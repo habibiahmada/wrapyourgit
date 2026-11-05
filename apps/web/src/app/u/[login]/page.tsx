@@ -1,9 +1,9 @@
 import type { RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "@wyg/video/copy";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Art } from "@/components/art";
 import { ClosingSection } from "@/components/landing/sections";
 import { LoadingCell } from "@/components/loading-cell";
 import { CellField, calendarLevels } from "@/components/site/cell-field";
@@ -138,12 +138,9 @@ function Summary({ data }: { data: RecapData }) {
               </ul>
             )}
           </div>
-          <Image
-            src={`/art/cutout-${identity.archetype ?? "cell-sleep"}.png`}
+          <Art
+            id={`cutout-${identity.archetype ?? "cell-sleep"}`}
             alt=""
-            width={1200}
-            height={900}
-            sizes="(min-width: 1024px) 45vw, 90vw"
             className="h-auto w-full origin-center scale-110"
           />
         </div>

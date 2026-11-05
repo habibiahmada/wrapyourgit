@@ -1,13 +1,8 @@
-import { ThreeCanvas } from "@remotion/three";
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { NeutralToneMapping } from "three";
 import { beats } from "../audio/track";
 import { useLayout } from "../layout";
 import { palette } from "../theme";
-import { BlobShadow } from "../three/BlobShadow";
-import { Chibi } from "../three/ChibiCell";
-import type { Look } from "../three/pose";
-import { CutoutLights } from "../three/World";
+import { Sprite } from "./Sprite";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -22,12 +17,13 @@ export type DashStyle = {
 export const DASH_BEATS = 3;
 
 /**
- * Cell running sideways across the frame at a cut, in the new scene's gear, so the story feels
- * like one character travelling from chapter to chapter. It leaves a trail of contribution
- * cells that light up and fade. Live 3D (ADR-0010), on top of the scene, for the first
- * DASH_BEATS beats only; the chapter's last frame, where slides are taken, never shows it.
+ * Cell running sideways across the frame at a cut, so the story feels like one character
+ * travelling from chapter to chapter. It leaves a trail of contribution cells that light up and
+ * fade. A baked side-on loop (Sprite, ADR-0013), mirrored for leftward runs, on top of the scene
+ * for the first DASH_BEATS beats only; the chapter's last frame, where slides are taken, never
+ * shows it.
  */
-export function CellDash({ look, dash }: { look: Look; dash: DashStyle }) {
+export function CellDash({ dash }: { dash: DashStyle }) {
   const frame = useCurrentFrame();
   const { width, height, fps } = useVideoConfig();
   const layout = useLayout();
@@ -47,8 +43,6 @@ export function CellDash({ look, dash }: { look: Look; dash: DashStyle }) {
   const x = start + (end - start) * progress;
   const t = frame / fps;
   const hop = dash.hop ? Math.abs(Math.sin((t * Math.PI * 4) / 1)) * box * 0.28 : 0;
-  // Face where it is going: a turn about the vertical, a little toward the viewer.
-  const turn = dash.dir === "right" ? 1.05 : -1.05;
 
   // Trail: cells dropped where Cell has passed, popping in, then fading out.
   const trail = Array.from({ length: 9 }, (_, i) => {
@@ -90,21 +84,8 @@ export function CellDash({ look, dash }: { look: Look; dash: DashStyle }) {
           height: box,
         }}
       >
-        <ThreeCanvas
-          width={Math.round(box)}
-          height={Math.round(box)}
-          gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
-          camera={{ position: [0, 1.5, 5.6], fov: 30 }}
-          onCreated={(state) => {
-            state.camera.lookAt(0, 0.95, 0);
-            state.gl.toneMapping = NeutralToneMapping;
-            state.gl.toneMappingExposure = 1.05;
-          }}
-        >
-          <CutoutLights />
-          <BlobShadow size={[1.6, 1.2]} opacity={0.35} />
-          <Chibi look={look} motion={dash.hop ? "cheer" : "run"} t={t} rotationY={turn} />
-        </ThreeCanvas>
+        {/* Side sprites face right; mirror them to run left. */}
+        <Sprite id={dash.hop ? "hop-side" : "run-side"} size={box} flip={dash.dir === "left"} />
       </div>
     </AbsoluteFill>
   );

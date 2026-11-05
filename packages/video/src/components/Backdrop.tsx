@@ -1,15 +1,15 @@
 import {
   AbsoluteFill,
-  Img,
   interpolate,
   random,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import type { SpriteId } from "../art";
 import { beats } from "../audio/track";
 import { type FieldColor, palette, textOn } from "../theme";
+import { Sprite } from "./Sprite";
 
 /*
  * What sits on a scene's field behind the text, so no field is flat: GitHub's own shapes,
@@ -183,43 +183,41 @@ export type SilhouetteSpot = {
 
 /**
  * Cell as a giant flat silhouette in the field's text colour, bleeding off an edge: the mascot
- * is present without standing in front of the numbers. Drawn from a baked cutout, so it keeps
- * the pose; it drifts up slowly and leans with the beat.
+ * is present without standing in front of the numbers. Drawn from the baked sprite, so it keeps
+ * moving; it rises in slowly and leans with the beat.
  */
 export function Silhouette({
   field,
-  art,
+  sprite,
   spot,
 }: {
   field: FieldColor;
-  art: string;
+  sprite: SpriteId;
   spot: SilhouetteSpot;
 }) {
   const frame = useCurrentFrame();
   const { width, height, fps } = useVideoConfig();
-  // In the cutouts the character fills about 80% of the image height, feet at about 86%.
-  const imgH = (spot.size * height) / 0.8;
-  const imgW = (imgH * 4) / 3;
+  // In the sprite frames the character is about 76% of the frame tall, feet at about 85%.
+  const box = (spot.size * height) / 0.76;
   const rise = spring({ frame, fps, config: { damping: 20, stiffness: 60 } });
   const sway = Math.sin((frame / fps) * Math.PI) * 1.2;
   // A light silhouette on dark fields, a dark one on light fields: both are the text colour.
   const light = textOn[field] === palette.paper;
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <Img
-        src={staticFile(`art/${art}.png`)}
+      <div
         style={{
           position: "absolute",
-          left: spot.x * width - imgW / 2,
-          top: spot.feet * height - imgH * 0.86 + (1 - rise) * height * 0.25,
-          width: imgW,
-          height: imgH,
+          left: spot.x * width - box / 2,
+          top: spot.feet * height - box * 0.85 + (1 - rise) * height * 0.25,
           filter: light ? "brightness(0) invert(1)" : "brightness(0)",
           opacity: (light ? 0.09 : 0.08) * Math.min(1, rise * 1.5),
-          transform: `${spot.flip ? "scaleX(-1) " : ""}rotate(${sway}deg)`,
-          transformOrigin: "50% 86%",
+          transform: `rotate(${sway}deg)`,
+          transformOrigin: "50% 85%",
         }}
-      />
+      >
+        <Sprite id={sprite} size={box} flip={spot.flip} />
+      </div>
     </AbsoluteFill>
   );
 }

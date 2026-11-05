@@ -3,66 +3,52 @@ import type { ArchetypeId } from "@wyg/schema";
 import type { ReactNode } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { NeutralToneMapping } from "three";
+import { CELL_POSES, type CellPose, SPRITES, type SpriteId } from "../art";
 import { archetypeRole } from "../cast";
 import { PhotoCard } from "../components/PhotoCard";
 import type { PhotoId } from "../photos";
 import { BlobShadow } from "./BlobShadow";
-import { CELL, Chibi, type ChibiMotion, type Look } from "./ChibiCell";
+import { CELL, Chibi } from "./ChibiCell";
 import { CutoutLights } from "./World";
 
-/** The host's poses for the baked cutouts used across the web pages and exports. */
-export type CellPose = "wave" | "cheer" | "think" | "proud" | "sleep";
-
+/** Every baked composition: web art, the letterhead head and the story's sprites. */
 export type ArtId =
   | `cutout-cell-${CellPose}`
   | `cutout-${ArchetypeId}`
   | `skin-${ArchetypeId}`
-  | "hero-cast";
+  | "hero-cast"
+  | "head-cell"
+  | `sprite-${SpriteId}`;
 
-/** Cell's look and motion for each baked pose: the same rig and looks as the story. */
-const CELL_POSES: Record<CellPose, { look: Look; motion: ChibiMotion }> = {
-  wave: { look: CELL, motion: "wave" },
-  cheer: { look: { ...CELL, eyes: "happy" }, motion: "cheer" },
-  think: { look: { ...CELL, gear: ["glasses"] }, motion: "think" },
-  proud: { look: { ...CELL, eyes: "happy", gear: ["crown"] }, motion: "proud" },
-  sleep: { look: { ...CELL, eyes: "sleepy" }, motion: "sleep" },
-};
-
-/**
- * When to catch each motion for a still: the peak of the gesture. On the beat itself (e.g. 1.5 s)
- * every motion passes through its neutral pose: hops land, running legs cross, the hammer is
- * behind the head. Seconds; the music runs two beats a second.
- */
-const PEAK: Partial<Record<ChibiMotion, number>> = {
-  run: 1.625,
-  cheer: 1.75,
-  groove: 1.75,
-  hammer: 1.58,
-  celebrate: 1.5,
-  pass: 1.62,
-};
-
-/** The landing hero's snapshots, fanned behind Cell: three of the places the story visits. */
+/** The landing hero's snapshots, fanned behind Cell. */
 const HERO_PHOTOS: { photo: PhotoId; left: number; top: number; tilt: number }[] = [
   { photo: "workshop", left: 0.02, top: 0.2, tilt: -8 },
   { photo: "mountains", left: 0.5, top: 0.18, tilt: 7 },
   { photo: "fireworks", left: 0.24, top: 0.04, tilt: -1 },
 ];
 
+type Camera = { position: [number, number, number]; fov: number; look: number; lookX?: number };
+
+/** Straight on, a little above: the framing of the story's accents. */
+const STORY_CAMERA: Camera = { position: [0, 1.5, 5.6], fov: 30, look: 0.95 };
+/** Close on the head, for the letterhead. */
+const HEAD_CAMERA: Camera = { position: [0.06, 1.7, 3.0], fov: 30, look: 1.62, lookX: 0.06 };
+
 /**
- * Bakes still PNGs of Cell (scripts/render-art.ts) for places that don't run the live 3D: the web
- * pages, loading states, the OG image and the letter slide. Same rig and looks as the story, so a
- * page never shows a different mascot. Cutouts are Cell alone on a transparent background;
- * `skin-*` and the hero put Cell in front of real photos (photos.ts), like the story scenes.
- * Time comes from the frame, so a given frame always renders the same image.
+ * One loop of Cell for baking (scripts/render-art.ts, ADR-0013): the same rig and looks as the
+ * story, so no page shows a different mascot. Time comes from the frame, and every motion repeats
+ * after LOOP_SECONDS, so the baked loop plays without a jump. Cutouts and sprites are Cell alone
+ * on a transparent background; `skin-*` and the hero put Cell in front of real photos.
  */
 export function ArtStill({ art }: { art: ArtId }) {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
-  const at = (motion: ChibiMotion) => PEAK[motion] ?? frame / fps;
-  // A three-quarter turn so arms and legs read beside the big head instead of behind it.
+  const t = frame / fps;
+  // A three-quarter turn so arms and legs read beside the big head on the pages.
   const turn = 0.45;
 
+  let camera = STORY_CAMERA;
+  let shadow = true;
   let backdrop: ReactNode = null;
   let subject: ReactNode;
   if (art === "hero-cast") {
@@ -72,7 +58,16 @@ export function ArtStill({ art }: { art: ArtId }) {
         <PhotoCard photo={photo} width={w} height={w * 0.72} tilt={tilt} />
       </div>
     ));
-    subject = <Chibi look={CELL} motion="wave" t={at("wave")} scale={1.05} rotationY={0.2} />;
+    subject = <Chibi look={CELL} motion="wave" t={t} scale={1.05} rotationY={0.2} />;
+  } else if (art === "head-cell") {
+    camera = HEAD_CAMERA;
+    shadow = false;
+    subject = <Chibi look={CELL} motion="groove" t={t} />;
+  } else if (art.startsWith("sprite-")) {
+    const sprite = SPRITES[art.slice("sprite-".length) as SpriteId];
+    subject = (
+      <Chibi look={sprite.look} motion={sprite.motion} t={t} rotationY={sprite.turn ?? 0} />
+    );
   } else if (art.startsWith("skin-")) {
     const role = archetypeRole(art.slice("skin-".length) as ArchetypeId);
     const w = width * 0.8;
@@ -85,7 +80,7 @@ export function ArtStill({ art }: { art: ArtId }) {
       <Chibi
         look={role.look}
         motion={role.motion}
-        t={at(role.motion)}
+        t={t}
         position={[0.35, 0, 0]}
         scale={1.05}
         rotationY={turn}
@@ -93,10 +88,10 @@ export function ArtStill({ art }: { art: ArtId }) {
     );
   } else if (art.startsWith("cutout-cell-")) {
     const pose = CELL_POSES[art.slice("cutout-cell-".length) as CellPose];
-    subject = <Chibi look={pose.look} motion={pose.motion} t={at(pose.motion)} rotationY={turn} />;
+    subject = <Chibi look={pose.look} motion={pose.motion} t={t} rotationY={turn} />;
   } else {
     const role = archetypeRole(art.slice("cutout-".length) as ArchetypeId);
-    subject = <Chibi look={role.look} motion={role.motion} t={at(role.motion)} rotationY={turn} />;
+    subject = <Chibi look={role.look} motion={role.motion} t={t} rotationY={turn} />;
   }
 
   return (
@@ -107,10 +102,9 @@ export function ArtStill({ art }: { art: ArtId }) {
           width={width}
           height={height}
           gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
-          // Straight on, a little above, like the story's LiveAccent.
-          camera={{ position: [0, 1.5, 5.6], fov: 30 }}
+          camera={{ position: camera.position, fov: camera.fov }}
           onCreated={(state) => {
-            state.camera.lookAt(0, 0.95, 0);
+            state.camera.lookAt(camera.lookX ?? 0, camera.look, 0);
             // Khronos PBR Neutral keeps brand colours as picked; ACES shifted the green toward yellow.
             state.gl.toneMapping = NeutralToneMapping;
             state.gl.toneMappingExposure = 1.05;
@@ -118,7 +112,7 @@ export function ArtStill({ art }: { art: ArtId }) {
         >
           <CutoutLights />
           {/* A soft shadow where the feet meet the ground, so Cell stands instead of floats. */}
-          <BlobShadow size={[1.9, 1.4]} opacity={0.45} />
+          {shadow && <BlobShadow size={[1.9, 1.4]} opacity={0.45} />}
           {subject}
         </ThreeCanvas>
       </AbsoluteFill>

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { Art } from "@/components/art";
 
 const WEEK = [0, 1, 2, 3, 4, 5, 6];
 // GitHub's dark graph ramp, so the loading row looks like a week filling in on your profile.
@@ -16,13 +16,10 @@ export function LoadingCell({ label }: { label: string; tone?: "paper" | "ink" }
       role="status"
       className="flex flex-1 flex-col items-center justify-center gap-6 px-4 py-16 text-center"
     >
-      <Image
-        src="/art/cutout-cell-think.png"
+      <Art
+        id="cutout-cell-think"
         alt=""
-        width={1200}
-        height={900}
-        preload
-        sizes="20rem"
+        priority
         className="h-auto w-64 motion-safe:animate-[bob_1.6s_ease-in-out_infinite] sm:w-80"
       />
       <div aria-hidden className="flex gap-1.5">

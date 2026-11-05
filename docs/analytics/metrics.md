@@ -50,6 +50,8 @@ Rationale: raw repo bytes over-weights large repos the user barely touched.
 
 `contributions.totalCount` per repo counts **days**, not commits: there is one `CreatedCommitContribution` node per (repo, day). We sum `commitCount`, querying each calendar quarter separately so that no connection goes over 100 nodes. Spike A: the per-repo sum equalled `totalCommitContributions` exactly.
 
+**Derived on screen: share of the year's commits** (Projects chapter, `packages/video/src/share.ts`). The top four of `repositories.top` and "every other repository" as squares of a 10 × 10 grid, 1 square = 1%. Base = `max(contributions.commits, sum of the four)`, so shares never pass 100% when the two GitHub fields disagree. Squares are handed out by largest remainder (exactly 100 in total); each label is its square count, so label and picture always agree (within 1% of the exact share), and a repository with commits but no square reads "<1%". Not stored: computed from the two fields above at render time.
+
 ## Community impact (owned, non-fork repos)
 
 | Field                                  | Definition                                              | Source                                                                                                            |                                                                                                                                               |

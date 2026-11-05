@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
     "@wyg/github",
     "@wyg/video",
     "@wyg/renderer",
-    "three",
   ],
   turbopack: {
     rules: {

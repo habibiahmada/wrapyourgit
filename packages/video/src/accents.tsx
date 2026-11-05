@@ -1,19 +1,19 @@
 import type { LayoutFamily, RecapData } from "@wyg/schema";
 import type { ReactNode } from "react";
+import type { SpriteId } from "./art";
 import { beats } from "./audio/track";
-import { archetypeRole, CAST, type Role } from "./cast";
 import { BranchLine, CellScatter, Silhouette, type SilhouetteSpot } from "./components/Backdrop";
 import { CellDash, DASH_BEATS, type DashStyle } from "./components/CellDash";
-import { LiveAccent } from "./components/LiveAccent";
-import { Chibi } from "./three/ChibiCell";
+import { SpriteAccent } from "./components/SpriteAccent";
 import { type SceneId, TIMELINE } from "./timeline";
 
 /*
- * What each scene draws behind its text: GitHub motifs on the field, and Cell, either live in 3D
- * (cast.ts) so its limbs, head and face move, or as a giant faint silhouette, so not every slide
- * has the mascot standing in it. A live Cell is placed in the space that scene's layout leaves empty: large, without covering a number or a
- * label. Positions are tuned per layout family from rendered stills of the sample and edge
- * recaps (docs/video/scene-system.md).
+ * What each scene draws behind its text: GitHub motifs on the field, and Cell, either looping its
+ * baked motion (Sprite, ADR-0013) so its limbs, head and face move, or as a giant faint
+ * silhouette, so not every slide has the mascot standing in it. A standing Cell is placed in the
+ * space that scene's layout leaves empty: large, without covering a number or a label. Positions
+ * are tuned per layout family from rendered stills of the sample and edge recaps
+ * (docs/video/scene-system.md).
  */
 
 type Spot = { x: number; y: number; size: number };
@@ -22,16 +22,12 @@ type PerLayout = Record<LayoutFamily, Spot>;
 function solo(
   spots: PerLayout,
   layout: LayoutFamily,
-  role: Role,
+  sprite: SpriteId,
   at: number,
   enter: "right" | "bottom" = "bottom",
 ): ReactNode {
   const { x, y, size } = spots[layout];
-  return (
-    <LiveAccent at={at} enter={enter} x={x} y={y} size={size}>
-      {(t) => <Chibi look={role.look} motion={role.motion} t={t} />}
-    </LiveAccent>
-  );
+  return <SpriteAccent sprite={sprite} at={at} enter={enter} x={x} y={y} size={size} />;
 }
 
 function figure(id: SceneId, data: RecapData, layout: LayoutFamily): ReactNode {
@@ -44,7 +40,7 @@ function figure(id: SceneId, data: RecapData, layout: LayoutFamily): ReactNode {
           landscape: { x: 0.76, y: 0.46, size: 0.72 },
         },
         layout,
-        CAST.intro,
+        "wave",
         beats(1),
         "right",
       );
@@ -56,42 +52,38 @@ function figure(id: SceneId, data: RecapData, layout: LayoutFamily): ReactNode {
           landscape: { x: 0.84, y: 0.8, size: 0.42 },
         },
         layout,
-        CAST.contributions,
+        "cheer",
         beats(DASH_BEATS),
         "right",
       );
     case "rhythm":
       // Cell the runner, as a giant shadow behind the calendar.
-      return giant(id, "cutout-consistent", layout, {
+      return giant(id, "arch-consistent", layout, {
         portrait: { x: 0.74, feet: 1.06, size: 0.6 },
         compact: { x: 0.78, feet: 1.1, size: 0.8 },
         landscape: { x: 0.84, feet: 1.12, size: 1.05 },
       });
     case "tech-dna":
-      return giant(id, "cutout-cell-think", layout, {
+      return giant(id, "think", layout, {
         portrait: { x: 0.8, feet: 1.04, size: 0.55 },
         compact: { x: 0.82, feet: 1.08, size: 0.75 },
         landscape: { x: 0.86, feet: 1.1, size: 1.0 },
       });
     case "projects":
-      return solo(
-        {
-          portrait: { x: 0.56, y: 0.47, size: 0.72 },
-          compact: { x: 0.6, y: 0.465, size: 0.38 },
-          landscape: { x: 0.2, y: 0.84, size: 0.34 },
-        },
-        layout,
-        CAST.projects,
-        beats(DASH_BEATS),
-      );
+      // The waffle and its legend need the room: Cell hammers away as a giant shadow behind.
+      return giant(id, "hammer", layout, {
+        portrait: { x: 0.82, feet: 1.14, size: 0.42 },
+        compact: { x: 0.84, feet: 1.1, size: 0.72 },
+        landscape: { x: 0.52, feet: 1.14, size: 1.0 },
+      });
     case "community":
-      return giant(id, "cutout-cell-cheer", layout, {
+      return giant(id, "cheer", layout, {
         portrait: { x: 0.8, feet: 0.72, size: 0.5, flip: true },
         compact: { x: 0.84, feet: 0.78, size: 0.7, flip: true },
         landscape: { x: 0.2, feet: 1.12, size: 1.0 },
       });
     case "engineering":
-      return giant(id, "cutout-collaborator", layout, {
+      return giant(id, "arch-collaborator", layout, {
         portrait: { x: 0.78, feet: 1.05, size: 0.55 },
         compact: { x: 0.82, feet: 1.08, size: 0.75 },
         landscape: { x: 0.86, feet: 1.12, size: 1.05 },
@@ -104,7 +96,7 @@ function figure(id: SceneId, data: RecapData, layout: LayoutFamily): ReactNode {
           landscape: { x: 0.8, y: 0.66, size: 0.66 },
         },
         layout,
-        archetypeRole(data.identity.archetype),
+        data.identity.archetype ? `arch-${data.identity.archetype}` : "sleep",
         beats(3),
       );
     case "closing":
@@ -115,7 +107,7 @@ function figure(id: SceneId, data: RecapData, layout: LayoutFamily): ReactNode {
           landscape: { x: 0.88, y: 0.8, size: 0.4 },
         },
         layout,
-        CAST.closing,
+        "proud",
         beats(7),
       );
     default:
@@ -131,11 +123,11 @@ const FIELD = Object.fromEntries(TIMELINE.map((scene) => [scene.id, scene.field]
 /** Cell as a giant silhouette in the field's text colour (Backdrop.tsx). */
 function giant(
   id: SceneId,
-  art: string,
+  sprite: SpriteId,
   layout: LayoutFamily,
   spots: Record<LayoutFamily, SilhouetteSpot>,
 ): ReactNode {
-  return <Silhouette field={FIELD[id]} art={art} spot={spots[layout]} />;
+  return <Silhouette field={FIELD[id]} sprite={sprite} spot={spots[layout]} />;
 }
 
 /** GitHub motifs per scene: scattered cells everywhere, a branch graph where an edge is free. */
@@ -179,5 +171,5 @@ const DASHES: Partial<Record<SceneId, DashStyle>> = {
 export function sceneDash(id: SceneId): ReactNode {
   const dash = DASHES[id];
   if (!dash || id === "identity") return null;
-  return <CellDash look={CAST[id].look} dash={dash} />;
+  return <CellDash dash={dash} />;
 }
