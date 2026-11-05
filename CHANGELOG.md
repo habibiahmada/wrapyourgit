@@ -8,6 +8,7 @@ The 2026 edition, before its first release.
 
 ### Added
 
+- Production is live on Vercel + Neon at wrapyourgit.habibiahmada.dev (ADR-0015) ([#34](https://github.com/habibiahmada/wrapyourgit/issues/34)).
 - A deployment guide: staging on Vercel + Neon, production on an AWS VPS (systemd, Caddy, Postgres), updates, rollback, backups and the pre-launch checklist ([docs/deployment/guide.md](docs/deployment/guide.md)).
 - The contribution workflow is enforced: git hooks installed by `bun install`, a CI `Policy` check, merge-commit-only repository settings, and rulesets ready for when the repository is public (ADR-0014) ([#28](https://github.com/habibiahmada/wrapyourgit/issues/28)).
 - A live 3D chibi Cell for the story, with arms, legs, head and face that move on the beat (ADR-0010) ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
