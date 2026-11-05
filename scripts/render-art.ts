@@ -7,7 +7,8 @@
  * Web art and the letterhead head go to packages/video/public/art as `<id>.webp` (looping
  * animated WebP for the pages) and `<id>.png` (one frame at the motion's peak, for reduced motion,
  * Open Graph and the letter slide). Sprites go to packages/video/public/sprites/<id>.webp as a
- * grid of frames the story steps through. apps/web/public links both folders.
+ * grid of frames the story steps through. The web app gets copies of both folders before dev and
+ * build (scripts/sync-web-public.ts).
  *
  * Renders with the still renderer (apps/renderer/src/still.ts: one bundle, one browser,
  * angle-egl) and assembles with ffmpeg (libwebp_anim) and ImageMagick (montage).

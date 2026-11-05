@@ -9,6 +9,13 @@ dist/
 *.tsbuildinfo
 next-env.d.ts
 
+# copied from packages/video/public before dev and build (scripts/sync-web-public.ts)
+apps/web/public/art/
+apps/web/public/audio/
+apps/web/public/lang/
+apps/web/public/photos/
+apps/web/public/sprites/
+
 # remotion
 packages/video/out/
 apps/renderer/out/
