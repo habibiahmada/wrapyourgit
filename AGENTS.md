@@ -49,12 +49,15 @@ Before declaring work done: `bun run typecheck && bun test && bun run lint`.
 7. **Workspace packages ship TS source** (no build step). If `apps/web` imports a new `@wyg/*` package, add it to `transpilePackages` in `apps/web/next.config.ts`.
 8. **Next.js 16 differs from your training data.** See `apps/web/AGENTS.md`; read `node_modules/next/dist/docs/` before using unfamiliar Next APIs.
 
+## Git workflow (enforced)
+
+Issue → branch `<type>/<issue>-<slug>` (`gh issue develop N --name ... --base main --checkout`) → small Conventional Commits → PR with a Conventional title and `Closes #N` → self-review comment → merge commit after green CI and the maintainer's OK (`gh pr merge N --merge --delete-branch`). Never commit or push to `main`. Commits, PRs and issues are in English, in the author's own name; crediting an AI tool is allowed but recommended against. `.githooks` (installed by `bun install`) and the CI `Policy` job check this with `scripts/policy/rules.ts`. Full version: CONTRIBUTING.md "Workflow" and "Releases".
+
 ## Conventions
 
 - TypeScript strict, `noUncheckedIndexedAccess`. Biome for lint/format (double quotes, 2 spaces, width 100).
 - Tests sit next to code: `foo.ts` → `foo.test.ts`, run with `bun test`.
 - Comments explain _why_ or a non-obvious contract, not what the code does.
-- Conventional commits: `feat(video): ...`, `fix(analytics): ...`, `docs: ...`, `chore: ...`.
 - Architecture decisions go in `docs/architecture/decisions/NNNN-title.md` (ADR). If you change a decision, write a new ADR that supersedes the old one.
 - Docs are in English; discussion with the maintainer may be in Bahasa Indonesia.
 

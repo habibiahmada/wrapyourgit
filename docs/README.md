@@ -30,3 +30,4 @@
 | [0011](architecture/decisions/0011-slides-from-the-composition.md)       | Exported slides are frames of the story composition               | Accepted                       |
 | [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art    | Accepted                       |
 | [0013](architecture/decisions/0013-baked-animation-no-webgl.md)          | Cell moves through baked loops, no WebGL in the browser           | Accepted                       |
+| [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets  | Accepted                       |

@@ -41,7 +41,9 @@
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun test",
     "lint": "biome check .",
-    "format": "biome check --write ."
+    "format": "biome check --write .",
+    "policy": "bun scripts/policy/cli.ts",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",

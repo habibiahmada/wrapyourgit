@@ -1,0 +1,3 @@
+#!/bin/sh
+# Conventional Commit subjects; AI attribution is allowed but warned about (scripts/policy).
+exec bun scripts/policy/cli.ts commit-msg "$1"
