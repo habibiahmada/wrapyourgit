@@ -182,7 +182,7 @@ bun run --filter @wyg/web db:migrate
 bun run dev                             # http://localhost:3000
 ```
 
-Just want to see the video? `bun run studio` opens Remotion Studio with sample data, no sign-in needed. The full guide, including creating your own GitHub App, is in [docs/development/setup.md](docs/development/setup.md).
+Just want to see the video? `bun run studio` opens Remotion Studio with sample data, no sign-in needed. The full guide, including creating your own GitHub App, is in [docs/development/setup.md](docs/development/setup.md); running it on a server is in [docs/deployment/guide.md](docs/deployment/guide.md).
 
 | Command             | What it does                                         |
 | ------------------- | ---------------------------------------------------- |
@@ -244,7 +244,7 @@ WrapYourGit is released under the [MIT License](LICENSE). Its dependencies keep 
 - Fonts: [Mona Sans](https://github.com/github/mona-sans) and [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque) (SIL Open Font License).
 - Inspired by Spotify Wrapped and the open-source year-in-review projects before it, including [GitHub Unwrapped](https://www.githubunwrapped.com) by Remotion.
 
-Not affiliated with or endorsed by GitHub. GitHub and the contribution graph are trademarks of GitHub, Inc.
+WrapYourGit is an independent project. It reads your activity through the public GitHub API; GitHub is a trademark of GitHub, Inc.
 
 <div align="center">
 <br>

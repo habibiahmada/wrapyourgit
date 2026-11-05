@@ -57,10 +57,10 @@ Statistics live inside `recaps.data` as one validated document rather than in ma
 
 ## Environments
 
-See [ADR-0005](decisions/0005-environments-and-hosting.md).
+See [ADR-0005](decisions/0005-environments-and-hosting.md); the steps are in [deployment/guide.md](../deployment/guide.md). Nothing is deployed yet.
 
 | Env        | Web                             | DB                            | Rendering                          |
 | ---------- | ------------------------------- | ----------------------------- | ---------------------------------- |
 | local      | `bun run dev`                   | local Postgres or Neon branch | Remotion CLI locally               |
 | staging    | Vercel (preview/hobby)          | Neon free                     | Remotion Lambda (same AWS account) |
-| production | AWS (EC2/Lightsail VPS, Docker) | Postgres on AWS               | Remotion Lambda                    |
+| production | AWS VPS, `next start` (systemd) | Postgres container on the VPS | Remotion Lambda                    |

@@ -63,10 +63,10 @@ Issue → branch `<type>/<issue>-<slug>` (`gh issue develop N --name ... --base 
 
 ## Where to read next
 
-| You are working on               | Read                                                                              |
-| -------------------------------- | --------------------------------------------------------------------------------- |
-| Anything                         | [docs/README.md](docs/README.md)                                                  |
-| GitHub fetching / metrics        | [docs/analytics/metrics.md](docs/analytics/metrics.md)                            |
-| Scenes, animation, audio, export | [DESIGN.md](DESIGN.md) + [docs/video/scene-system.md](docs/video/scene-system.md) |
-| Infra, auth, deploy              | [docs/architecture/overview.md](docs/architecture/overview.md) + ADRs             |
-| What to build next               | [docs/product/roadmap.md](docs/product/roadmap.md)                                |
+| You are working on               | Read                                                                                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Anything                         | [docs/README.md](docs/README.md)                                                                                            |
+| GitHub fetching / metrics        | [docs/analytics/metrics.md](docs/analytics/metrics.md)                                                                      |
+| Scenes, animation, audio, export | [DESIGN.md](DESIGN.md) + [docs/video/scene-system.md](docs/video/scene-system.md)                                           |
+| Infra, auth, deploy              | [docs/architecture/overview.md](docs/architecture/overview.md), [docs/deployment/guide.md](docs/deployment/guide.md) + ADRs |
+| What to build next               | [docs/product/roadmap.md](docs/product/roadmap.md)                                                                          |

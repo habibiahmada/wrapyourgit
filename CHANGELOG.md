@@ -8,6 +8,7 @@ The 2026 edition, before its first release.
 
 ### Added
 
+- A deployment guide: staging on Vercel + Neon, production on an AWS VPS (systemd, Caddy, Postgres), updates, rollback, backups and the pre-launch checklist ([docs/deployment/guide.md](docs/deployment/guide.md)).
 - The contribution workflow is enforced: git hooks installed by `bun install`, a CI `Policy` check, merge-commit-only repository settings, and rulesets ready for when the repository is public (ADR-0014) ([#28](https://github.com/habibiahmada/wrapyourgit/issues/28)).
 - A live 3D chibi Cell for the story, with arms, legs, head and face that move on the beat (ADR-0010) ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
 - A different camera-like transition for every cut (dive, tilt, whip pan, iris, blinds, card flip, a flash for the archetype, pull-back), a sound for every animation, and a gap-free looping soundtrack on the web; the MP4 carries the same effects on the same frames ([#20](https://github.com/habibiahmada/wrapyourgit/issues/20)).
@@ -22,6 +23,7 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- The footer, README and third-party notices describe WrapYourGit as an independent project instead of disclaiming an affiliation.
 - Cell moves everywhere as baked 3D loops instead of live WebGL: animated WebP on the pages (a still under reduced motion) and sprite sheets in the story; the web app no longer ships three.js (ADR-0013) ([#24](https://github.com/habibiahmada/wrapyourgit/issues/24)).
 - The Projects chapter shows the year's commits as a 10 × 10 waffle coloured by repository, with names, commits and shares ([#24](https://github.com/habibiahmada/wrapyourgit/issues/24)).
 - The letter has a letterhead with Cell's head, a postmark, the person's own contribution strip as the rule, a motif on the paper and a signature flourish, on the web and in the letter slide ([#24](https://github.com/habibiahmada/wrapyourgit/issues/24)).

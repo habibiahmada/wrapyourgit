@@ -13,7 +13,7 @@ export function SiteFooter({ base = "" }: { base?: "" | "/" }) {
             WrapYourGit {EDITION_YEAR}
           </Link>
           <p className="max-w-md text-sm text-muted">
-            Built on the GitHub API. Not affiliated with GitHub.
+            An independent project, built on the GitHub API.
           </p>
         </div>
         <nav aria-label="Footer">
