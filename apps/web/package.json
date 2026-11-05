@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "bun ../../scripts/sync-web-public.ts && next dev",
+    "build": "bun ../../scripts/sync-web-public.ts && next build",
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "db:generate": "drizzle-kit generate",
