@@ -34,7 +34,7 @@ The template is [`.env.example`](../../.env.example). The web app reads these; s
 
 `GITHUB_TOKEN` in `.env.example` is for local spikes only; don't set it on a server.
 
-On Vercel, `DATABASE_URL` comes from the Neon integration (Production and Preview); `APP_URL` is set for Production and Preview; `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_SECRET` and `TOKEN_ENCRYPTION_KEY` are set for **Production only**, so preview deployments build but can't sign anyone in. For previews the Neon integration replaces `DATABASE_URL` with a **database branch of their own** ("Create Database Branch For Deployment: Preview"), so a preview never touches production data. The two secrets are Vercel _Secret_ variables, entered by the maintainer.
+On Vercel, `DATABASE_URL` comes from the Neon integration (Production and Preview); `APP_URL` is set for Production and Preview; `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_SECRET` and `TOKEN_ENCRYPTION_KEY` are set for **Production only**, so preview deployments build but can't sign anyone in. For previews the Neon integration replaces `DATABASE_URL` with a **database branch of their own** ("Create Database Branch For Deployment: Preview"), so a preview never touches production data. The branches are named `preview/<git branch>` and show in the Neon console (Vercel → Storage → wrapyourgit-db → Open in Neon → Branches). The free plan caps the number of branches: if a preview fails to get a database, delete old `preview/*` branches there. The two secrets are Vercel _Secret_ variables, entered by the maintainer.
 
 ## GitHub App
 
