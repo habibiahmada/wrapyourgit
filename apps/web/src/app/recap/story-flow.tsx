@@ -500,7 +500,9 @@ function ComicArt({
   priority?: boolean;
 }) {
   return (
-    <div className="mx-auto w-full max-w-xl lg:max-w-none">
+    // The art is scaled up for presence; clip the sides (transparent margin) so it never widens
+    // the page on a phone. `clip`, not `hidden`, so it can still grow upwards.
+    <div className="mx-auto w-full max-w-xl overflow-x-clip lg:max-w-none">
       <Image
         src={`/art/${art}.png`}
         alt={alt}
