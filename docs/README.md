@@ -10,7 +10,7 @@
 | [video/scene-system.md](video/scene-system.md)       | Scenes, layouts, animation rules, audio, export       | Scenes, formats or the audio approach change       |
 | [../DESIGN.md](../DESIGN.md)                         | Visual direction: palette, type, motif, dials         | The look of the story changes                      |
 | [development/setup.md](development/setup.md)         | Local setup, env vars, GitHub App, AWS                | Setup steps change                                 |
-| [deployment/guide.md](deployment/guide.md)           | Staging (Vercel + Neon), production (VPS), backups    | Hosting, env vars or the release steps change      |
+| [deployment/guide.md](deployment/guide.md)           | Production on Vercel + Neon now, AWS VPS later        | Hosting, env vars or the release steps change      |
 | [security/](security/)                               | Security reviews: findings, fixes, what stays open    | After each review                                  |
 
 **Source of truth order:** code + tests > metrics.md / ADRs > PRD. If they disagree, fix the doc in the same change.
@@ -32,3 +32,4 @@
 | [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art    | Accepted                       |
 | [0013](architecture/decisions/0013-baked-animation-no-webgl.md)          | Cell moves through baked loops, no WebGL in the browser           | Accepted                       |
 | [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets  | Accepted                       |
+| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later        | Accepted                       |

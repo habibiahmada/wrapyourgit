@@ -57,10 +57,10 @@ Statistics live inside `recaps.data` as one validated document rather than in ma
 
 ## Environments
 
-See [ADR-0005](decisions/0005-environments-and-hosting.md); the steps are in [deployment/guide.md](../deployment/guide.md). Nothing is deployed yet.
+See [ADR-0005](decisions/0005-environments-and-hosting.md) and [ADR-0015](decisions/0015-production-on-vercel-first.md); the steps are in [deployment/guide.md](../deployment/guide.md). Production is live on Vercel since 2026-11-05.
 
-| Env        | Web                             | DB                            | Rendering                          |
-| ---------- | ------------------------------- | ----------------------------- | ---------------------------------- |
-| local      | `bun run dev`                   | local Postgres or Neon branch | Remotion CLI locally               |
-| staging    | Vercel (preview/hobby)          | Neon free                     | Remotion Lambda (same AWS account) |
-| production | AWS VPS, `next start` (systemd) | Postgres container on the VPS | Remotion Lambda                    |
+| Env        | Web                                  | DB                            | Rendering                       |
+| ---------- | ------------------------------------ | ----------------------------- | ------------------------------- |
+| local      | `bun run dev`                        | local Postgres or Neon branch | Remotion CLI locally            |
+| preview    | Vercel preview deployments           | the production Neon database  | not wired yet                   |
+| production | Vercel Hobby (`sin1`); AWS VPS later | Neon, Singapore               | Remotion Lambda (not wired yet) |
