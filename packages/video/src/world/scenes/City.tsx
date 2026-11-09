@@ -9,18 +9,18 @@ import type { SceneProps } from "./types";
  * the band above it.
  */
 export function City({ data, size, layout, enter }: SceneProps) {
-  const { total, final } = cityModel(data);
+  const { total, headline, caption, legend } = cityModel(data);
   const h = sceneHeight(size);
   const safe = safeArea(size);
   const t = easeOut(interpolate(enter, [0, 1], [0, 1], { extrapolateRight: "clamp" }));
   const landscape = layout === "landscape";
   const unit = Math.min(1000, h);
   // In landscape the city fills the top; the free corner is the bottom left, under its diagonal.
-  const w = landscape ? 340 : 800;
-  const boxH = (landscape ? h * 0.32 : Math.min(unit * 0.26, 300)) + (final ? 0 : 34);
+  const w = landscape ? 320 : 800;
+  const boxH = (landscape ? h * 0.24 : Math.min(unit * 0.2, 230)) + (legend ? 48 : 0);
   const top = landscape ? h - safe.bottom - boxH - 10 : safe.top + 8;
   const cx = landscape ? 20 + w / 2 : 500;
-  const title = `This year you made ${formatCount(total)} contributions${final ? "" : " so far"}`;
+  const title = `${headline} ${formatCount(total)} contributions`;
   return (
     <AbsoluteFill>
       <SceneSvg title={title}>
@@ -37,8 +37,8 @@ export function City({ data, size, layout, enter }: SceneProps) {
           />
           <Label
             x={cx}
-            y={top + boxH * (final ? 0.26 : 0.22)}
-            text={final ? "This year you made" : "This year so far you made"}
+            y={top + boxH * (legend ? 0.2 : 0.26)}
+            text={headline}
             size={boxH * 0.13}
             weight={700}
             anchor="middle"
@@ -47,7 +47,7 @@ export function City({ data, size, layout, enter }: SceneProps) {
           />
           <Label
             x={cx}
-            y={top + boxH * (final ? 0.64 : 0.6)}
+            y={top + boxH * (legend ? 0.55 : 0.64)}
             text={formatCount(total)}
             size={boxH * 0.38}
             weight={800}
@@ -56,19 +56,19 @@ export function City({ data, size, layout, enter }: SceneProps) {
           />
           <Label
             x={cx}
-            y={top + boxH * (final ? 0.86 : 0.8)}
-            text="contributions · one building per day"
+            y={top + boxH * (legend ? 0.76 : 0.86)}
+            text={caption}
             size={boxH * 0.11}
             weight={700}
             anchor="middle"
             maxWidth={w - 60}
             fill={palette.inkSoft}
           />
-          {!final && (
+          {legend && (
             <Label
               x={cx}
-              y={top + boxH * 0.95}
-              text="not yet: days still to come"
+              y={top + boxH * 0.91}
+              text={legend}
               size={boxH * 0.09}
               weight={400}
               anchor="middle"

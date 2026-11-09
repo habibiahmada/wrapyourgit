@@ -94,3 +94,25 @@ export const busyRecap: RecapData = {
     reasons: ["2,877 pull request reviews", "1,204 pull requests to other people's repositories"],
   },
 };
+
+const PROVISIONAL_END = "2026-11-09";
+const provisionalCalendar = sampleRecap.contributions.calendar.filter(
+  (day) => day.date <= PROVISIONAL_END,
+);
+// Earliest day with the highest count, the same rule as analytics' busiestDay.
+const provisionalBusiest = provisionalCalendar.reduce((best, day) =>
+  day.count > best.count ? day : best,
+);
+
+/** A year still running: the period ends Nov 9, later days are not in the calendar yet. */
+export const provisionalRecap: RecapData = {
+  ...sampleRecap,
+  meta: { ...sampleRecap.meta, isFinal: false, periodEnd: PROVISIONAL_END },
+  contributions: {
+    ...sampleRecap.contributions,
+    total: provisionalCalendar.reduce((sum, day) => sum + day.count, 0),
+    activeDays: provisionalCalendar.filter((day) => day.count > 0).length,
+    busiestDay: { date: provisionalBusiest.date, count: provisionalBusiest.count },
+    calendar: provisionalCalendar,
+  },
+};
