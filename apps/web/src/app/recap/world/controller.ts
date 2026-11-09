@@ -37,10 +37,15 @@ export function request(
   };
 }
 
-export function frameAt(state: ControllerState, elapsedMs: number, fps: number): number {
+/**
+ * The frame to show during a move, or null when the camera rests: frame 0 is a real frame (the
+ * first stop), so "no move" can't be 0. At rest the player shows `timeline.stopFrames[state.stop]`.
+ */
+export function frameAt(state: ControllerState, elapsedMs: number, fps: number): number | null {
   const move = state.moving;
-  if (!move) return 0;
-  const travelled = Math.floor((elapsedMs * fps) / 1000);
+  if (!move) return null;
+  // Clamped at 0 so clock skew on the first tick never lands before startFrame.
+  const travelled = Math.max(0, Math.floor((elapsedMs * fps) / 1000));
   const frame = move.startFrame + move.direction * travelled;
   return move.direction === 1 ? Math.min(frame, move.endFrame) : Math.max(frame, move.endFrame);
 }

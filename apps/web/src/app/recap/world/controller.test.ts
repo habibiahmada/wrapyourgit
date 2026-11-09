@@ -24,7 +24,7 @@ test("backward plays the same frames in reverse", () => {
   expect(r.state.moving).toEqual({ from: 2, to: 1, startFrame: 250, endFrame: 100, direction: -1 });
   expect(frameAt(r.state, 0, 30)).toBe(250);
   expect(frameAt(r.state, 1000, 30)).toBe(220);
-  expect(frameAt(r.state, 1000, 30)).toBeLessThan(frameAt(r.state, 500, 30));
+  expect(frameAt(r.state, 1000, 30)).toBeLessThan(frameAt(r.state, 500, 30) ?? 0);
 });
 
 test("nothing happens before the first stop or after the last", () => {
@@ -63,4 +63,17 @@ test("frameAt never passes the end frame", () => {
 test("frameAt returns whole frames", () => {
   const fwd = request(initialState(), 1, timeline).state;
   expect(frameAt(fwd, 100, 30)).toBe(3);
+});
+
+test("frameAt is null while the camera rests", () => {
+  expect(frameAt(initialState(), 500, 30)).toBeNull();
+});
+
+test("a negative elapsed time never goes before the start frame", () => {
+  const back = request(atStop(2), -1, timeline).state;
+  expect(frameAt(back, -50, 30)).toBe(250);
+});
+
+test("settle on a resting state keeps the stop and returns no move", () => {
+  expect(settle(atStop(2))).toEqual({ state: atStop(2), next: null });
 });
