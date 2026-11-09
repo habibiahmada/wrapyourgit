@@ -4,6 +4,8 @@ import { buildCity, type City } from "./city";
 import { buildStops, type Stop } from "./stops";
 import { buildTimeline, type Timeline, type WorldMode } from "./timeline";
 
+export type { Timeline };
+
 export type WorldModel = { city: City; stops: Stop[]; cameras: Camera[]; timeline: Timeline };
 
 type Format = { width: number; height: number };
