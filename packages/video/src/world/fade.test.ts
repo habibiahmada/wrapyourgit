@@ -2,7 +2,14 @@ import { expect, test } from "bun:test";
 import { VIDEO_FORMATS } from "@wyg/schema";
 import { sampleRecap } from "../fixtures/sample-recap";
 import { PLOT_SPAN } from "./camera";
-import { cardOpacity, cityOpacity, contributionsLabel, formatDay, reachedStop } from "./fade";
+import {
+  cardOpacity,
+  cityOpacity,
+  contributionsLabel,
+  enterProgress,
+  formatDay,
+  reachedStop,
+} from "./fade";
 import { buildWorld } from "./model";
 import type { WorldMode } from "./timeline";
 
@@ -75,4 +82,35 @@ test("contributionsLabel uses the singular for exactly one", () => {
   expect(contributionsLabel(1, "1")).toBe("1 contribution");
   expect(contributionsLabel(0, "0")).toBe("0 contributions");
   expect(contributionsLabel(1234, "1,234")).toBe("1,234 contributions");
+});
+
+for (const mode of ["interactive", "video"] as WorldMode[]) {
+  test(`enterProgress (${mode}): 0 before the move in, eased over it, 1 from the rest on`, () => {
+    const { timeline } = buildWorld(sampleRecap, VIDEO_FORMATS["9x16"], mode, 30);
+    const { stopFrames, moveFrames } = timeline;
+    expect(enterProgress(0, 0, timeline)).toBe(1);
+    for (let i = 1; i < stopFrames.length; i++) {
+      const rest = stopFrames[i] as number;
+      const move = moveFrames[i] as number;
+      expect(enterProgress(i, stopFrames[i - 1] as number, timeline)).toBe(0);
+      expect(enterProgress(i, rest - move, timeline)).toBe(0);
+      const mid = enterProgress(i, rest - Math.round(move / 2), timeline);
+      expect(mid).toBeGreaterThan(0);
+      expect(mid).toBeLessThan(1);
+      expect(enterProgress(i, rest, timeline)).toBe(1);
+      // Through the hold and the move out: the scene stays entered while it fades away.
+      const next = stopFrames[i + 1] ?? timeline.durationInFrames - 1;
+      expect(enterProgress(i, next, timeline)).toBe(1);
+      expect(enterProgress(i, Math.round((rest + next) / 2), timeline)).toBe(1);
+    }
+  });
+}
+
+test("enterProgress eases: slow at both ends of the move", () => {
+  const timeline = { stopFrames: [0, 100], moveFrames: [0, 100], durationInFrames: 101 };
+  const early = enterProgress(1, 10, timeline);
+  expect(early).toBeLessThan(0.1);
+  expect(enterProgress(1, 50, timeline)).toBeCloseTo(0.5, 5);
+  expect(enterProgress(1, 90, timeline)).toBeCloseTo(1 - early, 5);
+  expect(enterProgress(5, 50, timeline)).toBe(0);
 });

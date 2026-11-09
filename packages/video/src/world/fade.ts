@@ -1,5 +1,5 @@
 import { type Camera, PLOT_SPAN } from "./camera";
-import type { Timeline } from "./timeline";
+import { easeInOutCubic, type Timeline } from "./timeline";
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
@@ -34,6 +34,20 @@ export function cardOpacity(i: number, frame: number, timeline: Timeline): numbe
   const leave = next - moveOut;
   if (frame <= leave) return 1;
   return moveOut > 0 ? clamp01((next - frame) / moveOut) : 0;
+}
+
+/**
+ * How far stop i's scene has entered: 0 until the camera starts moving into it, eased with the
+ * camera over that move, 1 from the rest frame on (the hold and the move out keep it entered, so a
+ * scene fades away whole). Scenes animate their entrance from this, never from wall time.
+ */
+export function enterProgress(i: number, frame: number, timeline: Timeline): number {
+  const rest = timeline.stopFrames[i];
+  if (rest === undefined) return 0;
+  if (frame >= rest) return 1;
+  const move = timeline.moveFrames[i] ?? 0;
+  if (move <= 0) return 0;
+  return easeInOutCubic(clamp01(1 - (rest - frame) / move));
 }
 
 /**

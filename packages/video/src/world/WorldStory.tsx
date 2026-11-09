@@ -1,4 +1,4 @@
-import type { RecapData } from "@wyg/schema";
+import { layoutForSize, type RecapData } from "@wyg/schema";
 import { useMemo } from "react";
 import {
   AbsoluteFill,
@@ -14,7 +14,7 @@ import { palette } from "../theme";
 import { Chrome } from "./Chrome";
 import { CityLayer } from "./CityLayer";
 import { cameraAt } from "./camera";
-import { cardOpacity, reachedStop } from "./fade";
+import { cardOpacity, enterProgress, reachedStop } from "./fade";
 import { buildWorld } from "./model";
 import { StopLayer } from "./StopLayer";
 import { transitionSound } from "./sound";
@@ -36,6 +36,7 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
   );
   const { city, stops, cameras, timeline } = world;
   const size = { width, height };
+  const layout = layoutForSize(width, height);
   const camera = cameraAt(frame, cameras, timeline);
   const current = reachedStop(frame, timeline.stopFrames);
   const citySpan = cameras[stops.findIndex((s) => s.kind === "city")]?.span ?? camera.span;
@@ -52,13 +53,17 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
         return (
           <StopLayer
             key={stop.id}
+            data={data}
             stop={stop}
             stopCam={stopCam}
             camera={camera}
             city={city}
             citySpan={citySpan}
             timelineOpacity={cardOpacity(i, frame, timeline)}
-            frame={size}
+            enter={enterProgress(i, frame, timeline)}
+            frame={frame}
+            size={size}
+            layout={layout}
           />
         );
       })}
