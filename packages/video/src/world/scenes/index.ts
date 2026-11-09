@@ -1,4 +1,6 @@
 import type { StopKind } from "../stops";
+import { Busiest } from "./Busiest";
+import { City } from "./City";
 import { FirstDay } from "./FirstDay";
 import { Hello } from "./Hello";
 import { Placeholder } from "./Placeholder";
@@ -12,8 +14,8 @@ export const SCENES: Record<StopKind, Scene> = {
   hello: Hello,
   "first-day": FirstDay,
   private: Private,
-  city: Placeholder,
-  busiest: Placeholder,
+  city: City,
+  busiest: Busiest,
   rhythm: Placeholder,
   languages: Placeholder,
   projects: Placeholder,

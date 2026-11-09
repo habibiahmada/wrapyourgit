@@ -58,7 +58,10 @@ for (const format of FORMATS) {
   // The same model the composition builds (video mode at VIDEO_FPS), so the frames line up.
   const { stops, timeline } = buildWorld(data, VIDEO_FORMATS[format], "video", VIDEO_FPS);
   const i = stops.findIndex((s) => s.kind === kind);
-  if (i < 0) usage(`No ${kind} stop in the ${fixture} world`);
+  if (i < 0) {
+    console.log(`No ${kind} stop in the ${fixture} world (nothing to draw); skipped.`);
+    process.exit(0);
+  }
   const rest = timeline.stopFrames[i] as number;
   const frame = Math.min(timeline.durationInFrames - 1, Math.max(0, rest + offset));
   const png = await renderSceneStill(data, `world-${format}`, frame);
