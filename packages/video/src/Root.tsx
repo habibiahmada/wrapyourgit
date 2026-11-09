@@ -4,6 +4,8 @@ import { BAKE_FPS, HEAD_ART_ID, LOOP_FRAMES, SPRITE_IDS, SPRITE_SHEET, WEB_ART_I
 import { sampleRecap } from "./fixtures/sample-recap";
 import { type ArtId, ArtStill } from "./three/ArtStill";
 import { STORY_DURATION_IN_FRAMES, WrapStory } from "./WrapStory";
+import { worldDuration } from "./world/model";
+import { WorldStory, type WorldStoryProps } from "./world/WorldStory";
 
 /** Every baked loop: web art, the letterhead head and the story's sprites (art.ts). */
 export const ART_IDS: ArtId[] = [
@@ -35,6 +37,26 @@ export function Root() {
             width={width}
             height={height}
             defaultProps={{ data: sampleRecap }}
+          />
+        );
+      })}
+      {/* The story world, video mode: duration depends on the data, so it comes from the props. */}
+      {(Object.keys(VIDEO_FORMATS) as VideoFormatId[]).map((formatId) => {
+        const format = VIDEO_FORMATS[formatId];
+        const defaultProps: WorldStoryProps = { data: sampleRecap, mode: "video" };
+        return (
+          <Composition
+            key={`world-${formatId}`}
+            id={`world-${formatId}`}
+            component={WorldStory}
+            durationInFrames={worldDuration(sampleRecap, format, "video")}
+            calculateMetadata={({ props }) => ({
+              durationInFrames: worldDuration(props.data, format, props.mode),
+            })}
+            fps={VIDEO_FPS}
+            width={format.width}
+            height={format.height}
+            defaultProps={defaultProps}
           />
         );
       })}
