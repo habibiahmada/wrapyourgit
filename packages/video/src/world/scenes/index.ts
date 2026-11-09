@@ -5,6 +5,7 @@ import { FirstDay } from "./FirstDay";
 import { Garden } from "./Garden";
 import { Hello } from "./Hello";
 import { Placeholder } from "./Placeholder";
+import { Planes } from "./Planes";
 import { Private } from "./Private";
 import { Projects } from "./Projects";
 import { Rhythm } from "./Rhythm";
@@ -29,7 +30,7 @@ export const SCENES: Record<StopKind, Scene> = {
   languages: Garden,
   projects: Projects,
   community: Sky,
-  engineering: Placeholder,
+  engineering: Planes,
   archetype: Placeholder,
   versus: Placeholder,
   letter: Placeholder,
