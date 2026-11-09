@@ -6,6 +6,7 @@ import { Garden } from "./Garden";
 import { Hello } from "./Hello";
 import { Placeholder } from "./Placeholder";
 import { Private } from "./Private";
+import { Projects } from "./Projects";
 import { Rhythm } from "./Rhythm";
 import type { Scene } from "./types";
 
@@ -20,7 +21,7 @@ export const SCENES: Record<StopKind, Scene> = {
   busiest: Busiest,
   rhythm: Rhythm,
   languages: Garden,
-  projects: Placeholder,
+  projects: Projects,
   community: Placeholder,
   engineering: Placeholder,
   archetype: Placeholder,
