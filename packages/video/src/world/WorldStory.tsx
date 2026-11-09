@@ -14,7 +14,7 @@ import { palette } from "../theme";
 import { Chrome } from "./Chrome";
 import { CityLayer } from "./CityLayer";
 import { cameraAt } from "./camera";
-import { cardOpacity } from "./fade";
+import { cardOpacity, reachedStop } from "./fade";
 import { buildWorld } from "./model";
 import { StopLayer } from "./StopLayer";
 import { transitionSound } from "./sound";
@@ -27,13 +27,6 @@ export type WorldStoryProps = {
   music?: boolean;
 };
 
-/** Index of the stop the camera rests on or is leaving: the last one whose frame has passed. */
-function currentStop(frame: number, stopFrames: number[]): number {
-  let current = 0;
-  for (let i = 0; i < stopFrames.length; i++) if (frame >= (stopFrames[i] ?? 0)) current = i;
-  return current;
-}
-
 export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
   const { width, height, fps } = useVideoConfig();
   const frame = useCurrentFrame();
@@ -44,7 +37,7 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
   const { city, stops, cameras, timeline } = world;
   const size = { width, height };
   const camera = cameraAt(frame, cameras, timeline);
-  const current = currentStop(frame, timeline.stopFrames);
+  const current = reachedStop(frame, timeline.stopFrames);
   const citySpan = cameras[stops.findIndex((s) => s.kind === "city")]?.span ?? camera.span;
   const end = timeline.durationInFrames;
 

@@ -36,6 +36,16 @@ export function cardOpacity(i: number, frame: number, timeline: Timeline): numbe
   return moveOut > 0 ? clamp01((next - frame) / moveOut) : 0;
 }
 
+/**
+ * The last stop the camera has arrived at by `frame`: its rest frame has been reached. Pure in the
+ * frame, so seeking back over a segment gives the same answer as playing forward over it.
+ */
+export function reachedStop(frame: number, stopFrames: number[]): number {
+  let reached = 0;
+  for (let i = 0; i < stopFrames.length; i++) if (frame >= (stopFrames[i] ?? 0)) reached = i;
+  return reached;
+}
+
 const MONTHS = [
   "January",
   "February",
@@ -55,4 +65,9 @@ const MONTHS = [
 export function formatDay(iso: string): string {
   const month = MONTHS[Number(iso.slice(5, 7)) - 1] ?? "";
   return `${month} ${Number(iso.slice(8, 10))}`;
+}
+
+/** "1 contribution", "2 contributions": the count is already formatted, only the noun varies. */
+export function contributionsLabel(count: number, formatted: string): string {
+  return `${formatted} ${count === 1 ? "contribution" : "contributions"}`;
 }

@@ -16,7 +16,21 @@ export function transitionSound(to: StopKind): SfxName {
     case "city":
     case "closing":
       return "wind";
-    default:
+    case "hello":
+    case "first-day":
+    case "busiest":
+    case "private":
+    case "rhythm":
+    case "projects":
+    case "engineering":
+    case "archetype":
+    case "versus":
+    case "letter":
       return "dive";
+    default: {
+      // A new StopKind fails typecheck here instead of silently getting "dive".
+      const unreachable: never = to;
+      return unreachable;
+    }
   }
 }

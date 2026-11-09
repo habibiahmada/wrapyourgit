@@ -24,7 +24,9 @@ test("backward plays the same frames in reverse", () => {
   expect(r.state.moving).toEqual({ from: 2, to: 1, startFrame: 250, endFrame: 100, direction: -1 });
   expect(frameAt(r.state, 0, 30)).toBe(250);
   expect(frameAt(r.state, 1000, 30)).toBe(220);
-  expect(frameAt(r.state, 1000, 30)).toBeLessThan(frameAt(r.state, 500, 30) ?? 0);
+  const early = frameAt(r.state, 500, 30);
+  expect(early).not.toBeNull();
+  expect(frameAt(r.state, 1000, 30) as number).toBeLessThan(early as number);
 });
 
 test("nothing happens before the first stop or after the last", () => {

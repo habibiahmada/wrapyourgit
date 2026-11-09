@@ -2,7 +2,7 @@ import { AbsoluteFill } from "remotion";
 import { fontFamily, formatCount, palette } from "../theme";
 import { type Camera, project } from "./camera";
 import type { City } from "./city";
-import { formatDay, zoomFade } from "./fade";
+import { contributionsLabel, formatDay, zoomFade } from "./fade";
 import type { Stop } from "./stops";
 
 type Frame = { width: number; height: number };
@@ -68,7 +68,7 @@ export function StopLayer({
         <div style={{ fontSize: unit * 5, fontWeight: 400 }}>{formatDay(plot.date)}</div>
         {stop.kind === "busiest" && (
           <div style={{ fontSize: unit * 6, fontWeight: 700 }}>
-            {formatCount(plot.count)} contributions
+            {contributionsLabel(plot.count, formatCount(plot.count))}
           </div>
         )}
       </div>
