@@ -1,4 +1,4 @@
-import { AbsoluteFill, interpolate } from "remotion";
+import { AbsoluteFill, interpolate, random } from "remotion";
 import { easeOut, formatCount, palette } from "../../theme";
 import { CellArt, Label, SceneSvg, safeArea, sceneHeight } from "./kit";
 import { rhythmModel } from "./rhythm.model";
@@ -10,20 +10,17 @@ const CARS = 7;
 /** Tallest heap, in car-body heights; heaps are 72% of a car wide and read as piled goods. */
 const HEAP_MAX = 2.2;
 const HEAP_WIDTH = 0.72;
+const BASE_CELLS = 5;
 const CELL_PER_BODY = 1.9;
 const CELL_RATIO = 0.75;
 const WHEEL = 0.16;
 const SKY = "#DDF3E1";
-const CARGO = palette.heat[3];
 
-/** A mound: flat foot, rounded shoulders, a broad crown. */
-function heapPath(cx: number, base: number, w: number, hgt: number): string {
-  const l = cx - w / 2;
-  const r = cx + w / 2;
-  const top = base - hgt;
-  return `M ${l} ${base} C ${l} ${base - hgt * 0.45} ${cx - w * 0.42} ${top} ${cx - w * 0.1} ${top} L ${cx + w * 0.1} ${top} C ${
-    cx + w * 0.42
-  } ${top} ${r} ${base - hgt * 0.45} ${r} ${base} Z`;
+/** Row widths, bottom to top, of the tallest pile: a stepped pyramid 5, 3, then 1 cells wide. */
+function pyramidRows(maxRows: number): number[] {
+  const wide = Math.ceil(maxRows * 0.4);
+  const mid = Math.ceil(maxRows * 0.3);
+  return Array.from({ length: maxRows }, (_, i) => (i < wide ? 5 : i < wide + mid ? 3 : 1));
 }
 
 export function Rhythm({ data, size, enter, frame }: SceneProps) {
@@ -54,7 +51,23 @@ export function Rhythm({ data, size, enter, frame }: SceneProps) {
   // The whole train, Cell with it, rolls in from beyond the left edge.
   const shift = -(1 - t) * (MARGIN + trainW + cellW / 2);
   const bob = Math.sin(frame / 12) * 3;
-  const heapH = (fill: number) => (fill > 0 ? Math.max(bodyH * 0.12, fill * HEAP_MAX * bodyH) : 0);
+  const pitch = (carW * HEAP_WIDTH) / BASE_CELLS;
+  const cellSize = pitch * 0.84;
+  const rowWidths = pyramidRows(Math.max(1, Math.floor((HEAP_MAX * bodyH) / pitch)));
+  const maxCells = rowWidths.reduce((a, b) => a + b, 0);
+  // Cells in the pile, proportional to the day's share of the busiest; any contribution shows one.
+  const pileCells = (fill: number) => (fill > 0 ? Math.max(1, Math.round(fill * maxCells)) : 0);
+  const pileRows = (n: number) => {
+    let left = n;
+    let rows = 0;
+    for (const w of rowWidths) {
+      if (left <= 0) break;
+      left -= w;
+      rows++;
+    }
+    return rows;
+  };
+  const heapH = (fill: number) => pileRows(pileCells(fill)) * pitch;
   return (
     <AbsoluteFill style={{ backgroundColor: SKY }}>
       <SceneSvg title={`${model.title}. ${model.caption}`}>
@@ -72,7 +85,6 @@ export function Rhythm({ data, size, enter, frame }: SceneProps) {
           {model.cars.map((car, i) => {
             const x = MARGIN + i * (carW + GAP);
             const cx = x + carW / 2;
-            const hh = heapH(car.fill);
             return (
               <g key={car.day}>
                 {i < CARS - 1 && (
@@ -84,16 +96,29 @@ export function Rhythm({ data, size, enter, frame }: SceneProps) {
                     fill={palette.ink}
                   />
                 )}
-                {hh > 0 && (
+                {pileCells(car.fill) > 0 && (
                   <g>
-                    <path d={heapPath(cx, bodyTop + 2, carW * HEAP_WIDTH, hh)} fill={CARGO} />
-                    {hh > bodyH * 0.5 && (
-                      <g fill={palette.heat[1]}>
-                        <circle cx={cx - carW * 0.14} cy={bodyTop - hh * 0.55} r={carW * 0.045} />
-                        <circle cx={cx + carW * 0.1} cy={bodyTop - hh * 0.32} r={carW * 0.035} />
-                        <circle cx={cx + carW * 0.02} cy={bodyTop - hh * 0.8} r={carW * 0.03} />
-                      </g>
-                    )}
+                    {pileRows(pileCells(car.fill)) > 0 &&
+                      Array.from({ length: pileCells(car.fill) }, (_, n) => {
+                        let row = 0;
+                        let before = 0;
+                        while (before + (rowWidths[row] ?? 1) <= n) before += rowWidths[row++] ?? 1;
+                        const inRow = Math.min(rowWidths[row] ?? 1, pileCells(car.fill) - before);
+                        const col = n - before;
+                        const px = cx + (col - (inRow - 1) / 2) * pitch - cellSize / 2;
+                        const py = bodyTop - (row + 1) * pitch + (pitch - cellSize) - 2;
+                        return (
+                          <rect
+                            key={`${row}-${col}`}
+                            x={px}
+                            y={py}
+                            width={cellSize}
+                            height={cellSize}
+                            rx={cellSize * 0.2}
+                            fill={palette.heat[Math.floor(random(`${car.day}-${n}`) * 4)]}
+                          />
+                        );
+                      })}
                   </g>
                 )}
                 <rect
