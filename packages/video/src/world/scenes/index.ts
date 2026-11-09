@@ -8,6 +8,7 @@ import { Placeholder } from "./Placeholder";
 import { Private } from "./Private";
 import { Projects } from "./Projects";
 import { Rhythm } from "./Rhythm";
+import { Sky } from "./Sky";
 import type { Scene } from "./types";
 
 export type { Scene, SceneProps } from "./types";
@@ -22,7 +23,7 @@ export const SCENES: Record<StopKind, Scene> = {
   rhythm: Rhythm,
   languages: Garden,
   projects: Projects,
-  community: Placeholder,
+  community: Sky,
   engineering: Placeholder,
   archetype: Placeholder,
   versus: Placeholder,
