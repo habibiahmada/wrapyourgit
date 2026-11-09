@@ -144,6 +144,24 @@ export async function endSession(): Promise<void> {
   store.delete(SESSION_COOKIE);
 }
 
+/**
+ * Signs the account out on every device: deletes all of its sessions, this one included, and the
+ * cookie. Signing in again does not do this on its own, so a lost laptop stays signed in until
+ * someone asks for it. Call only from a route handler or server action.
+ */
+export async function endAllSessions(): Promise<void> {
+  const store = await cookies();
+  const token = store.get(SESSION_COOKIE)?.value;
+  if (token) {
+    const [own] = await db
+      .select({ userId: sessions.userId })
+      .from(sessions)
+      .where(eq(sessions.tokenHash, hashToken(token)));
+    if (own) await db.delete(sessions).where(eq(sessions.userId, own.userId));
+  }
+  store.delete(SESSION_COOKIE);
+}
+
 /** A usable GitHub access token for the user, refreshing it first when it is about to expire. */
 export async function getGithubToken(userId: string): Promise<string> {
   const key = encryptionKey();

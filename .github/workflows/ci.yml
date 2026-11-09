@@ -85,6 +85,23 @@ jobs:
       - name: Unit tests
         run: bun test
 
+  # Production runs on Node, the unit tests on Bun: the token crypto must hold on both.
+  node-crypto:
+    name: Token crypto on Node
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Forged tokens fail to decrypt
+        run: node scripts/check-crypto-node.mjs
+
   build:
     name: Build web
     needs: checks

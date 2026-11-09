@@ -9,6 +9,7 @@ import {
   RevealTransition,
 } from "@/components/site/page-transition";
 import { SiteHeader } from "@/components/site/site-header";
+import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 
 export const metadata: Metadata = { title: "Settings", robots: { index: false, follow: false } };
@@ -74,6 +75,22 @@ async function Settings({
                 </p>
               </div>
             </div>
+          </section>
+
+          <section aria-labelledby="sessions-title">
+            <h2 id="sessions-title" className="border-b border-line pb-2 text-xl font-bold">
+              Devices
+            </h2>
+            <p className="mt-4 max-w-2xl text-muted">
+              Signed in on a shared or lost computer? This signs you out everywhere, including here.
+              Your recap stays, and you can sign in again any time.
+            </p>
+            <form action="/api/auth/signout" method="post" className="mt-5">
+              <input type="hidden" name="scope" value="everywhere" />
+              <button type="submit" className={button.secondary}>
+                Sign out on all devices
+              </button>
+            </form>
           </section>
 
           <section aria-labelledby="delete-title">

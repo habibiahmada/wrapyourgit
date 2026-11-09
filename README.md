@@ -113,14 +113,14 @@ The climax of the story names your archetype, with the facts that earned it. You
 
 ## What you keep
 
-|                          |                                                                                                             |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| 🎬 **The story**         | Plays in your browser with its own soundtrack, chapter by chapter.                                          |
-| 🖼️ **Ten slides as PNG** | One 1080 × 1350 image per chapter plus the letter, or all ten in a ZIP.                                     |
-| 📄 **One PDF**           | The same ten slides in a single file, for keeping or printing.                                              |
-| 🔗 **A public page**     | Off until you publish it. Then your year lives at `/u/<your-login>`, with private repository names removed. |
-| 🪪 **A share card**      | A 1200 × 630 image for social posts, also used as the page's preview.                                       |
-| 🎞️ **An MP4 video**      | In 9:16, 4:5, 1:1 and 16:9. _Coming soon: rendering is being set up._                                       |
+|                          |                                                                                                                        |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 🎬 **The story**         | Plays in your browser with its own soundtrack, chapter by chapter.                                                     |
+| 🖼️ **Ten slides as PNG** | One 1080 × 1350 image per chapter plus the letter, or all ten in a ZIP. _On the hosted site, only the letter for now._ |
+| 📄 **One PDF**           | The same ten slides in a single file, for keeping or printing. _Self-hosted only for now._                             |
+| 🔗 **A public page**     | Off until you publish it. Then your year lives at `/u/<your-login>`, with private repository names removed.            |
+| 🪪 **A share card**      | A 1200 × 630 image for social posts, also used as the page's preview.                                                  |
+| 🎞️ **An MP4 video**      | In 9:16, 4:5, 1:1 and 16:9. _Coming soon, rendered in your own browser._                                               |
 
 The dashboard adds a profile-style overview: your calendar, highlights, languages, this year against the same span of last year, and the repositories that caught your eye.
 
@@ -151,22 +151,22 @@ flowchart LR
   rd --> player[Story in the browser<br>Remotion Player]
   rd --> exports[PNG · PDF · share card]
   rd --> pub[Public page<br>private repos removed]
-  rd -.->|coming soon| mp4[MP4 on Remotion Lambda]
+  rd -.->|coming soon| mp4[MP4 rendered<br>in your browser]
   video[packages/video<br>Remotion scenes] --> player
   video -.-> mp4
 ```
 
-One validated document, `RecapData`, is the contract between everything: GitHub data goes in once, and the same scenes render in the browser and (soon) to video, so the numbers on screen and in the export never disagree. More in the [architecture overview](docs/architecture/overview.md).
+One validated document, `RecapData`, is the contract between everything: GitHub data goes in once, and the same scenes play in the browser and (soon) render to video, so the numbers on screen and in the export never disagree. More in the [architecture overview](docs/architecture/overview.md).
 
 ## Tech stack
 
-| Area            | Tools                                                                             |
-| --------------- | --------------------------------------------------------------------------------- |
-| Web             | Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4               |
-| Story and video | Remotion 4, React Three Fiber for the illustrations, a synthesised CC0 soundtrack |
-| Data            | GitHub GraphQL API, Zod 4 schemas, PostgreSQL with Drizzle ORM                    |
-| Auth            | GitHub App user authorisation with PKCE, AES-256-GCM token encryption             |
-| Tooling         | Bun workspaces, TypeScript strict, Biome, `bun test`, GitHub Actions              |
+| Area            | Tools                                                                                                             |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Web             | Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4                                               |
+| Story and video | Remotion 4, baked 3D art (animated WebP and sprite sheets, no WebGL in the browser), a synthesised CC0 soundtrack |
+| Data            | GitHub GraphQL API, Zod 4 schemas, PostgreSQL with Drizzle ORM                                                    |
+| Auth            | GitHub App user authorisation with PKCE, AES-256-GCM token encryption                                             |
+| Tooling         | Bun workspaces, TypeScript strict, Biome, `bun test`, GitHub Actions                                              |
 
 ## Run it locally
 
@@ -198,7 +198,7 @@ Just want to see the video? `bun run studio` opens Remotion Studio with sample d
 ```
 apps/
   web/          Next.js: landing, sign-in, dashboard, story, public pages, SEO
-  renderer/     Remotion Lambda deploy and render jobs (MP4, coming soon)
+  renderer/     Slide stills for self-hosting (Bun + headless Chrome); Lambda scripts, to be replaced by in-browser rendering
 packages/
   schema/       RecapData zod schema and video formats: the contract
   github/       GitHub GraphQL client and queries
@@ -225,7 +225,8 @@ docs/           Product spec, metric definitions, ADRs, design, setup
 - [x] Sign in with GitHub, sync, dashboard and the nine-chapter story
 - [x] Slides as PNG, ZIP and PDF; opt-in public page and share card
 - [x] Comparison with last year; repositories you starred
-- [ ] MP4 export in four aspect ratios on Remotion Lambda
+- [ ] The story as one continuous world with a moving camera ([design](docs/superpowers/specs))
+- [ ] MP4, slides and PDF rendered in your browser, in four aspect ratios
 - [ ] More soundtracks
 - [ ] Final 2026 recaps after the year ends
 
