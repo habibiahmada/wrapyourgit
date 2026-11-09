@@ -5,6 +5,7 @@ import { FirstDay } from "./FirstDay";
 import { Hello } from "./Hello";
 import { Placeholder } from "./Placeholder";
 import { Private } from "./Private";
+import { Rhythm } from "./Rhythm";
 import type { Scene } from "./types";
 
 export type { Scene, SceneProps } from "./types";
@@ -16,7 +17,7 @@ export const SCENES: Record<StopKind, Scene> = {
   private: Private,
   city: City,
   busiest: Busiest,
-  rhythm: Placeholder,
+  rhythm: Rhythm,
   languages: Placeholder,
   projects: Placeholder,
   community: Placeholder,
