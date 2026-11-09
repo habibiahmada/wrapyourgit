@@ -1,6 +1,6 @@
 # Story as one world: design
 
-Date: 2026-11-06, updated 2026-11-09 with the answers to the builder check. Status: draft, awaiting the maintainer's approval.
+Date: 2026-11-06, updated 2026-11-09 with the answers to the builder check. Status: approved by the maintainer on 2026-11-09.
 
 ## Intent
 
