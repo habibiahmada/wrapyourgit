@@ -1,14 +1,30 @@
 import type { ReactNode } from "react";
 import { Img, staticFile, useVideoConfig } from "remotion";
 import { type CellPose, HEAD_ART_ID } from "../../art";
-import { fitFontSize } from "../../heat";
 import { fontFamily, palette } from "../../theme";
+import {
+  type LabelAnchor,
+  type LabelWeight,
+  labelFontSize,
+  labelRoom,
+  SCENE_WIDTH,
+  sceneHeight,
+} from "./fit";
 
-/** Scenes draw in a space 1000 units wide; this is its height for a frame of the given size. */
-export const SCENE_WIDTH = 1000;
-export function sceneHeight(size: { width: number; height: number }): number {
-  return (SCENE_WIDTH * size.height) / size.width;
-}
+export {
+  type LabelAnchor,
+  type LabelWeight,
+  labelFontSize,
+  labelRoom,
+  labelWidth,
+  SCENE_WIDTH,
+  safeArea,
+  sceneHeight,
+} from "./fit";
+
+/** Height over width of the baked stills (scripts/render-art.ts): cutouts 1200×900, head 600×600. */
+const CUTOUT_ASPECT = 3 / 4;
+const HEAD_ASPECT = 1;
 
 /** Pixels per scene unit, for HTML layers (the art) that sit over a SceneSvg. */
 function useUnitPx(): number {
@@ -18,8 +34,9 @@ function useUnitPx(): number {
 /**
  * The frame as an SVG 1000 units wide and `sceneHeight` tall, so one unit is the same on both
  * axes in every format. Later siblings (CellArt, HeadArt) draw over it: DOM order, no z-index.
+ * `title` names the picture for assistive tech; the scene's own text stays in the tree too.
  */
-export function SceneSvg({ children }: { children?: ReactNode }) {
+export function SceneSvg({ title, children }: { title: string; children?: ReactNode }) {
   const { width, height } = useVideoConfig();
   const h = sceneHeight({ width, height });
   return (
@@ -28,16 +45,16 @@ export function SceneSvg({ children }: { children?: ReactNode }) {
       width={width}
       height={height}
       style={{ position: "absolute", left: 0, top: 0 }}
-      role="presentation"
     >
+      <title>{title}</title>
       {children}
     </svg>
   );
 }
 
 /**
- * One line of text in scene units, shrunk to fit `maxWidth` (never wider). `y` is the baseline.
- * Must sit inside a SceneSvg.
+ * One line of text in scene units, shrunk until it fits both the scene (from x and the anchor) and
+ * `maxWidth` when given. `y` is the baseline. Must sit inside a SceneSvg.
  */
 export function Label({
   x,
@@ -46,7 +63,7 @@ export function Label({
   size,
   weight = 700,
   anchor = "start",
-  maxWidth = SCENE_WIDTH,
+  maxWidth,
   fill = palette.ink,
 }: {
   x: number;
@@ -54,8 +71,8 @@ export function Label({
   text: string;
   /** Largest font size, in scene units. */
   size: number;
-  weight?: 400 | 700 | 800;
-  anchor?: "start" | "middle" | "end";
+  weight?: LabelWeight;
+  anchor?: LabelAnchor;
   maxWidth?: number;
   fill?: string;
 }) {
@@ -65,7 +82,7 @@ export function Label({
       y={y}
       fill={fill}
       fontFamily={fontFamily}
-      fontSize={fitFontSize(text, maxWidth, size)}
+      fontSize={labelFontSize(text, size, weight, labelRoom(x, anchor, maxWidth))}
       fontWeight={weight}
       textAnchor={anchor}
     >
@@ -90,7 +107,7 @@ export function CellArt({
   width: number;
 }) {
   const px = useUnitPx();
-  const height = width * 0.75;
+  const height = width * CUTOUT_ASPECT;
   return (
     <Img
       src={staticFile(`art/cutout-cell-${pose}.png`)}
@@ -116,9 +133,9 @@ export function HeadArt({ x, y, size }: { x: number; y: number; size: number }) 
       style={{
         position: "absolute",
         left: (x - size / 2) * px,
-        top: (y - size / 2) * px,
+        top: (y - (size * HEAD_ASPECT) / 2) * px,
         width: size * px,
-        height: size * px,
+        height: size * HEAD_ASPECT * px,
       }}
     />
   );

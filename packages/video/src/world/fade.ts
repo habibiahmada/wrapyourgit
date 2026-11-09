@@ -14,6 +14,9 @@ export function cityOpacity(camera: Camera, citySpan: number): number {
 /** 1 with the camera at a stop's zoom, 0 at the city overview. */
 export function zoomFade(camera: Camera, stopCam: Camera, citySpan: number): number {
   const far = Math.max(citySpan, 3 * PLOT_SPAN);
+  // At the city's own camera there is no zoom range left to fade over (and log(1) would divide by
+  // zero): the layer is fully in, and time alone (cardOpacity) decides when it shows.
+  if (far <= stopCam.span) return 1;
   return clamp01(1 - Math.log(camera.span / stopCam.span) / Math.log(far / stopCam.span));
 }
 

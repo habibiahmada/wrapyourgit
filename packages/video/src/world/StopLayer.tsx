@@ -22,7 +22,7 @@ export function StopLayer({
   citySpan,
   timelineOpacity,
   enter,
-  frame,
+  compFrame,
   size,
   layout,
 }: {
@@ -36,14 +36,12 @@ export function StopLayer({
   timelineOpacity: number;
   /** enterProgress for this stop at the current frame. */
   enter: number;
-  frame: number;
+  /** Composition frame, passed to the scene as `frame` for idle loops. */
+  compFrame: number;
   size: Size;
   layout: LayoutFamily;
 }) {
-  const isCity = stop.plot === null;
-  // The city's own camera is the widest there is, so zoomFade has no range to fade over: time alone
-  // decides when its layer shows.
-  const opacity = isCity ? timelineOpacity : timelineOpacity * zoomFade(camera, stopCam, citySpan);
+  const opacity = timelineOpacity * zoomFade(camera, stopCam, citySpan);
   if (opacity <= 0) return null;
   const centre = project(stopCam, camera, size);
   const scale = stopCam.span / camera.span;
@@ -62,7 +60,7 @@ export function StopLayer({
         size={size}
         layout={layout}
         enter={enter}
-        frame={frame}
+        frame={compFrame}
       />
     </AbsoluteFill>
   );

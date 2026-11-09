@@ -61,7 +61,7 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
             citySpan={citySpan}
             timelineOpacity={cardOpacity(i, frame, timeline)}
             enter={enterProgress(i, frame, timeline)}
-            frame={frame}
+            compFrame={frame}
             size={size}
             layout={layout}
           />

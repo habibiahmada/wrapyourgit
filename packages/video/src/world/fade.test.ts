@@ -9,6 +9,7 @@ import {
   enterProgress,
   formatDay,
   reachedStop,
+  zoomFade,
 } from "./fade";
 import { buildWorld } from "./model";
 import type { WorldMode } from "./timeline";
@@ -113,4 +114,11 @@ test("enterProgress eases: slow at both ends of the move", () => {
   expect(enterProgress(1, 50, timeline)).toBeCloseTo(0.5, 5);
   expect(enterProgress(1, 90, timeline)).toBeCloseTo(1 - early, 5);
   expect(enterProgress(5, 50, timeline)).toBe(0);
+});
+
+test("zoomFade: finite and 1 at the city camera, where there is no zoom left to fade over", () => {
+  expect(zoomFade(at(60), at(60), 60)).toBe(1);
+  expect(zoomFade(at(80), at(60), 60)).toBe(1);
+  expect(zoomFade(at(PLOT_SPAN), at(PLOT_SPAN), 60)).toBe(1);
+  expect(zoomFade(at(60), at(PLOT_SPAN), 60)).toBe(0);
 });
