@@ -7,31 +7,56 @@ import type { SceneProps } from "./types";
 const MARGIN = 30;
 const GAP = 12;
 const CARS = 7;
+/** Tallest heap, in car-body heights; heaps are 72% of a car wide and read as piled goods. */
+const HEAP_MAX = 2.2;
+const HEAP_WIDTH = 0.72;
+const CELL_PER_BODY = 1.9;
+const CELL_RATIO = 0.75;
+const WHEEL = 0.16;
+const SKY = "#DDF3E1";
+const CARGO = palette.heat[3];
 
-export function Rhythm({ data, size, enter }: SceneProps) {
+/** A mound: flat foot, rounded shoulders, a broad crown. */
+function heapPath(cx: number, base: number, w: number, hgt: number): string {
+  const l = cx - w / 2;
+  const r = cx + w / 2;
+  const top = base - hgt;
+  return `M ${l} ${base} C ${l} ${base - hgt * 0.45} ${cx - w * 0.42} ${top} ${cx - w * 0.1} ${top} L ${cx + w * 0.1} ${top} C ${
+    cx + w * 0.42
+  } ${top} ${r} ${base - hgt * 0.45} ${r} ${base} Z`;
+}
+
+export function Rhythm({ data, size, enter, frame }: SceneProps) {
   const model = rhythmModel(data);
   const h = sceneHeight(size);
   const safe = safeArea(size);
   const t = easeOut(interpolate(enter, [0, 1], [0, 1], { extrapolateRight: "clamp" }));
   const carW = (1000 - 2 * MARGIN - GAP * (CARS - 1)) / CARS;
-  const bodyH = Math.min(110, h * 0.12);
-  const wheelR = bodyH * 0.16;
+  const trainW = CARS * carW + (CARS - 1) * GAP;
   const titleSize = Math.min(72, h * 0.07);
   const captionSize = Math.min(34, h * 0.04);
   const titleY = safe.top + titleSize;
   const captionY = h - safe.bottom;
-  const cellW = Math.min(190, h * 0.26);
-  const cellH = cellW * 0.75;
-  // Rails sit above the caption; cargo and Cell fill what is left under the title.
-  const railY = captionY - captionSize - 24;
-  const bodyBottom = railY - wheelR;
+  // The band (Cell, heap, car, wheels) is as big as one row and the free height allow, centred
+  // between the title and the caption.
+  const bandTop = titleY + 30;
+  const bandBottom = captionY - captionSize - 50;
+  const perBody = (model.busiest ? CELL_PER_BODY * CELL_RATIO * 0.88 : 0) + HEAP_MAX + 1 + WHEEL;
+  const bodyH = Math.min(carW * 0.85, (bandBottom - bandTop) / perBody);
+  const wheelR = bodyH * WHEEL;
+  const cellW = bodyH * CELL_PER_BODY;
+  const cellH = cellW * CELL_RATIO;
+  const bandH = (model.busiest ? cellH * 0.88 : 0) + HEAP_MAX * bodyH + bodyH + wheelR;
+  const bandStart = bandTop + (bandBottom - bandTop - bandH) / 2;
+  const bodyBottom = bandStart + bandH - wheelR;
   const bodyTop = bodyBottom - bodyH;
-  const room = bodyTop - (titleY + 24) - (model.busiest ? cellH : 0);
-  const cargoMax = Math.max(40, Math.min(h * 0.5, room));
-  // The train rolls in from the left edge; one full train length covers the entry.
-  const shift = -(1 - t) * 1100;
+  const railY = bodyBottom + wheelR * 1.4;
+  // The whole train, Cell with it, rolls in from beyond the left edge.
+  const shift = -(1 - t) * (MARGIN + trainW + cellW / 2);
+  const bob = Math.sin(frame / 12) * 3;
+  const heapH = (fill: number) => (fill > 0 ? Math.max(bodyH * 0.12, fill * HEAP_MAX * bodyH) : 0);
   return (
-    <AbsoluteFill style={{ backgroundColor: palette.paper }}>
+    <AbsoluteFill style={{ backgroundColor: SKY }}>
       <SceneSvg title={`${model.title}. ${model.caption}`}>
         <Label
           x={500}
@@ -41,12 +66,13 @@ export function Rhythm({ data, size, enter }: SceneProps) {
           weight={800}
           anchor="middle"
         />
-        <rect x={0} y={railY} width={1000} height={8} fill={palette.ink} />
+        <rect x={0} y={railY} width={1000} height={8} fill="#6E5236" />
+        <rect x={0} y={railY + 14} width={1000} height={5} fill="#6E5236" />
         <g transform={`translate(${shift} 0)`}>
           {model.cars.map((car, i) => {
             const x = MARGIN + i * (carW + GAP);
-            const cargoH = car.count > 0 ? Math.max(8, car.fill * cargoMax) : 0;
-            const fill = car.busiest ? palette.ink : palette.cobalt;
+            const cx = x + carW / 2;
+            const hh = heapH(car.fill);
             return (
               <g key={car.day}>
                 {i < CARS - 1 && (
@@ -54,61 +80,59 @@ export function Rhythm({ data, size, enter }: SceneProps) {
                     x={x + carW}
                     y={bodyBottom - bodyH * 0.3}
                     width={GAP}
-                    height={8}
+                    height={6}
                     fill={palette.ink}
                   />
                 )}
-                {cargoH > 0 && (
-                  <rect
-                    x={x + 8}
-                    y={bodyTop - cargoH}
-                    width={carW - 16}
-                    height={cargoH}
-                    rx={6}
-                    fill={car.busiest ? palette.persimmon : palette.heat[1]}
-                    stroke={palette.ink}
-                    strokeWidth={4}
-                  />
+                {hh > 0 && (
+                  <g>
+                    <path d={heapPath(cx, bodyTop + 2, carW * HEAP_WIDTH, hh)} fill={CARGO} />
+                    {hh > bodyH * 0.5 && (
+                      <g fill={palette.heat[1]}>
+                        <circle cx={cx - carW * 0.14} cy={bodyTop - hh * 0.55} r={carW * 0.045} />
+                        <circle cx={cx + carW * 0.1} cy={bodyTop - hh * 0.32} r={carW * 0.035} />
+                        <circle cx={cx + carW * 0.02} cy={bodyTop - hh * 0.8} r={carW * 0.03} />
+                      </g>
+                    )}
+                  </g>
                 )}
                 <rect
                   x={x}
                   y={bodyTop}
                   width={carW}
                   height={bodyH}
-                  rx={10}
-                  fill={fill}
+                  rx={8}
+                  fill={car.busiest ? palette.heat[2] : palette.heat[0]}
                   stroke={palette.ink}
-                  strokeWidth={4}
+                  strokeWidth={3}
                 />
                 <Label
-                  x={x + carW / 2}
+                  x={cx}
                   y={bodyTop + bodyH * 0.45}
                   text={car.day}
                   size={bodyH * 0.34}
                   weight={800}
                   anchor="middle"
                   maxWidth={carW - 12}
-                  fill={palette.paper}
                 />
                 <Label
-                  x={x + carW / 2}
+                  x={cx}
                   y={bodyTop + bodyH * 0.82}
                   text={formatCount(car.count)}
-                  size={bodyH * 0.26}
+                  size={bodyH * 0.27}
                   weight={700}
                   anchor="middle"
                   maxWidth={carW - 12}
-                  fill={palette.paper}
                 />
                 <circle
                   cx={x + carW * 0.25}
-                  cy={bodyBottom + wheelR * 0.4}
+                  cy={bodyBottom + wheelR * 0.3}
                   r={wheelR}
                   fill={palette.ink}
                 />
                 <circle
                   cx={x + carW * 0.75}
-                  cy={bodyBottom + wheelR * 0.4}
+                  cy={bodyBottom + wheelR * 0.3}
                   r={wheelR}
                   fill={palette.ink}
                 />
@@ -130,10 +154,9 @@ export function Rhythm({ data, size, enter }: SceneProps) {
         if (!car.busiest) return null;
         const carCx = MARGIN + i * (carW + GAP) + carW / 2;
         const cx = Math.min(1000 - cellW / 2, Math.max(cellW / 2, carCx));
-        const cargoH = Math.max(8, car.fill * cargoMax);
-        return (
-          <CellArt key={car.day} pose="cheer" x={cx + shift} y={bodyTop - cargoH} width={cellW} />
-        );
+        // Cell sits in the crown of its heap, feet slightly sunk into the goods.
+        const feet = bodyTop - heapH(car.fill) + cellH * 0.3 + bob;
+        return <CellArt key={car.day} pose="cheer" x={cx + shift} y={feet} width={cellW} />;
       })}
     </AbsoluteFill>
   );
