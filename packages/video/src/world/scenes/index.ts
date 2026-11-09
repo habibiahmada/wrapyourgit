@@ -1,14 +1,17 @@
 import type { StopKind } from "../stops";
+import { FirstDay } from "./FirstDay";
+import { Hello } from "./Hello";
 import { Placeholder } from "./Placeholder";
+import { Private } from "./Private";
 import type { Scene } from "./types";
 
 export type { Scene, SceneProps } from "./types";
 
 /** The picture each stop draws. Kinds without their own scene yet show the phase 1 card. */
 export const SCENES: Record<StopKind, Scene> = {
-  hello: Placeholder,
-  "first-day": Placeholder,
-  private: Placeholder,
+  hello: Hello,
+  "first-day": FirstDay,
+  private: Private,
   city: Placeholder,
   busiest: Placeholder,
   rhythm: Placeholder,
