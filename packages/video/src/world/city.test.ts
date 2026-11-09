@@ -1,29 +1,7 @@
 import { expect, test } from "bun:test";
-import type { RecapData } from "@wyg/schema";
 import { sampleRecap } from "../fixtures/sample-recap";
 import { buildCity, cityBounds, isoPoint, type Plot, plotHeight } from "./city";
-
-function withMeta(data: RecapData, meta: Partial<RecapData["meta"]>): RecapData {
-  return { ...data, meta: { ...data.meta, ...meta } };
-}
-
-function withYear(data: RecapData, year: number): RecapData {
-  return withMeta(data, {
-    year,
-    periodStart: `${year}-01-01`,
-    periodEnd: `${year}-12-31`,
-  });
-}
-
-function withCalendar(data: RecapData, counts: Record<string, number>): RecapData {
-  const start = Date.UTC(data.meta.year, 0, 1);
-  const days = data.meta.year % 4 === 0 ? 366 : 365;
-  const calendar = Array.from({ length: days }, (_, i) => {
-    const date = new Date(start + i * 86_400_000).toISOString().slice(0, 10);
-    return { date, count: counts[date] ?? 0 };
-  });
-  return { ...data, contributions: { ...data.contributions, calendar } };
-}
+import { withCalendar, withMeta, withYear } from "./test-fixtures";
 
 test("one plot per day of the edition year, Jan 1 first", () => {
   const city = buildCity(sampleRecap);
@@ -39,12 +17,20 @@ test("weeks are columns and weekdays rows, like the GitHub graph", () => {
 });
 
 test("days after periodEnd are not-yet while the recap is provisional, zero days stay zero", () => {
-  const data = withMeta(sampleRecap, { periodEnd: "2026-11-09", isFinal: false });
+  const data = withMeta(
+    withCalendar(sampleRecap, { "2026-03-01": 3, "2026-05-05": 2, "2026-11-20": 50 }),
+    { periodEnd: "2026-11-09", isFinal: false },
+  );
   const city = buildCity(data);
   expect(city.plots.find((p) => p.date === "2026-11-10")?.state).toBe("not-yet");
-  expect(city.plots.filter((p) => p.state === "zero").every((p) => p.date <= "2026-11-09")).toBe(
-    true,
-  );
+  const zeros = city.plots.filter((p) => p.state === "zero");
+  expect(zeros.length).toBeGreaterThan(0);
+  expect(zeros.every((p) => p.date <= "2026-11-09")).toBe(true);
+  expect(city.plots.some((p) => p.state === "active")).toBe(true);
+  // A count dated after periodEnd must not leak into the city.
+  const late = city.plots.find((p) => p.date === "2026-11-20");
+  expect(late).toMatchObject({ state: "not-yet", count: 0 });
+  expect(city.maxCount).toBe(3);
   expect(city.lastDataIndex).toBe(city.plots.findIndex((p) => p.date === "2026-11-09"));
 });
 
