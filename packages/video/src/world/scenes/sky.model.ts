@@ -28,7 +28,9 @@ export function skyModel(data: RecapData): SkyModel {
     value: starValue,
     label:
       starValue === 0
-        ? "No stars yet"
+        ? starsOk
+          ? "No stars this year"
+          : "No stars yet"
         : starsOk
           ? `${plural(starValue, "star", "stars")} earned this year`
           : `${plural(starValue, "star", "stars")} on your repositories`,

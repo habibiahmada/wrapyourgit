@@ -76,11 +76,11 @@ test("skyModel: zero stars is a dark sky with 'No stars yet'", () => {
   expect(m.forks).toEqual({ value: 0, label: "forks this year", estimated: false });
 });
 
-test("skyModel: zero gained but stars owned still says no stars earned", () => {
+test('skyModel: zero gained says "No stars this year", even when stars are owned', () => {
   const m = skyModel(
     withCommunity({ totalStars: 50, starsGained: { status: "ok", value: 0, estimated: false } }),
   );
-  expect(m.stars.label).toBe("No stars yet");
+  expect(m.stars.label).toBe("No stars this year");
   expect(m.drawn).toBe(0);
 });
 

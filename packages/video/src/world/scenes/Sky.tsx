@@ -1,17 +1,20 @@
 import { AbsoluteFill, interpolate, random } from "remotion";
 import { easeOut, palette } from "../../theme";
+import { mixHex } from "../chrome-tone";
 import { CellArt, Label, labelWidth, SceneSvg, safeArea, sceneHeight } from "./kit";
 import { countText, skyModel } from "./sky.model";
 import type { SceneProps } from "./types";
 
 const SKY_TOP = "#0A0D2B";
-const SKY_LOW = "#222B66";
+/** The sky is a stack of solid bands: no SVG gradient references (the web renderer may drop them). */
+const BANDS = 24;
+const GLOW_RINGS = 14;
+const SKY_LOW = "#1C2358";
 const STAR = "#FFF1C2";
 const BRIGHT = "#FFD84D";
-/** A moonlit near hill: pale, so the footer line Chrome draws in ink stays readable on it. */
-const HILL = "#B4C2EC";
-const HILL_FAR = "#38468F";
-const HILL_RIM = "#E6EBFF";
+const HILL = "#10143A";
+const HILL_FAR = "#1E2766";
+const HILL_RIM = "#4A5AB0";
 const WOOD = "#C98A4B";
 const WOOD_DARK = "#7A4B22";
 
@@ -48,6 +51,19 @@ export function Sky({ data, size, layout, enter, frame }: SceneProps) {
   const farTop = hillTop - h * 0.05;
   const farPath = `M0 ${h} L0 ${farTop + h * 0.05} Q300 ${farTop - h * 0.04} 620 ${farTop + h * 0.02} T1000 ${farTop} L1000 ${h} Z`;
 
+  // The ground's residents: Cell asleep on the left, the forks sign planted on the right.
+  // Tall frames stand them on the hill's face, below its crest, so the ground earns its height.
+  const cellDrop = wide ? 0 : h * 0.1;
+  const signDrop = wide ? 0 : h * 0.08;
+  const cellW = wide ? Math.min(340, h * 0.5) : Math.min(640, h * 0.38);
+  const cellX = wide ? 230 : 270;
+  const signX = wide ? 800 : 760;
+  const boardW = wide ? 330 : 440;
+  const boardH = wide ? 105 : 180;
+  const postH = wide ? 40 : 130;
+  const signBase = hillY(signX) + 12 + signDrop;
+  const boardY = signBase - postH - boardH;
+
   // The brightest star: stacked above its words in tall frames, beside them in landscape.
   const skyH = hillTop - safe.top;
   const R = none
@@ -58,7 +74,7 @@ export function Sky({ data, size, layout, enter, frame }: SceneProps) {
       ? Math.min(90, skyH * 0.3)
       : Math.min(230, skyH * 0.17);
   const bigX = wide ? 300 : 500;
-  const bigY = wide ? safe.top + skyH * 0.3 : safe.top + skyH * 0.3;
+  const bigY = safe.top + skyH * 0.3;
   const numSize = none ? 0 : wide ? Math.min(110, R * 1.3) : Math.min(130, R * 0.75);
   const labelSize = none
     ? wide
@@ -82,6 +98,12 @@ export function Sky({ data, size, layout, enter, frame }: SceneProps) {
   const numW = none ? 0 : labelWidth(aboutNum, numSize, 800);
   const labW = labelWidth(model.stars.label, labelSize, 700);
   const textHalf = Math.min(textW, Math.max(numW, labW)) / 2;
+  const signBox: Box = {
+    x0: signX - boardW / 2 - 10,
+    x1: signX + boardW / 2 + 10,
+    y0: boardY - 10,
+    y1: signBase,
+  };
   const keepOut: Box[] = wide
     ? [
         { x0: bigX - R * 1.5, x1: bigX + R * 1.5, y0: bigY - R * 1.5, y1: bigY + R * 1.5 },
@@ -91,6 +113,7 @@ export function Sky({ data, size, layout, enter, frame }: SceneProps) {
         { x0: bigX - R * 1.5, x1: bigX + R * 1.5, y0: bigY - R * 1.5, y1: bigY + R * 1.5 },
         { x0: 500 - textHalf - 20, x1: 500 + textHalf + 20, y0: numY - numSize, y1: labelY + 25 },
       ];
+  keepOut.push(signBox);
   const lowest = hillTop - h * (wide ? 0.045 : 0.01);
   const small = Array.from({ length: model.drawn }, (_, i) => {
     let x = 0;
@@ -105,18 +128,6 @@ export function Sky({ data, size, layout, enter, frame }: SceneProps) {
     return { x, y, r, rad: 2.6 + r * 3.2, phase: random(`sky-${login}${i}-p`) * 6.28, i };
   });
 
-  // The ground's residents: Cell asleep on the left, the forks sign planted on the right.
-  // Tall frames stand them on the hill's face, below its crest, so the ground earns its height.
-  const cellDrop = wide ? 0 : h * 0.1;
-  const signDrop = wide ? 0 : h * 0.08;
-  const cellW = wide ? Math.min(340, h * 0.5) : Math.min(640, h * 0.38);
-  const cellX = wide ? 230 : 270;
-  const signX = wide ? 800 : 760;
-  const boardW = wide ? 330 : 440;
-  const boardH = wide ? 105 : 180;
-  const postH = wide ? 40 : 130;
-  const signBase = hillY(signX) + 12 + signDrop;
-  const boardY = signBase - postH - boardH;
   const forksNum = countText(model.forks.value, model.forks.estimated);
   const signIn = easeOut(Math.min(1, Math.max(0, t * 1.5 - 0.35)));
   const bob = Math.sin(frame / 22) * 2;
@@ -133,17 +144,16 @@ export function Sky({ data, size, layout, enter, frame }: SceneProps) {
             : `${aboutNum} ${model.stars.label}, drawn as ${model.drawn} small stars around one bright star`
         }. ${forksNum} ${model.forks.label}, on a sign. Cell sleeps on the hill.`}
       >
-        <defs>
-          <linearGradient id="sky-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor={SKY_TOP} />
-            <stop offset="1" stopColor={SKY_LOW} />
-          </linearGradient>
-          <radialGradient id="sky-glow">
-            <stop offset="0" stopColor={BRIGHT} stopOpacity={0.55} />
-            <stop offset="1" stopColor={BRIGHT} stopOpacity={0} />
-          </radialGradient>
-        </defs>
-        <rect x={0} y={0} width={1000} height={h} fill="url(#sky-bg)" />
+        {Array.from({ length: BANDS }, (_, k) => k).map((k) => (
+          <rect
+            key={k}
+            x={0}
+            y={(h * k) / BANDS}
+            width={1000}
+            height={h / BANDS + 1}
+            fill={mixHex(SKY_TOP, SKY_LOW, k / (BANDS - 1))}
+          />
+        ))}
         {small.map((s) => {
           const p = easeOut(
             Math.min(1, Math.max(0, t * 1.7 - (s.i / Math.max(1, model.drawn)) * 0.9)),
@@ -167,7 +177,14 @@ export function Sky({ data, size, layout, enter, frame }: SceneProps) {
           opacity={none ? 0.4 * bigIn : bigIn}
           transform={`translate(${bigX} ${bigY}) scale(${bigIn * (none ? 1 : bigPulse)})`}
         >
-          <circle r={R * 2.4} fill="url(#sky-glow)" />
+          {Array.from({ length: GLOW_RINGS }, (_, k) => k).map((k) => (
+            <circle
+              key={k}
+              r={R * (2.5 - (k * 1.5) / GLOW_RINGS)}
+              fill={BRIGHT}
+              fillOpacity={0.028}
+            />
+          ))}
           <polygon
             points={starPoints(R)}
             fill={none ? STAR : BRIGHT}

@@ -14,9 +14,11 @@ import { palette } from "../theme";
 import { Chrome } from "./Chrome";
 import { CityLayer } from "./CityLayer";
 import { cameraAt } from "./camera";
+import { chromeDarkness } from "./chrome-tone";
 import { cardOpacity, enterProgress, reachedStop } from "./fade";
 import { buildWorld } from "./model";
 import { StopLayer } from "./StopLayer";
+import { SCENE_TONE } from "./scenes";
 import { transitionSound } from "./sound";
 import type { WorldMode } from "./timeline";
 
@@ -67,7 +69,17 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
           />
         );
       })}
-      <Chrome stops={stops.length} current={current} year={data.meta.year} frame={size} />
+      <Chrome
+        stops={stops.length}
+        current={current}
+        year={data.meta.year}
+        frame={size}
+        darkness={chromeDarkness(
+          stops.map((stop) => SCENE_TONE[stop.kind] ?? "light"),
+          frame,
+          timeline,
+        )}
+      />
       {mode === "video" && (
         <>
           {stops.slice(1).map((stop, k) => {

@@ -13,6 +13,11 @@ import type { Scene } from "./types";
 
 export type { Scene, SceneProps } from "./types";
 
+/** Stops drawn on a night sky; the chrome turns paper-coloured over them. Others are light. */
+export const SCENE_TONE: Partial<Record<StopKind, "dark">> = {
+  community: "dark",
+};
+
 /** The picture each stop draws. Kinds without their own scene yet show the phase 1 card. */
 export const SCENES: Record<StopKind, Scene> = {
   hello: Hello,
