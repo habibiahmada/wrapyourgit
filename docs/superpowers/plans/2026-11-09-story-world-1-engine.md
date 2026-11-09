@@ -76,7 +76,9 @@ test("days after periodEnd are not-yet while the recap is provisional, zero days
   const data = withMeta(sampleRecap, { periodEnd: "2026-11-09", isFinal: false });
   const city = buildCity(data);
   expect(city.plots.find((p) => p.date === "2026-11-10")?.state).toBe("not-yet");
-  expect(city.plots.filter((p) => p.state === "zero").every((p) => p.date <= "2026-11-09")).toBe(true);
+  expect(city.plots.filter((p) => p.state === "zero").every((p) => p.date <= "2026-11-09")).toBe(
+    true,
+  );
   expect(city.lastDataIndex).toBe(city.plots.findIndex((p) => p.date === "2026-11-09"));
 });
 test("a final recap has no not-yet plots and ends on Dec 31", () => {
@@ -88,7 +90,9 @@ test("leap year 2028 has 366 plots", () => {
   expect(buildCity(withYear(sampleRecap, 2028)).plots).toHaveLength(366);
 });
 test("busiest is the highest count, earliest on a tie; tallest building", () => {
-  const city = buildCity(withCalendar(sampleRecap, { "2026-03-12": 38, "2026-07-01": 38, "2026-02-02": 5 }));
+  const city = buildCity(
+    withCalendar(sampleRecap, { "2026-03-12": 38, "2026-07-01": 38, "2026-02-02": 5 }),
+  );
   expect(city.plots[city.busiestIndex ?? -1]?.date).toBe("2026-03-12");
   const tallest = Math.max(...city.plots.map((p) => plotHeight(p, city.maxCount)));
   expect(plotHeight(city.plots[city.busiestIndex ?? 0] as Plot, city.maxCount)).toBe(tallest);
@@ -150,19 +154,44 @@ Plots:
 test("stops come in story order, letter pages expanded", () => {
   const city = buildCity(sampleRecap);
   const ids = buildStops(sampleRecap, city, { letterPages: 2 }).map((s) => s.id);
-  expect(ids).toEqual(["hello", "first-day", "private", "city", "busiest", "rhythm", "languages", "projects",
-    "community", "engineering", "archetype", "versus", "letter-1", "letter-2", "closing"]);
+  expect(ids).toEqual([
+    "hello",
+    "first-day",
+    "private",
+    "city",
+    "busiest",
+    "rhythm",
+    "languages",
+    "projects",
+    "community",
+    "engineering",
+    "archetype",
+    "versus",
+    "letter-1",
+    "letter-2",
+    "closing",
+  ]);
 });
-test("natural dates: hello Jan 1, busiest on the busiest plot, closing on the last day with data", () => { /* assert plots */ });
+test("natural dates: hello Jan 1, busiest on the busiest plot, closing on the last day with data", () => {
+  /* assert plots */
+});
 test("every stop but the city has its own plot", () => {
   const stops = buildStops(sampleRecap, buildCity(sampleRecap));
   const plots = stops.flatMap((s) => (s.plot === null ? [] : [s.plot]));
   expect(new Set(plots).size).toBe(plots.length);
 });
-test("fixed-plot stops move forward through the year", () => { /* plots of fixed stops strictly increasing */ });
-test("collisions: busiest on Jan 1 and first day equal to busiest still give distinct plots", () => { /* withCalendar({"2026-01-01": 9}) */ });
-test("an empty year has no busiest stop", () => { /* ids exclude "busiest" */ });
-test("a provisional year ending 2026-01-20 still fits every stop before the closing plot", () => { /* all plots <= lastDataIndex */ });
+test("fixed-plot stops move forward through the year", () => {
+  /* plots of fixed stops strictly increasing */
+});
+test("collisions: busiest on Jan 1 and first day equal to busiest still give distinct plots", () => {
+  /* withCalendar({"2026-01-01": 9}) */
+});
+test("an empty year has no busiest stop", () => {
+  /* ids exclude "busiest" */
+});
+test("a provisional year ending 2026-01-20 still fits every stop before the closing plot", () => {
+  /* all plots <= lastDataIndex */
+});
 ```
 
 Put the fixture helpers from Task 1 in `packages/video/src/world/test-fixtures.ts` and import them from both test files.
@@ -216,17 +245,27 @@ Camera rules inside a move from A to B with eased progress `e = easeInOutCubic(t
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
-test("the camera rests exactly on each stop's frame", () => { /* cameraAt(stopFrames[i]) deep-equals cameras[i] */ });
-test("moves last between 1.1 s and 2 s at 30 fps", () => { /* every moveFrames[i>0] in [33, 60] */ });
+test("the camera rests exactly on each stop's frame", () => {
+  /* cameraAt(stopFrames[i]) deep-equals cameras[i] */
+});
+test("moves last between 1.1 s and 2 s at 30 fps", () => {
+  /* every moveFrames[i>0] in [33, 60] */
+});
 test("video mode holds each stop for 3 s, interactive mode does not", () => {
   // same cameras: video durationInFrames === interactive durationInFrames + 90 * cameras.length
 });
-test("zoom is log-linear: halfway between span 1 and span 4 is span 2 when there is no hop", () => { /* at e = 0.5 */ });
-test("a long hop between two close-ups zooms out mid-flight and lands back in", () => { /* max span along the move > both ends */ });
+test("zoom is log-linear: halfway between span 1 and span 4 is span 2 when there is no hop", () => {
+  /* at e = 0.5 */
+});
+test("a long hop between two close-ups zooms out mid-flight and lands back in", () => {
+  /* max span along the move > both ends */
+});
 test("the city stop frames the whole city in every format", () => {
   // for each VIDEO_FORMATS entry: every plot corner projected through stopCamera(city) lies inside the frame
 });
-test("cameraAt is deterministic and clamps outside the timeline", () => { /* frame -5 → first camera, frame 1e6 → last */ });
+test("cameraAt is deterministic and clamps outside the timeline", () => {
+  /* frame -5 → first camera, frame 1e6 → last */
+});
 ```
 
 - [ ] **Step 2: Run to verify they fail**
@@ -335,7 +374,9 @@ test("buildWorld: one camera per stop and a duration that covers the last stop",
   expect(world.cameras).toHaveLength(world.stops.length);
   expect(world.timeline.durationInFrames).toBe((world.timeline.stopFrames.at(-1) ?? 0) + 1);
 });
-test("worldDuration in video mode is longer than interactive by the holds", () => { /* difference = 90 * stops */ });
+test("worldDuration in video mode is longer than interactive by the holds", () => {
+  /* difference = 90 * stops */
+});
 ```
 
 - [ ] **Step 2: Run to verify it fails**
@@ -384,12 +425,24 @@ git commit -m "feat(video): the story world as one composition"
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
-test("forward from stop 0 moves to stop 1 over its move frames", () => { /* start true, endFrame = stopFrames[1] */ });
-test("backward plays the same frames in reverse", () => { /* from stop 2 back: startFrame = stopFrames[2], endFrame = stopFrames[1]; frameAt decreases */ });
-test("nothing happens before the first stop or after the last", () => { /* start false, state unchanged */ });
-test("taps during a move queue one direction, the last one wins", () => { /* request(+1) twice then (-1): queued -1 */ });
-test("settle rests on the target and returns the queued move", () => { /* next === queued, queued cleared */ });
-test("frameAt never passes the end frame", () => { /* huge elapsed → endFrame */ });
+test("forward from stop 0 moves to stop 1 over its move frames", () => {
+  /* start true, endFrame = stopFrames[1] */
+});
+test("backward plays the same frames in reverse", () => {
+  /* from stop 2 back: startFrame = stopFrames[2], endFrame = stopFrames[1]; frameAt decreases */
+});
+test("nothing happens before the first stop or after the last", () => {
+  /* start false, state unchanged */
+});
+test("taps during a move queue one direction, the last one wins", () => {
+  /* request(+1) twice then (-1): queued -1 */
+});
+test("settle rests on the target and returns the queued move", () => {
+  /* next === queued, queued cleared */
+});
+test("frameAt never passes the end frame", () => {
+  /* huge elapsed → endFrame */
+});
 ```
 
 - [ ] **Step 2: Run to verify they fail**
