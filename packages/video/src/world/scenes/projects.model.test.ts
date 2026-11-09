@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import type { RecapData } from "@wyg/schema";
 import { busyRecap, emptyRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
+import { labelWidth } from "./fit";
 import { commitsText, projectsModel, truncateLabel } from "./projects.model";
 
 const trailmix = sampleRecap.repositories.top[0];
@@ -30,7 +31,8 @@ test("projectsModel: sample takes four stacks, unit 50, ceil crates and a privat
     ["design-tokens", 41, 1],
   ]);
   expect(m.empty).toBe(false);
-  expect(m.title).toBe("6 new repositories");
+  expect(m.title).toBe("Where your commits went");
+  expect(m.subtitle).toBe("6 new repositories this year");
   expect(m.legend).toBe("one crate ≈ 50 commits");
 });
 
@@ -57,7 +59,7 @@ test("projectsModel: past 8 crates at the largest unit the unit stays 500 and th
 test("projectsModel: crates round up, so any commits make at least one", () => {
   const m = projectsModel(withRepos([1, 10, 11]));
   expect(m.unit).toBe(10);
-  expect(m.stacks.map((s) => s.crates)).toEqual([1, 1, 2]);
+  expect(m.stacks.map((s) => s.crates)).toEqual([2, 1, 1]);
 });
 
 test("projectsModel: skips repositories without commits and keeps the first four", () => {
@@ -65,11 +67,19 @@ test("projectsModel: skips repositories without commits and keeps the first four
   expect(m.stacks.map((s) => s.commits)).toEqual([30, 20, 10, 5]);
 });
 
-test("projectsModel: titles for one, none and many created repositories", () => {
-  expect(projectsModel(withRepos([10], 1)).title).toBe("1 new repository");
-  expect(projectsModel(withRepos([10], 0)).title).toBe("Where your commits went");
-  expect(projectsModel(withRepos([10], 2)).title).toBe("2 new repositories");
-  expect(projectsModel(withRepos([10], 1234)).title).toBe("1,234 new repositories");
+test("projectsModel: the headline is fixed; the subtitle counts new repositories", () => {
+  expect(projectsModel(withRepos([10], 1)).subtitle).toBe("1 new repository this year");
+  expect(projectsModel(withRepos([10], 0)).subtitle).toBeNull();
+  expect(projectsModel(withRepos([10], 2)).subtitle).toBe("2 new repositories this year");
+  expect(projectsModel(withRepos([10], 1234)).subtitle).toBe("1,234 new repositories this year");
+  for (const c of [0, 1, 5]) {
+    expect(projectsModel(withRepos([10], c)).title).toBe("Where your commits went");
+  }
+});
+
+test("projectsModel: stacks are the four largest by commits, whatever the input order", () => {
+  const m = projectsModel(withRepos([5, 40, 0, 20, 30, 10]));
+  expect(m.stacks.map((s) => s.commits)).toEqual([40, 30, 20, 10]);
 });
 
 test("projectsModel: no repository commits is an empty shelf with its own copy", () => {
@@ -78,6 +88,7 @@ test("projectsModel: no repository commits is an empty shelf with its own copy",
     expect(m.stacks).toEqual([]);
     expect(m.empty).toBe(true);
     expect(m.title).toBe("No repository commits yet");
+    expect(m.subtitle).toBeNull();
     expect(m.legend).toBeNull();
   }
 });
@@ -86,6 +97,11 @@ test("commitsText is singular for one", () => {
   expect(commitsText(1)).toBe("1 commit");
   expect(commitsText(312)).toBe("312 commits");
   expect(commitsText(4812)).toBe("4,812 commits");
+});
+
+test("truncateLabel leaves a name that fits at the given size alone", () => {
+  const w = labelWidth("Private repository", 15, 800);
+  expect(truncateLabel("Private repository", 15, 800, w + 1)).toBe("Private repository");
 });
 
 test("truncateLabel keeps text that fits and ends a longer one with an ellipsis that fits", () => {

@@ -17,6 +17,8 @@ export type ProjectsModel = {
   created: number;
   empty: boolean;
   title: string;
+  /** "6 new repositories this year", or null when none were created. */
+  subtitle: string | null;
   /** "one crate ≈ 50 commits", or null on an empty shelf. */
   legend: string | null;
 };
@@ -27,9 +29,11 @@ const UNITS = [10, 25, 50, 100, 250, 500];
 
 export const commitsText = (n: number) => `${formatCount(n)} ${n === 1 ? "commit" : "commits"}`;
 
-function titleFor(created: number): string {
-  if (created === 0) return "Where your commits went";
-  return created === 1 ? "1 new repository" : `${formatCount(created)} new repositories`;
+function subtitleFor(created: number): string | null {
+  if (created === 0) return null;
+  return created === 1
+    ? "1 new repository this year"
+    : `${formatCount(created)} new repositories this year`;
 }
 
 /**
@@ -39,7 +43,11 @@ function titleFor(created: number): string {
  */
 export function projectsModel(data: RecapData): ProjectsModel {
   const { top, createdThisYear } = data.repositories;
-  const picked = top.filter((r) => r.commits > 0).slice(0, MAX_STACKS);
+  // Sorted here so the tallest stack is first (Cell stands by it) whatever order analytics gave.
+  const picked = top
+    .filter((r) => r.commits > 0)
+    .sort((a, b) => b.commits - a.commits)
+    .slice(0, MAX_STACKS);
   const tallest = Math.max(0, ...picked.map((r) => r.commits));
   const unit =
     UNITS.find((u) => Math.ceil(tallest / u) <= MAX_CRATES) ?? (UNITS[UNITS.length - 1] as number);
@@ -55,6 +63,7 @@ export function projectsModel(data: RecapData): ProjectsModel {
       created: createdThisYear,
       empty: true,
       title: "No repository commits yet",
+      subtitle: null,
       legend: null,
     };
   }
@@ -63,7 +72,8 @@ export function projectsModel(data: RecapData): ProjectsModel {
     unit,
     created: createdThisYear,
     empty: false,
-    title: titleFor(createdThisYear),
+    title: "Where your commits went",
+    subtitle: subtitleFor(createdThisYear),
     legend: `one crate ≈ ${formatCount(unit)} commits`,
   };
 }

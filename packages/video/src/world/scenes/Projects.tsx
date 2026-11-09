@@ -13,6 +13,8 @@ const ROW_GAP = 28;
 /** A crate is wider than tall, like a shipping crate seen from the front. */
 const CRATE_RATIO = 1.35;
 const MAX_CRATE_H = 200;
+/** A name is cut with an ellipsis only if it wouldn't fit at this share of the label size. */
+const NAME_FLOOR = 0.5;
 
 /** One wooden crate, front on: a dark frame, plank seams and a cross brace. Bottom-centre at (0, 0). */
 function Crate({ w, h }: { w: number; h: number }) {
@@ -90,7 +92,9 @@ export function Projects({ data, size, layout, enter, frame }: SceneProps) {
   const captionSize = Math.min(34, h * 0.04);
   const titleY = safe.top + titleSize;
   const captionY = h - safe.bottom;
-  const topLimit = titleY + 36;
+  const subSize = Math.min(38, h * 0.036);
+  const subY = titleY + subSize * 1.5;
+  const topLimit = (model.subtitle ? subY : titleY) + 36;
   const bottomLimit = captionY - captionSize - 24;
 
   // Tall frames: two shelves, stacks 2 + 2, each crate as big as the height allows. Landscape:
@@ -134,13 +138,17 @@ export function Projects({ data, size, layout, enter, frame }: SceneProps) {
 
   const placed = [
     ...rowA.map((stack, i) => ({ stack, row: 0, cx: slotX(i + 1) })),
-    ...rowB.map((stack, i) => ({ stack, row: 1, cx: slotX(i + 1) })),
+    ...rowB.map((stack, i) => ({
+      stack,
+      row: 1,
+      cx: 500 + (i - (rowB.length - 1) / 2) * slotW,
+    })),
   ];
 
   return (
     <AbsoluteFill style={{ backgroundColor: WALL }}>
       <SceneSvg
-        title={`${model.title}. ${
+        title={`${model.title}${model.subtitle ? `. ${model.subtitle}` : ""}. ${
           model.empty
             ? "Nothing to stack until commits land in a repository"
             : `${model.stacks.map((s) => `${s.label} ${commitsText(s.commits)}`).join(", ")}. ${model.legend}`
@@ -154,6 +162,17 @@ export function Projects({ data, size, layout, enter, frame }: SceneProps) {
           weight={800}
           anchor="middle"
         />
+        {model.subtitle && (
+          <Label
+            x={500}
+            y={subY}
+            text={model.subtitle}
+            size={subSize}
+            weight={700}
+            anchor="middle"
+            fill={palette.inkSoft}
+          />
+        )}
         {Array.from({ length: rows }, (_, k) => k).map((k) => {
           const ground = groundOf(k);
           return (
@@ -181,11 +200,12 @@ export function Projects({ data, size, layout, enter, frame }: SceneProps) {
         })}
         {placed.map(({ stack, row, cx }, i) => {
           const ground = groundOf(row);
-          const nameMax = slotW - 20;
-          const name = truncateLabel(stack.label, font * 0.62, 800, nameMax);
+          const nameMax = slotW - 6;
+          const name = truncateLabel(stack.label, font * NAME_FLOOR, 800, nameMax);
           const labelIn = easeOut(Math.min(1, Math.max(0, t * 1.4 - 0.1 - i * 0.05)));
           return (
-            <g key={stack.label}>
+            // biome-ignore lint/suspicious/noArrayIndexKey: two private repos share a label, so the position disambiguates
+            <g key={`${i}-${stack.label}`}>
               {Array.from({ length: stack.crates }, (_, k) => k).map((k) => {
                 // Crates land one after another, lowest first, across the whole entrance.
                 const p = easeOut(
