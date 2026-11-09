@@ -162,6 +162,37 @@ The maintainer leaned towards B', then chose **A'** on 2026-11-06. It keeps one 
 - The other chapters (such as Languages and Community) get fixed days spread from January to December, one chapter per stretch of weeks, so the camera travels through the year in order and never doubles back.
 - Camera paths are computed from those days, deterministically for the same data, and tested on several fixtures, including a quiet year and a very busy one.
 
+## Phase 2 decisions (2026-11-09)
+
+### Scenes, approved from mockups
+
+| Stop        | Scene                                                                            | Data in the picture                                                                                       |
+| ----------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Hello       | Cell's head fills the frame; its face is a screen                                | "hi, @login" on the screen                                                                                |
+| First day   | An empty plot of soil with one sprout                                            | date of the first contribution on a small sign                                                            |
+| Private     | A locked door with a padlock                                                     | private contribution count on a brass plaque; no names                                                    |
+| City        | The whole city                                                                   | the year's total on a sign above it                                                                       |
+| Busiest     | Close-up of the tallest building, lit windows, Cell planting a flag              | date and count on the flag                                                                                |
+| Rhythm      | A seven-car train, Sunday to Saturday, cargo heaped by contributions per weekday | weekday labels, the busiest weekday and its count; Cell rides that car                                    |
+| Languages   | A garden; each tree's size is that language's share                              | name and percentage on signs in the ground, "other" share stated                                          |
+| Projects    | A shelf of crates; each repository's stack is its commits                        | repository name (or "a private repository") and commits on the shelf edge; repositories created this year |
+| Community   | A night sky; stars earned are stars                                              | total as the brightest star; forks on a sign (followers are not a metric, rule 1)                         |
+| Engineering | Paper planes: pull requests in flight, merged ones landed                        | arrivals board: PRs opened, merged, reviews                                                               |
+| Archetype   | A stage under a spotlight, Cell in the archetype's costume                       | archetype name and its reasons                                                                            |
+| Comparison  | A seesaw weighing last year against this year                                    | both totals for the same span and the change in percent                                                   |
+| Letter      | A sheet of paper with Cell's head as letterhead                                  | the letter's text, split into pages ("1 / 2"), turned with a folded corner                                |
+| Closing     | Fireworks over the last day with data, Cell waving                               | the year's headline numbers; "so far" while the year isn't over                                           |
+
+Unavailable data keeps its own state in the picture (for example the comparison says last year couldn't be read; the archetype says there isn't enough activity yet), never a zero.
+
+### Soundtrack
+
+A new original soundtrack made for wandering the world: calmer than the current 120 BPM track, built to loop for as long as the viewer rests at a stop without becoming tiring, and leaving room for the transition sounds. Synthesised and CC0 like the current one (ADR-0007). The current track stays with the old story until phase 4 removes it.
+
+### Arrival sounds (my call)
+
+Each scene gets one short arrival sound when the camera lands (a flag snapping, leaves, a twinkle, a plane touching down, a page), synthesised like the others, in both the web player and the video. Reason: ADR-0009's "a sound for everything that moves"; the scenes move when the camera arrives.
+
 ## Calls I made (the maintainer can override them)
 
 - Tap zones split one third / two thirds, as in Instagram Stories.
