@@ -35,3 +35,6 @@ coverage/
 .DS_Store
 *.pem
 *.log
+
+# Brainstorming mockups (local only)
+.superpowers/
