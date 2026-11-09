@@ -64,6 +64,20 @@ export function busiestMonth(
   return bestIndex === -1 ? null : { month: bestIndex + 1, count: bestCount };
 }
 
+/** Day with the most contributions; null when no day has any. Ties go to the earlier date. */
+export function busiestDay(
+  calendar: readonly CalendarDay[],
+): { date: string; count: number } | null {
+  let best: { date: string; count: number } | null = null;
+  for (const { date, count } of calendar) {
+    if (count <= 0) continue;
+    if (!best || count > best.count || (count === best.count && date < best.date)) {
+      best = { date, count };
+    }
+  }
+  return best;
+}
+
 function addDays(isoDate: string, days: number): string {
   const date = new Date(`${isoDate}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);

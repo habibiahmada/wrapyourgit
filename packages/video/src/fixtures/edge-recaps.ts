@@ -14,6 +14,7 @@ export const emptyRecap: RecapData = {
     activeDays: 0,
     longestStreak: { days: 0, start: null, end: null },
     busiestMonth: null,
+    busiestDay: null,
     monthly: Array(12).fill(0),
     weekday: Array(7).fill(0),
     calendar: sampleRecap.contributions.calendar.map((day) => ({ ...day, count: 0 })),

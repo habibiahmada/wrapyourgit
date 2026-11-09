@@ -30,6 +30,7 @@ const recap = (): RecapData => ({
     activeDays: 30,
     longestStreak: { days: 5, start: "2026-03-01", end: "2026-03-05" },
     busiestMonth: { month: 3, count: 40 },
+    busiestDay: { date: "2026-01-01", count: 2 },
     monthly: Array(12).fill(0),
     weekday: Array(7).fill(0),
     hourly: { status: "ok", value: Array(24).fill(1), estimated: true },

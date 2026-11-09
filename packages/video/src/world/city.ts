@@ -38,7 +38,6 @@ export function buildCity(data: RecapData): City {
 
   const plots: Plot[] = [];
   let maxCount = 0;
-  let busiestIndex: number | null = null;
   let firstActiveIndex: number | null = null;
   let lastDataIndex = days - 1;
 
@@ -48,10 +47,7 @@ export function buildCity(data: RecapData): City {
     const count = notYet ? 0 : (counts.get(date) ?? 0);
     const state: PlotState = notYet ? "not-yet" : count > 0 ? "active" : "zero";
     if (notYet && lastDataIndex === days - 1) lastDataIndex = i - 1;
-    if (count > maxCount) {
-      maxCount = count;
-      busiestIndex = i;
-    }
+    if (count > maxCount) maxCount = count;
     if (state === "active" && firstActiveIndex === null) firstActiveIndex = i;
     plots.push({
       index: i,
@@ -62,6 +58,11 @@ export function buildCity(data: RecapData): City {
       state,
     });
   }
+
+  // The metric owns "busiest"; a date outside the year's plots (never expected) yields null.
+  const busiestDate = data.contributions.busiestDay?.date;
+  const found = busiestDate === undefined ? -1 : plots.findIndex((p) => p.date === busiestDate);
+  const busiestIndex = found === -1 ? null : found;
 
   return { plots, maxCount, busiestIndex, firstActiveIndex, lastDataIndex };
 }

@@ -5,7 +5,7 @@ import { z } from "zod";
  * presentation surface (web story, video, PNG, public page).
  * Change it deliberately: bump SCHEMA_VERSION and update docs/analytics/metrics.md.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const EDITION_YEAR = 2026;
 
 /**
@@ -99,6 +99,7 @@ export const recapDataSchema = z.object({
     busiestMonth: z
       .object({ month: z.number().int().min(1).max(12), count: z.number().int() })
       .nullable(),
+    busiestDay: z.object({ date: isoDate, count: z.number().int().nonnegative() }).nullable(),
     monthly: z.array(z.number().int().nonnegative()).length(12),
     /** Index 0 = Sunday. */
     weekday: z.array(z.number().int().nonnegative()).length(7),
