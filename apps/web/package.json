@@ -11,7 +11,7 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@remotion/player": "4.0.540",
+    "@remotion/player": "4.0.541",
     "@wyg/analytics": "workspace:*",
     "@wyg/github": "workspace:*",
     "@wyg/renderer": "workspace:*",
@@ -21,7 +21,7 @@
     "fflate": "^0.8.3",
     "next": "16.4.5",
     "pdf-lib": "^1.17.1",
-    "postgres": "^4.0.0",
+    "postgres": "^4.1.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "remotion": "4.0.540",
