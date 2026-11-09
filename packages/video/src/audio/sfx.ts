@@ -23,6 +23,16 @@ export const SFX = {
   shimmer: { file: "audio/sfx/shimmer.wav", volume: 0.4, seconds: 1.2 },
   /** The archetype reveal. */
   impact: { file: "audio/sfx/impact.wav", volume: 0.7, seconds: 1 },
+  /** A tap on a building in the world. */
+  tap: { file: "audio/sfx/tap.wav", volume: 0.35, seconds: 0.06 },
+  /** The camera crosses the city or heads for the closing: air over rooftops. */
+  wind: { file: "audio/sfx/wind.wav", volume: 0.4, seconds: 1.6 },
+  /** The camera enters the garden. */
+  leaves: { file: "audio/sfx/leaves.wav", volume: 0.35, seconds: 1.4 },
+  /** The camera looks up at the night sky. */
+  crickets: { file: "audio/sfx/crickets.wav", volume: 0.3, seconds: 1.6 },
+  /** The camera drops onto a plot: a muffled whoosh that closes down. */
+  dive: { file: "audio/sfx/dive.wav", volume: 0.45, seconds: 1.2 },
 } as const satisfies Record<string, { file: string; volume: number; seconds: number }>;
 
 export type SfxName = keyof typeof SFX;

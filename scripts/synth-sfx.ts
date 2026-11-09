@@ -36,6 +36,12 @@ function lowPass(cutoff: (t: number) => number) {
   };
 }
 
+/** One-pole high-pass; with a low-pass it makes a band, for rustle and hiss. */
+function highPass(cutoff: number) {
+  const low = lowPass(() => cutoff);
+  return (input: number, t: number) => input - low(input, t);
+}
+
 /** Builds a voice per sound: a function of time in seconds, called once per sample in order. */
 const VOICES: Record<SfxName, (step: number) => (t: number, length: number) => number> = {
   whoosh: () => {
@@ -92,6 +98,52 @@ const VOICES: Record<SfxName, (step: number) => (t: number, length: number) => n
       const sub = Math.sin(2 * Math.PI * (40 * t + 25 * (1 - Math.exp(-t * 8)))) * Math.exp(-t * 3);
       return sub + 0.5 * filter(noise(), t) * Math.exp(-t * 2.5);
     };
+  },
+  tap: () => (t) => (0.7 * sine(1200 * (1 - 0.4 * t * 16), t) + 0.3 * noise()) * Math.exp(-t * 90),
+  wind: () => {
+    const filter = lowPass((t) => 350 + 500 * Math.sin(Math.PI * Math.min(1, t / 1.6)));
+    return (t, length) => filter(noise(), t) * Math.sin(Math.PI * (t / length)) ** 2 * 3;
+  },
+  leaves: () => {
+    // Rustle bursts at fixed offsets: band-passed noise, each with a quick attack and fall.
+    const band = lowPass(() => 5500);
+    const highs = highPass(1800);
+    const bursts = Array.from({ length: 9 }, (_, i) => ({
+      at: i * 0.14 + Math.abs(noise()) * 0.06,
+      length: 0.08 + Math.abs(noise()) * 0.08,
+    }));
+    return (t, length) => {
+      let envelope = 0;
+      for (const burst of bursts) {
+        const local = t - burst.at;
+        if (local >= 0 && local < burst.length) {
+          envelope = Math.max(envelope, Math.sin(Math.PI * (local / burst.length)));
+        }
+      }
+      return band(highs(noise(), t), t) * envelope * Math.sin(Math.PI * (t / length)) ** 0.5 * 2;
+    };
+  },
+  crickets: () => {
+    // Pairs of short chirps near 4.5 kHz, with a slow wobble so the pairs don't line up.
+    const pairs = Array.from({ length: 6 }, (_, i) => 0.1 + i * 0.26 + Math.abs(noise()) * 0.05);
+    return (t, length) => {
+      let sum = 0;
+      for (const start of pairs) {
+        for (const offset of [0, 0.06]) {
+          const local = t - start - offset;
+          if (local >= 0 && local < 0.03) {
+            sum +=
+              sine(4500 + 120 * Math.sin(local * 400), local) *
+              Math.sin(Math.PI * (local / 0.03) ** 2);
+          }
+        }
+      }
+      return sum * Math.min(1, t * 10, (length - t) * 6);
+    };
+  },
+  dive: () => {
+    const filter = lowPass((t) => 2200 * Math.exp(-t * 2.4) + 180);
+    return (t, length) => filter(noise(), t) * Math.sin(Math.PI * (t / length)) ** 0.8 * 2.4;
   },
 };
 

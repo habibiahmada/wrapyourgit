@@ -1,21 +1,24 @@
 import type { RecapData } from "@wyg/schema";
 import type { City } from "./city";
 
-export type StopKind =
-  | "hello"
-  | "first-day"
-  | "private"
-  | "city"
-  | "busiest"
-  | "rhythm"
-  | "languages"
-  | "projects"
-  | "community"
-  | "engineering"
-  | "archetype"
-  | "versus"
-  | "letter"
-  | "closing";
+export const STOP_KINDS = [
+  "hello",
+  "first-day",
+  "private",
+  "city",
+  "busiest",
+  "rhythm",
+  "languages",
+  "projects",
+  "community",
+  "engineering",
+  "archetype",
+  "versus",
+  "letter",
+  "closing",
+] as const;
+
+export type StopKind = (typeof STOP_KINDS)[number];
 
 export type Stop = {
   id: string;
