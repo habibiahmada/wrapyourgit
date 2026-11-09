@@ -3,6 +3,8 @@
  * returns null and the UI draws a badge in the language's own colour with its initials.
  */
 
+import { palette } from "./theme";
+
 const ICONS: Record<string, string> = {
   TypeScript: "typescript",
   JavaScript: "javascript",
@@ -70,4 +72,9 @@ export function languageInitials(name: string): string {
       .map((w) => w[0]?.toUpperCase())
       .join("");
   return name.slice(0, 2);
+}
+
+/** Fill for a language's own colour, or the third green of GitHub's ramp when it has none. */
+export function languageColor(color: string | null): string {
+  return color ?? palette.heat[2];
 }

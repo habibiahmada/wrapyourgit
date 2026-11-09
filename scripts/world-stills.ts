@@ -9,7 +9,7 @@
  *   bun scripts/world-stills.ts hello --offset -20     # 20 frames before the rest: mid-entrance
  *
  * <kind> is a StopKind; the first stop of that kind is used. Fixtures: sample (default),
- * edge-empty, edge-long-names, edge-provisional. Writes `<outDir>/<kind>[-<fixture>]-<format>.png` for world-9x16,
+ * edge-empty, edge-long-names, edge-provisional, edge-one-language. Writes `<outDir>/<kind>[-<fixture>]-<format>.png` for world-9x16,
  * world-4x5 and world-16x9 (outDir defaults to /tmp/claude-1000/world-stills/). Renders through
  * apps/renderer/src/still.ts like render-art.ts: one bundle, one headless browser, video mode.
  */
@@ -31,6 +31,10 @@ const FIXTURES: Record<string, RecapData> = {
   "edge-empty": emptyRecap,
   "edge-long-names": busyRecap,
   "edge-provisional": provisionalRecap,
+  "edge-one-language": {
+    ...sampleRecap,
+    languages: { top: [{ name: "Rust", color: "#dea584", share: 1 }], distinctCount: 1 },
+  },
 };
 const FORMATS: VideoFormatId[] = ["9x16", "4x5", "16x9"];
 

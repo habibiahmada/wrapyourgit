@@ -85,3 +85,10 @@ test("gardenModel: no languages is bare soil and says so", () => {
   expect(m.title).toBe("No language data yet");
   expect(m.otherNote).toBeNull();
 });
+
+test("gardenModel: the other note appears at exactly 0.5% and not just below", () => {
+  const at = gardenModel(withTop([{ name: "Go", color: "#fff", share: 0.995 }]));
+  expect(at.otherNote).toBe("Everything else: 1%");
+  const below = gardenModel(withTop([{ name: "Go", color: "#fff", share: 0.996 }]));
+  expect(below.otherNote).toBeNull();
+});

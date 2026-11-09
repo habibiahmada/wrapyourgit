@@ -1,5 +1,5 @@
 import type { RecapData } from "@wyg/schema";
-import { palette } from "../../theme";
+import { languageColor } from "../../languages";
 
 export type GardenTree = {
   name: string;
@@ -34,8 +34,7 @@ const percentLabel = (share: number) => {
 
 /**
  * Up to five trees for `languages.top`, in the given order (sorted by share). A language with no
- * colour of its own takes the third green of GitHub's ramp, since the existing LanguageMark badge
- * falls back to ink, which would draw a black crown.
+ * colour of its own takes `languageColor`'s green, not the badge's ink, which would be a black crown.
  */
 export function gardenModel(data: RecapData): GardenModel {
   const trees = data.languages.top.slice(0, MAX_TREES).map((l) => {
@@ -45,7 +44,7 @@ export function gardenModel(data: RecapData): GardenModel {
       share,
       percent: Math.round(share * 100),
       label: percentLabel(share),
-      color: l.color ?? palette.heat[2],
+      color: languageColor(l.color),
       radius: Math.max(MIN_RADIUS, Math.sqrt(share)),
     };
   });
