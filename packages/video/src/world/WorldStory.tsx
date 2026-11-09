@@ -14,6 +14,7 @@ import { palette } from "../theme";
 import { Chrome } from "./Chrome";
 import { CityLayer } from "./CityLayer";
 import { cameraAt } from "./camera";
+import { cardOpacity } from "./fade";
 import { buildWorld } from "./model";
 import { StopLayer } from "./StopLayer";
 import { transitionSound } from "./sound";
@@ -63,6 +64,7 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
             camera={camera}
             city={city}
             citySpan={citySpan}
+            timelineOpacity={cardOpacity(i, frame, timeline)}
             frame={size}
           />
         );
@@ -80,6 +82,9 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
               src={staticFile(TRACK.file)}
               // The track is shorter than the world; looping holds until phase 3 brings its own.
               loop
+              // "extend" keeps the volume curve on composition frames across loops, so the fade
+              // below lands on the composition's last two beats, not on each pass of the track.
+              loopVolumeCurveBehavior="extend"
               volume={(f) =>
                 interpolate(f, [end - beats(2, fps), end], [1, 0], {
                   extrapolateLeft: "clamp",

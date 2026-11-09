@@ -1,32 +1,11 @@
 import { AbsoluteFill } from "remotion";
 import { fontFamily, formatCount, palette } from "../theme";
-import { type Camera, PLOT_SPAN, project } from "./camera";
+import { type Camera, project } from "./camera";
 import type { City } from "./city";
+import { formatDay, zoomFade } from "./fade";
 import type { Stop } from "./stops";
 
 type Frame = { width: number; height: number };
-
-/** Camera distance, in stop spans, over which a card fades out; neighbouring plots sit past it. */
-const FADE_DISTANCE = 0.35;
-
-/**
- * How visible a stop's card is: 1 with the camera on it, 0 at the city overview or once the camera
- * has moved off towards another plot, so a card never shows at a neighbouring stop.
- */
-export function stopOpacity(camera: Camera, stopCam: Camera, citySpan: number): number {
-  const zoom = Math.log(camera.span / stopCam.span) / Math.log(citySpan / stopCam.span);
-  const distance = Math.hypot(camera.x - stopCam.x, camera.y - stopCam.y) / stopCam.span;
-  const clamp = (v: number) => Math.min(1, Math.max(0, v));
-  return clamp(1 - zoom) * clamp(1 - distance / FADE_DISTANCE);
-}
-
-function formatDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
 
 /**
  * Placeholder for a stop's scene (phase 2 replaces it). It lives in world space: frame-sized when
@@ -38,6 +17,7 @@ export function StopLayer({
   camera,
   city,
   citySpan,
+  timelineOpacity,
   frame,
 }: {
   stop: Stop;
@@ -45,10 +25,12 @@ export function StopLayer({
   camera: Camera;
   city: City;
   citySpan: number;
+  /** cardOpacity for this stop at the current frame. */
+  timelineOpacity: number;
   frame: Frame;
 }) {
   const plot = stop.plot === null ? undefined : city.plots[stop.plot];
-  const opacity = stopOpacity(camera, stopCam, Math.max(citySpan, 3 * PLOT_SPAN));
+  const opacity = timelineOpacity * zoomFade(camera, stopCam, citySpan);
   if (!plot || opacity <= 0) return null;
   const centre = project(stopCam, camera, frame);
   const scale = stopCam.span / camera.span;
@@ -83,7 +65,7 @@ export function StopLayer({
         <div style={{ fontSize: unit * 11, fontWeight: 800, textTransform: "uppercase" }}>
           {stop.page ? `${stop.kind} ${stop.page}` : stop.kind}
         </div>
-        <div style={{ fontSize: unit * 5, fontWeight: 400 }}>{formatDate(plot.date)}</div>
+        <div style={{ fontSize: unit * 5, fontWeight: 400 }}>{formatDay(plot.date)}</div>
         {stop.kind === "busiest" && (
           <div style={{ fontSize: unit * 6, fontWeight: 700 }}>
             {formatCount(plot.count)} contributions

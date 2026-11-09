@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { heatLevels } from "../heat";
 import { palette } from "../theme";
-import { type Camera, PLOT_SPAN, project } from "./camera";
+import { type Camera, project } from "./camera";
 import { type City, isoPoint, plotHeight, TILE_H, TILE_W } from "./city";
+import { cityOpacity } from "./fade";
 
 type Frame = { width: number; height: number };
 type Point = { x: number; y: number };
@@ -24,14 +26,6 @@ function faces(top: string): [string, string, string] {
 const ZERO_FACES = faces(palette.paper);
 const LEVEL_FACES = palette.heat.map(faces);
 
-/** 1 at the city overview, 0 once the camera is down to a few plots. */
-export function cityOpacity(camera: Camera, citySpan: number): number {
-  const near = Math.log(3 * PLOT_SPAN);
-  const far = Math.log(citySpan);
-  if (far <= near) return camera.span >= citySpan ? 1 : 0;
-  return Math.min(1, Math.max(0, (Math.log(camera.span) - near) / (far - near)));
-}
-
 const points = (corners: Point[]) =>
   corners.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
 
@@ -46,14 +40,20 @@ export function CityLayer({
   citySpan: number;
   frame: Frame;
 }) {
+  // Per city, not per frame: the levels and the back-to-front order never change while it plays.
+  const { levels, order } = useMemo(
+    () => ({
+      levels: heatLevels(city.plots),
+      // Rows of the iso grid with a larger col + row sit nearer the viewer.
+      order: [...city.plots].sort((a, b) => a.col + a.row - (b.col + b.row) || a.col - b.col),
+    }),
+    [city],
+  );
   const opacity = cityOpacity(camera, citySpan);
   if (opacity <= 0) return null;
   const px = Math.min(frame.width, frame.height) / 1080;
-  const levels = heatLevels(city.plots);
   const w = TILE_W * FOOTPRINT;
   const h = TILE_H * FOOTPRINT;
-  // Back to front: rows of the iso grid with a larger col + row sit nearer the viewer.
-  const order = [...city.plots].sort((a, b) => a.col + a.row - (b.col + b.row) || a.col - b.col);
 
   const shapes = order.map((plot) => {
     const base = isoPoint(plot.col, plot.row);
