@@ -32,86 +32,120 @@ const EDGE = 7;
 /**
  * Closing is last in story order even though it sits on the last day with data: ending there
  * keeps the camera from flying back in time after the year is over.
+ *
+ * Plots never decrease along the story: first-day, busiest and closing keep their real dates, and
+ * the fixed stops between two anchors are spread over the plots between them. The one exception
+ * is a busiest day on Jan 1, where hello yields and moves forward.
  */
 export function buildStops(
-  data: RecapData,
+  _data: RecapData,
   city: City,
   options: { letterPages?: number } = {},
 ): Stop[] {
-  void data;
   const pages = Math.max(1, options.letterPages ?? 1);
   const last = city.lastDataIndex;
   const used = new Set<number>();
 
-  const claim = (wanted: number, from = wanted): number => {
-    let p = Math.max(0, Math.min(wanted, last));
-    p = Math.max(p, Math.min(from, last));
+  const take = (plot: number): number => {
+    used.add(plot);
+    return plot;
+  };
+  const firstFreeFrom = (plot: number): number => {
+    let p = Math.max(0, plot);
     while (p <= last && used.has(p)) p++;
-    if (p > last) {
-      // Degenerate tiny year: take the earliest free plot instead of dropping a stop.
-      p = 0;
-      while (used.has(p)) p++;
-    }
-    used.add(p);
+    if (p <= last) return p;
+    // Degenerate tiny year: the earliest free plot beats dropping a stop.
+    p = 0;
+    while (used.has(p)) p++;
     return p;
   };
+  const lastFreeUpTo = (plot: number): number => {
+    for (let p = Math.min(plot, last); p >= 0; p--) if (!used.has(p)) return p;
+    return firstFreeFrom(plot);
+  };
 
-  // Natural dates claim first, in priority order, so a collision moves the less specific stop.
-  const closing = claim(last);
-  const hello = claim(0);
-  const busiest = city.busiestIndex === null ? null : claim(city.busiestIndex);
-  const firstDay = city.firstActiveIndex === null ? null : claim(city.firstActiveIndex);
+  // Priority on a shared day: busiest, first-day, closing, then hello. Closing and first-day move
+  // back (they stay after what precedes them), hello moves forward.
+  const busiest = city.busiestIndex === null ? null : take(city.busiestIndex);
+  const firstDay =
+    city.firstActiveIndex === null ? null : take(lastFreeUpTo(city.firstActiveIndex));
+  const closing = take(lastFreeUpTo(last));
+  const hello = take(firstFreeFrom(0));
 
-  const fixedOrder: { id: string; kind: StopKind; page?: number }[] = [
-    { id: "private", kind: "private" },
-    { id: "rhythm", kind: "rhythm" },
-    { id: "languages", kind: "languages" },
-    { id: "projects", kind: "projects" },
-    { id: "community", kind: "community" },
-    { id: "engineering", kind: "engineering" },
-    { id: "archetype", kind: "archetype" },
-    { id: "versus", kind: "versus" },
-    ...Array.from({ length: pages }, (_, i) => ({
-      id: `letter-${i + 1}`,
-      kind: "letter" as const,
-      page: i + 1,
-    })),
+  type Entry = { id: string; kind: StopKind; page?: number; plot: number | null; fixed: boolean };
+  const letters: Entry[] = Array.from({ length: pages }, (_, i) => ({
+    id: `letter-${i + 1}`,
+    kind: "letter",
+    page: i + 1,
+    plot: null,
+    fixed: true,
+  }));
+  const fixed = (kind: StopKind): Entry => ({ id: kind, kind, plot: null, fixed: true });
+  const entries: Entry[] = [
+    { id: "hello", kind: "hello", plot: hello, fixed: false },
+    firstDay === null
+      ? fixed("first-day")
+      : { id: "first-day", kind: "first-day", plot: firstDay, fixed: false },
+    fixed("private"),
+    { id: "city", kind: "city", plot: null, fixed: false },
+    ...(busiest === null
+      ? []
+      : [{ id: "busiest", kind: "busiest" as const, plot: busiest, fixed: false }]),
+    fixed("rhythm"),
+    fixed("languages"),
+    fixed("projects"),
+    fixed("community"),
+    fixed("engineering"),
+    fixed("archetype"),
+    fixed("versus"),
+    ...letters,
+    { id: "closing", kind: "closing", plot: closing, fixed: false },
   ];
-  if (firstDay === null) fixedOrder.unshift({ id: "first-day", kind: "first-day" });
 
-  const n = fixedOrder.length;
-  let lo = EDGE;
-  let hi = last - EDGE;
-  // A short provisional year can't hold the margins: use everything between hello and closing.
-  if (hi - lo < n - 1) {
-    lo = 1;
-    hi = last - 1;
-  }
-  const fixedPlots = new Map<string, number>();
-  let prev = -1;
-  fixedOrder.forEach((stop, k) => {
-    const target = n === 1 ? lo : lo + Math.round((k * (hi - lo)) / (n - 1));
-    const plot = claim(target, Math.max(target, prev + 1));
-    fixedPlots.set(stop.id, plot);
-    prev = plot;
-  });
+  const spread = (run: Entry[], lo: number, hi: number) => {
+    let floor = lo;
+    run.forEach((entry, k) => {
+      const target = run.length === 1 ? lo : lo + Math.round((k * (hi - lo)) / (run.length - 1));
+      entry.plot = take(firstFreeFrom(Math.max(target, floor)));
+      floor = (entry.plot ?? floor) + 1;
+    });
+  };
 
-  const at = (id: string): number => fixedPlots.get(id) as number;
-  const stops: Stop[] = [
-    { id: "hello", kind: "hello", plot: hello },
-    {
-      id: "first-day",
-      kind: "first-day",
-      plot: firstDay ?? at("first-day"),
-    },
-    { id: "private", kind: "private", plot: at("private") },
-    { id: "city", kind: "city", plot: null },
-  ];
-  if (busiest !== null) stops.push({ id: "busiest", kind: "busiest", plot: busiest });
-  for (const s of fixedOrder) {
-    if (s.id === "first-day" || s.id === "private") continue;
-    stops.push({ id: s.id, kind: s.kind, plot: at(s.id), ...(s.page ? { page: s.page } : {}) });
+  let prev = hello;
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i] as Entry;
+    if (!entry.fixed) {
+      if (entry.plot !== null) prev = entry.plot;
+      continue;
+    }
+    let end = i;
+    while ((entries[end + 1] as Entry).fixed) end++;
+    const run = entries.slice(i, end + 1);
+    const next = (entries.slice(end + 1).find((e) => e.plot !== null) as Entry).plot as number;
+    let lo = prev + 1;
+    let hi = next - 1;
+    if (hi - lo + 1 < run.length) {
+      // No room between the anchors: spread over the whole year rather than stack stops.
+      lo = 1;
+      hi = last - 1;
+    } else {
+      // Keep clear of the year's edges where the segment has room.
+      const mlo = Math.max(lo, EDGE);
+      const mhi = Math.min(hi, last - EDGE);
+      if (mhi - mlo + 1 >= run.length) {
+        lo = mlo;
+        hi = mhi;
+      }
+    }
+    spread(run, lo, hi);
+    prev = run[run.length - 1]?.plot ?? prev;
+    i = end;
   }
-  stops.push({ id: "closing", kind: "closing", plot: closing });
-  return stops;
+
+  return entries.map(({ id, kind, page, plot }) => ({
+    id,
+    kind,
+    plot,
+    ...(page ? { page } : {}),
+  }));
 }
