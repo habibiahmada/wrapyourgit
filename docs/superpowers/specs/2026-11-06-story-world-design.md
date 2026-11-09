@@ -1,6 +1,6 @@
 # Story as one world: design
 
-Date: 2026-11-06. Status: draft, awaiting the maintainer's approval.
+Date: 2026-11-06, updated 2026-11-09 with the answers to the builder check. Status: draft, awaiting the maintainer's approval.
 
 ## Intent
 
@@ -29,7 +29,7 @@ These are separate projects, designed later and in this order unless the maintai
 - Tidying the site's URLs.
 - Head-only Cell variants on the loading screen and the landing page. The head-only Cell used at the story's first stop is in scope here.
 
-Also out of scope: new metrics, changes to the analytics or the schema, and the dashboard's design.
+Also out of scope: new metrics, changes to the analytics or the schema, and the dashboard's design (apart from the small download section below).
 
 ## Anti-goals (a failure even if it works)
 
@@ -37,7 +37,7 @@ Also out of scope: new metrics, changes to the analytics or the schema, and the 
 - A picture repeated across stops (goal 2).
 - Choppy motion: dropped frames on a mid-range phone, a visible jump where the camera rests, or a stop frame caught mid-transition.
 - The web story and the MP4 or slides showing different things.
-- A private repository's name in any exported file (rule 6).
+- A private repository's name on the public page `/u/<login>`, or in any file when the owner chose to hide names (see Private repository names).
 - Non-deterministic scenes (rule 3).
 
 ## Constraints
@@ -103,7 +103,7 @@ The maintainer leaned towards B', then chose **A'** on 2026-11-06. It keeps one 
 - A copyright line at the bottom of every frame, including in the exports.
 - Tap or click the right two thirds to go forward and the left third to go back. The camera moves for about 1-2 s, then rests and waits.
 - Going back plays the same move in reverse, Cell's animation included.
-- The letter stop can scroll. Leaving it resets the scroll to the top.
+- The letter is split into pages (see The letter). Nothing in the player scrolls.
 
 ### Sound
 
@@ -120,6 +120,48 @@ The maintainer leaned towards B', then chose **A'** on 2026-11-06. It keeps one 
 - **Slides:** the frame at each stop, as PNG. The ZIP and PDF are assembled in the browser (fflate and pdf-lib are already dependencies).
 - The share card (`/api/card`) stays as it is.
 
+## Decided after the builder check (2026-11-09)
+
+### Private repository names
+
+- Before the owner's story plays the first time, one question: "Show your private repository names?" The answer is remembered and can be changed in Settings.
+- **Yes:** private names show in the story, the slide PNGs, the PDF and the MP4. Nothing is hidden. The export screen reminds once: "These files include your private repository names."
+- **No:** the story and every file use the public projection (`toPublicRecap`).
+- The public page `/u/<login>` always uses the public projection, whatever the owner chose, and says that private repository names are not shown.
+- Numbers never differ between the projections; only private names (and details that identify a private repository) do.
+
+### A year that isn't over
+
+- While `meta.isFinal` is false, days after `periodEnd` are drawn as empty, thinly outlined plots labelled "not yet", clearly distinct from a flat plot with zero contributions (rule 2).
+- The closing stop lives in the last day with data (`periodEnd`), not December 31.
+- Once the recap is final, the city is complete and the closing stop returns to December 31.
+
+### The public page
+
+- `/u/<login>` opens on a short card: Cell's head, the login, the total, and a "Play @login's year" button. The card keeps the shared link readable for previews and search engines.
+- The button starts the same full-screen world player with the public projection.
+- The letter stops are left out (the letter is personal); the comparison with last year stays.
+- Exiting, or reaching the end, returns to the card, which offers "Make your own".
+- Visitors cannot export another person's MP4, slides or PDF. The share card stays.
+
+### Where exports live
+
+- After the last stop, the player shows a web-only "Keep your year" screen. It is not a stop: it is never a slide or part of the MP4. It offers the MP4 formats (9:16, 4:5, 1:1, 16:9), PNG, ZIP, PDF, the share card, and "Go to dashboard".
+- Rendering shows progress, a cancel button and "Keep this tab open".
+- The dashboard gets a small "Download your story" section with the same options, so files can be downloaded again without replaying. This is the only dashboard change in scope.
+
+### The letter
+
+- The letter sits on a sheet of paper in the world and is split into pages when it doesn't fit, e.g. "1/2" and "2/2". Tapping right turns the page with a paper animation; tapping left turns it back.
+- Pagination is computed from the text and each format's frame size, so the same text and format always give the same pages.
+- Every page is a stop: one slide each, held about 3 s in the MP4.
+
+### Which day each chapter lives in
+
+- Chapters with a natural date use it: the busiest day, the start of the longest streak where the data has one, the last day with data for the closing stop.
+- The other chapters (such as Languages and Community) get fixed days spread from January to December, one chapter per stretch of weeks, so the camera travels through the year in order and never doubles back.
+- Camera paths are computed from those days, deterministically for the same data, and tested on several fixtures, including a quiet year and a very busy one.
+
 ## Calls I made (the maintainer can override them)
 
 - Tap zones split one third / two thirds, as in Instagram Stories.
@@ -127,13 +169,14 @@ The maintainer leaned towards B', then chose **A'** on 2026-11-06. It keeps one 
 - Keyboard: Right arrow, Space and Enter go forward; Left arrow goes back; Escape exits. The two tap zones are real buttons with accessible names ("Next", "Previous").
 - `prefers-reduced-motion`: camera moves become short crossfades, and the stops are unchanged.
 - If the browser lacks WebCodecs, the export step says so plainly and offers only what still works (the share card), as the Vercel export step does today (#39).
-- ADRs: a new ADR supersedes ADR-0004 (Lambda MP4) and ADR-0011 (slides from the Bun worker), and amends ADR-0002 (reverse playback by stepping frames). The Lambda renderer, `apps/renderer`'s still worker and `SLIDE_EXPORTS` are removed once browser export works.
+- ADRs: a new ADR supersedes ADR-0004 (Lambda MP4) and ADR-0011 (slides from the Bun worker), and amends ADR-0002 (reverse playback by stepping frames). A second new ADR amends AGENTS.md rule 6: private names in the owner's story and files follow the owner's choice; the public page always hides them. The Lambda renderer, `apps/renderer`'s still worker and `SLIDE_EXPORTS` are removed once browser export works.
 
 ## Left to the builder
 
 - Exact durations, easing curves and camera paths per stop, and framing per layout family.
-- Scenes for the chapters not yet drawn (Rhythm, Projects, Engineering, Archetype, the previous-year comparison, the letter), following the principles above. Each gets a mockup for the maintainer to approve before it is built.
+- Scenes for the chapters not yet drawn (Rhythm, Projects, Engineering, Archetype, the previous-year comparison, the letter's paper), following the principles above. Each gets a mockup for the maintainer to approve before it is built.
 - The transition sounds' synthesis, and the tap sound.
 - Export UI details: format picker, progress, cancel, and what happens if the tab is hidden.
 - A performance budget for mid-range phones (Player frame time, render time per format).
-- Order of migration from the current scenes. The old `WrapStory` and the new world must not both ship to users at once.
+- Order of migration from the current scenes. The old `WrapStory` and the new world must not both ship to users at once; the owner's story and the public page switch together.
+- Where the "show private names" answer is stored (a column on the user or the recap), and how Settings changes it.
