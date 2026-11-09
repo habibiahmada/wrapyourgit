@@ -4,6 +4,9 @@ import { buildCity, type City } from "./city";
 import { buildStops, type Stop } from "./stops";
 import { buildTimeline, type Timeline, type WorldMode } from "./timeline";
 
+// Interactive mode renders no audio: the web player plays these itself, on the tap that moves.
+export { SFX, type SfxName, sfxFile } from "../audio/sfx";
+export { TAP_SOUND, transitionSound } from "./sound";
 export type { Timeline };
 
 export type WorldModel = { city: City; stops: Stop[]; cameras: Camera[]; timeline: Timeline };
