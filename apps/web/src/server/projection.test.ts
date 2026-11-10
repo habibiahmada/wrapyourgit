@@ -99,8 +99,9 @@ describe("showFilesReminder", () => {
   });
 
   test("is false when nothing private would be named", () => {
-    expect(showFilesReminder(true, sampleRecap)).toBe(false);
-    expect(showFilesReminder(false, sampleRecap)).toBe(false);
-    expect(showFilesReminder(null, sampleRecap)).toBe(false);
+    const clean = withoutPrivateNames(withPrivate());
+    expect(showFilesReminder(true, clean)).toBe(false);
+    expect(showFilesReminder(false, clean)).toBe(false);
+    expect(showFilesReminder(null, clean)).toBe(false);
   });
 });
