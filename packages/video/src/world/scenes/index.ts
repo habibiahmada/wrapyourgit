@@ -10,6 +10,7 @@ import { Planes } from "./Planes";
 import { Private } from "./Private";
 import { Projects } from "./Projects";
 import { Rhythm } from "./Rhythm";
+import { Seesaw } from "./Seesaw";
 import { Sky } from "./Sky";
 import type { Scene } from "./types";
 
@@ -34,7 +35,7 @@ export const SCENES: Record<StopKind, Scene> = {
   community: Sky,
   engineering: Planes,
   archetype: Archetype,
-  versus: Placeholder,
+  versus: Seesaw,
   letter: Placeholder,
   closing: Placeholder,
 };
