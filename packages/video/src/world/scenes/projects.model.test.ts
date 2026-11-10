@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { RecapData } from "@wyg/schema";
+import { PRIVATE_REPO_NAME, type RecapData } from "@wyg/schema";
 import { busyRecap, emptyRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { labelWidth } from "./fit";
@@ -112,4 +112,25 @@ test("truncateLabel keeps text that fits and ends a longer one with an ellipsis 
   expect(out.length).toBeLessThan(long.length);
   expect(out.length).toBeGreaterThan(1);
   expect(long.startsWith(out.slice(0, -1))).toBe(true);
+});
+
+test("projectsModel: two or more unnamed private stacks are numbered in shelf order", () => {
+  const data = withRepos([300, 200, 100, 50]);
+  data.repositories.top = data.repositories.top.map((r, i) =>
+    i === 0 ? r : { ...r, isPrivate: true, nameWithOwner: PRIVATE_REPO_NAME },
+  );
+  expect(projectsModel(data).stacks.map((s) => s.label)).toEqual([
+    "repo-0",
+    "Private repository 1",
+    "Private repository 2",
+    "Private repository 3",
+  ]);
+});
+
+test("projectsModel: a single unnamed private stack keeps its plain label", () => {
+  const data = withRepos([300, 200]);
+  data.repositories.top = data.repositories.top.map((r, i) =>
+    i === 1 ? { ...r, isPrivate: true, nameWithOwner: PRIVATE_REPO_NAME } : r,
+  );
+  expect(projectsModel(data).stacks.map((s) => s.label)).toEqual(["repo-0", "Private repository"]);
 });

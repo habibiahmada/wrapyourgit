@@ -1,5 +1,5 @@
 import type { RecapData } from "@wyg/schema";
-import { repoLabel, shelfRepos } from "../../present";
+import { isAnonymised, repoLabel, shelfRepos } from "../../present";
 import { formatCount } from "../../theme";
 import { labelWidth } from "./fit";
 
@@ -47,8 +47,11 @@ export function projectsModel(data: RecapData): ProjectsModel {
   const tallest = Math.max(0, ...picked.map((r) => r.commits));
   const unit =
     UNITS.find((u) => Math.ceil(tallest / u) <= MAX_CRATES) ?? (UNITS[UNITS.length - 1] as number);
+  // Several unnamed private stacks would read as one repository repeated: number them instead.
+  const unnamed = picked.filter(isAnonymised).length;
+  let nth = 0;
   const stacks = picked.map((r) => ({
-    label: repoLabel(r).name,
+    label: unnamed > 1 && isAnonymised(r) ? `${repoLabel(r).name} ${++nth}` : repoLabel(r).name,
     commits: r.commits,
     crates: Math.ceil(r.commits / unit),
   }));
