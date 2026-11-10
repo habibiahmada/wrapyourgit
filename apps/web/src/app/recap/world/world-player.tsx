@@ -44,6 +44,18 @@ const zone = (disabled: boolean) =>
  */
 const CUE = `inline-flex h-11 cursor-pointer items-center rounded-md border border-ink/25 bg-paper/90 px-4 font-semibold text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 const CONTROL = `grid size-11 cursor-pointer place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
+/** Close while a render runs: faded, no hover tint; the base layer's not-allowed cursor shows. */
+const CONTROL_OFF = `grid size-11 place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink opacity-50 ${CONTROL_RING}`;
+/** Why every way out is off while a render runs; the end screen shows it under its buttons. */
+const LEAVE_BLOCKED = "leave-blocked";
+
+function CloseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
+      <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -211,10 +223,9 @@ export function WorldPlayer({
     const onKey = (event: KeyboardEvent) => {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
       if (ended) {
-        // Arrow keys belong to the format radios while one has focus; a running render keeps the
-        // screen until it ends or is cancelled.
-        // Escape is too easy to hit by accident to throw away minutes of encoding; the visible
-        // Close control and "Go to dashboard" still leave.
+        // Arrow keys belong to the format radios while one has focus. A running render keeps the
+        // screen until it ends or is cancelled: Escape, Back, Close and "Go to dashboard" all wait,
+        // since leaving would throw away minutes of encoding without a word.
         const onField = event.target instanceof Element && event.target.closest("input") !== null;
         if (event.key === "Escape" && !busy) router.push("/dashboard");
         else if (event.key === "ArrowLeft" && !onField && !busy) closeEnd();
@@ -325,19 +336,30 @@ export function WorldPlayer({
                   <button
                     type="button"
                     disabled={busy}
-                    aria-describedby={busy ? "back-blocked" : undefined}
+                    aria-describedby={busy ? LEAVE_BLOCKED : undefined}
                     onClick={closeEnd}
                     className={PAPER_BUTTON.secondary}
                   >
                     Back to the story
                   </button>
-                  <Link href="/dashboard" className={PAPER_BUTTON.secondary}>
-                    Go to dashboard
-                  </Link>
+                  {busy ? (
+                    <button
+                      type="button"
+                      disabled
+                      aria-describedby={LEAVE_BLOCKED}
+                      className={PAPER_BUTTON.secondary}
+                    >
+                      Go to dashboard
+                    </button>
+                  ) : (
+                    <Link href="/dashboard" className={PAPER_BUTTON.secondary}>
+                      Go to dashboard
+                    </Link>
+                  )}
                 </div>
                 {busy && (
-                  <p id="back-blocked" className="text-base text-ink-soft">
-                    Cancel the render first to go back to the story.
+                  <p id={LEAVE_BLOCKED} className="text-base text-ink-soft">
+                    Cancel the render first to go back to the story or leave it.
                   </p>
                 )}
               </div>
@@ -366,11 +388,22 @@ export function WorldPlayer({
           >
             <SpeakerIcon muted={muted} />
           </button>
-          <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
-              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </Link>
+          {/* Client navigation, so the panel's beforeunload guard can't catch it: off while busy. */}
+          {busy ? (
+            <button
+              type="button"
+              disabled
+              aria-label="Close story"
+              aria-describedby={LEAVE_BLOCKED}
+              className={CONTROL_OFF}
+            >
+              <CloseIcon />
+            </button>
+          ) : (
+            <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
+              <CloseIcon />
+            </Link>
+          )}
         </div>
         {/* Web-only, never part of the composition or a file. Bottom-left, just above the
             copyright line's safe area: the closing scene keeps that corner to the skyline (Cell

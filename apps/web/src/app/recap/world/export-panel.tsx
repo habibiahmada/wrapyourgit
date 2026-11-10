@@ -84,6 +84,21 @@ export function ExportPanel({
   const busy = state.status === "rendering";
   useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);
 
+  // Reload, tab close or a typed address would end the render without a word; the browser's own
+  // "Leave site?" asks first. Not window.confirm: that blocks the thread the encoder runs on.
+  // Client navigations never fire it: the story world turns its own exits off while busy (via
+  // onBusyChange); the dashboard's site links are not covered yet.
+  useEffect(() => {
+    if (!busy) return;
+    const hold = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Older Chrome and Safari still read returnValue instead of preventDefault().
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", hold);
+    return () => window.removeEventListener("beforeunload", hold);
+  }, [busy]);
+
   // A disabled button drops focus to the page; when the job ends, give it back to its button.
   const lastJob = state.status === "idle" ? null : state.job;
   useEffect(() => {
