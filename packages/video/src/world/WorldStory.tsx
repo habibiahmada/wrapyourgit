@@ -21,7 +21,7 @@ import { cardOpacity, enterProgress, reachedStop } from "./fade";
 import { buildWorld } from "./model";
 import { StopLayer } from "./StopLayer";
 import { SCENE_TONE } from "./scenes";
-import { arrivalSound, travelSound } from "./sound";
+import { videoSounds } from "./sound";
 import type { WorldMode } from "./timeline";
 
 export type WorldStoryProps = {
@@ -84,20 +84,11 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
       />
       {mode === "video" && (
         <>
-          {stops.slice(1).map((stop, k) => {
-            const i = k + 1;
-            const at = (timeline.stopFrames[i] ?? 0) - (timeline.moveFrames[i] ?? 0);
-            const travel = travelSound(stop.kind, timeline.inPlace?.[i] ?? false);
-            return travel && <Sfx key={stop.id} at={at} sound={travel} />;
-          })}
-          {stops.map((stop, i) => {
-            const arrival = arrivalSound(stop.kind);
-            return (
-              arrival && (
-                <Sfx key={`${stop.id}-arrive`} at={timeline.stopFrames[i] ?? 0} sound={arrival} />
-              )
-            );
-          })}
+          {videoSounds(world).map(({ frame: at, sound }, k) => (
+            // Index keys: the list is fixed for a given world, and one frame can hold two sounds.
+            // biome-ignore lint/suspicious/noArrayIndexKey: see above
+            <Sfx key={`${k}-${sound}`} at={at} sound={sound} />
+          ))}
           {music && <WorldMusic end={end} fps={fps} />}
         </>
       )}

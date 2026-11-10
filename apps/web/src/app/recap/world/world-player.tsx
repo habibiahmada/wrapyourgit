@@ -3,7 +3,7 @@
 import { Player, type PlayerRef } from "@remotion/player";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
 import { sampleRecap, WorldStory } from "@wyg/video";
-import { arrivalSound, buildWorld, TAP_SOUND, travelSound } from "@wyg/video/world";
+import { buildWorld, edgeSounds, TAP_SOUND } from "@wyg/video/world";
 import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -97,14 +97,12 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
         const move = state.current.moving;
         if (!move) return;
         sfx.play(TAP_SOUND);
-        const arrival = stops[move.to];
-        const travel = arrival && travelSound(arrival.kind, timeline.inPlace?.[move.to] ?? false);
-        if (travel) sfx.play(travel);
+        const sounds = edgeSounds(timeline, stops, move.from, move.to);
+        if (sounds.travel) sfx.play(sounds.travel);
         if (!music.isPlaying()) music.play();
 
         const finish = () => {
-          const landed = arrival && arrivalSound(arrival.kind);
-          if (landed) sfx.play(landed);
+          if (sounds.arrival) sfx.play(sounds.arrival);
           const { state: rested, next } = settle(state.current);
           commit(rested);
           if (next !== null) step(next);
