@@ -38,6 +38,11 @@ const CONTROL_RING =
 /** A zone at the end of the story stays focusable (focus must not vanish under the reader). */
 const zone = (disabled: boolean) =>
   `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-ink/[0.03] active:bg-ink/[0.07]"} ${ZONE_RING}`;
+/**
+ * The way on at the rested closing stop. Paper like the other controls: the closing sky is dark,
+ * so a paper fill is what stands out there; the words, not an icon, say where it goes.
+ */
+const CUE = `inline-flex h-11 cursor-pointer items-center rounded-md border border-ink/25 bg-paper/90 px-4 font-semibold text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 const CONTROL = `grid size-11 cursor-pointer place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 
 function useReducedMotion(): boolean {
@@ -95,6 +100,8 @@ export function WorldPlayer({
   // The controller lives in a ref (the frame loop reads it every tick); `at` mirrors it for render.
   const state = useRef<ControllerState>(initialState());
   const [at, setAt] = useState(0);
+  // Mirrors `!state.moving`: the end-screen cue shows only once the camera has settled.
+  const [resting, setResting] = useState(true);
   const [muted, setMuted] = useState(false);
   const [faded, setFaded] = useState(false);
   const raf = useRef(0);
@@ -109,6 +116,7 @@ export function WorldPlayer({
   const commit = useCallback((next: ControllerState) => {
     state.current = next;
     setAt(heading(next));
+    setResting(next.moving === null);
   }, []);
 
   const stopLoop = useCallback(() => {
@@ -203,8 +211,10 @@ export function WorldPlayer({
       if (ended) {
         // Arrow keys belong to the format radios while one has focus; a running render keeps the
         // screen until it ends or is cancelled.
+        // Escape is too easy to hit by accident to throw away minutes of encoding; the visible
+        // Close control and "Go to dashboard" still leave.
         const onField = event.target instanceof Element && event.target.closest("input") !== null;
-        if (event.key === "Escape") router.push("/dashboard");
+        if (event.key === "Escape" && !busy) router.push("/dashboard");
         else if (event.key === "ArrowLeft" && !onField && !busy) closeEnd();
         else return;
         event.preventDefault();
@@ -308,18 +318,26 @@ export function WorldPlayer({
                 </p>
               </div>
               <ExportPanel data={exportData} card={!sample} onBusyChange={setBusy} />
-              <div className="flex flex-col gap-3 border-t border-ink/25 pt-6 sm:flex-row">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={closeEnd}
-                  className={PAPER_BUTTON.secondary}
-                >
-                  Back to the story
-                </button>
-                <Link href="/dashboard" className={PAPER_BUTTON.secondary}>
-                  Go to dashboard
-                </Link>
+              <div className="flex flex-col gap-3 border-t border-ink/25 pt-6">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-describedby={busy ? "back-blocked" : undefined}
+                    onClick={closeEnd}
+                    className={PAPER_BUTTON.secondary}
+                  >
+                    Back to the story
+                  </button>
+                  <Link href="/dashboard" className={PAPER_BUTTON.secondary}>
+                    Go to dashboard
+                  </Link>
+                </div>
+                {busy && (
+                  <p id="back-blocked" className="text-base text-ink-soft">
+                    Cancel the render first to go back to the story.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -332,26 +350,37 @@ export function WorldPlayer({
             Sample data
           </p>
         )}
-        <div className="pointer-events-auto absolute top-4 right-3 flex gap-2">
-          <button
-            type="button"
-            aria-label="Sound"
-            aria-pressed={!muted}
-            onClick={toggleSound}
-            className={CONTROL}
-          >
-            <SpeakerIcon muted={muted} />
-          </button>
-          <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
-              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </Link>
+        <div className="pointer-events-auto absolute top-4 right-3 flex flex-col items-end gap-2">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              aria-label="Sound"
+              aria-pressed={!muted}
+              onClick={toggleSound}
+              className={CONTROL}
+            >
+              <SpeakerIcon muted={muted} />
+            </button>
+            <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
+              <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
+                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </Link>
+          </div>
+          {/* Web-only, under the controls in the chrome's corner, so it never sits over the
+              sample label or the scene's data; never part of the composition or a file. */}
+          {resting && at === last && !ended && (
+            <button type="button" onClick={() => setEnded(true)} className={CUE}>
+              Keep your year
+            </button>
+          )}
         </div>
       </div>
 
       <p aria-live="polite" className="sr-only">
-        {ended ? "End of the story" : `Stop ${at + 1} of ${stops.length}`}
+        {/* Opening the end screen is announced by focusing its heading, not here. */}
+        Stop {at + 1} of {stops.length}
+        {resting && at === last ? ". Keep your year is next." : ""}
       </p>
     </div>
   );

@@ -42,14 +42,11 @@ export function ExportPanel({
   data,
   card,
   onBusyChange,
-  keepOpenId,
 }: {
   data: RecapData;
   /** Whether `/api/card` can answer: it needs a signed-in user with a recap. */
   card: boolean;
   onBusyChange?: (busy: boolean) => void;
-  /** Lets the screen around the panel point at the "Keep this tab open" line. */
-  keepOpenId?: string;
 }) {
   const [state, dispatch] = useReducer(exportReducer, IDLE);
   const [support, setSupport] = useState<ExportSupport | null>(null);
@@ -208,9 +205,7 @@ export function ExportPanel({
               style={{ width: `${percent(state)}%` }}
             />
           </div>
-          <p id={keepOpenId} className="text-base">
-            {KEEP_OPEN[state.job]}
-          </p>
+          <p className="text-base">{KEEP_OPEN[state.job]}</p>
           <button type="button" onClick={cancel} className={PAPER_BUTTON.secondary}>
             Cancel
           </button>
