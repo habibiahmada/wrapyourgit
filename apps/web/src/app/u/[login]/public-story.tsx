@@ -60,10 +60,12 @@ export function PublicStory({ data }: { data: RecapData }) {
   return (
     <>
       {playing && (
-        <>
-          <h1 className="sr-only">@{login}'s year as a city</h1>
-          <WorldPlayer variant="public" data={data} onExit={exit} />
-        </>
+        <WorldPlayer
+          variant="public"
+          title={`@${login}'s year as a city`}
+          data={data}
+          onExit={exit}
+        />
       )}
       <section aria-labelledby="recap-title" hidden={playing} className="border-b border-line">
         <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 pt-12 pb-16 sm:px-8 sm:pt-16 lg:grid-cols-[1fr_minmax(0,26rem)]">

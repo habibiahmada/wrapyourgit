@@ -93,6 +93,8 @@ export type WorldPlayerProps =
       data: RecapData;
       /** True when `data` names a private repository: the end screen then says the files do too. */
       privateNames: boolean;
+      /** The page's only h1, focused when the story opens. */
+      title: string;
     }
   | {
       /**
@@ -102,6 +104,7 @@ export type WorldPlayerProps =
       variant: "public";
       data: RecapData;
       onExit: () => void;
+      title: string;
     };
 
 /**
@@ -150,6 +153,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
   // "Keep your year": a web-only screen over the paused closing stop, never part of the story.
   const [ended, setEnded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const endHeading = useRef<HTMLHeadingElement>(null);
   const nextZone = useRef<HTMLButtonElement>(null);
   const cue = useRef<HTMLButtonElement>(null);
@@ -249,6 +253,12 @@ export function WorldPlayer(props: WorldPlayerProps) {
     requestAnimationFrame(() => (cue.current ?? nextZone.current)?.focus());
   }, []);
 
+  // The control that opened the story (the question's answer, the card's Play) unmounts or is
+  // hidden on the same commit; without this, focus would fall back to <body>.
+  useEffect(() => {
+    titleRef.current?.focus({ preventScroll: true });
+  }, []);
+
   useEffect(() => {
     if (ended) endHeading.current?.focus();
   }, [ended]);
@@ -303,6 +313,9 @@ export function WorldPlayer(props: WorldPlayerProps) {
       className="fixed inset-0 grid place-items-center overflow-hidden bg-paper text-ink"
       style={{ paddingTop: CONTROL_BAND }}
     >
+      <h1 ref={titleRef} tabIndex={-1} className="sr-only">
+        {props.title}
+      </h1>
       <div
         className="[grid-area:1/1]"
         inert={ended}
