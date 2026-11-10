@@ -149,7 +149,7 @@ flowchart LR
   gh -->|raw activity| an[packages/analytics<br>pure functions]
   an -->|validated by packages/schema| rd[(RecapData<br>Postgres)]
   rd --> player[Story in the browser<br>Remotion Player]
-  rd --> pub[Public page<br>private repos removed]
+  rd --> pub[Public page<br>private names removed]
   rd --> card[Share card]
   video[packages/video<br>Remotion scenes] --> player
   video --> exports[MP4 · PNG · ZIP · PDF<br>rendered in your browser]

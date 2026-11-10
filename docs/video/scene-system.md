@@ -54,7 +54,7 @@ Order lives in `world/stops.ts`. Each stop sits on a day of the city: first-day,
 
 Cell is the only mascot (ADR-0012). Scenes draw it from the baked PNG stills (`CellArt`, `HeadArt` and the archetype cutouts in `world/scenes/kit.tsx`, ids in `src/art.ts`), so the story needs no WebGL. Re-bake after changing a look or motion: `bun scripts/render-art.ts <id>` (ADR-0013).
 
-Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`). Which repositories reach a scene is decided before the composition, by the data it is given: `toPublicRecap` on public surfaces, the owner's choice in their own story and files ([ADR-0017](../architecture/decisions/0017-private-names-follow-the-owner.md)). Metrics go through `metricValue()`: unavailable keeps its own state, estimates get "~".
+Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`). Which names reach a scene is decided before the composition, by the data it is given: `toPublicRecap` on public surfaces, the owner's choice in their own story and files ([ADR-0017](../architecture/decisions/0017-private-names-follow-the-owner.md)). Both projections keep a private top repository in rank under `PRIVATE_REPO_NAME`; `repoLabel` draws it as "Private repository" and the letter as "One private project". Metrics go through `metricValue()`: unavailable keeps its own state, estimates get "~".
 
 ## Audio
 

@@ -14,9 +14,11 @@ AGENTS.md rule 6 redacted private repository names from everything that could be
 
 Two projections in `packages/analytics/src/public.ts`, scenes that draw what they are given, and one rule for each kind of surface.
 
-1. **`withoutPrivateNames(data)`** removes private repositories from every list and highlight (`repositories.top`, `community.mostStarred`, `mostStarredNew`, `mostForked`, `starred.top`). Nothing else changes: every number, the timezone and the hourly data stay.
+1. **`withoutPrivateNames(data)`** leaves no private repository identifiable. Nothing else changes: every number, the timezone and the hourly data stay.
+   - **`repositories.top`** keeps each private entry in its rank, with its commits, but anonymised: `nameWithOwner` becomes `PRIVATE_REPO_NAME` (`"private"`, exported by `@wyg/schema` and `@wyg/analytics`; no slash, so it never reads as a real `owner/name`), `primaryLanguage` is `null`, `stars` and `forks` are 0, `isFork` is false and `createdAt` is the period start. `isPrivate` stays true. Dropping the entry instead would let the story credit the next public repository as the year's main one, a false statement.
+   - **`community.mostStarred`, `mostStarredNew`, `mostForked` and `starred.top`** drop private entries: each names one repository as a highlight, and an unnamed highlight says nothing.
 2. **`toPublicRecap(data)`** is `withoutPrivateNames` plus the timezone set to UTC and the hourly histogram marked unavailable ("Not shared publicly"). Numbers never differ between the projections; only names and identifying details go.
-3. **The projection is the only gate.** Scenes draw the names they are given (`repoLabel` in `packages/video/src/present.ts` does not filter), so the data passed to the composition alone decides whether a private name shows. A filter inside the scenes would turn the owner's "show" choice into a no-op.
+3. **The projection is the only gate.** Scenes draw the names they are given (`repoLabel` in `packages/video/src/present.ts` does not filter), so the data passed to the composition alone decides whether a private name shows. A filter inside the scenes would turn the owner's "show" choice into a no-op. The scenes only recognise the anonymised entry (`isAnonymised`: private and named `PRIVATE_REPO_NAME`): the projects shelf labels its stack "Private repository" with its real commit count, and the letter credits "One private project" when it is the top repository. A private repository the owner chose to show keeps its real name.
 
 ### Rule 1: every public surface uses the public projection
 
@@ -26,7 +28,7 @@ The public page `/u/<login>`, the story played on it (the public player, which r
 
 - **Where the choice lives:** `users.show_private_names`, a nullable boolean with no default. `null` means not asked yet. It is per person, not per year, so a new edition does not ask again, and deleting the account deletes it.
 - **The question** is asked once, on `/recap` before the first stop, only while the column is `null`: "Show your private repository names?", with two buttons, "Show them" and "Hide them". The answer is saved with a server action and the story starts.
-- **"Show them"** (`true`): the story and the files use the full data. When the story draws a private repository's name (`hasPrivateNames`, which asks `drawsPrivateName` in `packages/video/src/present.ts`: the projects shelf or the letter), the files carry the reminder "These files include your private repository names." above the download buttons.
+- **"Show them"** (`true`): the story and the files use the full data. When the story draws a private repository's name (`hasPrivateNames`, which asks `drawsPrivateName` in `packages/video/src/present.ts`: the projects shelf or the letter; an anonymised entry names nothing and does not count), the files carry the reminder "These files include your private repository names." above the download buttons.
 - **"Hide them", or not answered** (`false` or `null`): the story and the files use `withoutPrivateNames(data)`. The dashboard's "Download your story" uses this view until the owner answers.
 - **Settings** shows the current choice ("Private repositories") with one button that switches it, and says the public page never shows them.
 
@@ -43,6 +45,7 @@ AGENTS.md rule 6 now reads: private repository names never appear on a public su
 
 ## Consequences
 
+- The public page and the owner's hidden view show a private repository's stack and commit count without its name ("Private repository"). Before the anonymisation they dropped it; the count was already public through the totals, and the rank keeps the letter and the shelf true.
 - A file shown with names can name a private repository once the owner shares it. The question, the reminder and the Settings switch make that the owner's informed choice; public pages are unaffected.
 - Every new public surface must render `toPublicRecap`, and every new owner surface must go through `storyData` with the stored choice. A new field that names a private repository must be added to `withoutPrivateNames` (and is then hidden from the public too), and a new scene or letter line that names a repository must be added to `drawsPrivateName`, so the reminder stays true.
 - The choice is a database column, so the round trip (store, read back, change in Settings) is checked in the browser, not by a unit test: the repository has no database test harness.
