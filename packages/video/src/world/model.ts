@@ -48,3 +48,5 @@ export {
   slideFrames,
   worldExportComposition,
 } from "./export";
+/** The chrome's safe area in scene units, for web overlays that must keep clear of it too. */
+export { safeArea } from "./scenes/fit";

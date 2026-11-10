@@ -4,7 +4,7 @@ import { Player, type PlayerRef } from "@remotion/player";
 import { toPublicRecap } from "@wyg/analytics";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
 import { sampleRecap, WorldStory } from "@wyg/video";
-import { buildWorld, edgeSounds, TAP_SOUND } from "@wyg/video/world";
+import { buildWorld, edgeSounds, safeArea, TAP_SOUND } from "@wyg/video/world";
 import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -112,6 +112,8 @@ export function WorldPlayer({
   const endHeading = useRef<HTMLHeadingElement>(null);
   const nextZone = useRef<HTMLButtonElement>(null);
   const last = stops.length - 1;
+  // Scene units kept clear of the copyright line (the composition's own safe area).
+  const footerClear = safeArea({ width, height }).bottom;
 
   const commit = useCallback((next: ControllerState) => {
     state.current = next;
@@ -344,37 +346,46 @@ export function WorldPlayer({
         </section>
       )}
 
-      <div className="pointer-events-none relative [grid-area:1/1]" style={stage}>
+      {/* An inline-size container, so the cue can sit in scene units (1 unit = 0.1cqw). */}
+      <div
+        className="pointer-events-none relative [container-type:inline-size] [grid-area:1/1]"
+        style={stage}
+      >
         {sample && (
           <p className="absolute top-4 left-3 rounded-md border border-ink/25 bg-paper/90 px-3 py-2 text-sm font-semibold">
             Sample data
           </p>
         )}
-        <div className="pointer-events-auto absolute top-4 right-3 flex flex-col items-end gap-2">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              aria-label="Sound"
-              aria-pressed={!muted}
-              onClick={toggleSound}
-              className={CONTROL}
-            >
-              <SpeakerIcon muted={muted} />
-            </button>
-            <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
-              <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
-                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
-              </svg>
-            </Link>
-          </div>
-          {/* Web-only, under the controls in the chrome's corner, so it never sits over the
-              sample label or the scene's data; never part of the composition or a file. */}
-          {resting && at === last && !ended && (
-            <button type="button" onClick={() => setEnded(true)} className={CUE}>
-              Keep your year
-            </button>
-          )}
+        <div className="pointer-events-auto absolute top-4 right-3 flex gap-2">
+          <button
+            type="button"
+            aria-label="Sound"
+            aria-pressed={!muted}
+            onClick={toggleSound}
+            className={CONTROL}
+          >
+            <SpeakerIcon muted={muted} />
+          </button>
+          <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
+            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
+              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </Link>
         </div>
+        {/* Web-only, never part of the composition or a file. Bottom-left, just above the
+            copyright line's safe area: the closing scene keeps that corner to the skyline (Cell
+            stands centre in tall frames, right in landscape; the text is at the top or left-top).
+            After Close in tab order: it is the last control, so its visual spot can differ. */}
+        {resting && at === last && !ended && (
+          <button
+            type="button"
+            onClick={() => setEnded(true)}
+            className={`pointer-events-auto absolute left-3 ${CUE}`}
+            style={{ bottom: `${(footerClear / 10).toFixed(3)}cqw` }}
+          >
+            Keep your year
+          </button>
+        )}
       </div>
 
       <p aria-live="polite" className="sr-only">
