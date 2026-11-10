@@ -28,14 +28,16 @@ export type WorldStoryProps = {
   mode: WorldMode;
   /** Mix the soundtrack in (video mode only; the web player plays music itself). */
   music?: boolean;
+  /** Include the letter's pages. Defaults to true; the public page leaves them out. */
+  letter?: boolean;
 };
 
-export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
+export function WorldStory({ data, mode, music = true, letter = true }: WorldStoryProps) {
   const { width, height, fps } = useVideoConfig();
   const frame = useCurrentFrame();
   const world = useMemo(
-    () => buildWorld(data, { width, height }, mode, fps),
-    [data, width, height, mode, fps],
+    () => buildWorld(data, { width, height }, mode, fps, { letter }),
+    [data, width, height, mode, fps, letter],
   );
   const { city, stops, cameras, timeline } = world;
   const size = { width, height };

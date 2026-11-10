@@ -15,12 +15,11 @@
  * page (letter), written as `<kind>-p<n>…`. Fixtures: sample (default),
  * edge-empty, edge-long-names, edge-provisional, edge-one-language. Writes `<outDir>/<kind>[-<fixture>]-<format>.png` for world-9x16,
  * world-4x5 and world-16x9 (outDir defaults to /tmp/claude-1000/world-stills/). Renders through
- * apps/renderer/src/still.ts like render-art.ts: one bundle, one headless browser, video mode.
+ * scripts/lib/still.ts like render-art.ts: one bundle, one headless browser, video mode.
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type RecapData, VIDEO_FORMATS, VIDEO_FPS, type VideoFormatId } from "@wyg/schema";
-import { renderSceneStill } from "../apps/renderer/src/still";
 import {
   busyRecap,
   emptyRecap,
@@ -29,6 +28,7 @@ import {
 import { sampleRecap } from "../packages/video/src/fixtures/sample-recap";
 import { buildWorld } from "../packages/video/src/world/model";
 import { STOP_KINDS } from "../packages/video/src/world/stops";
+import { renderSceneStill } from "./lib/still";
 
 const FIXTURES: Record<string, RecapData> = {
   sample: sampleRecap,

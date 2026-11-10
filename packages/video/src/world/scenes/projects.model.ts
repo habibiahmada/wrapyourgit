@@ -1,5 +1,5 @@
 import type { RecapData } from "@wyg/schema";
-import { repoLabel } from "../../present";
+import { repoLabel, shelfRepos } from "../../present";
 import { formatCount } from "../../theme";
 import { labelWidth } from "./fit";
 
@@ -23,7 +23,6 @@ export type ProjectsModel = {
   legend: string | null;
 };
 
-const MAX_STACKS = 4;
 const MAX_CRATES = 8;
 const UNITS = [10, 25, 50, 100, 250, 500];
 
@@ -43,11 +42,8 @@ function subtitleFor(created: number): string | null {
  */
 export function projectsModel(data: RecapData): ProjectsModel {
   const { top, createdThisYear } = data.repositories;
-  // Sorted here so the tallest stack is first (Cell stands by it) whatever order analytics gave.
-  const picked = top
-    .filter((r) => r.commits > 0)
-    .sort((a, b) => b.commits - a.commits)
-    .slice(0, MAX_STACKS);
+  // Sorted so the tallest stack is first (Cell stands by it) whatever order analytics gave.
+  const picked = shelfRepos(top);
   const tallest = Math.max(0, ...picked.map((r) => r.commits));
   const unit =
     UNITS.find((u) => Math.ceil(tallest / u) <= MAX_CRATES) ?? (UNITS[UNITS.length - 1] as number);

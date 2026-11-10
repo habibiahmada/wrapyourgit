@@ -53,15 +53,6 @@ GITHUB_APP_CLIENT_ID=<client id> bun scripts/github-app-token.ts
 GITHUB_TOKEN=$(cat .data/github-app-token) SPIKE_LABEL=app bun scripts/spike-github.ts
 ```
 
-## AWS for Remotion Lambda (Spike B / M5)
-
-Follow https://www.remotion.dev/docs/lambda/setup to create the role and a user with the Remotion policy, then:
-
-```bash
-bun run --filter @wyg/renderer deploy
-```
-Copy the printed `REMOTION_LAMBDA_FUNCTION_NAME` and `REMOTION_SERVE_URL` into your env. Set an **AWS Budget alert** before rendering anything.
-
 ## Workflow with an AI agent
 
 - Agents start from [AGENTS.md](../../AGENTS.md).

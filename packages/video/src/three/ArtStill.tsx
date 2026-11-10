@@ -11,7 +11,7 @@ import { BlobShadow } from "./BlobShadow";
 import { CELL, Chibi } from "./ChibiCell";
 import { CutoutLights } from "./World";
 
-/** Every baked composition: web art, the letterhead head and the story's sprites. */
+/** Every baked composition: web art, the letterhead head and the (no longer drawn) sprites. */
 export type ArtId =
   | `cutout-cell-${CellPose}`
   | `cutout-${ArchetypeId}`
@@ -29,7 +29,7 @@ const HERO_PHOTOS: { photo: PhotoId; left: number; top: number; tilt: number }[]
 
 type Camera = { position: [number, number, number]; fov: number; look: number; lookX?: number };
 
-/** Straight on, a little above: the framing of the story's accents. */
+/** Straight on, a little above: the default framing, for the cutouts the story world draws. */
 const STORY_CAMERA: Camera = { position: [0, 1.5, 5.6], fov: 30, look: 0.95 };
 /** Close on the head, for the letterhead. */
 const HEAD_CAMERA: Camera = { position: [0.06, 1.7, 3.0], fov: 30, look: 1.62, lookX: 0.06 };

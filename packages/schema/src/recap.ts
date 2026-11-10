@@ -39,6 +39,13 @@ export const repoRefSchema = z.object({
   createdAt: z.iso.datetime(),
 });
 
+/**
+ * The name a private repository carries once anonymised (`withoutPrivateNames` in @wyg/analytics):
+ * it keeps its rank and commits, nothing that identifies it. No slash, so it never reads as a real
+ * `owner/name`. Lives here because analytics writes it and the scenes read it.
+ */
+export const PRIVATE_REPO_NAME = "private";
+
 const count = z.number().int().nonnegative();
 
 /** The same counts for a span of the previous year, so years compare like for like. */

@@ -61,7 +61,7 @@ contributions, streaks, the languages you lived in, the projects you built, and 
 
 - **Numbers you can trust.** Every metric has a written definition and a GitHub source in [metrics.md](docs/analytics/metrics.md). Your 2026 total matches the "contributions in 2026" on your profile. When GitHub doesn't provide something, the recap says _unavailable_ instead of showing a misleading 0, and estimates are marked with "~".
 - **A story, not a dashboard.** Nine short chapters set to a soundtrack, a warm-up before them, a comparison with last year after, and a letter from Cell that reads your year the way a friend would. A quiet year is told it counts; a relentless one is told to rest.
-- **Your private work counts.** Contributions to private repositories, yours and your organisations', are in your total. Their names never appear in anything you can share.
+- **Your private work counts.** Contributions to private repositories, yours and your organisations', are in your total. Your public page and its card never name them; your own story and downloads show the names only if you choose to, and you can change that in Settings.
 - **Read-only, and yours to delete.** Signing in asks GitHub for no repository permissions, the code is never read, and "Delete my data" removes everything and revokes access.
 
 <p align="right"><a href="#readme-top">back to top</a></p>
@@ -113,14 +113,14 @@ The climax of the story names your archetype, with the facts that earned it. You
 
 ## What you keep
 
-|                          |                                                                                                                        |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| 🎬 **The story**         | Plays in your browser with its own soundtrack, chapter by chapter.                                                     |
-| 🖼️ **Ten slides as PNG** | One 1080 × 1350 image per chapter plus the letter, or all ten in a ZIP. _On the hosted site, only the letter for now._ |
-| 📄 **One PDF**           | The same ten slides in a single file, for keeping or printing. _Self-hosted only for now._                             |
-| 🔗 **A public page**     | Off until you publish it. Then your year lives at `/u/<your-login>`, with private repository names removed.            |
-| 🪪 **A share card**      | A 1200 × 630 image for social posts, also used as the page's preview.                                                  |
-| 🎞️ **An MP4 video**      | In 9:16, 4:5, 1:1 and 16:9. _Coming soon, rendered in your own browser._                                               |
+|                      |                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 🎬 **The story**     | Plays in your browser with its own soundtrack, stop by stop.                                                               |
+| 🖼️ **Slides as PNG** | One 1080 × 1350 image per stop of the story, letter pages included, or all of them in a ZIP. Rendered in your own browser. |
+| 📄 **One PDF**       | The same slides in a single file, for keeping or printing.                                                                 |
+| 🔗 **A public page** | Off until you publish it. Then your year lives at `/u/<your-login>`, with private repository names removed.                |
+| 🪪 **A share card**  | A 1200 × 630 image for social posts, also used as the page's preview.                                                      |
+| 🎞️ **An MP4 video**  | In 9:16, 4:5, 1:1 and 16:9, with the soundtrack, rendered in your own browser.                                             |
 
 The dashboard adds a profile-style overview: your calendar, highlights, languages, this year against the same span of last year, and the repositories that caught your eye.
 
@@ -149,14 +149,13 @@ flowchart LR
   gh -->|raw activity| an[packages/analytics<br>pure functions]
   an -->|validated by packages/schema| rd[(RecapData<br>Postgres)]
   rd --> player[Story in the browser<br>Remotion Player]
-  rd --> exports[PNG · PDF · share card]
-  rd --> pub[Public page<br>private repos removed]
-  rd -.->|coming soon| mp4[MP4 rendered<br>in your browser]
+  rd --> pub[Public page<br>private names removed]
+  rd --> card[Share card]
   video[packages/video<br>Remotion scenes] --> player
-  video -.-> mp4
+  video --> exports[MP4 · PNG · ZIP · PDF<br>rendered in your browser]
 ```
 
-One validated document, `RecapData`, is the contract between everything: GitHub data goes in once, and the same scenes play in the browser and (soon) render to video, so the numbers on screen and in the export never disagree. More in the [architecture overview](docs/architecture/overview.md).
+One validated document, `RecapData`, is the contract between everything: GitHub data goes in once, and the same scenes play in the browser and render to video and slides there, so the numbers on screen and in the export never disagree. More in the [architecture overview](docs/architecture/overview.md).
 
 ## Tech stack
 
@@ -198,13 +197,12 @@ Just want to see the video? `bun run studio` opens Remotion Studio with sample d
 ```
 apps/
   web/          Next.js: landing, sign-in, dashboard, story, public pages, SEO
-  renderer/     Slide stills for self-hosting (Bun + headless Chrome); Lambda scripts, to be replaced by in-browser rendering
 packages/
   schema/       RecapData zod schema and video formats: the contract
   github/       GitHub GraphQL client and queries
   analytics/    Pure functions from raw activity to RecapData, with tests
   video/        Remotion scenes, illustrations, soundtrack
-scripts/        Data spike, local database, art and track generation
+scripts/        Data spike, local database, art and track generation, dev stills (lib/still.ts)
 docs/           Product spec, metric definitions, ADRs, design, setup
 ```
 
@@ -225,8 +223,8 @@ docs/           Product spec, metric definitions, ADRs, design, setup
 - [x] Sign in with GitHub, sync, dashboard and the nine-chapter story
 - [x] Slides as PNG, ZIP and PDF; opt-in public page and share card
 - [x] Comparison with last year; repositories you starred
-- [ ] The story as one continuous world with a moving camera ([design](docs/superpowers/specs))
-- [ ] MP4, slides and PDF rendered in your browser, in four aspect ratios
+- [x] The story as one continuous world with a moving camera ([design](docs/superpowers/specs))
+- [x] MP4, slides and PDF rendered in your browser, in four aspect ratios
 - [ ] More soundtracks
 - [ ] Final 2026 recaps after the year ends
 

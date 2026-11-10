@@ -1,7 +1,7 @@
 /**
  * Sound effects, synthesised by scripts/synth-sfx.ts (CC0, ADR-0009). WAV rather than AAC: AAC
  * starts with encoder padding, which would make a pop land after the thing it belongs to.
- * Volumes sit under the music; the components that move pick the sound (components/Sfx.tsx).
+ * Volumes sit under the music; world/sound.ts picks the sound for each stop.
  */
 export const SFX = {
   /** The previous scene leaves (transition exit). */

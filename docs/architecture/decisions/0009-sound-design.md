@@ -1,6 +1,7 @@
 # 0009. Sound design: effects in the composition, music outside the web Player
 
 - Status: Accepted
+- Note (phase 4): the code this describes (`WrapStory`, `Sfx`, `SceneTransition`, the 120 BPM track's story) was removed with the old story. The story world's sound lives in `world/sound.ts`, `WorldSfx` and `audio/world-track.ts` ([0016](0016-exports-in-the-browser.md)).
 - Date: 2026-11-05
 
 ## Context

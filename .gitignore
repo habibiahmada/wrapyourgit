@@ -18,7 +18,6 @@ apps/web/public/sprites/
 
 # remotion
 packages/video/out/
-apps/renderer/out/
 
 # env (commit .env.example only)
 .env*

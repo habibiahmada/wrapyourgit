@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { setPrivateNamesAction } from "@/app/recap/actions";
 import { LoadingCell } from "@/components/loading-cell";
 import {
   FallbackTransition,
@@ -11,6 +12,7 @@ import {
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
+import { getPrivateNamesChoice } from "@/server/privacy";
 
 export const metadata: Metadata = { title: "Settings", robots: { index: false, follow: false } };
 
@@ -43,6 +45,7 @@ async function Settings({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/");
+  const choice = await getPrivateNamesChoice(user.id);
   const { delete: deleteFlag } = await searchParams;
   const unconfirmed = deleteFlag === "unconfirmed";
 
@@ -75,6 +78,31 @@ async function Settings({
                 </p>
               </div>
             </div>
+          </section>
+
+          <section aria-labelledby="private-title">
+            <h2 id="private-title" className="border-b border-line pb-2 text-xl font-bold">
+              Private repositories
+            </h2>
+            <p role="status" className="mt-4 font-semibold">
+              {choice === null
+                ? "Not chosen yet; you'll be asked before your story"
+                : choice
+                  ? "Shown in your story and your files"
+                  : "Hidden in your story and your files"}
+            </p>
+            <p className="mt-1 max-w-2xl text-muted">Your public page never shows them.</p>
+            <form action={setPrivateNamesAction} className="mt-5">
+              <input type="hidden" name="redirectTo" value="/settings" />
+              <button
+                type="submit"
+                name="show"
+                value={choice ? "no" : "yes"}
+                className={button.secondary}
+              >
+                {choice ? "Hide private repository names" : "Show private repository names"}
+              </button>
+            </form>
           </section>
 
           <section aria-labelledby="sessions-title">

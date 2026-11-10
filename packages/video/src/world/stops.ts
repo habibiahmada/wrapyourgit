@@ -44,9 +44,10 @@ const EDGE = 7;
 export function buildStops(
   _data: RecapData,
   city: City,
-  options: { letterPages?: number } = {},
+  options: { letterPages?: number; letter?: boolean } = {},
 ): Stop[] {
   const pages = Math.max(1, options.letterPages ?? 1);
+  const withLetter = options.letter !== false;
   const last = city.lastDataIndex;
   const used = new Set<number>();
 
@@ -142,14 +143,17 @@ export function buildStops(
     i = end;
   }
 
+  // The letter still takes its plot above, so every other stop sits where it does with the letter.
   return entries.flatMap(({ id, kind, page, plot }): Stop[] =>
     kind === "letter"
-      ? Array.from({ length: pages }, (_, i) => ({
-          id: `letter-${i + 1}`,
-          kind,
-          plot,
-          page: i + 1,
-        }))
+      ? !withLetter
+        ? []
+        : Array.from({ length: pages }, (_, i) => ({
+            id: `letter-${i + 1}`,
+            kind,
+            plot,
+            page: i + 1,
+          }))
       : [{ id, kind, plot, ...(page ? { page } : {}) }],
   );
 }

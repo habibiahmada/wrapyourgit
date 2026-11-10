@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
 };
 
-const UPDATED = "4 November 2026";
+const UPDATED = "10 November 2026";
 
 /*
  * Every statement here describes what the code does today (server/auth.ts, server/recaps.ts,
@@ -64,14 +64,20 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
         <li>
           <strong>Your recap</strong>: counts computed from your GitHub activity for the year, such
           as contributions per day, languages, the repositories you committed to, pull requests,
-          issues, reviews and stars. Private repositories appear as counts, and their names are kept
-          out of anything shareable.
+          issues, reviews and stars. Private repositories count toward these numbers, and a count
+          never names a repository. Their names never appear on your public page or its card. Your
+          own story and the files you download show them only if you choose to, and you can change
+          that in Settings.
         </li>
         <li>
           <strong>Repository metadata, only if you choose</strong>: if you install WrapYourGit on
           your account or an organisation to count private repositories you own, it reads the
           metadata of the repositories you select (name, visibility, language, stars). Never their
-          code. Private names still never appear in anything shareable.
+          code. Your public page and its card still never show private names.
+        </li>
+        <li>
+          <strong>Your private names choice</strong>: whether you chose to show private repository
+          names in your own story and files, so we ask only once. You can change it in Settings.
         </li>
         <li>
           <strong>Your timezone</strong>: the one your browser reports when you sync, so the recap's
@@ -103,9 +109,9 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     title: "How we use it",
     body: (
       <p>
-        Only to build, show and export your recap: the story, the letter, the PNG and PDF slides,
-        and the public page if you publish one. We do not sell or rent your data and do not use it
-        to train models.
+        Only to build, show and export your recap: the story, the letter, the video, the slides (as
+        PNG images or one ZIP) and the PDF, all made in your browser, and the public page if you
+        publish one. We do not sell or rent your data and do not use it to train models.
       </p>
     ),
   },
@@ -119,7 +125,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           /u/your-login shows a reduced copy:
         </p>
         <ul>
-          <li>Private repository names and details are removed.</li>
+          <li>
+            Private repository names and details are removed. Their commit counts still show,
+            without a name.
+          </li>
           <li>Your timezone is replaced with UTC.</li>
           <li>The hours of the day you commit are withheld.</li>
         </ul>

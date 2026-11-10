@@ -9,7 +9,7 @@
 | [analytics/metrics.md](analytics/metrics.md)         | Definition, GitHub source and caveats of every metric | Any metric is added or its computation changes     |
 | [video/scene-system.md](video/scene-system.md)       | Scenes, layouts, animation rules, audio, export       | Scenes, formats or the audio approach change       |
 | [../DESIGN.md](../DESIGN.md)                         | Visual direction: palette, type, motif, dials         | The look of the story changes                      |
-| [development/setup.md](development/setup.md)         | Local setup, env vars, GitHub App, AWS                | Setup steps change                                 |
+| [development/setup.md](development/setup.md)         | Local setup, env vars, GitHub App                     | Setup steps change                                 |
 | [deployment/guide.md](deployment/guide.md)           | Production on Vercel + Neon now, AWS VPS later        | Hosting, env vars or the release steps change      |
 | [security/](security/)                               | Security reviews: findings, fixes, what stays open    | After each review                                  |
 
@@ -17,20 +17,21 @@
 
 ## ADRs
 
-| #                                                                        | Decision                                                          | Status                                                              |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------- |
-| [0001](architecture/decisions/0001-bun-workspaces-monorepo.md)           | Bun workspaces monorepo, packages ship TS source                  | Accepted                                                            |
-| [0002](architecture/decisions/0002-one-composition-for-web-and-video.md) | One Remotion composition powers the web story and MP4 export      | Accepted                                                            |
-| [0003](architecture/decisions/0003-layout-families.md)                   | Four aspect ratios, three layout families                         | Accepted                                                            |
-| [0004](architecture/decisions/0004-render-on-remotion-lambda.md)         | Render MP4 on Remotion Lambda (AWS)                               | Superseded by 0016 for the story world                              |
-| [0005](architecture/decisions/0005-environments-and-hosting.md)          | Vercel + Neon for dev/staging, AWS for production                 | Accepted, cost review pending                                       |
-| [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions          | Accepted                                                            |
-| [0007](architecture/decisions/0007-soundtrack-sourcing.md)               | Soundtrack: CC0/royalty-free tracks first, generated later        | Accepted (synth track for MVP)                                      |
-| [0009](architecture/decisions/0009-sound-design.md)                      | Effects in the composition, music on Web Audio outside the Player | Accepted                                                            |
-| [0010](architecture/decisions/0010-live-3d-cast.md)                      | The story cast is live 3D chibi characters, rendered every frame  | Partly superseded (0012, 0013)                                      |
-| [0011](architecture/decisions/0011-slides-from-the-composition.md)       | Exported slides are frames of the story composition               | Superseded by 0016 for the story world; current story until phase 4 |
-| [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art    | Accepted                                                            |
-| [0013](architecture/decisions/0013-baked-animation-no-webgl.md)          | Cell moves through baked loops, no WebGL in the browser           | Accepted                                                            |
-| [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets  | Accepted                                                            |
-| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later        | Accepted                                                            |
-| [0016](architecture/decisions/0016-exports-in-the-browser.md)            | The story's files are rendered in the viewer's browser            | Accepted                                                            |
+| #                                                                        | Decision                                                                                 | Status                               |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------ |
+| [0001](architecture/decisions/0001-bun-workspaces-monorepo.md)           | Bun workspaces monorepo, packages ship TS source                                         | Accepted                             |
+| [0002](architecture/decisions/0002-one-composition-for-web-and-video.md) | One Remotion composition powers the web story and MP4 export                             | Accepted                             |
+| [0003](architecture/decisions/0003-layout-families.md)                   | Four aspect ratios, three layout families                                                | Accepted                             |
+| [0004](architecture/decisions/0004-render-on-remotion-lambda.md)         | Render MP4 on Remotion Lambda (AWS)                                                      | Superseded by 0016                   |
+| [0005](architecture/decisions/0005-environments-and-hosting.md)          | Vercel + Neon for dev/staging, AWS for production                                        | Accepted, cost review pending        |
+| [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions                                 | Accepted                             |
+| [0007](architecture/decisions/0007-soundtrack-sourcing.md)               | Soundtrack: CC0/royalty-free tracks first, generated later                               | Accepted (synth track for MVP)       |
+| [0009](architecture/decisions/0009-sound-design.md)                      | Effects in the composition, music on Web Audio outside the Player                        | Accepted                             |
+| [0010](architecture/decisions/0010-live-3d-cast.md)                      | The story cast is live 3D chibi characters, rendered every frame                         | Partly superseded (0012, 0013)       |
+| [0011](architecture/decisions/0011-slides-from-the-composition.md)       | Exported slides are frames of the story composition                                      | Superseded by 0016                   |
+| [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art                           | Accepted                             |
+| [0013](architecture/decisions/0013-baked-animation-no-webgl.md)          | Cell moves through baked loops, no WebGL in the browser                                  | Accepted                             |
+| [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets                         | Accepted                             |
+| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later                               | Accepted                             |
+| [0016](architecture/decisions/0016-exports-in-the-browser.md)            | The story's files are rendered in the viewer's browser                                   | Accepted, decision 3 amended by 0017 |
+| [0017](architecture/decisions/0017-private-names-follow-the-owner.md)    | Private repo names follow the owner in their own story; public surfaces always hide them | Accepted                             |

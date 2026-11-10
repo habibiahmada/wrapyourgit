@@ -27,6 +27,8 @@ export const users = pgTable(
     avatarUrl: text("avatar_url").notNull(),
     /** Claimed atomically when a sync starts; enforces the cooldown even for parallel clicks. */
     syncStartedAt: timestamp("sync_started_at", { withTimezone: true }),
+    /** Owner's choice for their own story and files; null until asked. Public pages always hide names. */
+    showPrivateNames: boolean("show_private_names"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   // /u/<login> must resolve to exactly one person, case-insensitively (see signInWithTokens).

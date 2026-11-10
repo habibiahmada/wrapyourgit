@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { RecapData } from "@wyg/schema";
+import { PRIVATE_REPO_NAME, type RecapData } from "@wyg/schema";
 import { busyRecap, emptyRecap } from "./fixtures/edge-recaps";
 import { sampleRecap } from "./fixtures/sample-recap";
 import { activityTier, congratsLetter } from "./letter";
@@ -70,19 +70,6 @@ describe("congratsLetter", () => {
     expect(text(provisional)).toContain("so far");
   });
 
-  test("never names a private repository", () => {
-    const privateTop: RecapData = {
-      ...sampleRecap,
-      repositories: {
-        ...sampleRecap.repositories,
-        top: sampleRecap.repositories.top.map((repo, i) =>
-          i === 0 ? { ...repo, nameWithOwner: "octo/secret-client", isPrivate: true } : repo,
-        ),
-      },
-    };
-    expect(text(privateTop)).not.toContain("secret-client");
-  });
-
   test("uses 'an' before a vowel", () => {
     const explorer: RecapData = {
       ...sampleRecap,
@@ -98,5 +85,21 @@ describe("congratsLetter", () => {
   test("falls back to the login when there is no display name", () => {
     const noName = { ...sampleRecap, profile: { ...sampleRecap.profile, name: null } };
     expect(congratsLetter(noName).greeting).toBe("Dear @octo-sample,");
+  });
+
+  test("an anonymised top repository is still credited, as a private project, without a name", () => {
+    const [first, ...rest] = sampleRecap.repositories.top;
+    if (!first) throw new Error("the sample needs a top repository");
+    const anonymisedTop: RecapData = {
+      ...sampleRecap,
+      repositories: {
+        ...sampleRecap.repositories,
+        top: [{ ...first, nameWithOwner: PRIVATE_REPO_NAME, isPrivate: true }, ...rest],
+      },
+    };
+    const letter = text(anonymisedTop);
+    expect(letter).toContain("One private project got more of your attention");
+    expect(letter).not.toContain(`The ${PRIVATE_REPO_NAME} repository`);
+    expect(letter).not.toContain("Private repository repository");
   });
 });

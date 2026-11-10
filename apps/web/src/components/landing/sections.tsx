@@ -401,7 +401,7 @@ export const FAQ = [
   },
   {
     q: "Are private repositories included?",
-    a: "Your contributions to private repositories, your own and your organisations', count toward your total. Their names never appear in anything you can share.",
+    a: "Your contributions to private repositories, your own and your organisations', count toward your total. Your public page and its card never name them. Your own story and the files you download show their names only if you choose to, and you can change that in Settings.",
   },
   {
     q: `${EDITION_YEAR} isn't over yet. Is my recap final?`,

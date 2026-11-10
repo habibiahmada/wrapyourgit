@@ -1,4 +1,3 @@
-import { toPublicRecap } from "@wyg/analytics";
 import type { RecapData } from "@wyg/schema";
 import { EDITION_YEAR } from "@wyg/schema";
 import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "@wyg/video/copy";
@@ -9,7 +8,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { ExportPanel } from "@/app/recap/world/export-panel";
+import { ExportPanel } from "@/app/recap/export-panel";
 import { Art } from "@/components/art";
 import { LanguageBadge } from "@/components/language-badge";
 import { LoadingCell } from "@/components/loading-cell";
@@ -22,6 +21,7 @@ import {
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
+import { getPrivateNamesChoice, showFilesReminder, storyData } from "@/server/privacy";
 import { getRecap, isShared } from "@/server/recaps";
 import { nextSyncAt } from "@/server/sync-policy";
 import { setShareAction } from "./actions";
@@ -71,6 +71,9 @@ async function Dashboard({
   const recap = await getRecap(user.id);
   const retryAt = nextSyncAt(recap?.syncedAt ?? null, new Date());
   const shared = recap ? await isShared(user.id) : false;
+  // Unanswered counts as hidden: the files never name a private repository before the owner says so.
+  const choice = recap ? await getPrivateNamesChoice(user.id) : null;
+  const showNames = choice ?? false;
   const { share: shareFlag } = await searchParams;
 
   return (
@@ -102,7 +105,10 @@ async function Dashboard({
                   </p>
                   <YearComparison data={recap.data} />
                 </section>
-                {process.env.NODE_ENV !== "production" && <DownloadSection data={recap.data} />}
+                <DownloadSection
+                  data={storyData(recap.data, showNames)}
+                  privateNames={showFilesReminder(choice, recap.data)}
+                />
                 <ShareSection
                   login={user.login}
                   shared={shared}
@@ -408,23 +414,23 @@ function StarredSection({ data }: { data: RecapData }) {
 }
 
 /**
- * The story's files, made in this browser. Development only until phase 4, like /recap/world: the
- * old and the new story never ship to users at once. Every file leaves the site, so the panel gets
- * the public projection (rule 6). The panel is drawn ink on paper, the letter's language, so it
- * sits on a paper sheet here rather than on the dark canvas.
+ * The story's files, made in this browser. Every file leaves the site, so `data` is the owner's
+ * story projection: private names only when they chose to show them (ADR-0017). The panel is drawn
+ * ink on paper, the letter's language, so it sits on a paper sheet here rather than on the dark
+ * canvas.
  */
-function DownloadSection({ data }: { data: RecapData }) {
+function DownloadSection({ data, privateNames }: { data: RecapData; privateNames: boolean }) {
   return (
     <section aria-labelledby="download-title">
       <h2 id="download-title" className={sectionTitle}>
         Download your story
       </h2>
       <p className="mt-2 mb-6 max-w-2xl text-muted">
-        Your story as a video, slides or a PDF, made in this browser. Private repositories are never
-        named.
+        Your story as a video, slides or a PDF, made in this browser.
+        {privateNames ? "" : " Private repositories are never named."}
       </p>
       <div className="on-light rounded-xl border border-line bg-paper p-5 text-ink sm:p-8">
-        <ExportPanel data={toPublicRecap(data)} card />
+        <ExportPanel data={data} privateNames={privateNames} card />
       </div>
     </section>
   );

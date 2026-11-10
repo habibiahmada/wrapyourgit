@@ -6,32 +6,27 @@ How to run WrapYourGit outside a laptop. For local development see [development/
 
 ## What runs where
 
-| Piece                                  | Now (Vercel)                                      | Later (AWS VPS, ADR-0005)                |
-| -------------------------------------- | ------------------------------------------------- | ---------------------------------------- |
-| Web app (`apps/web`, Next.js 16)       | Vercel Hobby, functions in Singapore (`sin1`)     | `next start` behind Caddy (HTTPS)        |
-| Database (Postgres)                    | Neon `wrapyourgit-db`, Singapore, free plan       | Postgres container on the same VPS       |
-| Slide exports (PNG, ZIP, PDF)          | **Hidden** (routes answer 503)                    | On the VPS: Bun worker + headless Chrome |
-| MP4 export (Remotion Lambda, ADR-0004) | Not wired to the UI yet                           | Not wired to the UI yet                  |
-| GitHub sign-in                         | GitHub App `wrapyourgit` (public)                 | The same app                             |
-| DNS                                    | Cloudflare `CNAME wrapyourgit` → Vercel, DNS only | `A` record → the VPS                     |
+| Piece                              | Now (Vercel)                                      | Later (AWS VPS, ADR-0005)          |
+| ---------------------------------- | ------------------------------------------------- | ---------------------------------- |
+| Web app (`apps/web`, Next.js 16)   | Vercel Hobby, functions in Singapore (`sin1`)     | `next start` behind Caddy (HTTPS)  |
+| Database (Postgres)                | Neon `wrapyourgit-db`, Singapore, free plan       | Postgres container on the same VPS |
+| Story exports (MP4, PNG, ZIP, PDF) | In the viewer's browser (ADR-0016)                | The same                           |
+| GitHub sign-in                     | GitHub App `wrapyourgit` (public)                 | The same app                       |
+| DNS                                | Cloudflare `CNAME wrapyourgit` → Vercel, DNS only | `A` record → the VPS               |
 
-Why slide exports differ: slides are frames of the story composition, rendered by a separate Bun process with headless Chrome ([ADR-0011](../architecture/decisions/0011-slides-from-the-composition.md)). A serverless function has neither, so on Vercel the story's export step offers only the share card and the letter slide (both next/og, which works there) and says why the PDF and chapter slides are missing. The PDF, ZIP and chapter slide routes answer `503 Slide exports can't be rendered on this server right now` without trying a render. The switch is `SLIDE_EXPORTS` (table below); Vercel needs no setting. Everything else works there. Moving the slides to `renderStillOnLambda` is the planned fix.
+No server renders the story: the MP4, slides, ZIP and PDF are made in the viewer's browser ([ADR-0016](../architecture/decisions/0016-exports-in-the-browser.md)), so every host serves them the same way and needs no render setup. The share card is next/og on the server, which works on Vercel.
 
 ## Environment variables
 
 The template is [`.env.example`](../../.env.example). The web app reads these; set them per environment, never commit real values.
 
-| Variable                                                                                                                            | Required | Notes                                                                                                                                                         |
-| ----------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_URL`                                                                                                                           | yes      | Origin, no trailing slash, e.g. `https://wrapyourgit.habibiahmada.dev`. Drives OAuth callbacks, canonical URLs, the sitemap and secure cookies (`https://`).  |
-| `DATABASE_URL`                                                                                                                      | yes      | Postgres connection string. On Neon, use the **pooled** string with `sslmode=require`.                                                                        |
-| `TOKEN_ENCRYPTION_KEY`                                                                                                              | yes      | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts GitHub tokens at rest. **Changing it makes every stored token unreadable:** users sign in again. |
-| `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`                                                                                  | yes      | From the GitHub App for that environment.                                                                                                                     |
-| `GITHUB_APP_SLUG`                                                                                                                   | no       | The app's URL slug; enables the optional install for private repositories (ADR-0008).                                                                         |
-| `BUN_BIN`                                                                                                                           | no       | Path to `bun` for the slide worker when it isn't on `PATH` (VPS only).                                                                                        |
-| `REMOTION_GL`                                                                                                                       | no       | WebGL backend for slide renders. Set `swangle` on a server without a GPU.                                                                                     |
-| `SLIDE_EXPORTS`                                                                                                                     | no       | `on` or `off`: whether this host renders chapter slides. Unset: off on Vercel (`VERCEL=1`), on elsewhere.                                                     |
-| `AWS_REGION`, `REMOTION_AWS_ACCESS_KEY_ID`, `REMOTION_AWS_SECRET_ACCESS_KEY`, `REMOTION_LAMBDA_FUNCTION_NAME`, `REMOTION_SERVE_URL` | not yet  | For MP4 rendering on Lambda, once it is wired to the UI.                                                                                                      |
+| Variable                                           | Required | Notes                                                                                                                                                         |
+| -------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL`                                          | yes      | Origin, no trailing slash, e.g. `https://wrapyourgit.habibiahmada.dev`. Drives OAuth callbacks, canonical URLs, the sitemap and secure cookies (`https://`).  |
+| `DATABASE_URL`                                     | yes      | Postgres connection string. On Neon, use the **pooled** string with `sslmode=require`.                                                                        |
+| `TOKEN_ENCRYPTION_KEY`                             | yes      | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts GitHub tokens at rest. **Changing it makes every stored token unreadable:** users sign in again. |
+| `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET` | yes      | From the GitHub App for that environment.                                                                                                                     |
+| `GITHUB_APP_SLUG`                                  | no       | The app's URL slug; enables the optional install for private repositories (ADR-0008).                                                                         |
 
 `GITHUB_TOKEN` in `.env.example` is for local spikes only; don't set it on a server.
 
@@ -60,7 +55,7 @@ Migrations only add; to roll back the code, keep the schema and deploy the previ
 What is set up, and how to set it up again:
 
 1. **Vercel project** `wrapyourgit` (team "mainan bheeboyy", Hobby), imported from `habibiahmada/wrapyourgit`:
-   - Root Directory: `apps/web`, with "Include files outside the root directory" on (the app imports `packages/*` and `apps/renderer`).
+   - Root Directory: `apps/web`, with "Include files outside the root directory" on (the app imports `packages/*`).
    - Install command: `cd ../.. && bun install --frozen-lockfile` (the whole workspace, from the repository root).
    - Build command: `bun run db:migrate && bun run build`. `build` first copies `art`, `audio`, `lang`, `photos` and `sprites` from `packages/video/public` into `apps/web/public` (`scripts/sync-web-public.ts`): symlinks there made Vercel's output step fail.
    - Settings → Functions → Function Region: Singapore (`sin1`), next to the database.
@@ -72,23 +67,18 @@ What is set up, and how to set it up again:
 
 Verified on 2026-11-05: the site, the copied static folders (`/art`, `/sprites`, `/photos`, `/lang`), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
 
-Also verified on 2026-11-05: the export routes answer `503 Slide exports can't be rendered on this server right now`, not 500. Since #39 the story's export step there offers only the share card and the letter slide, and says why.
-
 ## Later: production on an AWS VPS
 
-A single Linux VPS (Ubuntu 24.04 assumed) runs the web app, the slide worker and Postgres.
+A single Linux VPS (Ubuntu 24.04 assumed) runs the web app and Postgres.
 
 ### 1. Server
 
 ```bash
-# Node 22 (Next.js runs on Node) and Bun (workspace scripts, the slide worker)
+# Node 22 (Next.js runs on Node) and Bun (workspace scripts)
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash - && sudo apt-get install -y nodejs
 curl -fsSL https://bun.sh/install | bash
 # Docker for Postgres, Caddy for HTTPS
 sudo apt-get install -y docker.io caddy
-# Libraries headless Chrome needs for slide exports
-sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
-  libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2t64 libpango-1.0-0 libcairo2
 ```
 
 Create a user `wyg` that owns `/srv/wrapyourgit` and runs the app. Open only ports 22, 80 and 443.
@@ -112,7 +102,7 @@ sudo -u wyg git checkout v<version>          # deploy a release tag, not a movin
 sudo -u wyg bun install --frozen-lockfile
 ```
 
-Put the variables in `/etc/wrapyourgit.env` (owner root, mode `600`), with `REMOTION_GL=swangle` and `BUN_BIN=/home/wyg/.bun/bin/bun`. Then migrate and build:
+Put the variables in `/etc/wrapyourgit.env` (owner root, mode `600`). Then migrate and build:
 
 ```bash
 set -a; . /etc/wrapyourgit.env; set +a
@@ -164,7 +154,6 @@ Point the domain's `A` record at the VPS, then `sudo systemctl reload caddy`; Ca
 
 **Not yet verified:**
 
-- The first slide export downloads Chrome Headless Shell (Remotion's `ensureBrowser`) and bundles the composition: tens of seconds. Later exports take a few seconds each. If Chrome fails to start, the service log (`journalctl -u wrapyourgit`) names the missing library.
 - `curl -I https://wrapyourgit.habibiahmada.dev` returns 200 with `Strict-Transport-Security`.
 
 ### Update and roll back
@@ -190,17 +179,10 @@ find /var/backups -name 'wyg-*.dump' -mtime +14 -delete
 
 Restore with `pg_restore -U wyg -d wrapyourgit --clean <file>` inside the container. Test a restore before launch.
 
-## MP4 rendering (Remotion Lambda)
-
-The Lambda function and the video site are deployed with `bun run --filter @wyg/renderer deploy` (see [development/setup.md](../development/setup.md#aws-for-remotion-lambda-spike-b--m5)), which prints `REMOTION_LAMBDA_FUNCTION_NAME` and `REMOTION_SERVE_URL`. Redeploy the site after any change in `packages/video`. The web app doesn't start renders yet (the MP4 button is disabled); this section grows when it does.
-
 ## Before launch
 
-From ADR-0005 and ADR-0011:
+From ADR-0005:
 
-- [ ] AWS Budget alert set (e.g. $20/month), before rendering anything on Lambda.
-- [ ] Cost per render measured; per-user daily render limit decided.
-- [ ] Slide exports moved to `renderStillOnLambda`, or the 503 accepted on any serverless host.
 - [ ] Database backup restored once on a scratch database.
 - [ ] Repository public and `bun scripts/github-settings.ts` run, so `main` is protected (ADR-0014).
 - [ ] Every **Not yet verified** item above confirmed and removed from this guide.

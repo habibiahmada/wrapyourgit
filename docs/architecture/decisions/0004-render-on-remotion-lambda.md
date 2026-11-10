@@ -1,6 +1,6 @@
 # 0004. Render MP4 on Remotion Lambda (AWS)
 
-- Status: Superseded by [0016](0016-exports-in-the-browser.md) for the story world. The current story's Lambda path (never deployed) stays in the repository until phase 4 removes it.
+- Status: Superseded by [0016](0016-exports-in-the-browser.md). The Lambda path (never deployed) was removed in phase 4.
 - Date: 2026-11-04
 
 ## Context

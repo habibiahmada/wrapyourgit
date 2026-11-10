@@ -95,4 +95,4 @@ Sign-in success rate · sync success rate · story completion rate · MP4 export
 - **Live story uses Remotion Player**, not a separate Framer Motion implementation (ADR-0002).
 - **Four ratios → three layout families** (ADR-0003).
 - **MVP ships one soundtrack**, others in P1.
-- **Hosting**: Vercel/Neon for dev+staging, AWS for production, Remotion Lambda for rendering (ADR-0004, 0005).
+- **Hosting**: Vercel/Neon for dev+staging, AWS for production; the story's files render in the viewer's browser (ADR-0005, 0016).

@@ -5,9 +5,9 @@ import { CELL, type ChibiMotion, type Look } from "./three/pose";
 import type { SceneId } from "./timeline";
 
 /*
- * Who appears in each scene, and where. One mascot: Cell, the host, in every scene, so the story
- * reads as one character's tour of the year. Variety comes from what Cell does and wears: every
- * scene has its own motion and gear; some show Cell as a giant silhouette instead (accents.tsx).
+ * Cell's motion and gear per chapter, and each archetype's Cell. One mascot (ADR-0012). The baked
+ * art reads these (art.ts, three/ArtStill.tsx, scripts/render-art.ts): the cutouts take a
+ * chapter's role, the skins an archetype's.
  */
 
 export type Role = { look: Look; motion: ChibiMotion };

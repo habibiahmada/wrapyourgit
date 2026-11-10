@@ -5,9 +5,9 @@ import { CELL, type ChibiMotion, LOOP_SECONDS, type Look } from "./three/pose";
 
 /*
  * The baked animations of Cell (scripts/render-art.ts, ADR-0013). Nothing in the browser runs
- * WebGL: the web pages show looping animated WebP, and the story draws sprite sheets frame by
- * frame. Both are one loop of the same rig (three/ChibiCell.tsx), LOOP_SECONDS long, so the
- * character keeps moving on the beat. Pure data, so the web app can import it.
+ * WebGL: the web pages show looping animated WebP, one loop of the rig (three/ChibiCell.tsx)
+ * LOOP_SECONDS long, and the story world draws the still PNG baked at each motion's peak.
+ * Pure data, so the web app can import it.
  */
 
 /** Frames per second of the baked loops: "on twos" against the 30 fps story. */
@@ -50,9 +50,9 @@ export const CELL_POSES: Record<CellPose, Pose> = {
 };
 
 /**
- * Sprite sheets for the story (`public/sprites/<id>.webp`): LOOP_FRAMES square frames in a grid,
- * framed like the old live accent (straight on, a little above), so every tuned position holds.
- * `side` sprites face right, for Cell crossing the frame at a cut.
+ * Sprite sheets (`public/sprites/<id>.webp`): LOOP_FRAMES square frames in a grid, framed straight
+ * on, a little above. Still baked, but the story world no longer draws them; their removal is a
+ * follow-up. `side` sprites face right.
  */
 export type SpriteId =
   | "wave"

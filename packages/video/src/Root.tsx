@@ -3,7 +3,6 @@ import { Composition } from "remotion";
 import { BAKE_FPS, HEAD_ART_ID, LOOP_FRAMES, SPRITE_IDS, SPRITE_SHEET, WEB_ART_IDS } from "./art";
 import { sampleRecap } from "./fixtures/sample-recap";
 import { type ArtId, ArtStill } from "./three/ArtStill";
-import { STORY_DURATION_IN_FRAMES, WrapStory } from "./WrapStory";
 import { worldDuration } from "./world/model";
 import { WorldStory, type WorldStoryProps } from "./world/WorldStory";
 
@@ -21,25 +20,10 @@ export function artSize(art: ArtId): { width: number; height: number } {
   return { width: 1200, height: 900 };
 }
 
-/** One composition per export format. Composition id = `wrap-<format>`, e.g. `wrap-9x16`. */
+/** One story world composition per export format (`world-<format>`, e.g. `world-9x16`), plus the art bake. */
 export function Root() {
   return (
     <>
-      {(Object.keys(VIDEO_FORMATS) as VideoFormatId[]).map((formatId) => {
-        const { width, height } = VIDEO_FORMATS[formatId];
-        return (
-          <Composition
-            key={formatId}
-            id={`wrap-${formatId}`}
-            component={WrapStory}
-            durationInFrames={STORY_DURATION_IN_FRAMES}
-            fps={VIDEO_FPS}
-            width={width}
-            height={height}
-            defaultProps={{ data: sampleRecap }}
-          />
-        );
-      })}
       {/* The story world, video mode: duration depends on the data, so it comes from the props. */}
       {(Object.keys(VIDEO_FORMATS) as VideoFormatId[]).map((formatId) => {
         const format = VIDEO_FORMATS[formatId];

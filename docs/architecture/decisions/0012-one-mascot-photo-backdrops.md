@@ -1,6 +1,7 @@
 # 0012. One mascot, silhouettes, GitHub motifs, and photos only for archetype art
 
 - Status: Accepted
+- Note (phase 4): the scene silhouettes, field motifs (`Backdrop.tsx`) and `CellDash` were removed with the old story ([0016](0016-exports-in-the-browser.md)). One mascot and the archetype looks still hold.
 - Date: 2026-11-05
 - Supersedes: point 3 of [0010](0010-live-3d-cast.md) ("A cast, not a mascot")
 

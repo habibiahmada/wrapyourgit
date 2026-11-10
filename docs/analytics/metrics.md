@@ -51,8 +51,6 @@ Rationale: raw repo bytes over-weights large repos the user barely touched.
 
 `contributions.totalCount` per repo counts **days**, not commits: there is one `CreatedCommitContribution` node per (repo, day). We sum `commitCount`, querying each calendar quarter separately so that no connection goes over 100 nodes. Spike A: the per-repo sum equalled `totalCommitContributions` exactly.
 
-**Derived on screen: share of the year's commits** (Projects chapter, `packages/video/src/share.ts`). The top four of `repositories.top` and "every other repository" as squares of a 10 × 10 grid, 1 square = 1%. Base = `max(contributions.commits, sum of the four)`, so shares never pass 100% when the two GitHub fields disagree. Squares are handed out by largest remainder (exactly 100 in total); each label is its square count, so label and picture always agree (within 1% of the exact share), and a repository with commits but no square reads "<1%". Not stored: computed from the two fields above at render time.
-
 ## Community impact (owned, non-fork repos)
 
 | Field                                  | Definition                                              | Source                                                                                                            |                                                                                                                                               |
@@ -107,7 +105,7 @@ If the request fails, the sync still succeeds and `previousYear` is **unavailabl
 
 ## Private repositories
 
-Without an installation the sign-in token has no repository permissions (ADR-0006). Private **contributions** are still counted (totals, calendar, per-repository commits including organisation repositories the user contributes to); private repository **names** never appear in anything shareable. What needs the optional installation (ADR-0008, Metadata: read on chosen repositories or organisations): private repositories the user **owns** (`repositories.ownedTotal`, `createdThisYear`) and `community.starsGained`.
+Without an installation the sign-in token has no repository permissions (ADR-0006). Private **contributions** are still counted (totals, calendar, per-repository commits including organisation repositories the user contributes to); private repository **names** never appear on the public page, its card or its OG image, and appear in the owner's own story and downloaded files only if the owner chooses to show them, a choice they can change in Settings ([ADR-0017](../architecture/decisions/0017-private-names-follow-the-owner.md)). Where names are hidden, a private repository in `repositories.top` keeps its rank and commit count under the marker `PRIVATE_REPO_NAME` (`"private"`), which the scenes draw as "Private repository", with its language, stars, forks and creation date cleared. A count never names a repository. What needs the optional installation (ADR-0008, Metadata: read on chosen repositories or organisations): private repositories the user **owns** (`repositories.ownedTotal`, `createdThisYear`) and `community.starsGained`.
 
 ## Spike A results (2026-11-04, one account, classic token with `repo` scope)
 
