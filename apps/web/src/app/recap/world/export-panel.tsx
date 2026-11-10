@@ -1,12 +1,11 @@
 "use client";
 
 import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
-import { type ExportFormat, exportFileName } from "@wyg/video/world";
+import type { ExportFormat } from "@wyg/video/world";
 import { useEffect, useId, useReducer, useRef, useState } from "react";
-import { announcement, type ExportJob, exportReducer, IDLE, percent } from "./export-state";
+import { type ExportRunner, exportRunner } from "./export-runner";
+import { announcement, type ExportJob, exportReducer, IDLE, NOUN, percent } from "./export-state";
 import type { ExportSupport } from "./exports";
-
-type ExportsModule = typeof import("./exports");
 
 const FORMATS = ["9x16", "4x5", "1x1", "16x9"] as const satisfies readonly ExportFormat[];
 const NOTHING: ExportSupport = {
@@ -14,7 +13,6 @@ const NOTHING: ExportSupport = {
   stills: false,
   reason: "This browser can't make your files. Try a recent Chrome or Edge.",
 };
-const NOUN: Record<ExportJob, string> = { mp4: "video", zip: "slides", pdf: "PDF" };
 const KEEP_OPEN: Record<ExportJob, string> = {
   mp4: "Keep this tab open while your video renders.",
   zip: "Keep this tab open while your slides render.",
@@ -34,7 +32,6 @@ export const PAPER_BUTTON = {
 } as const;
 
 const ratio = (format: ExportFormat) => format.replace("x", ":");
-const isAbort = (error: unknown) => error instanceof DOMException && error.name === "AbortError";
 
 /**
  * The files of the story, made in this browser. `data` must already be the public projection
@@ -45,17 +42,19 @@ export function ExportPanel({
   data,
   card,
   onBusyChange,
+  keepOpenId,
 }: {
   data: RecapData;
   /** Whether `/api/card` can answer: it needs a signed-in user with a recap. */
   card: boolean;
   onBusyChange?: (busy: boolean) => void;
+  /** Lets the screen around the panel point at the "Keep this tab open" line. */
+  keepOpenId?: string;
 }) {
   const [state, dispatch] = useReducer(exportReducer, IDLE);
   const [support, setSupport] = useState<ExportSupport | null>(null);
   const [format, setFormat] = useState<ExportFormat>("9x16");
-  const renderer = useRef<ExportsModule | null>(null);
-  const current = useRef<AbortController | null>(null);
+  const runner = useRef<ExportRunner | null>(null);
   const buttons = useRef<Partial<Record<ExportJob, HTMLButtonElement | null>>>({});
   const ids = useId();
   const reasonId = `${ids}-reason`;
@@ -64,7 +63,7 @@ export function ExportPanel({
     let live = true;
     import("./exports")
       .then((loaded) => {
-        renderer.current = loaded;
+        if (live) runner.current = exportRunner(loaded, data, dispatch);
         return loaded.exportSupport();
       })
       .then((result) => live && setSupport(result))
@@ -72,10 +71,10 @@ export function ExportPanel({
     return () => {
       live = false;
       // Leaving the screen ends the render; nothing should keep encoding in the background.
-      current.current?.abort();
-      current.current = null;
+      runner.current?.dispose();
+      runner.current = null;
     };
-  }, []);
+  }, [data]);
 
   const busy = state.status === "rendering";
   useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);
@@ -88,59 +87,8 @@ export function ExportPanel({
     if (!active || active === document.body) buttons.current[lastJob]?.focus();
   }, [busy, lastJob]);
 
-  const run = async (job: ExportJob) => {
-    const exports = renderer.current;
-    if (!exports || busy) return;
-    const controller = new AbortController();
-    current.current = controller;
-    // Only the newest job may report: a cancelled one can still settle afterwards.
-    const mine = () => current.current === controller;
-    const signal = controller.signal;
-    dispatch({ type: "start", job });
-    try {
-      let blob: Blob;
-      let file: string;
-      if (job === "mp4") {
-        blob = await exports.renderMp4(data, format, {
-          signal,
-          onProgress: (value) => mine() && dispatch({ type: "progress", value }),
-        });
-        file = exportFileName("mp4", data, { format });
-      } else {
-        const slides = await exports.renderSlides(data, {
-          signal,
-          onProgress: (done, total) =>
-            mine() && dispatch({ type: "progress", value: total > 0 ? done / total : 0 }),
-        });
-        blob =
-          job === "zip"
-            ? await exports.zipSlides(slides)
-            : await exports.pdfSlides(slides, {
-                title: `WrapYourGit ${data.meta.year}: @${data.profile.login}`,
-              });
-        file = exportFileName(job, data);
-      }
-      if (!mine() || signal.aborted) return;
-      exports.download(blob, file);
-      dispatch({ type: "finish", file });
-    } catch (error) {
-      if (!mine()) return;
-      if (isAbort(error)) dispatch({ type: "cancel" });
-      else {
-        // A warning, not an error: the reader already sees what happened and what to try.
-        console.warn("Export failed", error);
-        dispatch({ type: "fail" });
-      }
-    } finally {
-      if (mine()) current.current = null;
-    }
-  };
-
-  const cancel = () => {
-    current.current?.abort();
-    current.current = null;
-    dispatch({ type: "cancel" });
-  };
+  const run = (job: ExportJob) => runner.current?.run(job, format);
+  const cancel = () => runner.current?.cancel();
 
   const checking = support === null;
   const mp4Off = checking || !support.mp4 || busy;
@@ -260,7 +208,9 @@ export function ExportPanel({
               style={{ width: `${percent(state)}%` }}
             />
           </div>
-          <p className="text-base">{KEEP_OPEN[state.job]}</p>
+          <p id={keepOpenId} className="text-base">
+            {KEEP_OPEN[state.job]}
+          </p>
           <button type="button" onClick={cancel} className={PAPER_BUTTON.secondary}>
             Cancel
           </button>

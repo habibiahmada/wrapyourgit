@@ -17,7 +17,8 @@ export type ExportAction =
 
 export const IDLE: ExportState = { status: "idle" };
 
-const NOUN: Record<ExportJob, string> = { mp4: "video", zip: "slides", pdf: "PDF" };
+/** How the panel and its announcements name each job. */
+export const NOUN: Record<ExportJob, string> = { mp4: "video", zip: "slides", pdf: "PDF" };
 
 export function exportReducer(state: ExportState, action: ExportAction): ExportState {
   if (action.type === "start") {
