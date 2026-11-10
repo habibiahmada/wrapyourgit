@@ -1,12 +1,14 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { sampleRecap, WorldStory } from "@wyg/video";
 import { slideFrames, worldExportComposition } from "@wyg/video/world";
 import { unzipSync } from "fflate";
 import { PDFDocument } from "pdf-lib";
 import {
+  download,
   type ExportEngine,
   exportSupport,
   pdfSlides,
+  REVOKE_AFTER_MS,
   renderMp4,
   renderSlides,
   zipSlides,
@@ -237,5 +239,59 @@ describe("renderSlides cancel", () => {
       },
     );
     await expect(run).rejects.toMatchObject({ name: "AbortError" });
+  });
+});
+
+describe("download", () => {
+  const saved = {
+    document: globalThis.document,
+    setTimeout: globalThis.setTimeout,
+    create: URL.createObjectURL,
+    revoke: URL.revokeObjectURL,
+  };
+  afterEach(() => {
+    globalThis.document = saved.document;
+    globalThis.setTimeout = saved.setTimeout;
+    URL.createObjectURL = saved.create;
+    URL.revokeObjectURL = saved.revoke;
+  });
+
+  test("clicks a link that is in the document, then revokes its URL 40 s later", () => {
+    const log: string[] = [];
+    const timers: [() => void, number][] = [];
+    let inDocument = false;
+    const link = {
+      href: "",
+      download: "",
+      click: () => log.push(`click in-document=${inDocument}`),
+      remove: () => {
+        inDocument = false;
+        log.push("remove");
+      },
+    };
+    globalThis.document = {
+      createElement: () => link,
+      body: {
+        append: () => {
+          inDocument = true;
+          log.push("append");
+        },
+      },
+    } as unknown as Document;
+    globalThis.setTimeout = ((run: () => void, ms: number) => {
+      timers.push([run, ms]);
+      return 0;
+    }) as unknown as typeof setTimeout;
+    URL.createObjectURL = () => "blob:file";
+    URL.revokeObjectURL = (url) => log.push(`revoke ${url}`);
+
+    download(png(), "story.zip");
+    expect(link).toMatchObject({ href: "blob:file", download: "story.zip" });
+    expect(log).toEqual(["append", "click in-document=true", "remove"]);
+    expect(timers.map(([, ms]) => ms)).toEqual([REVOKE_AFTER_MS]);
+    expect(REVOKE_AFTER_MS).toBeGreaterThanOrEqual(40_000);
+
+    timers[0]?.[0]();
+    expect(log.at(-1)).toBe("revoke blob:file");
   });
 });

@@ -200,12 +200,20 @@ export async function pdfSlides(slides: Slide[], { title }: { title: string }): 
   return blobOf(await pdf.save(), "application/pdf");
 }
 
+/**
+ * Firefox and Safari have failed or truncated downloads whose blob URL was revoked right after
+ * `click()`; FileSaver.js waits 40 s. Only the URL holds the blob, so it is freed after that.
+ */
+export const REVOKE_AFTER_MS = 40_000;
+
 export function download(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = name;
+  // Firefox ignores a click on a link that isn't in the document.
+  document.body.append(link);
   link.click();
-  // Revoke on the next task: the click has started the download by then.
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
 }
