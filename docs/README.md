@@ -9,7 +9,7 @@
 | [analytics/metrics.md](analytics/metrics.md)         | Definition, GitHub source and caveats of every metric | Any metric is added or its computation changes     |
 | [video/scene-system.md](video/scene-system.md)       | Scenes, layouts, animation rules, audio, export       | Scenes, formats or the audio approach change       |
 | [../DESIGN.md](../DESIGN.md)                         | Visual direction: palette, type, motif, dials         | The look of the story changes                      |
-| [development/setup.md](development/setup.md)         | Local setup, env vars, GitHub App, AWS                | Setup steps change                                 |
+| [development/setup.md](development/setup.md)         | Local setup, env vars, GitHub App                     | Setup steps change                                 |
 | [deployment/guide.md](deployment/guide.md)           | Production on Vercel + Neon now, AWS VPS later        | Hosting, env vars or the release steps change      |
 | [security/](security/)                               | Security reviews: findings, fixes, what stays open    | After each review                                  |
 

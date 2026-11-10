@@ -11,29 +11,28 @@
             │                    ▼                                                     │
             │               packages/analytics ──▶ RecapData (packages/schema) ──▶ Postgres
             │                                                                           │
-            │  export:  apps/renderer.startRender() ──▶ Remotion Lambda ──▶ S3 (MP4)    │
+            │  export:  in the browser, @remotion/web-renderer ──▶ MP4, PNG, ZIP, PDF   │
             └───────────────────────────────────────────────────────────────────────────┘
-                         packages/video is used by BOTH the Player and Lambda
+                 packages/video is used by BOTH the Player and the browser export
 ```
 
 ## Modules
 
-| Package     | Responsibility                                         | May depend on            | Must not                                                              |
-| ----------- | ------------------------------------------------------ | ------------------------ | --------------------------------------------------------------------- |
-| `schema`    | `RecapData` zod schema, video formats, layout families | zod                      | import anything app-specific                                          |
-| `github`    | Fetch from GitHub; raw API types                       | schema                   | compute metrics, touch DB                                             |
-| `analytics` | Pure transforms raw → `RecapData`                      | schema                   | do I/O, read env, call fetch                                          |
-| `video`     | Remotion scenes/compositions                           | schema, remotion, react  | fetch data, use non-deterministic animation                           |
-| `renderer`  | Deploy Lambda; start/poll renders                      | schema, @remotion/lambda | import video source at runtime (Lambda uses the deployed site bundle) |
-| `web`       | UI, auth, API routes, persistence, orchestration       | all of the above         | send tokens to the client                                             |
+| Package     | Responsibility                                         | May depend on           | Must not                                    |
+| ----------- | ------------------------------------------------------ | ----------------------- | ------------------------------------------- |
+| `schema`    | `RecapData` zod schema, video formats, layout families | zod                     | import anything app-specific                |
+| `github`    | Fetch from GitHub; raw API types                       | schema                  | compute metrics, touch DB                   |
+| `analytics` | Pure transforms raw → `RecapData`                      | schema                  | do I/O, read env, call fetch                |
+| `video`     | Remotion scenes/compositions                           | schema, remotion, react | fetch data, use non-deterministic animation |
+| `web`       | UI, auth, API routes, persistence, orchestration       | all of the above        | send tokens to the client                   |
 
 ## Key flows
 
 **Sync:** user signs in → server fetches with the user's token (contributions, repos, PR/issue details, stargazers for owned repos) → analytics builds `RecapData` → validated with `recapDataSchema.parse` → stored as JSON in `recaps` (versioned by `schemaVersion`). Raw responses may be cached briefly to allow recomputation; source code is never fetched.
 
-**Story:** `/recap` is a guided walk (`story-flow.tsx`): a welcome step, then one step per scene, where the Player is remounted per scene and fenced with `inFrame`/`outFrame` so it stops on the scene's last frame and waits for Next. After that come the congratulations letter (`congratsLetter` in `@wyg/video/letter`, every sentence from a real number) and the export step. Slides: `/api/story/slide/[n]` (10 PNGs at 4:5 rendered with next/og from the public projection, cached per user and sync time), `/api/story/zip` and `/api/story/pdf` (pdf-lib). MP4 stays "coming soon" until the Lambda export (M5).
+**Story:** `/recap` plays the story world (`WorldStory` in `@wyg/video`, `recap/world-player.tsx`): one stop after another through the year as a city, ending with the congratulations letter (`congratsLetter` in `@wyg/video/letter`, every sentence from a real number) and "Keep your year". Before the first visit it asks once whether to show private repository names (`users.show_private_names`, changeable in Settings; [ADR-0017](decisions/0017-private-names-follow-the-owner.md)).
 
-**Export:** user picks format + soundtrack → API creates a render job row → `startRender()` → poll `getRenderStatus()` → MP4 in S3 (private, signed download URL, lifecycle expiry).
+**Export:** in the viewer's browser ([ADR-0016](decisions/0016-exports-in-the-browser.md)): `ExportPanel` loads `recap/exports.ts` on demand and renders the MP4 (`renderMediaOnWeb`, one of the four formats) or one 4:5 PNG per stop (`renderStillOnWeb`), assembled into a ZIP or PDF. The files use the owner's projection (ADR-0017). No server, job table or storage is involved.
 
 **Public page:** `/u/<login>` (login matched case-insensitively) renders `toPublicRecap()` from `@wyg/analytics` only when a `recap_shares` row exists. Private repos are removed from every named field; aggregate counts stay; the timezone and commit-hour histogram are withheld. Publishing requires a sync from the last 24 h, because privacy flags are as of the last sync. The card PNG is cached per user and sync time (`cardPng`), while the share check runs on every request. The same projection feeds `opengraph-image` and the downloadable card at `/api/card` (`server/card.tsx`, `next/og`, 1200×630). An unknown or unshared login gets `notFound()`: the OG image returns a real 404, while the page streams a 404 view with HTTP 200 because the lookup sits behind `<Suspense>` (Cache Components).
 
@@ -43,7 +42,7 @@
 
 Built in M2: `users` (GitHub identity keyed by numeric `github_id`; one GitHub account per user, so there is no separate accounts table) · `github_tokens` (access + refresh token, AES-256-GCM, with expiry times) · `sessions` (SHA-256 of the cookie token, 30 days) · `recaps` (user, year, schemaVersion, data JSONB, isFinal, syncedAt; a row from an older schema version reads as missing). Every child table cascades on user delete.
 
-Added in M5: `recap_shares` (user, year; a row means published, so sharing is off by default). Planned with the Lambda export: `render_jobs` (recap, format, soundtrack, status, renderId, s3Key, error, attempts). Spike B saw one local render fail once and pass on retry, so jobs need retries and a stored error.
+Added in M5: `recap_shares` (user, year; a row means published, so sharing is off by default). Added in phase 4 of the story world: `users.show_private_names` (nullable; null until the owner answers, ADR-0017).
 
 ## Auth and sync (M2)
 
@@ -59,8 +58,8 @@ Statistics live inside `recaps.data` as one validated document rather than in ma
 
 See [ADR-0005](decisions/0005-environments-and-hosting.md) and [ADR-0015](decisions/0015-production-on-vercel-first.md); the steps are in [deployment/guide.md](../deployment/guide.md). Production is live on Vercel since 2026-11-05.
 
-| Env        | Web                                  | DB                            | Rendering                       |
-| ---------- | ------------------------------------ | ----------------------------- | ------------------------------- |
-| local      | `bun run dev`                        | local Postgres or Neon branch | Remotion CLI locally            |
-| preview    | Vercel preview deployments           | the production Neon database  | not wired yet                   |
-| production | Vercel Hobby (`sin1`); AWS VPS later | Neon, Singapore               | Remotion Lambda (not wired yet) |
+| Env        | Web                                  | DB                            | Rendering                                |
+| ---------- | ------------------------------------ | ----------------------------- | ---------------------------------------- |
+| local      | `bun run dev`                        | local Postgres or Neon branch | the browser; Remotion CLI for dev stills |
+| preview    | Vercel preview deployments           | the production Neon database  | the viewer's browser                     |
+| production | Vercel Hobby (`sin1`); AWS VPS later | Neon, Singapore               | the viewer's browser                     |
