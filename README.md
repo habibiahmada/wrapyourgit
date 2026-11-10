@@ -61,7 +61,7 @@ contributions, streaks, the languages you lived in, the projects you built, and 
 
 - **Numbers you can trust.** Every metric has a written definition and a GitHub source in [metrics.md](docs/analytics/metrics.md). Your 2026 total matches the "contributions in 2026" on your profile. When GitHub doesn't provide something, the recap says _unavailable_ instead of showing a misleading 0, and estimates are marked with "~".
 - **A story, not a dashboard.** Nine short chapters set to a soundtrack, a warm-up before them, a comparison with last year after, and a letter from Cell that reads your year the way a friend would. A quiet year is told it counts; a relentless one is told to rest.
-- **Your private work counts.** Contributions to private repositories, yours and your organisations', are in your total. Their names never appear in anything you can share.
+- **Your private work counts.** Contributions to private repositories, yours and your organisations', are in your total. Your public page and its card never name them; your own story and downloads show the names only if you choose to, and you can change that in Settings.
 - **Read-only, and yours to delete.** Signing in asks GitHub for no repository permissions, the code is never read, and "Delete my data" removes everything and revokes access.
 
 <p align="right"><a href="#readme-top">back to top</a></p>
