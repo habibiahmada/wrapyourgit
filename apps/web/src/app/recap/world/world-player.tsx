@@ -1,9 +1,10 @@
 "use client";
 
 import { Player, type PlayerRef } from "@remotion/player";
+import { toPublicRecap } from "@wyg/analytics";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
 import { sampleRecap, WorldStory } from "@wyg/video";
-import { buildWorld, edgeSounds, TAP_SOUND } from "@wyg/video/world";
+import { buildWorld, edgeSounds, safeArea, TAP_SOUND } from "@wyg/video/world";
 import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,7 @@ import {
   request,
   settle,
 } from "./controller";
+import { ExportPanel, PAPER_BUTTON } from "./export-panel";
 import { useSfx } from "./use-sfx";
 
 const FORMAT_FOR_LAYOUT = { portrait: "9x16", compact: "4x5", landscape: "16x9" } as const;
@@ -36,7 +38,24 @@ const CONTROL_RING =
 /** A zone at the end of the story stays focusable (focus must not vanish under the reader). */
 const zone = (disabled: boolean) =>
   `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-ink/[0.03] active:bg-ink/[0.07]"} ${ZONE_RING}`;
+/**
+ * The way on at the rested closing stop. Paper like the other controls: the closing sky is dark,
+ * so a paper fill is what stands out there; the words, not an icon, say where it goes.
+ */
+const CUE = `inline-flex h-11 cursor-pointer items-center rounded-md border border-ink/25 bg-paper/90 px-4 font-semibold text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 const CONTROL = `grid size-11 cursor-pointer place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
+/** Close while a render runs: faded, no hover tint; the base layer's not-allowed cursor shows. */
+const CONTROL_OFF = `grid size-11 place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink opacity-50 ${CONTROL_RING}`;
+/** Why every way out is off while a render runs; the end screen shows it under its buttons. */
+const LEAVE_BLOCKED = "leave-blocked";
+
+function CloseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
+      <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -59,7 +78,17 @@ function heading(state: ControllerState): number {
  * The story world as a full-screen tap story. The composition never plays: every frame comes from
  * `seekTo`, driven by the controller, so moving forward and back share one path and one cadence.
  */
-export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?: boolean }) {
+export function WorldPlayer({
+  data,
+  exportData,
+  sample = false,
+}: {
+  /** The full recap, for playback on the owner's own screen. */
+  data: RecapData;
+  /** The public projection: the only data the "Keep your year" files are made from. */
+  exportData: RecapData;
+  sample?: boolean;
+}) {
   const router = useRouter();
   const player = useRef<PlayerRef>(null);
   const music = useMusic(MUSIC_SRC, MUSIC_LOOP);
@@ -83,14 +112,26 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
   // The controller lives in a ref (the frame loop reads it every tick); `at` mirrors it for render.
   const state = useRef<ControllerState>(initialState());
   const [at, setAt] = useState(0);
+  // Mirrors `!state.moving`: the end-screen cue shows only once the camera has settled.
+  const [resting, setResting] = useState(true);
   const [muted, setMuted] = useState(false);
   const [faded, setFaded] = useState(false);
   const raf = useRef(0);
   const fade = useRef(0);
+  // "Keep your year": a web-only screen over the paused closing stop, never part of the story.
+  const [ended, setEnded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const endHeading = useRef<HTMLHeadingElement>(null);
+  const nextZone = useRef<HTMLButtonElement>(null);
+  const cue = useRef<HTMLButtonElement>(null);
+  const last = stops.length - 1;
+  // Scene units kept clear of the copyright line (the composition's own safe area).
+  const footerClear = safeArea({ width, height }).bottom;
 
   const commit = useCallback((next: ControllerState) => {
     state.current = next;
     setAt(heading(next));
+    setResting(next.moving === null);
   }, []);
 
   const stopLoop = useCallback(() => {
@@ -142,9 +183,16 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
         if (result.start) begin();
       };
 
+      // Next at the rested closing stop opens the end screen. Only a fresh tap does: a tap queued
+      // during the flight in must not cover the closing stop before it has been seen.
+      const rest = state.current;
+      if (direction === 1 && !rest.moving && rest.stop >= last) {
+        setEnded(true);
+        return;
+      }
       step(direction);
     },
-    [commit, music, reduced, sfx, stops, timeline],
+    [commit, last, music, reduced, sfx, stops, timeline],
   );
 
   // A new format means new stops (the letter's page count varies) and new frames: drop any move in
@@ -162,9 +210,31 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
 
   useEffect(() => stopLoop, [stopLoop]);
 
+  const closeEnd = useCallback(() => {
+    setEnded(false);
+    // The screen's own controls unmount; hand focus back to the cue that opened it, which is back
+    // by the next frame. The Next zone is the fallback, should the cue not be there.
+    requestAnimationFrame(() => (cue.current ?? nextZone.current)?.focus());
+  }, []);
+
+  useEffect(() => {
+    if (ended) endHeading.current?.focus();
+  }, [ended]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (ended) {
+        // Arrow keys belong to the format radios while one has focus. A running render keeps the
+        // screen until it ends or is cancelled: Escape, Back, Close and "Go to dashboard" all wait,
+        // since leaving would throw away minutes of encoding without a word.
+        const onField = event.target instanceof Element && event.target.closest("input") !== null;
+        if (event.key === "Escape" && !busy) router.push("/dashboard");
+        else if (event.key === "ArrowLeft" && !onField && !busy) closeEnd();
+        else return;
+        event.preventDefault();
+        return;
+      }
       // A focused button or link activates itself on Enter and Space; handling them here too
       // would move twice.
       const onControl =
@@ -178,7 +248,7 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, router]);
+  }, [busy, closeEnd, ended, go, router]);
 
   const toggleSound = () => {
     const next = !muted;
@@ -187,7 +257,6 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
     sfx.setMuted(next);
   };
 
-  const last = stops.length - 1;
   // The chrome sits on a copy of the stage box, so it stays under the progress bar when the
   // stage is letterboxed.
   const stage = {
@@ -199,6 +268,7 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
     <div className="fixed inset-0 grid place-items-center overflow-hidden bg-paper text-ink">
       <div
         className="[grid-area:1/1]"
+        inert={ended}
         style={{
           ...stage,
           opacity: faded ? 0 : 1,
@@ -226,18 +296,85 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
         type="button"
         aria-label="Previous"
         aria-disabled={at <= 0}
+        inert={ended}
         onClick={() => go(-1)}
         className={`${zone(at <= 0)} left-0 w-1/3`}
       />
+      {/* Never disabled: at the closing stop, Next opens "Keep your year". */}
       <button
+        ref={nextZone}
         type="button"
         aria-label="Next"
-        aria-disabled={at >= last}
+        inert={ended}
         onClick={() => go(1)}
-        className={`${zone(at >= last)} right-0 left-1/3`}
+        className={`${zone(false)} right-0 left-1/3`}
       />
 
-      <div className="pointer-events-none relative [grid-area:1/1]" style={stage}>
+      {ended && (
+        <section
+          aria-labelledby="keep-your-year"
+          className="on-light absolute inset-0 overflow-y-auto bg-paper/85"
+        >
+          {/* Top padding clears the Sound and Close controls, which stay usable above it. */}
+          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-4 pt-20 pb-8">
+            <div className="flex flex-col gap-6 rounded-xl border border-ink/25 bg-paper p-5 sm:p-8">
+              <div className="flex flex-col gap-2">
+                <h2
+                  id="keep-your-year"
+                  ref={endHeading}
+                  tabIndex={-1}
+                  className="text-3xl font-bold tracking-tight sm:text-4xl"
+                >
+                  Keep your year
+                </h2>
+                <p className="text-lg text-ink-soft">
+                  Your story as files to keep and post, made in this browser. Private repositories
+                  are never named.
+                </p>
+              </div>
+              <ExportPanel data={exportData} card={!sample} onBusyChange={setBusy} />
+              <div className="flex flex-col gap-3 border-t border-ink/25 pt-6">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-describedby={busy ? LEAVE_BLOCKED : undefined}
+                    onClick={closeEnd}
+                    className={PAPER_BUTTON.secondary}
+                  >
+                    Back to the story
+                  </button>
+                  {busy ? (
+                    <button
+                      type="button"
+                      disabled
+                      aria-describedby={LEAVE_BLOCKED}
+                      className={PAPER_BUTTON.secondary}
+                    >
+                      Go to dashboard
+                    </button>
+                  ) : (
+                    <Link href="/dashboard" className={PAPER_BUTTON.secondary}>
+                      Go to dashboard
+                    </Link>
+                  )}
+                </div>
+                {busy && (
+                  <p id={LEAVE_BLOCKED} className="text-base text-ink-soft">
+                    Cancel the render first to go back to the story or leave it.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* An inline-size container, so the cue can sit in scene units (1 unit = 0.1cqw). */}
+      <div
+        className="pointer-events-none relative [container-type:inline-size] [grid-area:1/1]"
+        style={stage}
+      >
         {sample && (
           <p className="absolute top-4 left-3 rounded-md border border-ink/25 bg-paper/90 px-3 py-2 text-sm font-semibold">
             Sample data
@@ -253,16 +390,44 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
           >
             <SpeakerIcon muted={muted} />
           </button>
-          <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
-              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </Link>
+          {/* Client navigation, so the panel's beforeunload guard can't catch it: off while busy. */}
+          {busy ? (
+            <button
+              type="button"
+              disabled
+              aria-label="Close story"
+              aria-describedby={LEAVE_BLOCKED}
+              className={CONTROL_OFF}
+            >
+              <CloseIcon />
+            </button>
+          ) : (
+            <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
+              <CloseIcon />
+            </Link>
+          )}
         </div>
+        {/* Web-only, never part of the composition or a file. Bottom-left, just above the
+            copyright line's safe area: the closing scene keeps that corner to the skyline (Cell
+            stands centre in tall frames, right in landscape; the text is at the top or left-top).
+            After Close in tab order: it is the last control, so its visual spot can differ. */}
+        {resting && at === last && !ended && (
+          <button
+            ref={cue}
+            type="button"
+            onClick={() => setEnded(true)}
+            className={`pointer-events-auto absolute left-3 ${CUE}`}
+            style={{ bottom: `${(footerClear / 10).toFixed(3)}cqw` }}
+          >
+            Keep your year
+          </button>
+        )}
       </div>
 
       <p aria-live="polite" className="sr-only">
+        {/* Opening the end screen is announced by focusing its heading, not here. */}
         Stop {at + 1} of {stops.length}
+        {resting && at === last ? ". Keep your year is next." : ""}
       </p>
     </div>
   );
@@ -273,8 +438,10 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
  * React context, which a server component can't import.
  */
 export function SampleWorldPlayer() {
-  return <WorldPlayer data={sampleRecap} sample />;
+  return <WorldPlayer data={sampleRecap} exportData={SAMPLE_EXPORT} sample />;
 }
+
+const SAMPLE_EXPORT = toPublicRecap(sampleRecap);
 
 function SpeakerIcon({ muted }: { muted: boolean }) {
   return (

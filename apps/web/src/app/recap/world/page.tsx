@@ -1,3 +1,4 @@
+import { toPublicRecap } from "@wyg/analytics";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -31,5 +32,6 @@ async function World() {
   const recap = user ? await getRecap(user.id) : null;
   // Development only: without a signed-in user or a recap, the sample keeps the page usable.
   if (!recap) return <SampleWorldPlayer />;
-  return <WorldPlayer data={recap.data} />;
+  // Every file the end screen makes leaves the site, so it gets the public projection (rule 6).
+  return <WorldPlayer data={recap.data} exportData={toPublicRecap(recap.data)} />;
 }

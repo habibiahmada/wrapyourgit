@@ -1,6 +1,6 @@
 # 0011. Exported slides are frames of the story composition
 
-- Status: Accepted
+- Status: Superseded by [0016](0016-exports-in-the-browser.md) for the story world. Still governs the current story's slides until phase 4 switches the story over.
 - Date: 2026-11-05
 - Builds on: [0002](0002-one-composition-for-web-and-video.md), [0010](0010-live-3d-cast.md)
 

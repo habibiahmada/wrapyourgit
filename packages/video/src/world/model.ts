@@ -42,3 +42,11 @@ export function buildWorld(
 export function worldDuration(data: RecapData, format: Format, mode: WorldMode): number {
   return buildWorld(data, format, mode, VIDEO_FPS).timeline.durationInFrames;
 }
+export {
+  type ExportFormat,
+  exportFileName,
+  slideFrames,
+  worldExportComposition,
+} from "./export";
+/** The chrome's safe area in scene units, for web overlays that must keep clear of it too. */
+export { safeArea } from "./scenes/fit";
