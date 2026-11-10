@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { palette } from "../theme";
-import { chromeDarkness, chromeInk, mixHex, type Tone } from "./chrome-tone";
+import { chromeDarkness, chromeInk, edgeTone, mixHex, type Tone } from "./chrome-tone";
+import { SCENE_TONE } from "./scenes";
 import type { Timeline } from "./timeline";
 
 const timeline = {
@@ -29,4 +30,34 @@ test("chromeInk: ink when light, paper when dark, a blend between", () => {
   expect(chromeInk(0)).toBe(palette.ink.toLowerCase());
   expect(chromeInk(1)).toBe(palette.paper.toLowerCase());
   expect(mixHex("#000000", "#ffffff", 0.5)).toBe("#808080");
+});
+
+test("edgeTone: one tone covers both edges, a split tone gives each its own, none is light", () => {
+  expect(edgeTone("dark", "top")).toBe("dark");
+  expect(edgeTone("dark", "bottom")).toBe("dark");
+  expect(edgeTone({ top: "light", bottom: "dark" }, "top")).toBe("light");
+  expect(edgeTone({ top: "light", bottom: "dark" }, "bottom")).toBe("dark");
+  expect(edgeTone(undefined, "bottom")).toBe("light");
+});
+
+test("chromeDarkness per edge: the footer darkens over dark ground while the bar stays light", () => {
+  const scenes = ["light", { top: "light", bottom: "dark" }, "light"] as const;
+  const at = (edge: "top" | "bottom") =>
+    chromeDarkness(
+      scenes.map((tone) => edgeTone(tone, edge)),
+      300,
+      timeline,
+    );
+  expect(at("top")).toBe(0);
+  expect(at("bottom")).toBe(1);
+});
+
+test("the runway and the garden soil are dark under the footer, their skies light under the bar", () => {
+  for (const kind of ["engineering", "languages"] as const) {
+    expect(edgeTone(SCENE_TONE[kind], "top")).toBe("light");
+    expect(edgeTone(SCENE_TONE[kind], "bottom")).toBe("dark");
+  }
+  for (const kind of ["projects", "versus"] as const)
+    expect(edgeTone(SCENE_TONE[kind], "bottom")).toBe("light");
+  expect(edgeTone(SCENE_TONE.closing, "top")).toBe("dark");
 });

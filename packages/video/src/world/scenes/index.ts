@@ -1,3 +1,4 @@
+import type { SceneTone } from "../chrome-tone";
 import type { StopKind } from "../stops";
 import { Archetype } from "./Archetype";
 import { Busiest } from "./Busiest";
@@ -17,9 +18,15 @@ import type { Scene } from "./types";
 
 export type { Scene, SceneProps } from "./types";
 
-/** Stops drawn on a night sky; the chrome turns paper-coloured over them. Others are light. */
-export const SCENE_TONE: Partial<Record<StopKind, "dark">> = {
+/**
+ * What each scene puts behind the chrome; the chrome turns paper-coloured over dark. Night scenes
+ * are dark throughout; the runway and the garden soil are dark only under the copyright line.
+ * Others are light.
+ */
+export const SCENE_TONE: Partial<Record<StopKind, SceneTone>> = {
+  languages: { top: "light", bottom: "dark" },
   community: "dark",
+  engineering: { top: "light", bottom: "dark" },
   archetype: "dark",
   letter: "dark",
   closing: "dark",

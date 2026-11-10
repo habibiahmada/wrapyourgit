@@ -15,16 +15,17 @@ export function Chrome({
   current,
   year,
   frame,
-  darkness = 0,
+  darkness = { top: 0, bottom: 0 },
 }: {
   stops: number;
   current: number;
   year: number;
   frame: { width: number; height: number };
-  /** 0 over light scenes, 1 over night ones; see chromeDarkness. */
-  darkness?: number;
+  /** Behind the progress bar (top) and the copyright line (bottom): 0 light, 1 dark; see chromeDarkness. */
+  darkness?: { top: number; bottom: number };
 }) {
-  const ink = chromeInk(darkness);
+  const barInk = chromeInk(darkness.top);
+  const footerInk = chromeInk(darkness.bottom);
   const px = Math.min(frame.width, frame.height) / CHROME_REF;
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
@@ -35,7 +36,7 @@ export function Chrome({
             key={i}
             style={{
               flex: 1,
-              backgroundColor: i <= current ? palette.heat[2] : ink,
+              backgroundColor: i <= current ? palette.heat[2] : barInk,
               opacity: i <= current ? 1 : 0.18,
             }}
           />
@@ -50,7 +51,7 @@ export function Chrome({
           textAlign: "center",
           fontFamily,
           fontSize: FOOTER_SIZE * px,
-          color: ink,
+          color: footerInk,
           opacity: 0.7,
         }}
       >

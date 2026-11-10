@@ -16,7 +16,7 @@ import { palette } from "../theme";
 import { Chrome } from "./Chrome";
 import { CityLayer } from "./CityLayer";
 import { cameraAt } from "./camera";
-import { chromeDarkness } from "./chrome-tone";
+import { chromeDarkness, edgeTone } from "./chrome-tone";
 import { cardOpacity, enterProgress, reachedStop } from "./fade";
 import { buildWorld } from "./model";
 import { StopLayer } from "./StopLayer";
@@ -76,11 +76,18 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
         current={current}
         year={data.meta.year}
         frame={size}
-        darkness={chromeDarkness(
-          stops.map((stop) => SCENE_TONE[stop.kind] ?? "light"),
-          frame,
-          timeline,
-        )}
+        darkness={{
+          top: chromeDarkness(
+            stops.map((stop) => edgeTone(SCENE_TONE[stop.kind], "top")),
+            frame,
+            timeline,
+          ),
+          bottom: chromeDarkness(
+            stops.map((stop) => edgeTone(SCENE_TONE[stop.kind], "bottom")),
+            frame,
+            timeline,
+          ),
+        }}
       />
       {mode === "video" && (
         <>

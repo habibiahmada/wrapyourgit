@@ -5,6 +5,21 @@ import type { Timeline } from "./timeline";
 export type Tone = "light" | "dark";
 
 /**
+ * What a scene puts behind the chrome. One tone covers the whole frame; a scene with a light sky
+ * over dark ground (a runway, soil) gives the progress bar (top) and the copyright line (bottom)
+ * their own, so each stays readable on what is actually behind it.
+ */
+export type SceneTone = Tone | { top: Tone; bottom: Tone };
+
+export type ChromeEdge = "top" | "bottom";
+
+/** The tone behind one edge of the chrome; scenes that declare nothing are light. */
+export function edgeTone(tone: SceneTone | undefined, edge: ChromeEdge): Tone {
+  if (tone === undefined) return "light";
+  return typeof tone === "string" ? tone : tone[edge];
+}
+
+/**
  * How dark the page behind the chrome is, 0 (light) to 1 (dark). Dark stops contribute their own
  * card opacity, so the chrome crossfades on exactly the timing of the cards and never flips
  * abruptly mid-move.
