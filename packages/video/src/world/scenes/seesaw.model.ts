@@ -9,7 +9,8 @@ export type SeesawModel =
       change: string;
       span: string;
     }
-  | { unavailable: true };
+  // Last year could not be read, but this year's total is known and still shown.
+  | { unavailable: true; current: { year: number; value: number } };
 
 /** The beam never tilts past this, so a huge gap still reads as a seesaw, not a ramp. */
 export const MAX_TILT = 12;
@@ -36,9 +37,11 @@ function changeText(last: number, current: number): string {
  */
 export function seesawModel(data: RecapData): SeesawModel {
   const prev = data.previousYear;
-  if (prev.status !== "ok") return { unavailable: true };
-  const last = prev.value.sameSpan.contributions;
   const current = data.contributions.total;
+  if (prev.status !== "ok") {
+    return { unavailable: true, current: { year: data.meta.year, value: current } };
+  }
+  const last = prev.value.sameSpan.contributions;
   const max = Math.max(last, current);
   const raw = max > 0 ? (MAX_TILT * (current - last)) / max : 0;
   return {

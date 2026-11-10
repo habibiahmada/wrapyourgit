@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { RecapData } from "@wyg/schema";
-import { emptyRecap } from "../../fixtures/edge-recaps";
+import { emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { seesawModel } from "./seesaw.model";
 
@@ -68,5 +68,25 @@ test("seesawModel: the angle never passes 12 degrees either way", () => {
 });
 
 test("seesawModel: unavailable last year is its own state", () => {
-  expect(seesawModel(emptyRecap)).toEqual({ unavailable: true });
+  expect(seesawModel(emptyRecap)).toEqual({
+    unavailable: true,
+    current: { year: 2026, value: 0 },
+  });
+  expect(
+    seesawModel(
+      sampleRecap.previousYear.status === "ok"
+        ? { ...sampleRecap, previousYear: emptyRecap.previousYear }
+        : sampleRecap,
+    ),
+  ).toEqual({
+    unavailable: true,
+    current: { year: 2026, value: 1284 },
+  });
+});
+
+test("seesawModel: a year still running names its real span", () => {
+  const m = seesawModel(provisionalRecap);
+  if ("unavailable" in m) throw new Error("expected a comparison");
+  expect(m.span).toBe("Jan 1 \u2013 Nov 9, both years");
+  expect(m.last.value).toBeLessThan(1031);
 });

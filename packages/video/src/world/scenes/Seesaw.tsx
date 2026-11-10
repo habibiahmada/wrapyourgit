@@ -28,7 +28,8 @@ export function Seesaw({ data, size, layout, enter }: SceneProps) {
   const fade = interpolate(t, [0, 0.5], [0, 1], { extrapolateRight: "clamp" });
 
   const level = "unavailable" in model;
-  const angle = (level ? 0 : model.angle) * settle;
+  // The overshoot of the settle stays inside the model's own limit.
+  const angle = Math.max(-MAX_TILT, Math.min(MAX_TILT, (level ? 0 : model.angle) * settle));
   const theta = angle * RAD;
 
   const boxW = wide ? 190 : 230;
@@ -61,7 +62,7 @@ export function Seesaw({ data, size, layout, enter }: SceneProps) {
   const leftY = py - BEAM_HALF * Math.sin(theta);
 
   const title = level
-    ? "Last year couldn't be read from GitHub"
+    ? `Last year couldn't be read from GitHub. ${model.current.year}: ${formatCount(model.current.value)} contributions so far.`
     : `${model.change}. ${model.last.year}: ${formatCount(model.last.value)} contributions. ${model.current.year}: ${formatCount(model.current.value)}. ${model.span}`;
 
   /** A weight standing on a beam end; upright, whatever the tilt. */
@@ -125,7 +126,7 @@ export function Seesaw({ data, size, layout, enter }: SceneProps) {
         />
         <Label
           x={cx}
-          y={changeY + (level ? 0 : 0)}
+          y={changeY}
           text={level ? "Last year couldn't be read from GitHub" : model.change}
           size={level ? changeSize * 0.34 : changeSize}
           weight={800}
@@ -164,7 +165,7 @@ export function Seesaw({ data, size, layout, enter }: SceneProps) {
         </g>
         <circle cx={cx} cy={py} r={16} fill={palette.paper} stroke={palette.ink} strokeWidth={4} />
         {level ? (
-          <g opacity={fade}>
+          <g opacity={fade} transform="translate(0 -10)">
             <rect
               x={leftX - boxW / 2}
               y={leftY - BEAM_THICK / 2 - boxH}
@@ -196,6 +197,15 @@ export function Seesaw({ data, size, layout, enter }: SceneProps) {
               fill={palette.inkSoft}
             />
           </g>
+        ) : null}
+        {level ? (
+          weight(
+            rightX,
+            rightY,
+            palette.heat[1],
+            String(model.current.year),
+            formatCount(model.current.value),
+          )
         ) : (
           <>
             {weight(leftX, leftY, LAST_BOX, String(model.last.year), formatCount(model.last.value))}

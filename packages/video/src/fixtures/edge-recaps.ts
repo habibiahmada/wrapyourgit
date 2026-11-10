@@ -115,4 +115,19 @@ export const provisionalRecap: RecapData = {
     busiestDay: { date: provisionalBusiest.date, count: provisionalBusiest.count },
     calendar: provisionalCalendar,
   },
+  // Last year over the same span (Jan 1 to Nov 9), not the whole of it.
+  previousYear:
+    sampleRecap.previousYear.status === "ok"
+      ? {
+          ...sampleRecap.previousYear,
+          value: {
+            ...sampleRecap.previousYear.value,
+            sameSpan: {
+              ...sampleRecap.previousYear.value.sameSpan,
+              through: "2025-11-09",
+              contributions: 912,
+            },
+          },
+        }
+      : sampleRecap.previousYear,
 };
