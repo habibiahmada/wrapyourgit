@@ -89,7 +89,7 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
   const periodStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
   const today = localDate(now, timezone);
-  // biome-ignore lint/complexity/useMathMinMax: ISO date strings, Math.min would coerce to NaN
+  // ISO date strings compare as text; Math.min would coerce them to NaN.
   const periodEnd = today < yearEnd ? today : yearEnd;
   const inPeriod = (iso: string) => {
     const date = iso.slice(0, 10);
