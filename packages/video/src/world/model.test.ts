@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { VIDEO_FORMATS } from "@wyg/schema";
+import { busyRecap } from "../fixtures/edge-recaps";
 import { sampleRecap } from "../fixtures/sample-recap";
 import { cardOpacity } from "./fade";
 import { buildWorld, worldDuration } from "./model";
@@ -50,3 +51,38 @@ for (const mode of ["interactive", "video"] as const)
       expect(cardOpacity(i - 1, mid, world.timeline)).toBe(0);
     }
   });
+
+for (const [name, data] of [
+  ["sample", sampleRecap],
+  ["long names", busyRecap],
+] as const) {
+  test(`buildWorld without the letter (${name}): no letter stops, ends on closing`, () => {
+    for (const format of Object.values(VIDEO_FORMATS)) {
+      const full = buildWorld(data, format, "interactive", 30);
+      const bare = buildWorld(data, format, "interactive", 30, { letter: false });
+      const letters = full.stops.filter((s) => s.id.startsWith("letter")).length;
+      expect(letters).toBeGreaterThan(0);
+      expect(bare.stops.some((s) => s.id.startsWith("letter"))).toBe(false);
+      expect(bare.stops.at(-1)?.kind).toBe("closing");
+      expect(bare.stops).toHaveLength(full.stops.length - letters);
+      expect(bare.cameras).toHaveLength(bare.stops.length);
+    }
+  });
+
+  test(`buildWorld without the letter (${name}): remaining cameras are unchanged`, () => {
+    const format = VIDEO_FORMATS["9x16"];
+    const full = buildWorld(data, format, "interactive", 30);
+    const bare = buildWorld(data, format, "interactive", 30, { letter: false });
+    bare.stops.forEach((stop, i) => {
+      const at = full.stops.findIndex((s) => s.id === stop.id);
+      expect(bare.cameras[i]).toEqual(full.cameras[at] as (typeof full.cameras)[number]);
+    });
+  });
+
+  test(`worldDuration without the letter (${name}) is shorter`, () => {
+    const format = VIDEO_FORMATS["9x16"];
+    expect(worldDuration(data, format, "video", { letter: false })).toBeLessThan(
+      worldDuration(data, format, "video"),
+    );
+  });
+}
