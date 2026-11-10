@@ -8,7 +8,7 @@ export type Timeline = {
   /** Length of the move from stop i - 1 to stop i; 0 for the first stop. */
   moveFrames: number[];
   /**
-   * True where stop i has the same camera as stop i - 1 (the letter's pages): nothing travels, so
+   * True where stop i sits on the same plot as stop i - 1 (the letter's pages): nothing travels, so
    * the move is the scene's own transition and the cards cut instead of crossfading.
    */
   inPlace?: boolean[];
@@ -34,11 +34,19 @@ export function moveSeconds(a: Camera, b: Camera): number {
   );
 }
 
-export function buildTimeline(cameras: Camera[], mode: WorldMode, fps: number): Timeline {
+/**
+ * `inPlace[i]` comes from the caller (stops sharing a plot), not from comparing cameras: two
+ * different plots can project to the same camera in iso view.
+ */
+export function buildTimeline(
+  cameras: Camera[],
+  mode: WorldMode,
+  fps: number,
+  inPlace: readonly boolean[] = [],
+): Timeline {
   const hold = mode === "video" ? Math.round(HOLD_SECONDS * fps) : 0;
   const stopFrames: number[] = [];
   const moveFrames: number[] = [];
-  const inPlace: boolean[] = [];
   let frame = 0;
   for (let i = 0; i < cameras.length; i++) {
     const prev = cameras[i - 1];
@@ -47,8 +55,12 @@ export function buildTimeline(cameras: Camera[], mode: WorldMode, fps: number): 
     if (i > 0) frame += hold + move;
     stopFrames.push(frame);
     moveFrames.push(move);
-    inPlace.push(!!prev && !!cam && prev.x === cam.x && prev.y === cam.y && prev.span === cam.span);
   }
   const last = stopFrames.at(-1) ?? 0;
-  return { stopFrames, moveFrames, inPlace, durationInFrames: last + hold + 1 };
+  return {
+    stopFrames,
+    moveFrames,
+    inPlace: cameras.map((_, i) => i > 0 && (inPlace[i] ?? false)),
+    durationInFrames: last + hold + 1,
+  };
 }

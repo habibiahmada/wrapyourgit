@@ -33,3 +33,13 @@ test("video mode holds each stop for 3 s, interactive mode does not", () => {
   expect(video.durationInFrames).toBe(interactive.durationInFrames + 90 * cameras.length);
   expect(video.moveFrames).toEqual(interactive.moveFrames);
 });
+
+test("buildTimeline: identical cameras alone don't make a stop in place; the caller says so", () => {
+  const cam = { x: 3, y: 4, span: 2 };
+  expect(buildTimeline([cam, cam, cam], "interactive", 30).inPlace).toEqual([false, false, false]);
+  expect(buildTimeline([cam, cam, cam], "interactive", 30, [false, false, true]).inPlace).toEqual([
+    false,
+    false,
+    true,
+  ]);
+});

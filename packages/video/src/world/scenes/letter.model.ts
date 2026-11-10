@@ -11,6 +11,12 @@ const BODY_SHARE = 0.042;
  */
 const SQUARE_BODY_SHARE = 0.036;
 const LINE_HEIGHT = 1.42;
+/**
+ * Pages at least this tall move a paragraph's lone first line to the next page. Shorter pages
+ * (landscape 8 lines, square 11) keep it: leaving two of eight lines empty reads worse than a lone
+ * line at the foot, while two of twenty in a tall frame goes unnoticed.
+ */
+const ORPHAN_MIN_LINES = 12;
 
 export type LetterGeometry = {
   /** The paper sheet in scene units. */
@@ -123,9 +129,9 @@ export function paginateLetterLines(letter: Letter, size: Size): LetterLine[][] 
   };
   for (const { kind, lines } of blocks) {
     if (page.length > 0) {
-      // Room for the gap and only one line of a longer paragraph: start it on the next page. Short
-      // pages (landscape, square) keep the line: a page a quarter empty reads worse than a lone line.
-      if (lines.length > 1 && linesPerPage >= 12 && linesPerPage - page.length <= 2) turn();
+      // Room for the gap and only one line of a longer paragraph: start it on the next page.
+      if (lines.length > 1 && linesPerPage >= ORPHAN_MIN_LINES && linesPerPage - page.length <= 2)
+        turn();
       else page.push({ text: "", kind: "gap" });
     }
     for (const text of lines) {

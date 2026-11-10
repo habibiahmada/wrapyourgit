@@ -30,18 +30,34 @@ for (const mode of ["interactive", "video"] as WorldMode[]) {
   test(`cardOpacity (${mode}): a card shows only at its own stop`, () => {
     const { timeline } = buildWorld(sampleRecap, VIDEO_FORMATS["9x16"], mode, 30);
     const { stopFrames, moveFrames, inPlace } = timeline;
+    // The sample letter has several pages in 9x16, so the in-place branch below really runs.
+    expect(inPlace?.filter(Boolean).length).toBeGreaterThan(0);
     for (let i = 0; i < stopFrames.length; i++) {
       const rest = stopFrames[i] as number;
       expect(cardOpacity(i, rest, timeline)).toBe(1);
-      // Moves between stops on one camera (letter pages) cut; model.test.ts covers them.
-      if (i > 0 && !inPlace?.[i]) {
+      if (i > 0 && inPlace?.[i]) {
+        // Letter pages turn in place: the cards cut, so exactly one shows on every frame.
+        const start = rest - (moveFrames[i] as number);
+        expect(cardOpacity(i, stopFrames[i - 1] as number, timeline)).toBe(0);
+        expect(cardOpacity(i, start, timeline)).toBe(0);
+        expect(cardOpacity(i - 1, start, timeline)).toBe(1);
+        expect(cardOpacity(i, start + 1, timeline)).toBe(1);
+        expect(cardOpacity(i - 1, start + 1, timeline)).toBe(0);
+        const mid = rest - Math.round((moveFrames[i] as number) / 2);
+        expect(cardOpacity(i, mid, timeline)).toBe(1);
+        expect(cardOpacity(i - 1, mid, timeline)).toBe(0);
+      } else if (i > 0) {
         expect(cardOpacity(i, stopFrames[i - 1] as number, timeline)).toBe(0);
         const mid = rest - Math.round((moveFrames[i] as number) / 2);
         expect(cardOpacity(i, mid, timeline)).toBeGreaterThan(0);
         expect(cardOpacity(i, mid, timeline)).toBeLessThan(1);
       }
       const next = stopFrames[i + 1];
-      if (next !== undefined && !inPlace?.[i + 1]) {
+      if (next !== undefined && inPlace?.[i + 1]) {
+        // At this stop's rest (also the next page's move start in interactive mode) only it shows.
+        expect(cardOpacity(i + 1, rest, timeline)).toBe(0);
+        expect(cardOpacity(i, next, timeline)).toBe(0);
+      } else if (next !== undefined) {
         expect(cardOpacity(i, next, timeline)).toBe(0);
         const mid = next - Math.round((moveFrames[i + 1] as number) / 2);
         expect(cardOpacity(i, mid, timeline)).toBeGreaterThan(0);

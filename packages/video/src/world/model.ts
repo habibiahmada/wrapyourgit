@@ -27,7 +27,9 @@ export function buildWorld(
   const letterPages = paginateLetter(congratsLetter(data), format).length;
   const stops = buildStops(data, city, { letterPages });
   const cameras = stops.map((stop) => stopCamera(stop, city, format));
-  return { city, stops, cameras, timeline: buildTimeline(cameras, mode, fps) };
+  // Only the letter's pages share a plot: moving between them is a page turn, not a flight.
+  const inPlace = stops.map((stop, i) => stop.plot !== null && stop.plot === stops[i - 1]?.plot);
+  return { city, stops, cameras, timeline: buildTimeline(cameras, mode, fps, inPlace) };
 }
 
 export function worldDuration(data: RecapData, format: Format, mode: WorldMode): number {

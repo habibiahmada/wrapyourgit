@@ -62,9 +62,9 @@ test("paginateLetter: lines use the column, and the sample letter takes at most 
   for (const format of Object.values(VIDEO_FORMATS)) {
     const { body, textWidth } = letterGeometry(format);
     const widest = Math.max(
-      ...paginateLetter(sample, format)
+      ...paginateLetterLines(sample, format)
         .flat()
-        .map((line) => labelWidth(line, body, 400)),
+        .map((line) => labelWidth(line.text, body, line.kind === "body" ? 400 : 700)),
     );
     expect(widest).toBeGreaterThan(textWidth * 0.9);
     expect(paginateLetter(sample, format).length).toBeLessThanOrEqual(5);

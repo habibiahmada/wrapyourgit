@@ -34,7 +34,9 @@ export function cardOpacity(i: number, frame: number, timeline: Timeline): numbe
   const moveIn = moveFrames[i] ?? 0;
   if (frame < rest) {
     if (moveIn <= 0) return 0;
-    if (inPlace?.[i]) return frame >= rest - moveIn ? 1 : 0;
+    // Strictly after the move's first frame, mirroring the outgoing card's `frame <= leave`: on the
+    // boundary frame (the previous rest, in interactive mode) only the previous page shows.
+    if (inPlace?.[i]) return frame > rest - moveIn ? 1 : 0;
     return clamp01(1 - (rest - frame) / moveIn);
   }
   const next = stopFrames[i + 1];

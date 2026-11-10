@@ -1,4 +1,5 @@
 import type { RecapData } from "@wyg/schema";
+import { useMemo } from "react";
 import { AbsoluteFill, interpolate } from "remotion";
 import { heatLevels } from "../../heat";
 import { congratsLetter } from "../../letter";
@@ -15,6 +16,8 @@ import type { SceneProps } from "./types";
 const DESK = "#2B2620";
 const GRAIN = "rgba(244, 239, 227, 0.05)";
 const FOLD = "#DED4BD";
+/** Gap between the strip's squares, as a share of a square. */
+const STRIP_GAP = 0.25;
 /** Level 0 is a faint ink square on paper; 1-4 are GitHub's ramp. */
 const HEAT = ["rgba(20, 19, 15, 0.08)", ...palette.heat] as const;
 /** The paper's motif: cells in the side margins, as fractions of the sheet (decoration only). */
@@ -34,8 +37,19 @@ const MOTIF: { x: number; y: number; s: number; lit?: boolean }[] = [
  * scaleX and skewY from `enter`), and going back plays the turn in reverse.
  */
 export function Letter({ data, stop, size, enter }: SceneProps) {
-  const g = letterGeometry(size);
-  const pages = paginateLetterLines(congratsLetter(data), size);
+  const { width, height } = size;
+  // Pure in the data and the frame size; every frame of the stop reuses it.
+  const { g, pages, strip } = useMemo(() => {
+    const g = letterGeometry({ width, height });
+    // The strip under the letterhead: as many of the last days as fit the text column.
+    const cell = g.body * 0.4;
+    const days = Math.floor((g.textWidth + cell * STRIP_GAP) / (cell * (1 + STRIP_GAP)));
+    return {
+      g,
+      pages: paginateLetterLines(congratsLetter(data), { width, height }),
+      strip: heatLevels(data.contributions.calendar).slice(-days),
+    };
+  }, [data, width, height]);
   const total = pages.length;
   const n = Math.min(Math.max(stop.page ?? 1, 1), total);
   const t = easeOut(interpolate(enter, [0, 1], [0, 1], { extrapolateRight: "clamp" }));
@@ -59,8 +73,16 @@ export function Letter({ data, stop, size, enter }: SceneProps) {
       </svg>
       {/* The page being turned over stays put underneath, so the turn reveals nothing but desk. */}
       {turning && (
-        <AbsoluteFill>
-          <Sheet data={data} g={g} lines={pages[n - 2] ?? []} n={n - 1} total={total} />
+        // Hidden from assistive tech: only the page being turned to is announced.
+        <AbsoluteFill aria-hidden>
+          <Sheet
+            data={data}
+            g={g}
+            strip={strip}
+            lines={pages[n - 2] ?? []}
+            n={n - 1}
+            total={total}
+          />
         </AbsoluteFill>
       )}
       <AbsoluteFill
@@ -70,7 +92,7 @@ export function Letter({ data, stop, size, enter }: SceneProps) {
           transformOrigin: `${g.sheet.x * px}px ${(g.sheet.y + g.sheet.height / 2) * px}px`,
         }}
       >
-        <Sheet data={data} g={g} lines={pages[n - 1] ?? []} n={n} total={total} />
+        <Sheet data={data} g={g} strip={strip} lines={pages[n - 1] ?? []} n={n} total={total} />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -80,23 +102,23 @@ export function Letter({ data, stop, size, enter }: SceneProps) {
 function Sheet({
   data,
   g,
+  strip,
   lines,
   n,
   total,
 }: {
   data: RecapData;
   g: LetterGeometry;
+  /** Heat levels of the last days, one square each. */
+  strip: number[];
   lines: LetterLine[];
   n: number;
   total: number;
 }) {
   const { sheet, body } = g;
   const year = data.meta.year;
-  // The strip under the letterhead: as many of the last days as fit the text column.
   const cell = body * 0.4;
-  const gap = cell * 0.25;
-  const days = Math.floor((g.textWidth + gap) / (cell + gap));
-  const strip = heatLevels(data.contributions.calendar).slice(-days);
+  const gap = cell * STRIP_GAP;
   const corner = body * 1.6;
   const right = sheet.x + sheet.width;
   const bottom = sheet.y + sheet.height;
