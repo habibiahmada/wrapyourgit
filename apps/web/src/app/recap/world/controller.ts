@@ -54,3 +54,30 @@ export function settle(state: ControllerState): { state: ControllerState; next: 
   const stop = state.moving ? state.moving.to : state.stop;
   return { state: { stop, moving: null, queued: null }, next: state.queued };
 }
+
+const LETTER_PAGE = /^letter-(\d+)$/;
+
+/**
+ * Where to rest after a format change rebuilds the stops. Stop ids, not indexes, carry over: the
+ * letter's page count depends on the format, so the same index can point at another stop. A page
+ * past the new count lands on the last page; anything else unknown keeps its index, clamped.
+ */
+export function carryStop(
+  previousIds: readonly string[],
+  previous: number,
+  nextIds: readonly string[],
+): number {
+  const last = Math.max(0, nextIds.length - 1);
+  const id = previousIds[previous];
+  if (id !== undefined) {
+    const same = nextIds.indexOf(id);
+    if (same !== -1) return same;
+    const page = LETTER_PAGE.exec(id)?.[1];
+    if (page !== undefined) {
+      const pages = nextIds.filter((next) => LETTER_PAGE.test(next)).length;
+      const lastPage = nextIds.indexOf(`letter-${Math.min(Number(page), pages)}`);
+      if (lastPage !== -1) return lastPage;
+    }
+  }
+  return Math.min(Math.max(0, previous), last);
+}

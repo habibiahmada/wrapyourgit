@@ -9,7 +9,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMusic } from "../use-music";
-import { type ControllerState, frameAt, initialState, request, settle } from "./controller";
+import {
+  type ControllerState,
+  carryStop,
+  frameAt,
+  initialState,
+  request,
+  settle,
+} from "./controller";
 import { useSfx } from "./use-sfx";
 
 const FORMAT_FOR_LAYOUT = { portrait: "9x16", compact: "4x5", landscape: "16x9" } as const;
@@ -140,14 +147,18 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
     [commit, music, reduced, sfx, stops, timeline],
   );
 
-  // A new format means new stop frames: drop any move in flight and rest where it was heading.
+  // A new format means new stops (the letter's page count varies) and new frames: drop any move in
+  // flight and rest on the stop it was heading to, found by id in the new list.
+  const restedIds = useRef<string[]>([]);
   useEffect(() => {
     stopLoop();
     setFaded(false);
-    const stop = heading(state.current);
+    const ids = stops.map((s) => s.id);
+    const stop = carryStop(restedIds.current, heading(state.current), ids);
+    restedIds.current = ids;
     commit({ stop, moving: null, queued: null });
     player.current?.seekTo(timeline.stopFrames[stop] ?? 0);
-  }, [timeline, commit, stopLoop]);
+  }, [stops, timeline, commit, stopLoop]);
 
   useEffect(() => stopLoop, [stopLoop]);
 
