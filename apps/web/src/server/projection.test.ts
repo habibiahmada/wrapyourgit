@@ -36,6 +36,12 @@ describe("storyData", () => {
     const fixture = withPrivate();
     expect(storyData(fixture, true)).toBe(fixture);
   });
+
+  test("the reminder matches each answer: the story draws the name only for yes", () => {
+    const fixture = withPrivate();
+    expect(hasPrivateNames(storyData(fixture, true))).toBe(true);
+    expect(hasPrivateNames(storyData(fixture, false))).toBe(false);
+  });
 });
 
 describe("hasPrivateNames", () => {
@@ -52,24 +58,37 @@ describe("hasPrivateNames", () => {
   });
 });
 
-describe("hasPrivateNames beyond the top lists", () => {
+describe("hasPrivateNames follows what the story draws", () => {
   const repo = { ...sampleRecap.repositories.top[0], nameWithOwner: SECRET, isPrivate: true };
   const publicBase = () => withoutPrivateNames(sampleRecap);
 
-  test("is true for a private repository only in community.mostForked", () => {
+  test("is false for a private repository only in community.mostForked: no scene names it", () => {
     const base = publicBase();
     const data = { ...base, community: { ...base.community, mostForked: repo } };
-    expect(hasPrivateNames(data as typeof base)).toBe(true);
+    expect(hasPrivateNames(data as typeof base)).toBe(false);
   });
 
-  test("is true for a private starred repository", () => {
+  test("is false for a private repository below the projects shelf", () => {
+    const base = publicBase();
+    const data = {
+      ...base,
+      repositories: {
+        ...base.repositories,
+        top: [...base.repositories.top, { ...repo, commits: 1 }],
+      },
+    };
+    expect(base.repositories.top.filter((r) => r.commits > 1).length).toBeGreaterThanOrEqual(4);
+    expect(hasPrivateNames(data as typeof base)).toBe(false);
+  });
+
+  test("is false for a private starred repository: no scene names it", () => {
     const base = publicBase();
     if (base.starred.status !== "ok") throw new Error("sampleRecap starred is unavailable");
     const data = {
       ...base,
       starred: { ...base.starred, value: { ...base.starred.value, top: [repo] } },
     };
-    expect(hasPrivateNames(data as typeof base)).toBe(true);
+    expect(hasPrivateNames(data as typeof base)).toBe(false);
   });
 
   test("an unavailable starred metric neither throws nor gives true", () => {

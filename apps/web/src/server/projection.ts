@@ -1,5 +1,6 @@
 import { withoutPrivateNames } from "@wyg/analytics";
 import type { RecapData } from "@wyg/schema";
+import { drawsPrivateName } from "@wyg/video/present";
 
 // Kept apart from privacy.ts so tests can import it without the server-only database module.
 
@@ -8,9 +9,13 @@ export function storyData(data: RecapData, showPrivateNames: boolean): RecapData
   return showPrivateNames ? data : withoutPrivateNames(data);
 }
 
-/** True when the files would differ once private names are removed, i.e. a private name would appear. */
+/**
+ * True when the story, and so every file made from it, draws a private repository's name. Asks the
+ * scenes (`drawsPrivateName`) rather than diffing the data: a private repository the story never
+ * names (sixth on the list, only starred, only most forked) must not trigger the reminder.
+ */
 export function hasPrivateNames(data: RecapData): boolean {
-  return JSON.stringify(data) !== JSON.stringify(withoutPrivateNames(data));
+  return drawsPrivateName(data);
 }
 
 /** The files' reminder shows only when the owner chose to show names and the recap has private ones. */
