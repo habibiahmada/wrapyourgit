@@ -102,7 +102,7 @@ export function ExportPanel({
             <label
               key={key}
               className={`flex min-h-11 flex-col justify-center gap-0.5 rounded-[var(--radius-control)] border px-3 py-2 ${
-                format === key ? "border-ink bg-ink/[0.07]" : "border-ink/40"
+                format === key ? "border-ink bg-ink/[0.07]" : "border-ink/60"
               } ${mp4Off ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-ink/[0.05]"}`}
             >
               <span className="flex items-center gap-2 font-semibold">
