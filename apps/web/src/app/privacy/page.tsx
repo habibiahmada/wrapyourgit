@@ -76,6 +76,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           code. Your public page and its card still never show private names.
         </li>
         <li>
+          <strong>Your private names choice</strong>: whether you chose to show private repository
+          names in your own story and files, so we ask only once. You can change it in Settings.
+        </li>
+        <li>
           <strong>Your timezone</strong>: the one your browser reports when you sync, so the recap's
           dates and hours match your day.
         </li>
@@ -105,9 +109,9 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     title: "How we use it",
     body: (
       <p>
-        Only to build, show and export your recap: the story, the letter, the PNG and PDF slides,
-        and the public page if you publish one. We do not sell or rent your data and do not use it
-        to train models.
+        Only to build, show and export your recap: the story, the letter, the video, the slides (as
+        PNG images or one ZIP) and the PDF, all made in your browser, and the public page if you
+        publish one. We do not sell or rent your data and do not use it to train models.
       </p>
     ),
   },
