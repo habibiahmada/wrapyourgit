@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { toPublicRecap } from "@wyg/analytics";
+import { withoutPrivateNames } from "@wyg/analytics";
 import { sampleRecap } from "@wyg/video";
 import { hasPrivateNames, storyData } from "./projection";
 
@@ -24,6 +24,14 @@ describe("storyData", () => {
     expect(hidden.contributions.total).toBe(fixture.contributions.total);
   });
 
+  test("keeps timezone and commit hours: only names are hidden", () => {
+    const fixture = withPrivate();
+    const hidden = storyData(fixture, false);
+    expect(hidden.meta.timezone).toBe(fixture.meta.timezone);
+    expect(hidden.contributions.hourly).toEqual(fixture.contributions.hourly);
+    expect(JSON.stringify(hidden)).not.toContain(SECRET);
+  });
+
   test("returns the same object when the answer is yes", () => {
     const fixture = withPrivate();
     expect(storyData(fixture, true)).toBe(fixture);
@@ -31,16 +39,22 @@ describe("storyData", () => {
 });
 
 describe("hasPrivateNames", () => {
+  test("is false for a recap with no private repository anywhere", () => {
+    // The raw sample names private repos, so strip them first; timezone and hours still differ
+    // from the public view and must not count.
+    expect(hasPrivateNames(withoutPrivateNames(sampleRecap))).toBe(false);
+  });
+
   test("is true with a private top repository and false after the public projection", () => {
     const fixture = withPrivate();
     expect(hasPrivateNames(fixture)).toBe(true);
-    expect(hasPrivateNames(toPublicRecap(fixture))).toBe(false);
+    expect(hasPrivateNames(withoutPrivateNames(fixture))).toBe(false);
   });
 });
 
 describe("hasPrivateNames beyond the top lists", () => {
   const repo = { ...sampleRecap.repositories.top[0], nameWithOwner: SECRET, isPrivate: true };
-  const publicBase = () => toPublicRecap(sampleRecap);
+  const publicBase = () => withoutPrivateNames(sampleRecap);
 
   test("is true for a private repository only in community.mostForked", () => {
     const base = publicBase();
