@@ -1,6 +1,6 @@
 import type { ArchetypeId, RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS } from "./copy";
-import { letterRepo, repoLabel, runnerUps } from "./present";
+import { isAnonymised, letterRepo, repoLabel, runnerUps } from "./present";
 
 /*
  * The congratulations letter at the end of the story. It reads like a note from a friend, not a
@@ -180,8 +180,11 @@ export function congratsLetter(recap: RecapData): Letter {
   const repo = letterRepo(recap);
   if (repo) {
     craft.push(
-      // Named even when private: only the owner's "show" choice lets one reach the letter (ADR-0017).
-      `The ${repoLabel(repo).name} repository got more of your time than anything else, and it shows.`,
+      // Named even when private when the owner chose to show it (ADR-0017). An anonymised one is
+      // still the year's main repository, so the letter says so without its name.
+      isAnonymised(repo)
+        ? "One private project got more of your attention than anything else, and whatever it is, it is better for it."
+        : `The ${repoLabel(repo).name} repository got more of your time than anything else, and it shows.`,
     );
   }
   if (community.starsGained.status === "ok" && community.starsGained.value > 0) {

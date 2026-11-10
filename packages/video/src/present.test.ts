@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { metricValue, repoLabel, runnerUps } from "./present";
+import { PRIVATE_REPO_NAME } from "@wyg/schema";
+import { isAnonymised, metricValue, repoLabel, runnerUps } from "./present";
 
 describe("repoLabel", () => {
   test("public repos show name and owner", () => {
@@ -14,6 +15,16 @@ describe("repoLabel", () => {
       name: "secret-client",
       owner: "octo",
     });
+  });
+
+  test("an anonymised private repository reads as one, without an owner", () => {
+    const anonymised = { nameWithOwner: PRIVATE_REPO_NAME, isPrivate: true };
+    expect(isAnonymised(anonymised)).toBe(true);
+    expect(repoLabel(anonymised)).toEqual({ name: "Private repository", owner: null });
+  });
+
+  test("the marker means nothing on a public repository", () => {
+    expect(isAnonymised({ nameWithOwner: PRIVATE_REPO_NAME, isPrivate: false })).toBe(false);
   });
 });
 

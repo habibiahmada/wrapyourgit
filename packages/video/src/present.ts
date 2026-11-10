@@ -1,20 +1,32 @@
-import type { ArchetypeId, Metric, RecapData, RepoRef } from "@wyg/schema";
+import {
+  type ArchetypeId,
+  type Metric,
+  PRIVATE_REPO_NAME,
+  type RecapData,
+  type RepoRef,
+} from "@wyg/schema";
 
 /*
  * Presentation rules shared by scenes. Pure, so they're unit-tested without Remotion.
  */
 
+/** Whether the projection anonymised this private repository: it has a rank, not a name. */
+export function isAnonymised(repo: Pick<RepoRef, "nameWithOwner" | "isPrivate">): boolean {
+  return repo.isPrivate && repo.nameWithOwner === PRIVATE_REPO_NAME;
+}
+
 /**
  * How a repository is named on screen: the name it is given, private or not. Privacy is enforced
  * before any scene sees the data, by the projection (ADR-0017): the owner's hidden view
- * (`withoutPrivateNames`) and every public surface (`toPublicRecap`) drop private repositories,
- * and the owner's "show" choice passes them through on purpose. A second filter here would make
- * that choice a no-op.
+ * (`withoutPrivateNames`) and every public surface (`toPublicRecap`) anonymise private
+ * repositories, which read "Private repository" here, and the owner's "show" choice passes the
+ * real names through on purpose. A second filter here would make that choice a no-op.
  */
 export function repoLabel(repo: Pick<RepoRef, "nameWithOwner" | "isPrivate">): {
   name: string;
   owner: string | null;
 } {
+  if (isAnonymised(repo)) return { name: "Private repository", owner: null };
   const [owner = "", name = repo.nameWithOwner] = repo.nameWithOwner.split("/");
   return { name, owner };
 }
@@ -38,14 +50,13 @@ export function letterRepo(data: RecapData): RepoRef | null {
 
 /**
  * Whether the story draws a private repository's name: on the projects shelf or in the letter,
- * the only places a repository is named. It decides the files' reminder, so it must follow every
- * scene: a new scene or letter line that names a repository belongs here too.
+ * the only places a repository is named. An anonymised one draws no name. It decides the files'
+ * reminder, so it must follow every scene: a new scene or letter line that names a repository
+ * belongs here too.
  */
 export function drawsPrivateName(data: RecapData): boolean {
-  return (
-    shelfRepos(data.repositories.top).some((r) => r.isPrivate) ||
-    letterRepo(data)?.isPrivate === true
-  );
+  const named = (r: RepoRef | null) => r?.isPrivate === true && !isAnonymised(r);
+  return shelfRepos(data.repositories.top).some(named) || named(letterRepo(data));
 }
 
 /**
