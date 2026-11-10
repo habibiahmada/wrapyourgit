@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { withoutPrivateNames } from "@wyg/analytics";
 import { sampleRecap } from "@wyg/video";
-import { hasPrivateNames, storyData } from "./projection";
+import { hasPrivateNames, showFilesReminder, storyData } from "./projection";
 
 const SECRET = "octo/secret-client";
 const withPrivate = () => {
@@ -82,5 +82,25 @@ describe("hasPrivateNames beyond the top lists", () => {
     const base = publicBase();
     const data = { ...base, community: { ...base.community, mostStarred: repo } };
     expect(JSON.stringify(storyData(data as typeof base, false))).not.toContain(SECRET);
+  });
+});
+
+describe("showFilesReminder", () => {
+  test("is true only when the owner shows names and the recap has private ones", () => {
+    expect(showFilesReminder(true, withPrivate())).toBe(true);
+  });
+
+  test("is false when the owner hides names, even if the recap has private ones", () => {
+    expect(showFilesReminder(false, withPrivate())).toBe(false);
+  });
+
+  test("is false while the question is unanswered", () => {
+    expect(showFilesReminder(null, withPrivate())).toBe(false);
+  });
+
+  test("is false when nothing private would be named", () => {
+    expect(showFilesReminder(true, sampleRecap)).toBe(false);
+    expect(showFilesReminder(false, sampleRecap)).toBe(false);
+    expect(showFilesReminder(null, sampleRecap)).toBe(false);
   });
 });

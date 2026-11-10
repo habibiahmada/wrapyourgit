@@ -12,3 +12,8 @@ export function storyData(data: RecapData, showPrivateNames: boolean): RecapData
 export function hasPrivateNames(data: RecapData): boolean {
   return JSON.stringify(data) !== JSON.stringify(withoutPrivateNames(data));
 }
+
+/** The files' reminder shows only when the owner chose to show names and the recap has private ones. */
+export function showFilesReminder(choice: boolean | null, data: RecapData): boolean {
+  return choice === true && hasPrivateNames(data);
+}

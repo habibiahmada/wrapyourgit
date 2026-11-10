@@ -2,7 +2,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { db, users } from "./db";
 
-export { hasPrivateNames, storyData } from "./projection";
+export { hasPrivateNames, showFilesReminder, storyData } from "./projection";
 
 /** The owner's answer to "Show your private repository names?"; null until they have answered. */
 export async function getPrivateNamesChoice(userId: string): Promise<boolean | null> {

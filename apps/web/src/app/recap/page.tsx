@@ -7,7 +7,7 @@ import { PageTransition } from "@/components/site/page-transition";
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
-import { getPrivateNamesChoice, hasPrivateNames, storyData } from "@/server/privacy";
+import { getPrivateNamesChoice, showFilesReminder, storyData } from "@/server/privacy";
 import { getRecap } from "@/server/recaps";
 import { PrivateNamesQuestion } from "./private-names-question";
 import { WorldPlayer } from "./world-player";
@@ -45,7 +45,7 @@ async function Story() {
       <h1 className="sr-only">Your year as a city</h1>
       <WorldPlayer
         data={storyData(recap.data, choice)}
-        privateNames={choice && hasPrivateNames(recap.data)}
+        privateNames={showFilesReminder(choice, recap.data)}
       />
     </main>
   );

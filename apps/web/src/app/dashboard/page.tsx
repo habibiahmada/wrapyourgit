@@ -21,7 +21,7 @@ import {
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
-import { getPrivateNamesChoice, hasPrivateNames, storyData } from "@/server/privacy";
+import { getPrivateNamesChoice, showFilesReminder, storyData } from "@/server/privacy";
 import { getRecap, isShared } from "@/server/recaps";
 import { nextSyncAt } from "@/server/sync-policy";
 import { setShareAction } from "./actions";
@@ -72,7 +72,8 @@ async function Dashboard({
   const retryAt = nextSyncAt(recap?.syncedAt ?? null, new Date());
   const shared = recap ? await isShared(user.id) : false;
   // Unanswered counts as hidden: the files never name a private repository before the owner says so.
-  const showNames = recap ? ((await getPrivateNamesChoice(user.id)) ?? false) : false;
+  const choice = recap ? await getPrivateNamesChoice(user.id) : null;
+  const showNames = choice ?? false;
   const { share: shareFlag } = await searchParams;
 
   return (
@@ -106,7 +107,7 @@ async function Dashboard({
                 </section>
                 <DownloadSection
                   data={storyData(recap.data, showNames)}
-                  privateNames={showNames && hasPrivateNames(recap.data)}
+                  privateNames={showFilesReminder(choice, recap.data)}
                 />
                 <ShareSection
                   login={user.login}
