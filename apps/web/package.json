@@ -15,7 +15,6 @@
     "@remotion/web-renderer": "4.0.541",
     "@wyg/analytics": "workspace:*",
     "@wyg/github": "workspace:*",
-    "@wyg/renderer": "workspace:*",
     "@wyg/schema": "workspace:*",
     "@wyg/video": "workspace:*",
     "drizzle-orm": "^0.45.4",

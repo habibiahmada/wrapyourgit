@@ -1,11 +1,10 @@
 /**
- * Renders single frames of the story composition to PNG on this machine, for the slide exports:
- * a slide is a chapter's finished last frame, drawn by the same composition the story and the MP4
- * use, so an export always looks exactly like the story (ADR-0011).
+ * Renders frames of the packages/video compositions to PNG on this machine, for the dev scripts:
+ * the art bake (render-art.ts) and the story world stills (world-stills.ts). Never imported by the
+ * web app: the story's own exports render in the browser (ADR-0016).
  *
- * Runs inside the still worker (still-worker.ts), a separate Bun process, never inside Next: the
- * composition is bundled once per worker and one headless browser is shared. Frames render one at
- * a time: parallel tabs on one machine contend for WebGL when baking the 3D loops (ADR-0013).
+ * The composition is bundled once per process and one headless browser is shared. Frames render
+ * one at a time: parallel tabs on one machine contend for WebGL when baking the 3D loops (ADR-0013).
  */
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -23,9 +22,8 @@ import {
 import type { RecapData } from "@wyg/schema";
 
 /**
- * packages/video, found by walking up from the working directory. Not from import.meta: once Next
- * bundles this module, import.meta.dirname is undefined. Looked up lazily, so a missing checkout
- * fails the render (a 503 in the routes), not the module import.
+ * packages/video, found by walking up from the working directory. Looked up lazily, so a missing
+ * checkout fails the render, not the module import.
  */
 function videoDir(): string {
   let dir = process.cwd();
@@ -86,7 +84,7 @@ function serial<T>(task: () => Promise<T>): Promise<T> {
 }
 
 /**
- * One frame of `composition` (e.g. "wrap-4x5") as PNG bytes. `data` must already be the public
+ * One frame of `composition` (e.g. "world-4x5") as PNG bytes. `data` must already be the public
  * projection when the file is meant to be shared.
  */
 export function renderSceneStill(

@@ -10,7 +10,7 @@
  * grid of frames the story steps through. The web app gets copies of both folders before dev and
  * build (scripts/sync-web-public.ts).
  *
- * Renders with the still renderer (apps/renderer/src/still.ts: one bundle, one browser,
+ * Renders with the still renderer (scripts/lib/still.ts: one bundle, one browser,
  * angle-egl) and assembles with ffmpeg (libwebp_anim) and ImageMagick (montage).
  */
 
@@ -19,7 +19,6 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { ArchetypeId } from "@wyg/schema";
 import { $ } from "bun";
-import { renderCompositionFrames } from "../apps/renderer/src/still";
 import {
   BAKE_FPS,
   CELL_POSES,
@@ -34,6 +33,7 @@ import {
 import { archetypeRole } from "../packages/video/src/cast";
 import { ART_IDS } from "../packages/video/src/Root";
 import type { ChibiMotion } from "../packages/video/src/three/pose";
+import { renderCompositionFrames } from "./lib/still";
 
 const publicDir = resolve(import.meta.dir, "../packages/video/public");
 const artDir = join(publicDir, "art");
