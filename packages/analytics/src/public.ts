@@ -1,23 +1,15 @@
 import type { RecapData, RepoRef } from "@wyg/schema";
 
 /**
- * The shareable projection of a recap (AGENTS.md rule 6). Anything that names a private
- * repository is removed; aggregate counts stay, because a count never identifies a repo. The
- * timezone and commit-hour histogram are withheld too: together they hint at where someone lives
- * and when they sleep, and no public scene needs them. Every public surface (public page, OG/PNG
- * card) renders this, never the stored document.
+ * Only the names: private repositories leave every list and highlight, nothing else changes.
+ * The owner's own "hide private names" view uses this, so their timezone and hours stay.
  */
-export function toPublicRecap(recap: RecapData): RecapData {
+export function withoutPrivateNames(recap: RecapData): RecapData {
   const publicOnly = <T extends RepoRef>(repo: T | null): T | null =>
     repo && !repo.isPrivate ? repo : null;
 
   return {
     ...recap,
-    meta: { ...recap.meta, timezone: "UTC" },
-    contributions: {
-      ...recap.contributions,
-      hourly: { status: "unavailable", reason: "Not shared publicly" },
-    },
     repositories: {
       ...recap.repositories,
       top: recap.repositories.top.filter((repo) => !repo.isPrivate),
@@ -38,5 +30,24 @@ export function toPublicRecap(recap: RecapData): RecapData {
             },
           }
         : recap.starred,
+  };
+}
+
+/**
+ * The shareable projection of a recap (AGENTS.md rule 6). Anything that names a private
+ * repository is removed; aggregate counts stay, because a count never identifies a repo. The
+ * timezone and commit-hour histogram are withheld too: together they hint at where someone lives
+ * and when they sleep, and no public scene needs them. Every public surface (public page, OG/PNG
+ * card) renders this, never the stored document.
+ */
+export function toPublicRecap(recap: RecapData): RecapData {
+  const named = withoutPrivateNames(recap);
+  return {
+    ...named,
+    meta: { ...named.meta, timezone: "UTC" },
+    contributions: {
+      ...named.contributions,
+      hourly: { status: "unavailable", reason: "Not shared publicly" },
+    },
   };
 }

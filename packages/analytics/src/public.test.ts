@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { type RecapData, type RepoRef, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
-import { toPublicRecap } from "./public";
+import { toPublicRecap, withoutPrivateNames } from "./public";
 
 const repo = (nameWithOwner: string, isPrivate: boolean): RepoRef => ({
   nameWithOwner,
@@ -127,6 +127,17 @@ describe("toPublicRecap", () => {
     const original = recap();
     toPublicRecap(original);
     expect(original.repositories.top).toHaveLength(2);
+  });
+});
+
+describe("withoutPrivateNames", () => {
+  test("drops every private name but keeps timezone and commit hours", () => {
+    const input = recap();
+    const result = withoutPrivateNames(input);
+    expect(JSON.stringify(result)).not.toContain("secret-");
+    expect(result.meta.timezone).toBe("Asia/Jakarta");
+    expect(result.contributions.hourly).toEqual(input.contributions.hourly);
+    expect(result.contributions.total).toBe(100);
   });
 });
 
