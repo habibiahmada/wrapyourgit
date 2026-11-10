@@ -60,14 +60,17 @@ Also out of scope: new metrics, changes to the analytics or the schema, and the 
 ## Approaches
 
 **A'. One Remotion composition, rendered in the browser (chosen).** The world, camera and chapters are one composition. On the web, the Player plays forward from stop to stop; going back steps the frame backward on each animation frame, so the move plays truly in reverse. Exports use `@remotion/web-renderer` (stable since 4.0.491; the project is on 4.0.540) to render MP4 and stills in the user's browser.
+
 - Pros: one source for web, MP4 and slides. Most of the foundation exists already: the Player, baked sprites, sounds and layout families. It removes Lambda and the slide worker.
 - Cons: animation is written in Remotion's frame-based style, and reverse playback needs our own controller.
 
 **B'. One GSAP timeline driving an SVG world, with our own export pipeline.** Bang-motion's style: a GSAP timeline seeked to time (deterministic), `reverse()` for going back. MP4 via our own SVG → canvas → WebCodecs pipeline and audio mix.
+
 - Pros: the most comfortable animation authoring.
 - Cons: we would build the encoder, audio mix and slide export ourselves, throw away the Remotion scenes, and supersede ADR-0002 and rule 3.
 
 **C. Pre-rendered clips per camera move.**
+
 - Cons: needs a per-user render on a server that Vercel doesn't have. It is slow and costs money, and reversed video playback in browsers stutters. Rejected.
 
 The maintainer leaned towards B', then chose **A'** on 2026-11-06. It keeps one implementation with far less to build. Bang-motion's thinking (camera language, easing, connected transitions) still guides how the moves are designed.

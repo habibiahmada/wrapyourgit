@@ -10,6 +10,7 @@ Sign-in is required. We need the viewer's contributions (including the _count_ o
 ## Decision
 
 Use a **GitHub App** with the user authorization flow ("Sign in with GitHub"), requesting no repository permissions for MVP:
+
 - Public data is readable with any user token.
 - `contributionsCollection.restrictedContributionsCount` gives private contribution counts without repo access (only if the user enabled "Private contributions" on their profile).
 - User access tokens expire (8 h) and come with refresh tokens, which limits damage if leaked.

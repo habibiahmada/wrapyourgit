@@ -33,11 +33,13 @@
 ### Task 1: Energetic soundtrack with loop points
 
 **Files:**
+
 - Modify: `packages/video/src/audio/track.ts`, `scripts/synth-track.ts`, `packages/video/public/audio/LICENSES.md`
 - Create: `packages/video/src/audio/track.test.ts`, `packages/video/public/audio/wrapyourgit-120bpm-v2.m4a` (generated); delete the old `.m4a`
 - Modify: `apps/web/src/app/recap/story-flow.tsx` (file path only, until Task 6)
 
 **Interfaces:**
+
 - Produces: `TRACK.file = "audio/wrapyourgit-120bpm-v2.m4a"`, `TRACK.loop = { startBeat: 40, endBeat: 88 }`, `loopSeconds(): { start: number; end: number }`.
 
 - [ ] Test `track.test.ts`: `loop` start and end are multiples of 4; `(startBeat/4) % 4 === (endBeat/4) % 4` (same chord); `endBeat <= sections.climax - 8` (no riser inside); `startBeat >= sections.drop`; `loopSeconds()` equals `{ start: 20, end: 44 }`.
@@ -51,10 +53,12 @@
 ### Task 2: Synthesised sound effects
 
 **Files:**
+
 - Create: `scripts/synth-sfx.ts`, `packages/video/src/audio/sfx.ts`, `packages/video/src/audio/sfx.test.ts`, `packages/video/public/audio/sfx/*.wav`
 - Modify: `packages/video/public/audio/LICENSES.md`
 
 **Interfaces:**
+
 - Produces: `type SfxName = "whoosh" | "cells" | "pop" | "tick" | "land" | "blip" | "shimmer" | "impact"`; `SFX: Record<SfxName, { file: string; volume: number }>` with `file = "audio/sfx/<name>.wav"`.
 
 - [ ] Test `sfx.test.ts`: every `SFX[name].file` exists on disk under `packages/video/public/`, is a RIFF/WAVE file under 200 KB, and every volume is in (0, 0.8].
@@ -67,10 +71,12 @@
 ### Task 3: `<Sfx>` and sounds from the animation primitives
 
 **Files:**
+
 - Create: `packages/video/src/components/Sfx.tsx`, `packages/video/src/components/Sfx.test.tsx`
 - Modify: `packages/video/src/components/Slam.tsx`, `packages/video/src/components/useCountUp.ts`, `packages/video/src/components/Accent.tsx`
 
 **Interfaces:**
+
 - Consumes: `SFX`, `SfxName` (Task 2).
 - Produces:
   - `SfxContext = createContext<boolean>(true)`.
@@ -104,11 +110,13 @@
 ### Task 5: Cell transitions
 
 **Files:**
+
 - Create: `packages/video/src/components/CellTransition.tsx`
 - Delete: `packages/video/src/components/CellWipe.tsx`
 - Modify: `packages/video/src/timeline.ts`, `packages/video/src/timeline.test.ts`, `packages/video/src/WrapStory.tsx`
 
 **Interfaces:**
+
 - Produces: `type TransitionVariant = "sweep" | "zoom" | "ripple"`; each `TIMELINE` entry after intro gets `transition: TransitionVariant`; `<CellTransition variant from to seed previous: ReactNode />`.
 - Assignment: contributions `sweep`, rhythm `ripple`, tech-dna `sweep`, projects `ripple`, community `sweep`, engineering `ripple`, identity `zoom`, closing `sweep`. Sweep direction alternates by index.
 - [ ] Test in `timeline.test.ts`: intro has no transition; every other scene has one; no two neighbouring scenes share a variant; identity is `zoom`.
@@ -125,10 +133,12 @@
 ### Task 6: Music prop and web audio
 
 **Files:**
+
 - Modify: `packages/video/src/WrapStory.tsx`, `apps/web/src/app/recap/story-flow.tsx`
 - Create: `apps/web/src/app/recap/use-music.ts`
 
 **Interfaces:**
+
 - Produces: `WrapStoryProps = { data: RecapData; music?: boolean }` (default `true`); `useMusic(src: string, loop: { start: number; end: number }) → { play(): void; fadeOut(ms?: number): () => void; setMuted(m: boolean): void; playing: boolean }`.
 - [ ] `WrapStory` renders the track only when `music !== false`.
 - [ ] `useMusic`: lazily creates an `AudioContext` on first `play()` (user gesture), fetches + decodes once, plays an `AudioBufferSourceNode` with `loop = true`, `loopStart`/`loopEnd` from `loopSeconds()`, through a `GainNode`. Mute sets gain to 0; `fadeOut` ramps gain with `linearRampToValueAtTime` then stops the source. Closes the context on unmount.

@@ -19,6 +19,7 @@ Railway is a fallback for staging if Vercel limits get in the way.
 ## Risk: credits expire right before peak season
 
 Users will want their **final** 2026 recap in early January, exactly when credits are gone. Before launch:
+
 1. Set an AWS Budget alert (e.g. $20/month after Jan 1).
 2. Measure cost per render (ADR-0004) and set per-user daily render limits accordingly.
 3. Decide a fallback if spend grows: cache identical renders, lower default resolution, queue renders, or ask for sponsorship.

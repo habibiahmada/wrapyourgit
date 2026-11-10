@@ -36,10 +36,12 @@
 ### Task 1: Busiest day as a metric (#47)
 
 **Files:**
+
 - Modify: `packages/schema/src/recap.ts` (add `contributions.busiestDay`, bump `SCHEMA_VERSION` 3 → 4), `docs/analytics/metrics.md` (row next to `busiestMonth`), `packages/analytics/src/calendar.ts` (+ `busiestDay`), `packages/analytics/src/recap.ts` (wire it), fixtures `packages/video/src/fixtures/sample-recap.ts` and `edge-recaps.ts`, `packages/analytics/src/public.test.ts` fixture, `packages/video/src/world/city.ts` (read the metric)
 - Test: `packages/analytics/src/calendar.test.ts`, `packages/video/src/world/city.test.ts`
 
 **Interfaces:**
+
 - Produces: `contributions.busiestDay: { date: string; count: number } | null` in `RecapData`; `busiestDay(calendar: CalendarDay[]): { date: string; count: number } | null` in analytics (highest count, earliest date on a tie, null when every day is 0).
 - `buildCity` sets `busiestIndex` from `data.contributions.busiestDay` (index of that date), not its own scan. `maxCount` stays computed from plots.
 
@@ -52,11 +54,13 @@
 ### Task 2: Scene framework
 
 **Files:**
+
 - Create: `packages/video/src/world/scenes/types.ts`, `packages/video/src/world/scenes/index.ts`, `packages/video/src/world/scenes/Placeholder.tsx` (the phase 1 card, moved), `packages/video/src/world/scenes/kit.tsx` (shared drawing helpers), `scripts/world-stills.ts`
 - Modify: `packages/video/src/world/StopLayer.tsx` (render the registry), `packages/video/src/world/fade.ts` (+ `enterProgress`), `packages/video/src/world/WorldStory.tsx` (pass `enter`)
 - Test: `packages/video/src/world/fade.test.ts`, `packages/video/src/world/scenes/index.test.ts`
 
 **Interfaces:**
+
 - `type SceneProps = { data: RecapData; stop: Stop; city: City; size: { width: number; height: number }; layout: LayoutFamily; enter: number; frame: number }` — `size` is the frame's size (the scene draws frame-sized), `enter` is 0 at the start of the move into this stop and 1 from the rest frame on, `frame` the composition frame for idle loops.
 - `type Scene = (props: SceneProps) => ReactNode`; `SCENES: Record<StopKind, Scene>`; until a later task replaces it, every kind maps to `Placeholder`.
 - `enterProgress(i: number, frame: number, timeline: Timeline): number` in `fade.ts`: 0 before the move into stop i, eased 0 → 1 over that move, 1 from the rest frame through the hold and the move out.
@@ -140,6 +144,7 @@ The approved mockups are `.superpowers/brainstorm/*/content/data-in-illustration
 **Files:** Create `packages/video/src/world/scenes/letter.model.ts` (+ test), `packages/video/src/world/scenes/Letter.tsx`; modify `packages/video/src/world/model.ts` (`buildWorld` passes the real page count to `buildStops`).
 
 **Interfaces:**
+
 - `paginateLetter(letter: Letter, size: { width: number; height: number }): string[][]` — pages of lines; lines wrap at word boundaries using the same character-width estimate as `fitFontSize` (0.62 em) at the letter's body size (4.2% of the frame's short side); paragraphs separated by one blank line; a page holds what fits between the letterhead and the page tab; never an empty page.
 - `buildWorld` calls `paginateLetter(congratsLetter(data), format)` and passes `letterPages: pages.length`.
 - Scene: paper sheet, `HeadArt` letterhead, the page's lines, "n / N" tab and a folded corner; arriving from the previous page the sheet turns (rotate around its left edge with `enter`, 2D only: `scaleX` and `skewY`, no 3D CSS).
@@ -158,6 +163,7 @@ The approved mockups are `.superpowers/brainstorm/*/content/data-in-illustration
 **Files:** `packages/video/src/audio/sfx.ts`, `scripts/synth-sfx.ts`, `packages/video/src/world/sound.ts` (+ test), `packages/video/src/world/WorldStory.tsx`, `apps/web/src/app/recap/world/world-player.tsx`.
 
 **Interfaces:**
+
 - New SFX (synthesised, peak −3 dBFS, RMS not above `whoosh`): `sprout` (0.5 s), `lock` (0.35 s), `flag` (0.4 s), `chug` (0.8 s), `bloom` (0.6 s), `crate` (0.35 s), `twinkle` (0.8 s), `landing` (0.6 s), `spotlight` (0.7 s), `seesaw` (0.6 s), `page` (0.35 s), `firework` (1.2 s), `hello` (0.4 s).
 - `arrivalSound(kind: StopKind): SfxName | null` — exhaustive switch with a `never` check; `city` → null (the wind already covers it).
 - Video mode: `Sfx` at each `stopFrames[i]`. Web player: play the arrival sound when a move settles (not when it is cancelled by a format change).
@@ -170,6 +176,7 @@ The approved mockups are `.superpowers/brainstorm/*/content/data-in-illustration
 **Files:** Create `packages/video/src/audio/world-track.ts` (+ test), `scripts/synth-world-track.ts`; output `packages/video/public/audio/world-90bpm-v1.m4a`; modify `WorldStory.tsx` and `world-player.tsx` to use it; `packages/video/public/audio/LICENSES.md` row.
 
 **Interfaces:**
+
 - `WORLD_TRACK = { file: "audio/world-90bpm-v1.m4a", bpm: 90, beats: 192, loop: { startBeat: 32, endBeat: 160 } }` and `worldLoopSeconds(): { start: number; end: number }`.
 - Character: calm, warm, A minor like the effects (so they sit in key); soft pads and plucked arpeggios, a light brushed beat entering at beat 32, no build-ups or drops inside the loop region (it may loop for minutes); intro beats 0-32 without drums; outro 160-192 fades for the video's ending.
 - Video mode: one `Html5Audio` plays the file from 0 to the loop end; when the video is longer, a `<Loop>` of length (loop end − loop start) follows it with an `Html5Audio` trimmed to the loop region (`startFrom`/`endAt` in frames). Keep the fade over the last two beats of the composition.
