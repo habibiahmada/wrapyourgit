@@ -26,7 +26,7 @@
     "@remotion/google-fonts": "4.0.540",
     "@remotion/three": "4.0.540",
     "@wyg/schema": "workspace:*",
-    "remotion": "4.0.540",
+    "remotion": "4.0.541",
     "three": "^0.187.0"
   },
   "devDependencies": {
