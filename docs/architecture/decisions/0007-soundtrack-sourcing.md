@@ -2,6 +2,7 @@
 
 - Status: Accepted for MVP (2026-11-04): original synthesised track, see Outcome
 - Date: 2026-11-04
+- Note (#63): the 120 BPM track and `scripts/synth-track.ts` were removed with the old story. The story world's 90 BPM track follows the same approach: synthesised CC0, from `scripts/synth-world-track.ts` and `packages/video/src/audio/world-track.ts`.
 
 ## Context
 

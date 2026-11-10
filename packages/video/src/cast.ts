@@ -2,12 +2,11 @@ import type { ArchetypeId } from "@wyg/schema";
 import type { PhotoId } from "./photos";
 import { C } from "./three/palette";
 import { CELL, type ChibiMotion, type Look } from "./three/pose";
-import type { SceneId } from "./timeline";
 
 /*
- * Cell's motion and gear per chapter, and each archetype's Cell. One mascot (ADR-0012). The baked
+ * Cell's motion and gear per role, and each archetype's Cell. One mascot (ADR-0012). The baked
  * art reads these (art.ts, three/ArtStill.tsx, scripts/render-art.ts): the cutouts take a
- * chapter's role, the skins an archetype's.
+ * role, the skins an archetype's.
  */
 
 export type Role = { look: Look; motion: ChibiMotion };
@@ -19,7 +18,18 @@ export type ArchetypeRole = Role & {
   tilt: number;
 };
 
-export const CAST: Record<Exclude<SceneId, "identity">, Role> = {
+/** The roles Cell plays in the baked art, named after the chapters they were first drawn for. */
+export type CastId =
+  | "intro"
+  | "contributions"
+  | "rhythm"
+  | "tech-dna"
+  | "projects"
+  | "community"
+  | "engineering"
+  | "closing";
+
+export const CAST: Record<CastId, Role> = {
   // Hello, waving.
   intro: { look: CELL, motion: "wave" },
   // The big number gets a jump.
