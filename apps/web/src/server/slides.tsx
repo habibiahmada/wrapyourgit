@@ -68,7 +68,7 @@ const GREENS = ["#9BE9A8", "#40C463", "#30A14E", "#216E39"] as const;
 const HEAT = ["rgba(20, 19, 15, 0.08)", ...GREENS] as const;
 const FAINT = "rgba(20, 19, 15, 0.12)";
 
-/** Margin cells of the paper's motif, as in the web letter (recap/letter-sheet.tsx). */
+/** Margin cells of the paper's motif, as in the old web letter. */
 const MOTIF: { x: number; y: number; s: number; lit?: boolean }[] = [
   { x: 18, y: 380, s: 22 },
   { x: 40, y: 430, s: 14, lit: true },

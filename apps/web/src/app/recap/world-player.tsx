@@ -1,15 +1,13 @@
 "use client";
 
 import { Player, type PlayerRef } from "@remotion/player";
-import { toPublicRecap } from "@wyg/analytics";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
-import { sampleRecap, WorldStory } from "@wyg/video";
+import { WorldStory } from "@wyg/video";
 import { buildWorld, edgeSounds, safeArea, TAP_SOUND } from "@wyg/video/world";
 import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMusic } from "../use-music";
 import {
   type ControllerState,
   carryStop,
@@ -19,6 +17,7 @@ import {
   settle,
 } from "./controller";
 import { ExportPanel, PAPER_BUTTON } from "./export-panel";
+import { useMusic } from "./use-music";
 import { useSfx } from "./use-sfx";
 
 const FORMAT_FOR_LAYOUT = { portrait: "9x16", compact: "4x5", landscape: "16x9" } as const;
@@ -39,7 +38,7 @@ const CONTROL_RING =
 const zone = (disabled: boolean) =>
   `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-ink/[0.03] active:bg-ink/[0.07]"} ${ZONE_RING}`;
 /**
- * A strip above the stage that holds the web-only controls (Sound, Close, the sample label). They
+ * A strip above the stage that holds the web-only controls (Sound, Close). They
  * are not part of the composition, so the scenes' safe area can't keep text clear of them; the
  * stage shrinks to fit under the strip instead, and exports never see it. 44 px controls plus
  * 8 px either side, in rem so it grows with them under text zoom.
@@ -87,14 +86,15 @@ function heading(state: ControllerState): number {
  */
 export function WorldPlayer({
   data,
-  exportData,
-  sample = false,
+  privateNames,
 }: {
-  /** The full recap, for playback on the owner's own screen. */
+  /**
+   * The owner's story projection (`storyData`): private names only when they chose to show them.
+   * The story and the "Keep your year" files both use it, so the files follow the choice.
+   */
   data: RecapData;
-  /** The public projection: the only data the "Keep your year" files are made from. */
-  exportData: RecapData;
-  sample?: boolean;
+  /** True when `data` names a private repository: the end screen then says the files do too. */
+  privateNames: boolean;
 }) {
   const router = useRouter();
   const player = useRef<PlayerRef>(null);
@@ -341,11 +341,11 @@ export function WorldPlayer({
                   Keep your year
                 </h2>
                 <p className="text-lg text-ink-soft">
-                  Your story as files to keep and post, made in this browser. Private repositories
-                  are never named.
+                  Your story as files to keep and post, made in this browser.
+                  {privateNames ? "" : " Private repositories are never named."}
                 </p>
               </div>
-              <ExportPanel data={exportData} card={!sample} onBusyChange={setBusy} />
+              <ExportPanel data={data} privateNames={privateNames} card onBusyChange={setBusy} />
               <div className="flex flex-col gap-3 border-t border-ink/25 pt-6">
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
@@ -392,11 +392,6 @@ export function WorldPlayer({
           className="absolute inset-x-3 bottom-full flex items-center justify-end gap-2"
           style={{ height: CONTROL_BAND }}
         >
-          {sample && (
-            <p className="mr-auto rounded-md border border-ink/25 bg-paper/90 px-3 py-2 text-sm font-semibold">
-              Sample data
-            </p>
-          )}
           <div className="pointer-events-auto flex gap-2">
             <button
               type="button"
@@ -450,16 +445,6 @@ export function WorldPlayer({
     </div>
   );
 }
-
-/**
- * Development fallback with the fixture. Lives on the client side: `@wyg/video`'s entry pulls in
- * React context, which a server component can't import.
- */
-export function SampleWorldPlayer() {
-  return <WorldPlayer data={sampleRecap} exportData={SAMPLE_EXPORT} sample />;
-}
-
-const SAMPLE_EXPORT = toPublicRecap(sampleRecap);
 
 function SpeakerIcon({ muted }: { muted: boolean }) {
   return (

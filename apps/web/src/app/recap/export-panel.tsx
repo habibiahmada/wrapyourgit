@@ -6,6 +6,7 @@ import { useEffect, useId, useReducer, useRef, useState } from "react";
 import { type ExportRunner, exportRunner } from "./export-runner";
 import { announcement, type ExportJob, exportReducer, IDLE, NOUN, percent } from "./export-state";
 import type { ExportSupport } from "./exports";
+import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 
 const FORMATS = ["9x16", "4x5", "1x1", "16x9"] as const satisfies readonly ExportFormat[];
 const NOTHING: ExportSupport = {
@@ -34,16 +35,20 @@ export const PAPER_BUTTON = {
 const ratio = (format: ExportFormat) => format.replace("x", ":");
 
 /**
- * The files of the story, made in this browser. `data` must already be the public projection
- * (AGENTS.md rule 6): everything here leaves the site. The renderer is imported on mount, so it
- * never weighs on the player's first load.
+ * The files of the story, made in this browser. `data` must already be the owner's story
+ * projection (`storyData`, ADR-0017): everything here leaves the site, so private names are in it
+ * only when the owner chose to show them. The renderer is imported on mount, so it never weighs
+ * on the player's first load.
  */
 export function ExportPanel({
   data,
+  privateNames,
   card,
   onBusyChange,
 }: {
   data: RecapData;
+  /** True when `data` names a private repository: a reminder line then sits above the buttons. */
+  privateNames: boolean;
   /** Whether `/api/card` can answer: it needs a signed-in user with a recap. */
   card: boolean;
   onBusyChange?: (busy: boolean) => void;
@@ -144,6 +149,10 @@ export function ExportPanel({
           ))}
         </div>
       </fieldset>
+
+      {showReminder(privateNames) && (
+        <p className="text-base font-semibold">{PRIVATE_NAMES_REMINDER}</p>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button
