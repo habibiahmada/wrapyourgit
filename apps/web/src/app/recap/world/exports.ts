@@ -1,5 +1,10 @@
 // Client only: renders with Remotion in the browser. Never import this from server code.
-import { canRenderMediaOnWeb, renderMediaOnWeb, renderStillOnWeb } from "@remotion/web-renderer";
+import {
+  canRenderMediaOnWeb,
+  type RenderMediaOnWebProgressCallback,
+  renderMediaOnWeb,
+  renderStillOnWeb,
+} from "@remotion/web-renderer";
 import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import { WorldStory } from "@wyg/video";
 import {
@@ -14,48 +19,48 @@ import { PDFDocument } from "pdf-lib";
 export type Slide = { name: string; blob: Blob };
 export type ExportSupport = { mp4: boolean; stills: boolean; reason: string | null };
 
-type Composition = ReturnType<typeof worldExportComposition>;
+type WorldComposition = ReturnType<typeof worldExportComposition> & {
+  component: typeof WorldStory;
+};
+type WorldProps = WorldComposition["defaultProps"];
+
+export type MediaOptions = {
+  composition: WorldComposition;
+  inputProps: WorldProps;
+  container: "mp4";
+  videoCodec: "h264";
+  audioCodec: "aac";
+  signal: AbortSignal;
+  onProgress: RenderMediaOnWebProgressCallback;
+};
+export type StillOptions = {
+  composition: WorldComposition;
+  inputProps: WorldProps;
+  frame: number;
+  signal: AbortSignal;
+};
 
 /** The browser-side renderer, injectable so the logic around it is testable without a browser. */
 export type ExportEngine = {
   canRender: typeof canRenderMediaOnWeb;
   stillsAvailable: () => boolean;
-  renderMedia: (
-    composition: Composition,
-    options: { onProgress: (p: number) => void; signal: AbortSignal },
-  ) => Promise<Blob>;
-  renderStill: (composition: Composition, frame: number, signal: AbortSignal) => Promise<Blob>;
+  renderMedia: (options: MediaOptions) => Promise<Blob>;
+  renderStill: (options: StillOptions) => Promise<Blob>;
 };
-
-const component = { component: WorldStory };
 
 const defaultEngine: ExportEngine = {
   canRender: canRenderMediaOnWeb,
   // Stills are drawn on an OffscreenCanvas and encoded with convertToBlob.
   stillsAvailable: () =>
     typeof OffscreenCanvas !== "undefined" && "convertToBlob" in OffscreenCanvas.prototype,
-  renderMedia: async (composition, { onProgress, signal }) => {
-    const result = await renderMediaOnWeb({
-      composition: { ...composition, ...component },
-      inputProps: composition.defaultProps,
-      container: "mp4",
-      videoCodec: "h264",
-      audioCodec: "aac",
-      signal,
-      onProgress: (progress) => onProgress(progress.progress),
-    });
-    return result.getBlob();
-  },
-  renderStill: async (composition, frame, signal) => {
-    const result = await renderStillOnWeb({
-      composition: { ...composition, ...component },
-      inputProps: composition.defaultProps,
-      frame,
-      signal,
-    });
-    return result.blob({ format: "png" });
-  },
+  renderMedia: async (options) => (await renderMediaOnWeb(options)).getBlob(),
+  renderStill: async (options) => (await renderStillOnWeb(options)).blob({ format: "png" }),
 };
+
+const composition = (data: RecapData, format: ExportFormat): WorldComposition => ({
+  ...worldExportComposition(data, format),
+  component: WorldStory,
+});
 
 const engineWith = (overrides: Partial<ExportEngine>): ExportEngine => ({
   ...defaultEngine,
@@ -81,7 +86,11 @@ export async function exportSupport(overrides: Partial<ExportEngine> = {}): Prom
       width,
       height,
     });
-    mp4 = result.canRender && !result.issues.some((issue) => issue.severity === "error");
+    // Not `result.canRender`: it always folds in a WebGL check, and the world draws no WebGL
+    // or 3D CSS (ADR-0013), so a missing WebGL must not cost the reader the video.
+    mp4 = !result.issues.some(
+      (issue) => issue.severity === "error" && issue.type !== "webgl-unsupported",
+    );
   } catch {
     mp4 = false;
   }
@@ -98,13 +107,34 @@ export async function exportSupport(overrides: Partial<ExportEngine> = {}): Prom
 export function renderMp4(
   data: RecapData,
   format: ExportFormat,
-  options: { onProgress: (p: number) => void; signal: AbortSignal },
+  { onProgress, signal }: { onProgress: (p: number) => void; signal: AbortSignal },
   overrides: Partial<ExportEngine> = {},
 ): Promise<Blob> {
-  return engineWith(overrides).renderMedia(worldExportComposition(data, format), options);
+  const world = composition(data, format);
+  return cancellable(signal, () =>
+    engineWith(overrides).renderMedia({
+      composition: world,
+      inputProps: world.defaultProps,
+      container: "mp4",
+      videoCodec: "h264",
+      audioCodec: "aac",
+      signal,
+      onProgress: (progress) => onProgress(progress.progress),
+    }),
+  );
 }
 
 const aborted = () => new DOMException("The export was cancelled.", "AbortError");
+
+/** Whatever the renderer throws once the signal has aborted, callers see one AbortError. */
+async function cancellable<T>(signal: AbortSignal, run: () => Promise<T>): Promise<T> {
+  if (signal.aborted) throw aborted();
+  try {
+    return await run();
+  } catch (error) {
+    throw signal.aborted ? aborted() : error;
+  }
+}
 
 /** One PNG per stop, one at a time: the web renderer is single-threaded and shares the tab. */
 export async function renderSlides(
@@ -114,13 +144,14 @@ export async function renderSlides(
 ): Promise<Slide[]> {
   const engine = engineWith(overrides);
   const { onProgress, signal } = options;
-  const composition = worldExportComposition(data, "4x5");
+  const world = composition(data, "4x5");
   const frames = slideFrames(data);
   const slides: Slide[] = [];
   onProgress(0, frames.length);
   for (const [i, { stopId, frame }] of frames.entries()) {
-    if (signal.aborted) throw aborted();
-    const blob = await engine.renderStill(composition, frame, signal);
+    const blob = await cancellable(signal, () =>
+      engine.renderStill({ composition: world, inputProps: world.defaultProps, frame, signal }),
+    );
     slides.push({ name: exportFileName("png", data, { index: i + 1, stopId }), blob });
     onProgress(i + 1, frames.length);
   }

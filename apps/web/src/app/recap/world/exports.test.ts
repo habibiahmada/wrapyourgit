@@ -1,9 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { sampleRecap } from "@wyg/video";
-import { slideFrames } from "@wyg/video/world";
+import { sampleRecap, WorldStory } from "@wyg/video";
+import { slideFrames, worldExportComposition } from "@wyg/video/world";
 import { unzipSync } from "fflate";
 import { PDFDocument } from "pdf-lib";
-import { type ExportEngine, exportSupport, pdfSlides, renderSlides, zipSlides } from "./exports";
+import {
+  type ExportEngine,
+  exportSupport,
+  pdfSlides,
+  renderMp4,
+  renderSlides,
+  zipSlides,
+} from "./exports";
 
 // A valid 1x1 PNG, enough for pdf-lib to embed and fflate to store.
 const PNG_1X1 = Uint8Array.from(
@@ -68,6 +75,28 @@ describe("exportSupport", () => {
     expect(support).toEqual({ mp4: true, stills: true, reason: null });
   });
 
+  test("WebGL is not needed: its issue alone leaves the MP4 on", async () => {
+    const support = await exportSupport({
+      canRender: async () =>
+        canRenderResult(false, [{ type: "webgl-unsupported", message: "no webgl" }]),
+      stillsAvailable: () => true,
+    });
+    expect(support).toEqual({ mp4: true, stills: true, reason: null });
+  });
+
+  test("another blocking issue next to WebGL still turns the MP4 off", async () => {
+    const support = await exportSupport({
+      canRender: async () =>
+        canRenderResult(false, [
+          { type: "webgl-unsupported", message: "no webgl" },
+          { type: "audio-codec-unsupported", message: "no aac" },
+        ]),
+      stillsAvailable: () => true,
+    });
+    expect(support.mp4).toBe(false);
+    expect(support.reason).toEqual(expect.any(String));
+  });
+
   test("a renderer that throws is the same as one that cannot render", async () => {
     const support = await exportSupport({
       canRender: async () => {
@@ -114,5 +143,79 @@ describe("renderSlides", () => {
     );
     await expect(run).rejects.toMatchObject({ name: "AbortError" });
     expect(rendered).toBe(1);
+  });
+});
+
+describe("renderMp4", () => {
+  test("passes the world composition, props, container and signal to the renderer", async () => {
+    const signal = new AbortController().signal;
+    const seen: Parameters<ExportEngine["renderMedia"]>[0][] = [];
+    const progress: number[] = [];
+    const blob = await renderMp4(
+      sampleRecap,
+      "16x9",
+      { onProgress: (p) => progress.push(p), signal },
+      {
+        renderMedia: async (options) => {
+          seen.push(options);
+          options.onProgress?.({
+            progress: 0.5,
+            renderedFrames: 0,
+            encodedFrames: 0,
+            doneIn: null,
+            renderEstimatedTime: 0,
+          });
+          return png();
+        },
+      },
+    );
+    const expected = worldExportComposition(sampleRecap, "16x9");
+    const options = seen[0];
+    expect(blob.type).toBe("image/png");
+    expect(options?.composition).toMatchObject({
+      id: expected.id,
+      width: 1920,
+      height: 1080,
+      fps: expected.fps,
+      durationInFrames: expected.durationInFrames,
+    });
+    expect(options?.composition.component).toBe(WorldStory);
+    expect(options?.inputProps).toEqual({ data: sampleRecap, mode: "video" });
+    expect(options?.container).toBe("mp4");
+    expect(options?.signal).toBe(signal);
+    expect(progress).toEqual([0.5]);
+  });
+
+  test("a renderer that fails after cancel rejects with an AbortError", async () => {
+    const controller = new AbortController();
+    const run = renderMp4(
+      sampleRecap,
+      "9x16",
+      { onProgress: () => {}, signal: controller.signal },
+      {
+        renderMedia: async () => {
+          controller.abort();
+          throw new Error("encoder closed");
+        },
+      },
+    );
+    await expect(run).rejects.toMatchObject({ name: "AbortError" });
+  });
+});
+
+describe("renderSlides cancel", () => {
+  test("a still renderer that fails after cancel rejects with an AbortError", async () => {
+    const controller = new AbortController();
+    const run = renderSlides(
+      sampleRecap,
+      { onProgress: () => {}, signal: controller.signal },
+      {
+        renderStill: async () => {
+          controller.abort();
+          throw new Error("canvas gone");
+        },
+      },
+    );
+    await expect(run).rejects.toMatchObject({ name: "AbortError" });
   });
 });
