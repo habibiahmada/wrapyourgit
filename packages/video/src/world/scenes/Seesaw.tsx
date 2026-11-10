@@ -62,7 +62,7 @@ export function Seesaw({ data, size, layout, enter }: SceneProps) {
   const leftY = py - BEAM_HALF * Math.sin(theta);
 
   const title = level
-    ? `Last year couldn't be read from GitHub. ${model.current.year}: ${formatCount(model.current.value)} contributions so far.`
+    ? `Last year couldn't be read from GitHub. ${model.current.year}: ${formatCount(model.current.value)} contributions${data.meta.isFinal ? "" : " so far"}.`
     : `${model.change}. ${model.last.year}: ${formatCount(model.last.value)} contributions. ${model.current.year}: ${formatCount(model.current.value)}. ${model.span}`;
 
   /** A weight standing on a beam end; upright, whatever the tilt. */

@@ -1,3 +1,4 @@
+import { layoutForSize } from "@wyg/schema";
 import type { Letter } from "../../letter";
 import { type LabelWeight, labelWidth, SCENE_WIDTH, safeArea, sceneHeight } from "./fit";
 
@@ -51,7 +52,7 @@ export function letterGeometry(size: Size): LetterGeometry {
     (square ? SQUARE_BODY_SHARE : BODY_SHARE) * Math.min(size.width, size.height) * unitsPerPx;
   const lineHeight = body * LINE_HEIGHT;
 
-  const landscape = size.width > size.height * 1.2;
+  const landscape = layoutForSize(size.width, size.height) === "landscape";
   const top = safe.top + body * 0.4;
   const height = h - top - safe.bottom - body * 0.4;
   const width = landscape ? Math.min(SCENE_WIDTH - 2 * body, height * 1.5) : SCENE_WIDTH - body * 2;
