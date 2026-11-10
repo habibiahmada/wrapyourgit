@@ -16,7 +16,8 @@ import {
   request,
   settle,
 } from "./controller";
-import { ExportPanel, PAPER_BUTTON } from "./export-panel";
+import { ExportPanel } from "./export-panel";
+import { PAPER_BUTTON } from "./paper-button";
 import { useMusic } from "./use-music";
 import { useSfx } from "./use-sfx";
 

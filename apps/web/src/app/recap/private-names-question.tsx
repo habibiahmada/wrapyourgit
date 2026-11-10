@@ -3,7 +3,7 @@
 import { useFormStatus } from "react-dom";
 import { Art } from "@/components/art";
 import { setPrivateNamesAction } from "./actions";
-import { PAPER_BUTTON } from "./export-panel";
+import { PAPER_BUTTON } from "./paper-button";
 
 /*
  * Asked once, before the story's first stop. Ink on paper like the story it opens, with no site
