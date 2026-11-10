@@ -32,6 +32,7 @@
 | [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art                           | Accepted                             |
 | [0013](architecture/decisions/0013-baked-animation-no-webgl.md)          | Cell moves through baked loops, no WebGL in the browser                                  | Accepted                             |
 | [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets                         | Accepted                             |
-| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later                               | Accepted                             |
+| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later                               | Accepted, amended by 0018            |
 | [0016](architecture/decisions/0016-exports-in-the-browser.md)            | The story's files are rendered in the viewer's browser                                   | Accepted, decision 3 amended by 0017 |
 | [0017](architecture/decisions/0017-private-names-follow-the-owner.md)    | Private repo names follow the owner in their own story; public surfaces always hide them | Accepted                             |
+| [0018](architecture/decisions/0018-production-only-deploys.md)           | Vercel deploys production only; no preview deployments or database branches              | Accepted                             |

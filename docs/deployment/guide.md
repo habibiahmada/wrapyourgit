@@ -30,7 +30,7 @@ The template is [`.env.example`](../../.env.example). The web app reads these; s
 
 `GITHUB_TOKEN` in `.env.example` is for local spikes only; don't set it on a server.
 
-On Vercel, `DATABASE_URL` comes from the Neon integration (Production and Preview); `APP_URL` is set for Production and Preview; `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_SECRET` and `TOKEN_ENCRYPTION_KEY` are set for **Production only**, so preview deployments build but can't sign anyone in. For previews the Neon integration replaces `DATABASE_URL` with a **database branch of their own** ("Create Database Branch For Deployment: Preview"), so a preview never touches production data. The branches are named `preview/<git branch>` and show in the Neon console (Vercel → Storage → wrapyourgit-db → Open in Neon → Branches). The free plan caps the number of branches: if a preview fails to get a database, delete old `preview/*` branches there. The two secrets are Vercel _Secret_ variables, entered by the maintainer.
+On Vercel, `DATABASE_URL` and the other `DATABASE_*` variables come from the Neon integration, connected to **Production only**; `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_SECRET` and `TOKEN_ENCRYPTION_KEY` are Production-only too. Vercel builds production only ([ADR-0018](../architecture/decisions/0018-production-only-deploys.md)): there are no preview deployments and no Neon database branches. If previews are ever turned back on, give the Neon connection Preview **together with** "Create Database Branch For Deployment: Preview", or previews would get the production database and migrate it. The two secrets are Vercel _Secret_ variables, entered by the maintainer.
 
 ## GitHub App
 
@@ -42,7 +42,7 @@ One GitHub App, `wrapyourgit` (App ID 5604815), serves both local development an
 
 ## Database migrations
 
-Migrations live in `apps/web/drizzle`. On Vercel the build command runs them first (`bun run db:migrate && bun run build`), so every deployment migrates before it builds. Production migrates the production database; a preview migrates its own Neon branch. Elsewhere, apply them from any machine that can reach the database, before the new code goes live:
+Migrations live in `apps/web/drizzle`. On Vercel the build command runs them first (`bun run db:migrate && bun run build`), so every deployment migrates before it builds. Only production deploys, so only the production database is migrated there. Elsewhere, apply them from any machine that can reach the database, before the new code goes live:
 
 ```bash
 DATABASE_URL='<connection string>' bun run --filter @wyg/web db:migrate
@@ -59,7 +59,7 @@ What is set up, and how to set it up again:
    - Install command: `cd ../.. && bun install --frozen-lockfile` (the whole workspace, from the repository root).
    - Build command: `bun run db:migrate && bun run build`. `build` first copies `art`, `audio`, `lang` and `photos` from `packages/video/public` into `apps/web/public` (`scripts/sync-web-public.ts`): symlinks there made Vercel's output step fail.
    - Settings → Functions → Function Region: Singapore (`sin1`), next to the database.
-   - Every push to `main` deploys production; other branches get preview deployments.
+   - Every push to `main` deploys production. Other branches are skipped (Settings → Build and Deployment → Ignored Build Step: "Only build production", ADR-0018).
 2. **Neon** through Vercel → Storage → Create Database → Neon: region Singapore, free plan, Neon Auth off, connected to the project with the variable prefix `DATABASE` (so the pooled string is `DATABASE_URL`).
 3. **Environment variables** as in the table and scopes above.
 4. **Rate limit:** Vercel → Firewall → Rules → "Rate limit /api and /u/ endpoints": paths starting with `/api` or `/u/`, fixed window of 60 seconds, 60 requests per IP, then **429**, published to production. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish.
