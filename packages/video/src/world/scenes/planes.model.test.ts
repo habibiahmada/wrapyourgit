@@ -74,3 +74,26 @@ test("planesModel: more merged than opened never goes negative", () => {
   expect(m.inFlight).toBe(0);
   expect(m.drawnFlying).toBe(0);
 });
+
+test("planesModel: merged unavailable claims nothing in flight and nothing parked (R6)", () => {
+  const m = planesModel(withEng({ prsMerged: { status: "unavailable", reason: "x" } }));
+  expect(m.inFlight).toBeNull();
+  expect(m.drawnFlying).toBe(MAX_PLANES);
+  expect(m.drawnLanded).toBe(0);
+  expect(m.picture).toBe("64 paper planes sent; merged couldn't be read");
+  expect(m.picture).not.toContain("parked");
+  expect(m.picture).not.toContain("in the air");
+});
+
+test("planesModel: the picture's words when merged is known", () => {
+  expect(planesModel(sampleRecap).picture).toBe(
+    "12 paper planes in the air, 12 parked on the runway",
+  );
+  expect(planesModel(emptyRecap).picture).toBe(
+    "No paper planes in the air, 0 parked on the runway",
+  );
+  const one = planesModel(
+    withEng({ prsOpened: 1, prsMerged: { status: "unavailable", reason: "x" } }),
+  );
+  expect(one.picture).toBe("1 paper plane sent; merged couldn't be read");
+});

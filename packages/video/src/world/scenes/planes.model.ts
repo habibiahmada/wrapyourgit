@@ -12,10 +12,15 @@ export type PlanesModel = {
   /** Null when GitHub could not say how many pull requests were merged. */
   merged: number | null;
   reviews: number;
-  /** Opened minus merged, never below zero; when merged is unknown, everything sent. */
-  inFlight: number;
+  /**
+   * Opened minus merged, never below zero. Null when merged is unknown: then nobody can say which
+   * planes are still in the air, so the scene draws them only as "sent".
+   */
+  inFlight: number | null;
   drawnFlying: number;
   drawnLanded: number;
+  /** What the picture shows, in words, for the scene's accessible title. */
+  picture: string;
   /** Nothing sent and nothing landed: an empty runway with its own words. */
   empty: boolean;
   /** The three arrivals-board rows. A null value means the row is a sentence on its own. */
@@ -31,7 +36,14 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 export function planesModel(data: RecapData): PlanesModel {
   const { prsOpened: sent, prsMerged, reviews } = data.engineering;
   const merged = prsMerged.status === "ok" ? prsMerged.value : null;
-  const inFlight = Math.max(0, sent - (merged ?? 0));
+  const inFlight = merged === null ? null : Math.max(0, sent - merged);
+  const drawnFlying = Math.min(MAX_PLANES, inFlight ?? sent);
+  const drawnLanded = Math.min(MAX_PLANES, merged ?? 0);
+  const planes = (n: number) => `${formatCount(n)} ${plural(n, "paper plane", "paper planes")}`;
+  const picture =
+    inFlight === null
+      ? `${sent === 0 ? "No paper planes" : planes(sent)} sent; merged couldn't be read`
+      : `${drawnFlying > 0 ? `${planes(drawnFlying)} in the air` : "No paper planes in the air"}, ${drawnLanded} parked on the runway`;
   const mergedRow: PlanesRow =
     prsMerged.status === "ok"
       ? { label: "landed (merged)", value: countText(prsMerged.value, prsMerged.estimated) }
@@ -41,8 +53,9 @@ export function planesModel(data: RecapData): PlanesModel {
     merged,
     reviews,
     inFlight,
-    drawnFlying: Math.min(MAX_PLANES, inFlight),
-    drawnLanded: Math.min(MAX_PLANES, merged ?? 0),
+    drawnFlying,
+    drawnLanded,
+    picture,
     empty: sent === 0 && (merged ?? 0) === 0,
     rows: [
       { label: plural(sent, "pull request sent", "pull requests sent"), value: formatCount(sent) },

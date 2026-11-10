@@ -102,11 +102,7 @@ export function Planes({ data, size, layout, enter, frame }: SceneProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: SKY_LOW }}>
       <SceneSvg
-        title={`${head}. ${lines.join(", ")}. ${
-          model.drawnFlying > 0
-            ? `${model.drawnFlying} paper planes in the air`
-            : "No paper planes in the air"
-        }, ${model.drawnLanded} parked on the runway. Cell cheers on the tarmac.`}
+        title={`${head}. ${lines.join(", ")}. ${model.picture}. Cell cheers on the tarmac.`}
       >
         {Array.from({ length: BANDS }, (_, k) => k).map((k) => (
           <rect
