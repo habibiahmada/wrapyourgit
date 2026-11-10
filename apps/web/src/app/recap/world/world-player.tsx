@@ -39,6 +39,13 @@ const CONTROL_RING =
 const zone = (disabled: boolean) =>
   `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-ink/[0.03] active:bg-ink/[0.07]"} ${ZONE_RING}`;
 /**
+ * A strip above the stage that holds the web-only controls (Sound, Close, the sample label). They
+ * are not part of the composition, so the scenes' safe area can't keep text clear of them; the
+ * stage shrinks to fit under the strip instead, and exports never see it. 44 px controls plus
+ * 8 px either side, in rem so it grows with them under text zoom.
+ */
+const CONTROL_BAND = "3.75rem";
+/**
  * The way on at the rested closing stop. Paper like the other controls: the closing sky is dark,
  * so a paper fill is what stands out there; the words, not an icon, say where it goes.
  */
@@ -258,14 +265,17 @@ export function WorldPlayer({
   };
 
   // The chrome sits on a copy of the stage box, so it stays under the progress bar when the
-  // stage is letterboxed.
-  const stage = {
-    width: `min(100svw, calc(100svh * ${width} / ${height}))`,
-    aspectRatio: `${width} / ${height}`,
-  };
+  // stage is letterboxed. The stage fits in what the controls' band leaves below it.
+  const stageWidth = `min(100svw, calc((100svh - ${CONTROL_BAND}) * ${width} / ${height}))`;
+  const stage = { width: stageWidth, aspectRatio: `${width} / ${height}` };
+  // Where the stage starts: centred in the height the band leaves. The controls end just above.
+  const stageTop = `calc(${CONTROL_BAND} + (100svh - ${CONTROL_BAND} - ${stageWidth} * ${height} / ${width}) / 2)`;
 
   return (
-    <div className="fixed inset-0 grid place-items-center overflow-hidden bg-paper text-ink">
+    <div
+      className="fixed inset-0 grid place-items-center overflow-hidden bg-paper text-ink"
+      style={{ paddingTop: CONTROL_BAND }}
+    >
       <div
         className="[grid-area:1/1]"
         inert={ended}
@@ -316,7 +326,10 @@ export function WorldPlayer({
           className="on-light absolute inset-0 overflow-y-auto bg-paper/85"
         >
           {/* Top padding clears the Sound and Close controls, which stay usable above it. */}
-          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-4 pt-20 pb-8">
+          <div
+            className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-4 pb-8"
+            style={{ paddingTop: stageTop }}
+          >
             <div className="flex flex-col gap-6 rounded-xl border border-ink/25 bg-paper p-5 sm:p-8">
               <div className="flex flex-col gap-2">
                 <h2
@@ -375,37 +388,42 @@ export function WorldPlayer({
         className="pointer-events-none relative [container-type:inline-size] [grid-area:1/1]"
         style={stage}
       >
-        {sample && (
-          <p className="absolute top-4 left-3 rounded-md border border-ink/25 bg-paper/90 px-3 py-2 text-sm font-semibold">
-            Sample data
-          </p>
-        )}
-        <div className="pointer-events-auto absolute top-4 right-3 flex gap-2">
-          <button
-            type="button"
-            aria-label="Sound"
-            aria-pressed={!muted}
-            onClick={toggleSound}
-            className={CONTROL}
-          >
-            <SpeakerIcon muted={muted} />
-          </button>
-          {/* Client navigation, so the panel's beforeunload guard can't catch it: off while busy. */}
-          {busy ? (
+        <div
+          className="absolute inset-x-3 bottom-full flex items-center justify-end gap-2"
+          style={{ height: CONTROL_BAND }}
+        >
+          {sample && (
+            <p className="mr-auto rounded-md border border-ink/25 bg-paper/90 px-3 py-2 text-sm font-semibold">
+              Sample data
+            </p>
+          )}
+          <div className="pointer-events-auto flex gap-2">
             <button
               type="button"
-              disabled
-              aria-label="Close story"
-              aria-describedby={LEAVE_BLOCKED}
-              className={CONTROL_OFF}
+              aria-label="Sound"
+              aria-pressed={!muted}
+              onClick={toggleSound}
+              className={CONTROL}
             >
-              <CloseIcon />
+              <SpeakerIcon muted={muted} />
             </button>
-          ) : (
-            <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
-              <CloseIcon />
-            </Link>
-          )}
+            {/* Client navigation, so the panel's beforeunload guard can't catch it: off while busy. */}
+            {busy ? (
+              <button
+                type="button"
+                disabled
+                aria-label="Close story"
+                aria-describedby={LEAVE_BLOCKED}
+                className={CONTROL_OFF}
+              >
+                <CloseIcon />
+              </button>
+            ) : (
+              <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
+                <CloseIcon />
+              </Link>
+            )}
+          </div>
         </div>
         {/* Web-only, never part of the composition or a file. Bottom-left, just above the
             copyright line's safe area: the closing scene keeps that corner to the skyline (Cell
