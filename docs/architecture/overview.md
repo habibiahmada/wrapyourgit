@@ -61,5 +61,4 @@ See [ADR-0005](decisions/0005-environments-and-hosting.md) and [ADR-0015](decisi
 | Env        | Web                                  | DB                            | Rendering                                                               |
 | ---------- | ------------------------------------ | ----------------------------- | ----------------------------------------------------------------------- |
 | local      | `bun run dev`                        | local Postgres or Neon branch | the browser; `scripts/lib/still.ts` and the Remotion CLI for dev stills |
-| preview    | Vercel preview deployments           | the production Neon database  | the viewer's browser                                                    |
 | production | Vercel Hobby (`sin1`); AWS VPS later | Neon, Singapore               | the viewer's browser                                                    |

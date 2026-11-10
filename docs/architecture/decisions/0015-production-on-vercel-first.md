@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-11-05
 - Amends: [0005](0005-environments-and-hosting.md) (production hosting, for now)
+- Amended by: [0018](0018-production-only-deploys.md): no preview deployments or Neon branches since 2026-11-10
 
 ## Context
 
