@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { withoutPrivateNames } from "@wyg/analytics";
+import { PRIVATE_REPO_NAME, toPublicRecap, withoutPrivateNames } from "@wyg/analytics";
 import { sampleRecap } from "@wyg/video";
 import { hasPrivateNames, showFilesReminder, storyData } from "./projection";
 
@@ -55,6 +55,22 @@ describe("hasPrivateNames", () => {
     const fixture = withPrivate();
     expect(hasPrivateNames(fixture)).toBe(true);
     expect(hasPrivateNames(withoutPrivateNames(fixture))).toBe(false);
+  });
+});
+
+// Both projections keep a private top repository in rank under the marker; the story draws it as
+// "Private repository" / "One private project", which names nothing, so no reminder.
+describe.each([
+  ["withoutPrivateNames", withoutPrivateNames],
+  ["toPublicRecap", toPublicRecap],
+])("hasPrivateNames after %s", (_, project) => {
+  test("is false with an anonymised private repository at the top", () => {
+    const projected = project(withPrivate());
+    expect(projected.repositories.top[0]).toMatchObject({
+      nameWithOwner: PRIVATE_REPO_NAME,
+      isPrivate: true,
+    });
+    expect(hasPrivateNames(projected)).toBe(false);
   });
 });
 

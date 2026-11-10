@@ -35,10 +35,12 @@ const letterText = (data: RecapData) => {
 describe("full data (the owner chose to show private names)", () => {
   test("the projects stop names the private repository", () => {
     expect(projectLabels(privateTop)).toContain(PRIVATE);
+    expect(projectLabels(privateTop)).not.toContain("Private repository");
   });
 
   test("the letter names it when it is the top repository", () => {
     expect(letterText(privateTop)).toContain(`The ${PRIVATE} repository`);
+    expect(letterText(privateTop)).not.toContain("One private project");
   });
 });
 
@@ -46,13 +48,19 @@ describe.each([
   ["withoutPrivateNames (the owner's hidden view)", withoutPrivateNames],
   ["toPublicRecap (every public surface)", toPublicRecap],
 ])("%s", (_, project) => {
-  test("the projects stop shows no private name", () => {
-    expect(projectLabels(project(privateTop))).not.toContain(PRIVATE);
+  test("the projects stop keeps the private repository's stack, without its name", () => {
+    const { stacks } = projectsModel(project(privateTop));
+    expect(stacks[0]).toMatchObject({ label: "Private repository", commits: 400 });
     expect(JSON.stringify(projectsModel(project(privateTop)))).not.toContain(PRIVATE);
   });
 
-  test("the letter shows no private name", () => {
-    expect(letterText(project(privateTop))).not.toContain(PRIVATE);
+  test("the letter credits a private project, not the next public repository", () => {
+    const text = letterText(project(privateTop));
+    expect(text).toContain("One private project got more of your attention");
+    expect(text).not.toContain(PRIVATE);
+    for (const r of sampleRecap.repositories.top.filter((r) => !r.isPrivate)) {
+      expect(text).not.toContain(`The ${r.nameWithOwner.split("/")[1]} repository`);
+    }
   });
 });
 

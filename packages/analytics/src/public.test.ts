@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { type RecapData, type RepoRef, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
-import { toPublicRecap, withoutPrivateNames } from "./public";
+import { PRIVATE_REPO_NAME, toPublicRecap, withoutPrivateNames } from "./public";
 
 const repo = (nameWithOwner: string, isPrivate: boolean): RepoRef => ({
   nameWithOwner,
@@ -82,11 +82,6 @@ describe("toPublicRecap", () => {
     expect(published).not.toContain("secret-client");
   });
 
-  test("private repos leave the top list; public ones keep their place", () => {
-    const { repositories } = toPublicRecap(recap());
-    expect(repositories.top.map((r) => r.nameWithOwner)).toEqual(["octo/public-lib"]);
-  });
-
   test("private most-starred / most-forked become null, public ones stay", () => {
     const { community } = toPublicRecap(recap());
     expect(community.mostStarred).toBeNull();
@@ -127,6 +122,48 @@ describe("toPublicRecap", () => {
     const original = recap();
     toPublicRecap(original);
     expect(original.repositories.top).toHaveLength(2);
+  });
+});
+
+// A private top repository keeps its rank and commits, so nothing downstream credits the next
+// public one as the year's main project; only what could identify it goes.
+describe.each([
+  ["withoutPrivateNames", withoutPrivateNames],
+  ["toPublicRecap", toPublicRecap],
+])("%s: private repositories in the top list", (_, project) => {
+  test("keep their rank and commits under the fixed marker", () => {
+    const { top } = project(recap()).repositories;
+    expect(top.map((r) => [r.nameWithOwner, r.isPrivate, r.commits])).toEqual([
+      [PRIVATE_REPO_NAME, true, 50],
+      ["octo/public-lib", false, 20],
+    ]);
+  });
+
+  test("carry nothing that identifies them", () => {
+    const [anonymised, publicLib] = project(recap()).repositories.top;
+    expect(anonymised).toEqual({
+      nameWithOwner: PRIVATE_REPO_NAME,
+      isPrivate: true,
+      isFork: false,
+      primaryLanguage: null,
+      stars: 0,
+      forks: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+      commits: 50,
+    });
+    expect(publicLib).toEqual({ ...repo("octo/public-lib", false), commits: 20 });
+  });
+
+  test("the real name is gone from the whole document, and it still validates", () => {
+    const result = project(recap());
+    const json = JSON.stringify(result);
+    expect(json).not.toContain("octo/secret-client");
+    expect(json).not.toContain("secret-client");
+    expect(() => recapDataSchema.parse(result)).not.toThrow();
+  });
+
+  test("the marker cannot be mistaken for a real owner/name", () => {
+    expect(PRIVATE_REPO_NAME).not.toContain("/");
   });
 });
 
