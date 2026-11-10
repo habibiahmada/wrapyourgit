@@ -44,6 +44,7 @@ async function Story() {
     <main id="main" className="flex-1 bg-paper text-ink">
       <h1 className="sr-only">Your year as a city</h1>
       <WorldPlayer
+        variant="owner"
         data={storyData(recap.data, choice)}
         privateNames={showFilesReminder(choice, recap.data)}
       />

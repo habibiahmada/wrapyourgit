@@ -18,6 +18,7 @@ import {
 } from "./controller";
 import { ExportPanel } from "./export-panel";
 import { PAPER_BUTTON } from "./paper-button";
+import { publicWorld } from "./public-world";
 import { useMusic } from "./use-music";
 import { useSfx } from "./use-sfx";
 
@@ -81,22 +82,42 @@ function heading(state: ControllerState): number {
   return state.moving ? state.moving.to : state.stop;
 }
 
+export type WorldPlayerProps =
+  | {
+      /** The owner on /recap: the letter, and "Keep your year" with the files after the last stop. */
+      variant: "owner";
+      /**
+       * The owner's story projection (`storyData`): private names only when they chose to show
+       * them. The story and the "Keep your year" files both use it, so the files follow the choice.
+       */
+      data: RecapData;
+      /** True when `data` names a private repository: the end screen then says the files do too. */
+      privateNames: boolean;
+    }
+  | {
+      /**
+       * A visitor on /u/<login>: the public projection (`publicWorld`), no letter, no files. Close,
+       * Escape, and Next at the rested closing stop all call `onExit`.
+       */
+      variant: "public";
+      data: RecapData;
+      onExit: () => void;
+    };
+
 /**
  * The story world as a full-screen tap story. The composition never plays: every frame comes from
  * `seekTo`, driven by the controller, so moving forward and back share one path and one cadence.
  */
-export function WorldPlayer({
-  data,
-  privateNames,
-}: {
-  /**
-   * The owner's story projection (`storyData`): private names only when they chose to show them.
-   * The story and the "Keep your year" files both use it, so the files follow the choice.
-   */
-  data: RecapData;
-  /** True when `data` names a private repository: the end screen then says the files do too. */
-  privateNames: boolean;
-}) {
+export function WorldPlayer(props: WorldPlayerProps) {
+  const owner = props.variant === "owner";
+  const privateNames = owner && props.privateNames;
+  const onExit = owner ? null : props.onExit;
+  // Decided here, not by the caller: a visitor's story is the public projection whatever it gets.
+  const { data, letter } = useMemo(
+    () =>
+      props.variant === "public" ? publicWorld(props.data) : { data: props.data, letter: true },
+    [props.variant, props.data],
+  );
   const router = useRouter();
   const player = useRef<PlayerRef>(null);
   const music = useMusic(MUSIC_SRC, MUSIC_LOOP);
@@ -113,8 +134,8 @@ export function WorldPlayer({
   }, []);
   const { width, height } = VIDEO_FORMATS[format];
   const { stops, timeline } = useMemo(
-    () => buildWorld(data, { width, height }, "interactive", VIDEO_FPS),
-    [data, width, height],
+    () => buildWorld(data, { width, height }, "interactive", VIDEO_FPS, { letter }),
+    [data, width, height, letter],
   );
 
   // The controller lives in a ref (the frame loop reads it every tick); `at` mirrors it for render.
@@ -133,6 +154,7 @@ export function WorldPlayer({
   const nextZone = useRef<HTMLButtonElement>(null);
   const cue = useRef<HTMLButtonElement>(null);
   const last = stops.length - 1;
+  const lastStopNote = owner ? ". Keep your year is next." : ". Next closes the story.";
   // Scene units kept clear of the copyright line (the composition's own safe area).
   const footerClear = safeArea({ width, height }).bottom;
 
@@ -191,16 +213,18 @@ export function WorldPlayer({
         if (result.start) begin();
       };
 
-      // Next at the rested closing stop opens the end screen. Only a fresh tap does: a tap queued
-      // during the flight in must not cover the closing stop before it has been seen.
+      // Next at the rested closing stop opens the end screen (a visitor leaves instead). Only a
+      // fresh tap does: a tap queued during the flight in must not end the story before the
+      // closing stop has been seen.
       const rest = state.current;
       if (direction === 1 && !rest.moving && rest.stop >= last) {
-        setEnded(true);
+        if (onExit) onExit();
+        else setEnded(true);
         return;
       }
       step(direction);
     },
-    [commit, last, music, reduced, sfx, stops, timeline],
+    [commit, last, music, onExit, reduced, sfx, stops, timeline],
   );
 
   // A new format means new stops (the letter's page count varies) and new frames: drop any move in
@@ -250,13 +274,15 @@ export function WorldPlayer({
       if (event.key === "ArrowRight") go(1);
       else if (event.key === "ArrowLeft") go(-1);
       else if ((event.key === " " || event.key === "Enter") && !onControl) go(1);
-      else if (event.key === "Escape") router.push("/dashboard");
-      else return;
+      else if (event.key === "Escape") {
+        if (onExit) onExit();
+        else router.push("/dashboard");
+      } else return;
       event.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [busy, closeEnd, ended, go, router]);
+  }, [busy, closeEnd, ended, go, onExit, router]);
 
   const toggleSound = () => {
     const next = !muted;
@@ -289,7 +315,7 @@ export function WorldPlayer({
         <Player
           ref={player}
           component={WorldStory}
-          inputProps={{ data, mode: "interactive", music: false }}
+          inputProps={{ data, mode: "interactive", music: false, letter }}
           durationInFrames={timeline.durationInFrames}
           fps={VIDEO_FPS}
           compositionWidth={width}
@@ -311,7 +337,7 @@ export function WorldPlayer({
         onClick={() => go(-1)}
         className={`${zone(at <= 0)} left-0 w-1/3`}
       />
-      {/* Never disabled: at the closing stop, Next opens "Keep your year". */}
+      {/* Never disabled: at the closing stop, Next opens "Keep your year" (or leaves, for a visitor). */}
       <button
         ref={nextZone}
         type="button"
@@ -321,7 +347,7 @@ export function WorldPlayer({
         className={`${zone(false)} right-0 left-1/3`}
       />
 
-      {ended && (
+      {owner && ended && (
         <section
           aria-labelledby="keep-your-year"
           className="on-light absolute inset-0 overflow-y-auto bg-paper/85"
@@ -404,7 +430,11 @@ export function WorldPlayer({
               <SpeakerIcon muted={muted} />
             </button>
             {/* Client navigation, so the panel's beforeunload guard can't catch it: off while busy. */}
-            {busy ? (
+            {onExit ? (
+              <button type="button" aria-label="Close story" onClick={onExit} className={CONTROL}>
+                <CloseIcon />
+              </button>
+            ) : busy ? (
               <button
                 type="button"
                 disabled
@@ -425,7 +455,7 @@ export function WorldPlayer({
             copyright line's safe area: the closing scene keeps that corner to the skyline (Cell
             stands centre in tall frames, right in landscape; the text is at the top or left-top).
             After Close in tab order: it is the last control, so its visual spot can differ. */}
-        {resting && at === last && !ended && (
+        {owner && resting && at === last && !ended && (
           <button
             ref={cue}
             type="button"
@@ -441,7 +471,7 @@ export function WorldPlayer({
       <p aria-live="polite" className="sr-only">
         {/* Opening the end screen is announced by focusing its heading, not here. */}
         Stop {at + 1} of {stops.length}
-        {resting && at === last ? ". Keep your year is next." : ""}
+        {resting && at === last ? lastStopNote : ""}
       </p>
     </div>
   );
