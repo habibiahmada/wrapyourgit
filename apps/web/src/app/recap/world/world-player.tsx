@@ -123,6 +123,7 @@ export function WorldPlayer({
   const [busy, setBusy] = useState(false);
   const endHeading = useRef<HTMLHeadingElement>(null);
   const nextZone = useRef<HTMLButtonElement>(null);
+  const cue = useRef<HTMLButtonElement>(null);
   const last = stops.length - 1;
   // Scene units kept clear of the copyright line (the composition's own safe area).
   const footerClear = safeArea({ width, height }).bottom;
@@ -211,8 +212,9 @@ export function WorldPlayer({
 
   const closeEnd = useCallback(() => {
     setEnded(false);
-    // The screen's own controls unmount; hand focus back to where the reader goes next.
-    requestAnimationFrame(() => nextZone.current?.focus());
+    // The screen's own controls unmount; hand focus back to the cue that opened it, which is back
+    // by the next frame. The Next zone is the fallback, should the cue not be there.
+    requestAnimationFrame(() => (cue.current ?? nextZone.current)?.focus());
   }, []);
 
   useEffect(() => {
@@ -411,6 +413,7 @@ export function WorldPlayer({
             After Close in tab order: it is the last control, so its visual spot can differ. */}
         {resting && at === last && !ended && (
           <button
+            ref={cue}
             type="button"
             onClick={() => setEnded(true)}
             className={`pointer-events-auto absolute left-3 ${CUE}`}
