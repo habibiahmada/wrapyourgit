@@ -36,6 +36,13 @@ const CONTROL_RING =
 /** A zone at the end of the story stays focusable (focus must not vanish under the reader). */
 const zone = (disabled: boolean) =>
   `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-ink/[0.03] active:bg-ink/[0.07]"} ${ZONE_RING}`;
+/**
+ * A strip above the stage that holds the web-only controls (Sound, Close, the sample label). They
+ * are not part of the composition, so the scenes' safe area can't keep text clear of them; the
+ * stage shrinks to fit under the strip instead, and exports never see it. 44 px controls plus
+ * 8 px either side, in rem so it grows with them under text zoom.
+ */
+const CONTROL_BAND = "3.75rem";
 const CONTROL = `grid size-11 cursor-pointer place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 
 function useReducedMotion(): boolean {
@@ -189,14 +196,17 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
 
   const last = stops.length - 1;
   // The chrome sits on a copy of the stage box, so it stays under the progress bar when the
-  // stage is letterboxed.
+  // stage is letterboxed. The stage fits in what the controls' band leaves below it.
   const stage = {
-    width: `min(100svw, calc(100svh * ${width} / ${height}))`,
+    width: `min(100svw, calc((100svh - ${CONTROL_BAND}) * ${width} / ${height}))`,
     aspectRatio: `${width} / ${height}`,
   };
 
   return (
-    <div className="fixed inset-0 grid place-items-center overflow-hidden bg-paper text-ink">
+    <div
+      className="fixed inset-0 grid place-items-center overflow-hidden bg-paper text-ink"
+      style={{ paddingTop: CONTROL_BAND }}
+    >
       <div
         className="[grid-area:1/1]"
         style={{
@@ -238,26 +248,31 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
       />
 
       <div className="pointer-events-none relative [grid-area:1/1]" style={stage}>
-        {sample && (
-          <p className="absolute top-4 left-3 rounded-md border border-ink/25 bg-paper/90 px-3 py-2 text-sm font-semibold">
-            Sample data
-          </p>
-        )}
-        <div className="pointer-events-auto absolute top-4 right-3 flex gap-2">
-          <button
-            type="button"
-            aria-label="Sound"
-            aria-pressed={!muted}
-            onClick={toggleSound}
-            className={CONTROL}
-          >
-            <SpeakerIcon muted={muted} />
-          </button>
-          <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
-              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </Link>
+        <div
+          className="absolute inset-x-3 bottom-full flex items-center justify-end gap-2"
+          style={{ height: CONTROL_BAND }}
+        >
+          {sample && (
+            <p className="mr-auto rounded-md border border-ink/25 bg-paper/90 px-3 py-2 text-sm font-semibold">
+              Sample data
+            </p>
+          )}
+          <div className="pointer-events-auto flex gap-2">
+            <button
+              type="button"
+              aria-label="Sound"
+              aria-pressed={!muted}
+              onClick={toggleSound}
+              className={CONTROL}
+            >
+              <SpeakerIcon muted={muted} />
+            </button>
+            <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
+              <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
+                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
 
