@@ -9,6 +9,9 @@ import {
   enterProgress,
   formatDay,
   reachedStop,
+  shortDay,
+  WEEKDAYS,
+  weekdayName,
   zoomFade,
 } from "./fade";
 import { buildWorld } from "./model";
@@ -138,4 +141,13 @@ test("zoomFade: finite and 1 at the city camera, where there is no zoom left to 
   expect(zoomFade(at(80), at(60), 60)).toBe(1);
   expect(zoomFade(at(PLOT_SPAN), at(PLOT_SPAN), 60)).toBe(1);
   expect(zoomFade(at(60), at(PLOT_SPAN), 60)).toBe(0);
+});
+
+test("shortDay and weekdayName: fixed names, read in UTC", () => {
+  expect(shortDay("2026-01-03")).toBe("Jan 3");
+  expect(shortDay("2026-11-09")).toBe("Nov 9");
+  expect(shortDay("2026-09-30")).toBe("Sep 30");
+  expect(weekdayName("2026-01-03")).toBe("Saturday");
+  expect(weekdayName("2026-11-09")).toBe("Monday");
+  expect(WEEKDAYS[0]).toBe("Sunday");
 });

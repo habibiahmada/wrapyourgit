@@ -1,5 +1,6 @@
 import type { RecapData } from "@wyg/schema";
 import { formatCount } from "../../theme";
+import { WEEKDAYS } from "../fade";
 
 export type RhythmCar = {
   day: string;
@@ -16,13 +17,11 @@ export type RhythmModel = {
   caption: string;
 };
 
-// Index 0 is Sunday, the order of `contributions.weekday`. Names are fixed, not locale-based.
-const FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const SHORT = WEEKDAYS.map((day) => day.slice(0, 3));
 
 /** The seven cars and the busiest weekday (the earlier one on a tie); no busiest when all are 0. */
 export function rhythmModel(data: RecapData): RhythmModel {
-  const counts = FULL.map((_, i) => data.contributions.weekday[i] ?? 0);
+  const counts = WEEKDAYS.map((_, i) => data.contributions.weekday[i] ?? 0);
   const max = Math.max(...counts);
   const top = max > 0 ? counts.indexOf(max) : -1;
   const cars = counts.map((count, i) => ({
@@ -39,7 +38,7 @@ export function rhythmModel(data: RecapData): RhythmModel {
       caption: "No contributions on any weekday yet",
     };
   }
-  const day = FULL[top] ?? "";
+  const day = WEEKDAYS[top] ?? "";
   return {
     cars,
     busiest: { day, count: max },

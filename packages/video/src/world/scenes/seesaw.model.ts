@@ -1,4 +1,5 @@
 import type { RecapData } from "@wyg/schema";
+import { shortDay } from "../fade";
 
 export type SeesawModel =
   | {
@@ -14,13 +15,6 @@ export type SeesawModel =
 
 /** The beam never tilts past this, so a huge gap still reads as a seesaw, not a ramp. */
 export const MAX_TILT = 12;
-
-// Fixed names so a render never depends on the host's locale.
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function shortDay(iso: string): string {
-  return `${MONTHS[Number(iso.slice(5, 7)) - 1] ?? ""} ${Number(iso.slice(8, 10))}`;
-}
 
 function changeText(last: number, current: number): string {
   if (last === 0) return current === 0 ? "same as last year" : "new this year";

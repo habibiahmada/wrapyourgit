@@ -56,9 +56,7 @@ export function Busiest({ data, size, enter, frame }: SceneProps) {
   }
   return (
     <AbsoluteFill style={{ backgroundColor: palette.paper }}>
-      <SceneSvg
-        title={`Busiest day: ${model.weekday}, ${model.date}, ${model.count} contributions`}
-      >
+      <SceneSvg title={`Busiest day: ${model.detail}`}>
         <rect x={0} y={ground} width={1000} height={h - ground} fill={palette.ink} />
         <rect x={bx} y={top} width={bw} height={bh} rx={10} fill={palette.ink} />
         {windows}
