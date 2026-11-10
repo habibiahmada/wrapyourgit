@@ -56,11 +56,19 @@ export function ExportPanel({
   const ids = useId();
   const reasonId = `${ids}-reason`;
 
+  // The dashboard's refresh() re-sends `data` as a new object. Keyed on it, the runner would be
+  // disposed mid-render and the panel left in "rendering" with a dead Cancel; so the runner lives
+  // as long as the panel and reads the newest data when a run starts.
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
   useEffect(() => {
     let live = true;
     import("./exports")
       .then((loaded) => {
-        if (live) runner.current = exportRunner(loaded, data, dispatch);
+        if (live) runner.current = exportRunner(loaded, () => dataRef.current, dispatch);
         return loaded.exportSupport();
       })
       .then((result) => live && setSupport(result))
@@ -71,7 +79,7 @@ export function ExportPanel({
       runner.current?.dispose();
       runner.current = null;
     };
-  }, [data]);
+  }, []);
 
   const busy = state.status === "rendering";
   useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);

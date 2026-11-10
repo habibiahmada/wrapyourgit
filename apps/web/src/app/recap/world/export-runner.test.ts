@@ -47,13 +47,15 @@ function setup() {
   const fake = fakeEngine();
   const actions: ExportAction[] = [];
   const warnings: unknown[] = [];
+  // The panel hands the runner a ref; a test swaps `source.data` the way a server refresh does.
+  const source = { data: sampleRecap };
   const runner = exportRunner(
     fake.engine,
-    sampleRecap,
+    () => source.data,
     (a) => actions.push(a),
     (...w) => warnings.push(w),
   );
-  return { ...fake, actions, warnings, runner };
+  return { ...fake, actions, warnings, runner, source };
 }
 
 const abortError = () => new DOMException("cancelled", "AbortError");
@@ -127,6 +129,27 @@ describe("exportRunner", () => {
     await failed;
     expect(actions.map((a) => a.type)).toEqual(["start", "cancel", "start", "fail"]);
     expect(warnings).toHaveLength(1);
+  });
+
+  test("new data mid-run neither aborts nor changes that render, and Cancel still works", async () => {
+    const { runner, renders, downloads, actions, source } = setup();
+    const first = runner.run("mp4", "9x16");
+    // The dashboard's refresh() re-sends the public recap as a new object with a new login.
+    source.data = { ...sampleRecap, profile: { ...sampleRecap.profile, login: "Renamed" } };
+    expect(renders[0]?.signal.aborted).toBe(false);
+    expect(runner.busy()).toBe(true);
+    renders[0]?.done.resolve(blob("mp4"));
+    await first;
+    expect(downloads[0]).toContain(sampleRecap.profile.login.toLowerCase());
+
+    const second = runner.run("mp4", "9x16");
+    source.data = { ...sampleRecap };
+    runner.cancel();
+    expect(renders[1]?.signal.aborted).toBe(true);
+    renders[1]?.done.reject(abortError());
+    await second;
+    expect(actions.map((a) => a.type)).toEqual(["start", "finish", "start", "cancel"]);
+    expect(runner.busy()).toBe(false);
   });
 
   test("dispose aborts silently: the screen is gone, nothing is left to tell", async () => {

@@ -23,10 +23,13 @@ const isAbort = (error: unknown) => error instanceof DOMException && error.name 
  * One export at a time, owned by its AbortController. The guard reads the controller, not React
  * state, so a second run can't slip in before a re-render; and only the newest run may report,
  * since a cancelled render can still settle after a new one has started.
+ *
+ * `data` is read when a run starts, not when the runner is made: the panel builds one runner for
+ * its lifetime, so a server refresh that re-sends the recap neither aborts a render nor strands it.
  */
 export function exportRunner(
   engine: ExportEngineModule,
-  data: RecapData,
+  getData: () => RecapData,
   dispatch: (action: ExportAction) => void,
   warn: (...args: unknown[]) => void = console.warn,
 ): ExportRunner {
@@ -43,6 +46,7 @@ export function exportRunner(
     current = controller;
     const mine = () => current === controller;
     const signal = controller.signal;
+    const data = getData();
     dispatch({ type: "start", job });
     try {
       let blob: Blob;
