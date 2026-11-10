@@ -56,6 +56,7 @@ GITHUB_TOKEN=$(cat .data/github-app-token) SPIKE_LABEL=app bun scripts/spike-git
 ## AWS for Remotion Lambda (Spike B / M5)
 
 Follow https://www.remotion.dev/docs/lambda/setup to create the role and a user with the Remotion policy, then:
+
 ```bash
 bun run --filter @wyg/renderer deploy
 ```

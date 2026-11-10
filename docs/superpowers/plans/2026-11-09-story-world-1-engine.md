@@ -44,10 +44,12 @@ This plan is phase 1 of 4. Each phase ships working, tested software; users keep
 ### Task 1: The city model
 
 **Files:**
+
 - Create: `packages/video/src/world/city.ts`
 - Test: `packages/video/src/world/city.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type PlotState = "active" | "zero" | "not-yet"`
   - `type Plot = { index: number; date: string; col: number; row: number; count: number; state: PlotState }`
@@ -131,10 +133,12 @@ git commit -m "feat(video): model the year as a city of daily plots"
 ### Task 2: The stops and the day each lives in
 
 **Files:**
+
 - Create: `packages/video/src/world/stops.ts`
 - Test: `packages/video/src/world/stops.test.ts`
 
 **Interfaces:**
+
 - Consumes: `City`, `Plot` from Task 1.
 - Produces:
   - `type StopKind = "hello" | "first-day" | "private" | "city" | "busiest" | "rhythm" | "languages" | "projects" | "community" | "engineering" | "archetype" | "versus" | "letter" | "closing"`
@@ -144,6 +148,7 @@ git commit -m "feat(video): model the year as a city of daily plots"
 Stop order: `hello`, `first-day`, `private`, `city`, `busiest` (only when `city.busiestIndex` is not null), `rhythm`, `languages`, `projects`, `community`, `engineering`, `archetype`, `versus`, `letter` × `letterPages` (ids `letter-1`, `letter-2`, …), `closing`. The closing stop is last, not before `versus` as the spec's list reads: it lives on the last day with data, and putting it last keeps the camera from flying back in time after the year has ended. Flag this to the maintainer at handoff.
 
 Plots:
+
 - Natural dates: `hello` → plot 0 (Jan 1), `first-day` → `city.firstActiveIndex`, `busiest` → `city.busiestIndex`, `closing` → `city.lastDataIndex`.
 - Every other stop gets a fixed plot, spread evenly in stop order from plot 7 to `lastDataIndex - 7` (or the nearest valid range in a short provisional year), moved forward to the next plot no other stop uses.
 - `first-day` with no active day falls back to a fixed plot like the others.
@@ -218,10 +223,12 @@ git commit -m "feat(video): place every story stop on a day of the city"
 ### Task 3: Timeline and camera
 
 **Files:**
+
 - Create: `packages/video/src/world/timeline.ts`, `packages/video/src/world/camera.ts`
 - Test: `packages/video/src/world/timeline.test.ts`, `packages/video/src/world/camera.test.ts`
 
 **Interfaces:**
+
 - Consumes: `City`, `isoPoint`, `cityBounds`, `plotHeight` (Task 1); `Stop` (Task 2); `LayoutFamily` from `@wyg/schema`.
 - Produces:
   - `type Camera = { x: number; y: number; span: number }` — centre in world units, and `span` = world units across the frame's shorter side
@@ -233,11 +240,13 @@ git commit -m "feat(video): place every story stop on a day of the city"
   - `MOVE_MIN_SECONDS = 1.1`, `MOVE_MAX_SECONDS = 2`, `HOLD_SECONDS = 3`
 
 Timeline rules:
+
 - A move lasts between `MOVE_MIN_SECONDS` and `MOVE_MAX_SECONDS`, longer for a bigger change of position or zoom: `1.1 + 0.9 * min(1, (centreDistance / max(spanA, spanB) + |ln(spanB / spanA)|) / 6)` seconds, rounded to whole frames.
 - `interactive`: stop 0 rests on frame 0; each stop rests on the last frame of its move; `durationInFrames = stopFrames.at(-1) + 1`.
 - `video`: each stop also holds for `HOLD_SECONDS` before the next move starts, and the last stop holds too.
 
 Camera rules inside a move from A to B with eased progress `e = easeInOutCubic(t)`:
+
 - The centre moves linearly with `e`.
 - `ln(span)` moves linearly with `e`, so zooming in and out feel alike.
 - When both ends are close-ups (`span <= 2 * PLOT_SPAN`) and the centres are more than `4 * PLOT_SPAN` apart, `ln(span)` rises by `1.2 * sin(π e)` mid-flight (the zoom-out hop).
@@ -290,12 +299,14 @@ git commit -m "feat(video): time the camera's moves between stops"
 ### Task 4: Tap and transition sounds
 
 **Files:**
+
 - Modify: `packages/video/src/audio/sfx.ts` (add entries), `scripts/synth-sfx.ts` (add voices)
 - Create: `packages/video/src/world/sound.ts`
 - Test: `packages/video/src/world/sound.test.ts`; extend `packages/video/src/audio/sfx.test.ts` only if it enumerates names
 - Generated: `packages/video/public/audio/sfx/{tap,wind,leaves,crickets,dive}.wav`
 
 **Interfaces:**
+
 - Consumes: `StopKind` (Task 2), `SFX`, `SfxName` (existing).
 - Produces:
   - New `SfxName`s with `SFX` entries: `tap` (volume 0.35, 0.06 s, a soft click), `wind` (0.4, 1.6 s, low-passed noise swelling and fading), `leaves` (0.35, 1.4 s, band-passed rustle bursts), `crickets` (0.3, 1.6 s, chirps near 4.5 kHz in pairs), `dive` (0.45, 1.2 s, muffled whoosh falling in cutoff)
@@ -346,11 +357,13 @@ git commit -m "feat(video): tap and transition sounds for the world"
 ### Task 5: The `WorldStory` composition
 
 **Files:**
+
 - Create: `packages/video/src/world/WorldStory.tsx`, `packages/video/src/world/CityLayer.tsx`, `packages/video/src/world/StopLayer.tsx`, `packages/video/src/world/Chrome.tsx`, `packages/video/src/world/model.ts`
 - Modify: `packages/video/src/Root.tsx` (register `world-<format>` compositions), `packages/video/src/index.ts` (export), `packages/video/package.json` (export `./world` → `./src/world/model.ts`)
 - Test: `packages/video/src/world/model.test.ts`
 
 **Interfaces:**
+
 - Consumes: Tasks 1-4.
 - Produces:
   - `type WorldModel = { city: City; stops: Stop[]; cameras: Camera[]; timeline: Timeline }`
@@ -360,6 +373,7 @@ git commit -m "feat(video): tap and transition sounds for the world"
   - Compositions `world-9x16`, `world-4x5`, `world-1x1`, `world-16x9` in `Root.tsx`, `mode: "video"`, duration from `calculateMetadata` → `worldDuration`
 
 Layers, back to front in the DOM (no `z-index`):
+
 1. `CityLayer`: one SVG. Each plot is three polygons (top, left face, right face) from `isoPoint` and `plotHeight`, projected through the current camera. Draw order: ascending `col + row`, then `col`. Colours: GitHub's greens by contribution level (`heat.ts` levels) with darker side faces; `zero` plots in the paper tone; `not-yet` plots as an outline only (1 px at 1080 wide, ink at 35% opacity) with no fill. The whole layer's opacity is 1 at the city stop's span and fades to 0 by `span <= 3 * PLOT_SPAN`.
 2. `StopLayer` for each plot stop within reach (current or neighbour stops): a full-frame placeholder card for now, scaled and translated so it is exactly frame-sized when the camera equals that stop's camera, transparent at the city span. Placeholder content: the stop's `kind`, its date and, for `busiest`, the count. Phase 2 replaces the placeholder.
 3. `Chrome`: the progress bar flush with the top (one segment per stop, 4 px tall at 1080 px wide, `#30A14E` filled up to the current stop, 18% ink for the rest, 3 px gaps) and the copyright line at the bottom (`© {year} WrapYourGit · wrapyourgit.habibiahmada.dev`, 22 px at 1080 wide, ink at 70%).
@@ -392,6 +406,7 @@ Run: `bun test packages/video/src && bun run typecheck && bun run lint`
 Expected: all pass.
 
 Run: `bun run studio`, open `world-9x16`, scrub the timeline and check:
+
 - The city builds at the city stop.
 - Every move is smooth with no jumps at the stops.
 - The progress bar and copyright are on every frame.
@@ -410,10 +425,12 @@ git commit -m "feat(video): the story world as one composition"
 ### Task 6: Player controller
 
 **Files:**
+
 - Create: `apps/web/src/app/recap/world/controller.ts`
 - Test: `apps/web/src/app/recap/world/controller.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Timeline` (Task 3).
 - Produces (pure, no React):
   - `type ControllerState = { stop: number; moving: null | { from: number; to: number; startFrame: number; endFrame: number; direction: 1 | -1 }; queued: 1 | -1 | null }`
@@ -469,10 +486,12 @@ git commit -m "feat(web): a controller for moving the story camera both ways"
 Load `antislop:antislop`, `antislop:antislop-human` and `antislop:antislop-ui` before the first edit (user instructions).
 
 **Files:**
+
 - Create: `apps/web/src/app/recap/world/page.tsx`, `apps/web/src/app/recap/world/world-player.tsx`, `apps/web/src/app/recap/world/use-sfx.ts`
 - Modify: `apps/web/next.config.ts` only if `@wyg/video/world` needs it (it is already transpiled as `@wyg/video`)
 
 **Interfaces:**
+
 - Consumes: `buildWorld`, `WorldStory` (`@wyg/video`, `@wyg/video/world`), controller (Task 6), `transitionSound`, `TAP_SOUND`, `sfxFile` (Task 4), `useMusic` and `loopSeconds()` (existing), `getCurrentUser`, `getRecap` (existing).
 - Produces:
   - `page.tsx`: server component. In production (`process.env.NODE_ENV === "production"`) calls `notFound()`. Otherwise it requires a signed-in user with a recap, like `/recap`, and renders `<WorldPlayer data={recap.data} />` with the site navbar left out.
@@ -480,6 +499,7 @@ Load `antislop:antislop`, `antislop:antislop-human` and `antislop:antislop-ui` b
   - `useSfx(): { play(name: SfxName): void; setMuted(muted: boolean): void }`: decodes each WAV once into a Web Audio buffer and plays it on demand.
 
 Behaviour:
+
 - **Layout:** the Player fills the viewport (`100svw` × `100svh`, `object-fit`-style letterboxing on the paper colour) in the format of the viewport's layout family (`FORMAT_FOR_LAYOUT` as in `story-player.tsx`), with `inputProps={{ data, mode: "interactive", music: false }}`, `clickToPlay={false}`, no controls.
 - **Tap zones:** two transparent `<button>`s over the Player. The left one covers the left third, named "Previous" (`aria-label`); the right one covers the rest, named "Next". Both have `cursor: pointer` and a visible `:focus-visible` ring inset 4 px.
 - **Keyboard:** ArrowRight, Space and Enter go forward; ArrowLeft goes back; Escape goes to `/dashboard`.
@@ -496,6 +516,7 @@ Behaviour:
 Run: `bun run dev`, open `http://localhost:3000/recap/world` signed in (or with a local seeded user).
 
 Check:
+
 - Full screen with no navbar.
 - Tapping right moves stop by stop with sound, and tapping left plays the move backwards.
 - Five fast taps never skip a stop silently.

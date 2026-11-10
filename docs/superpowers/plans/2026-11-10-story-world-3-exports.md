@@ -52,6 +52,7 @@
 **Files:** Create `packages/video/src/world/export.ts` (+ `export.test.ts`); re-export from `model.ts` (the `./world` entry).
 
 **Interfaces:**
+
 - `type ExportFormat = "9x16" | "4x5" | "1x1" | "16x9"`.
 - `worldExportComposition(data: RecapData, format: ExportFormat): { id: string; width: number; height: number; fps: number; durationInFrames: number; defaultProps: { data: RecapData; mode: "video" } }` — `durationInFrames = worldDuration(data, VIDEO_FORMATS[format], "video")`; `id = "world-" + format`.
 - `slideFrames(data: RecapData): { stopId: string; frame: number }[]` — one per stop of the 4:5 world in video mode, at `stopFrames[i] + 1` (inside the hold, after the arrival).
@@ -65,6 +66,7 @@
 **Files:** Create `apps/web/src/app/recap/world/exports.ts` (+ `exports.test.ts`); add `@remotion/web-renderer` 4.0.540 to `apps/web/package.json`.
 
 **Interfaces:**
+
 - `exportSupport(): Promise<{ mp4: boolean; stills: boolean; reason: string | null }>` — wraps `canRenderMediaOnWeb` (H.264/AAC MP4) and a still check; `reason` is a short sentence for the UI when something can't render.
 - `renderMp4(data, format, { onProgress(p: number), signal }): Promise<Blob>` — `renderMediaOnWeb` with `container: "mp4"`, the composition from Task 2 (`component: WorldStory`), `inputProps`, `signal`.
 - `renderSlides(data, { onProgress(done: number, total: number), signal }): Promise<{ name: string; blob: Blob }[]>` — `renderStillOnWeb` (PNG) per `slideFrames`, sequentially.
@@ -81,6 +83,7 @@ Load the antislop skills first.
 **Files:** Create `apps/web/src/app/recap/world/export-panel.tsx`; modify `world-player.tsx` (after the last stop, a web-only screen over the paused player: "Keep your year", the panel, "Go to dashboard") and `page.tsx` (pass `exportData = toPublicRecap(recap.data)`).
 
 **Behaviour:**
+
 - Format picker for MP4 (9:16 default, 4:5, 1:1, 16:9, labels from `VIDEO_FORMATS[...].label`), buttons "Video (MP4)", "Slides (PNG, ZIP)", "PDF", and "Share card (PNG)" (`/api/card`, unchanged).
 - While rendering: a progress bar with percent and an `aria-live` label, a Cancel button (aborts), "Keep this tab open while your video renders", other buttons disabled (`not-allowed`).
 - On `exportSupport()` false: the affected buttons are disabled with the reason shown; the share card stays.
