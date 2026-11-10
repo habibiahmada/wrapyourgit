@@ -7,6 +7,11 @@ export type Timeline = {
   stopFrames: number[];
   /** Length of the move from stop i - 1 to stop i; 0 for the first stop. */
   moveFrames: number[];
+  /**
+   * True where stop i has the same camera as stop i - 1 (the letter's pages): nothing travels, so
+   * the move is the scene's own transition and the cards cut instead of crossfading.
+   */
+  inPlace?: boolean[];
   durationInFrames: number;
 };
 
@@ -33,6 +38,7 @@ export function buildTimeline(cameras: Camera[], mode: WorldMode, fps: number): 
   const hold = mode === "video" ? Math.round(HOLD_SECONDS * fps) : 0;
   const stopFrames: number[] = [];
   const moveFrames: number[] = [];
+  const inPlace: boolean[] = [];
   let frame = 0;
   for (let i = 0; i < cameras.length; i++) {
     const prev = cameras[i - 1];
@@ -41,7 +47,8 @@ export function buildTimeline(cameras: Camera[], mode: WorldMode, fps: number): 
     if (i > 0) frame += hold + move;
     stopFrames.push(frame);
     moveFrames.push(move);
+    inPlace.push(!!prev && !!cam && prev.x === cam.x && prev.y === cam.y && prev.span === cam.span);
   }
   const last = stopFrames.at(-1) ?? 0;
-  return { stopFrames, moveFrames, durationInFrames: last + hold + 1 };
+  return { stopFrames, moveFrames, inPlace, durationInFrames: last + hold + 1 };
 }

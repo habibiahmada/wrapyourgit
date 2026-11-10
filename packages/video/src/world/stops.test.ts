@@ -45,8 +45,9 @@ test("natural dates: hello Jan 1, first day and busiest on their own days, closi
   expect(plotOf(stops, "city")).toBeNull();
 });
 
+/** Plots in story order, one per place: later letter pages share page 1's plot (ruling R7). */
 const plotsOf = (stops: ReturnType<typeof buildStops>) =>
-  stops.flatMap((s) => (s.plot === null ? [] : [s.plot]));
+  stops.flatMap((s) => (s.plot === null || (s.page ?? 1) > 1 ? [] : [s.plot]));
 
 test("plots never decrease along the story when the busiest day is late", () => {
   const data = withCalendar(sampleRecap, { "2026-09-15": 9, "2026-02-03": 2 });
@@ -79,16 +80,22 @@ test("busiest on the last day with data keeps it, closing sits before it", () =>
   expect(new Set(plotsOf(stops)).size).toBe(plotsOf(stops).length);
 });
 
-test("every stop but the city has its own plot", () => {
-  const stops = buildStops(sampleRecap, buildCity(sampleRecap));
-  const plots = stops.flatMap((s) => (s.plot === null ? [] : [s.plot]));
-  expect(new Set(plots).size).toBe(plots.length);
+test("every stop but the city has its own plot, except letter pages, which share one", () => {
+  const stops = buildStops(sampleRecap, buildCity(sampleRecap), { letterPages: 3 });
+  const letterPlots = stops.filter((s) => s.kind === "letter").map((s) => s.plot);
+  expect(letterPlots).toHaveLength(3);
+  expect(typeof letterPlots[0]).toBe("number");
+  expect(new Set(letterPlots).size).toBe(1);
+  const others = stops.flatMap((s) => (s.plot === null || s.kind === "letter" ? [] : [s.plot]));
+  expect(new Set([...others, letterPlots[0]]).size).toBe(others.length + 1);
 });
 
 test("fixed-plot stops move forward through the year", () => {
   const NATURAL = new Set(["hello", "first-day", "city", "busiest", "closing"]);
   const stops = buildStops(sampleRecap, buildCity(sampleRecap), { letterPages: 3 });
-  const fixed = stops.filter((s) => !NATURAL.has(s.kind)).map((s) => s.plot as number);
+  const fixed = stops
+    .filter((s) => !NATURAL.has(s.kind) && (s.page ?? 1) === 1)
+    .map((s) => s.plot as number);
   for (let i = 1; i < fixed.length; i++) expect(fixed[i]).toBeGreaterThan(fixed[i - 1] as number);
 });
 
@@ -117,7 +124,7 @@ test("a provisional year ending 2026-01-20 still fits every stop before the clos
   const city = buildCity(data);
   expect(city.lastDataIndex).toBe(19);
   const stops = buildStops(data, city, { letterPages: 2 });
-  const plots = stops.flatMap((s) => (s.plot === null ? [] : [s.plot]));
+  const plots = plotsOf(stops);
   expect(new Set(plots).size).toBe(plots.length);
   expect(plots.every((p) => p <= city.lastDataIndex)).toBe(true);
   expect(plotOf(stops, "closing")).toBe(19);

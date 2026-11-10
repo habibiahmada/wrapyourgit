@@ -38,7 +38,8 @@ const EDGE = 7;
  *
  * Plots never decrease along the story: first-day, busiest and closing keep their real dates, and
  * the fixed stops between two anchors are spread over the plots between them. The one exception
- * is a busiest day on Jan 1, where hello yields and moves forward.
+ * is a busiest day on Jan 1, where hello yields and moves forward. The letter's pages all share
+ * one plot, so moving between them is a page turn, not a camera flight.
  */
 export function buildStops(
   _data: RecapData,
@@ -76,13 +77,9 @@ export function buildStops(
   const hello = take(firstFreeFrom(0));
 
   type Entry = { id: string; kind: StopKind; page?: number; plot: number | null; fixed: boolean };
-  const letters: Entry[] = Array.from({ length: pages }, (_, i) => ({
-    id: `letter-${i + 1}`,
-    kind: "letter",
-    page: i + 1,
-    plot: null,
-    fixed: true,
-  }));
+  // One entry takes a plot for the whole letter; the pages are expanded onto it at the end, so the
+  // letter turns its pages in place instead of flying the camera between them.
+  const letters: Entry[] = [{ id: "letter-1", kind: "letter", page: 1, plot: null, fixed: true }];
   const fixed = (kind: StopKind): Entry => ({ id: kind, kind, plot: null, fixed: true });
   const entries: Entry[] = [
     { id: "hello", kind: "hello", plot: hello, fixed: false },
@@ -145,10 +142,14 @@ export function buildStops(
     i = end;
   }
 
-  return entries.map(({ id, kind, page, plot }) => ({
-    id,
-    kind,
-    plot,
-    ...(page ? { page } : {}),
-  }));
+  return entries.flatMap(({ id, kind, page, plot }): Stop[] =>
+    kind === "letter"
+      ? Array.from({ length: pages }, (_, i) => ({
+          id: `letter-${i + 1}`,
+          kind,
+          plot,
+          page: i + 1,
+        }))
+      : [{ id, kind, plot, ...(page ? { page } : {}) }],
+  );
 }

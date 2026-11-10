@@ -3,11 +3,13 @@
  * eye. Run from the repository root:
  *
  *   bun scripts/world-stills.ts <kind> [outDir] [--fixture <name>] [--offset <frames>] [--page <n>]
+ *   [--format <id>]
  *
  *   bun scripts/world-stills.ts busiest
  *   bun scripts/world-stills.ts projects /tmp/claude-1000/world-stills/task-7 --fixture edge-long-names
  *   bun scripts/world-stills.ts hello --offset -20     # 20 frames before the rest: mid-entrance
  *   bun scripts/world-stills.ts letter --page 2         # the letter's second page
+ *   bun scripts/world-stills.ts letter --format 1x1     # one format instead of the default three
  *
  * <kind> is a StopKind; the first stop of that kind is used, or with --page the stop showing that
  * page (letter), written as `<kind>-p<n>…`. Fixtures: sample (default),
@@ -38,11 +40,11 @@ const FIXTURES: Record<string, RecapData> = {
     languages: { top: [{ name: "Rust", color: "#dea584", share: 1 }], distinctCount: 1 },
   },
 };
-const FORMATS: VideoFormatId[] = ["9x16", "4x5", "16x9"];
+const DEFAULT_FORMATS: VideoFormatId[] = ["9x16", "4x5", "16x9"];
 
 function usage(message: string): never {
   console.error(`${message}
-Usage: bun scripts/world-stills.ts <kind> [outDir] [--fixture <name>] [--offset <frames>] [--page <n>]
+Usage: bun scripts/world-stills.ts <kind> [outDir] [--fixture <name>] [--offset <frames>] [--page <n>] [--format <id>]
 Kinds: ${STOP_KINDS.join(", ")}
 Fixtures: ${Object.keys(FIXTURES).join(", ")}`);
   process.exit(1);
@@ -52,12 +54,14 @@ const positional: string[] = [];
 let fixture = "sample";
 let offset = 0;
 let page: number | undefined;
+let only: string | undefined;
 const args = process.argv.slice(2);
 for (let i = 0; i < args.length; i++) {
   const arg = args[i] as string;
   if (arg === "--fixture") fixture = args[++i] ?? usage("--fixture needs a name");
   else if (arg === "--offset") offset = Number(args[++i]);
   else if (arg === "--page") page = Number(args[++i]);
+  else if (arg === "--format") only = args[++i] ?? usage("--format needs an id");
   else positional.push(arg);
 }
 const [kind, outDir = "/tmp/claude-1000/world-stills/"] = positional;
@@ -65,6 +69,9 @@ if (!kind || !(STOP_KINDS as readonly string[]).includes(kind)) usage(`Unknown k
 const data = FIXTURES[fixture] ?? usage(`Unknown fixture: ${fixture}`);
 if (!Number.isInteger(offset)) usage("--offset must be a whole number of frames");
 if (page !== undefined && !(Number.isInteger(page) && page >= 1)) usage("--page must be 1 or more");
+
+if (only !== undefined && !(only in VIDEO_FORMATS)) usage(`Unknown format: ${only}`);
+const FORMATS = only ? [only as VideoFormatId] : DEFAULT_FORMATS;
 
 await mkdir(outDir, { recursive: true });
 const suffix = `${page ? `-p${page}` : ""}${fixture === "sample" ? "" : `-${fixture}`}`;

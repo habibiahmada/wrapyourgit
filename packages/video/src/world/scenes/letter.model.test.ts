@@ -4,7 +4,8 @@ import { busyRecap, emptyRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { congratsLetter, type Letter } from "../../letter";
 import { buildWorld } from "../model";
-import { letterGeometry, paginateLetter } from "./letter.model";
+import { labelWidth } from "./fit";
+import { letterGeometry, paginateLetter, paginateLetterLines } from "./letter.model";
 
 const words = (texts: string[]) => texts.join(" ").split(/\s+/).filter(Boolean);
 const letterWords = (letter: Letter) =>
@@ -25,7 +26,7 @@ const letters = {
 for (const [formatId, format] of Object.entries(VIDEO_FORMATS)) {
   for (const [name, letter] of Object.entries(letters)) {
     test(`paginateLetter ${formatId} ${name}: lines fit, words whole and in order`, () => {
-      const { maxChars, linesPerPage } = letterGeometry(format);
+      const { body, textWidth, linesPerPage } = letterGeometry(format);
       const pages = paginateLetter(letter, format);
       expect(pages.length).toBeGreaterThanOrEqual(1);
       for (const page of pages) {
@@ -34,10 +35,12 @@ for (const [formatId, format] of Object.entries(VIDEO_FORMATS)) {
         // A blank line only separates paragraphs: never first or last on a page.
         expect(page[0]).not.toBe("");
         expect(page.at(-1)).not.toBe("");
-        for (const line of page) {
-          // A single word longer than a line is the one thing allowed to overrun (the scene shrinks it).
-          if (line.includes(" ")) expect(line.length).toBeLessThanOrEqual(maxChars);
-        }
+      }
+      for (const line of paginateLetterLines(letter, format).flat()) {
+        // Measured as the scene sets it; a single word longer than a line may overrun (Label shrinks it).
+        const weight = line.kind === "body" ? 400 : 700;
+        if (line.text.includes(" "))
+          expect(labelWidth(line.text, body, weight)).toBeLessThanOrEqual(textWidth);
       }
       expect(words(pages.flat())).toEqual(letterWords(letter));
     });
@@ -55,6 +58,19 @@ test("paginateLetter: the 3x letter needs more pages than the sample, and tall f
   );
 });
 
+test("paginateLetter: lines use the column, and the sample letter takes at most 5 pages", () => {
+  for (const format of Object.values(VIDEO_FORMATS)) {
+    const { body, textWidth } = letterGeometry(format);
+    const widest = Math.max(
+      ...paginateLetter(sample, format)
+        .flat()
+        .map((line) => labelWidth(line, body, 400)),
+    );
+    expect(widest).toBeGreaterThan(textWidth * 0.9);
+    expect(paginateLetter(sample, format).length).toBeLessThanOrEqual(5);
+  }
+});
+
 test("paginateLetter: a word longer than a line keeps its own line, unsplit", () => {
   const giant = "x".repeat(80);
   const pages = paginateLetter(
@@ -65,10 +81,12 @@ test("paginateLetter: a word longer than a line keeps its own line, unsplit", ()
   expect(pages[0]?.[1]).toBe(`@${giant},`);
 });
 
-test("letterGeometry: body is 4.2% of the short side, in scene units", () => {
+test("letterGeometry: body is 4.2% of the short side (3.6% when square), in scene units", () => {
   const { body } = letterGeometry(VIDEO_FORMATS["16x9"]);
   // 1080 px short side on a 1920 px wide frame; scene units are 1000 / 1920 px.
   expect(body).toBeCloseTo((0.042 * 1080 * 1000) / 1920, 6);
+  // Square frames set it a little smaller to keep the page count down.
+  expect(letterGeometry(VIDEO_FORMATS["1x1"]).body).toBeCloseTo(36, 6);
 });
 
 test("buildWorld: one letter stop per page, numbered 1..N", () => {

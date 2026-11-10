@@ -29,18 +29,19 @@ test("cityOpacity: 1 at the city span and wider, 0 at 3 plot spans and closer", 
 for (const mode of ["interactive", "video"] as WorldMode[]) {
   test(`cardOpacity (${mode}): a card shows only at its own stop`, () => {
     const { timeline } = buildWorld(sampleRecap, VIDEO_FORMATS["9x16"], mode, 30);
-    const { stopFrames, moveFrames } = timeline;
+    const { stopFrames, moveFrames, inPlace } = timeline;
     for (let i = 0; i < stopFrames.length; i++) {
       const rest = stopFrames[i] as number;
       expect(cardOpacity(i, rest, timeline)).toBe(1);
-      if (i > 0) {
+      // Moves between stops on one camera (letter pages) cut; model.test.ts covers them.
+      if (i > 0 && !inPlace?.[i]) {
         expect(cardOpacity(i, stopFrames[i - 1] as number, timeline)).toBe(0);
         const mid = rest - Math.round((moveFrames[i] as number) / 2);
         expect(cardOpacity(i, mid, timeline)).toBeGreaterThan(0);
         expect(cardOpacity(i, mid, timeline)).toBeLessThan(1);
       }
       const next = stopFrames[i + 1];
-      if (next !== undefined) {
+      if (next !== undefined && !inPlace?.[i + 1]) {
         expect(cardOpacity(i, next, timeline)).toBe(0);
         const mid = next - Math.round((moveFrames[i + 1] as number) / 2);
         expect(cardOpacity(i, mid, timeline)).toBeGreaterThan(0);

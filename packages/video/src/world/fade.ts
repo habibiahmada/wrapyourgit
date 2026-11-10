@@ -23,19 +23,26 @@ export function zoomFade(camera: Camera, stopCam: Camera, citySpan: number): num
 /**
  * Stop i's card by the timeline, not by where the camera is: in iso view two plots can share
  * nearly the same camera centre, so only time can keep a card off another stop. It fades in over
- * the move into stop i, holds through its rest and fades out over the move out of it.
+ * the move into stop i, holds through its rest and fades out over the move out of it. Between two
+ * stops on the same camera (`inPlace`) the cards cut at the start of the move instead: the incoming
+ * scene draws its own transition over the outgoing picture, so a crossfade would only ghost.
  */
 export function cardOpacity(i: number, frame: number, timeline: Timeline): number {
-  const { stopFrames, moveFrames } = timeline;
+  const { stopFrames, moveFrames, inPlace } = timeline;
   const rest = stopFrames[i];
   if (rest === undefined) return 0;
   const moveIn = moveFrames[i] ?? 0;
-  if (frame < rest) return moveIn > 0 ? clamp01(1 - (rest - frame) / moveIn) : 0;
+  if (frame < rest) {
+    if (moveIn <= 0) return 0;
+    if (inPlace?.[i]) return frame >= rest - moveIn ? 1 : 0;
+    return clamp01(1 - (rest - frame) / moveIn);
+  }
   const next = stopFrames[i + 1];
   if (next === undefined) return 1;
   const moveOut = moveFrames[i + 1] ?? 0;
   const leave = next - moveOut;
   if (frame <= leave) return 1;
+  if (inPlace?.[i + 1]) return 0;
   return moveOut > 0 ? clamp01((next - frame) / moveOut) : 0;
 }
 

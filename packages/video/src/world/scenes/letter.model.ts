@@ -1,12 +1,15 @@
 import type { Letter } from "../../letter";
-import { SCENE_WIDTH, safeArea, sceneHeight } from "./fit";
+import { type LabelWeight, labelWidth, SCENE_WIDTH, safeArea, sceneHeight } from "./fit";
 
 type Size = { width: number; height: number };
 
-/** Same per-character estimate as `fitFontSize`, so a wrapped line is never wider than it allows. */
-const CHAR_EM = 0.62;
 /** Body text as a share of the frame's shorter side. */
 const BODY_SHARE = 0.042;
+/**
+ * Square frames have the least height per line of text: a slightly smaller body there keeps the
+ * sample letter to five pages instead of seven (ruling R8).
+ */
+const SQUARE_BODY_SHARE = 0.036;
 const LINE_HEIGHT = 1.42;
 
 export type LetterGeometry = {
@@ -23,7 +26,6 @@ export type LetterGeometry = {
   textWidth: number;
   /** Baseline of a page's first line. */
   firstBaseline: number;
-  maxChars: number;
   linesPerPage: number;
   /** Baseline of the "n / N" tab at the foot of the sheet. */
   tabBaseline: number;
@@ -38,7 +40,9 @@ export function letterGeometry(size: Size): LetterGeometry {
   const h = sceneHeight(size);
   const safe = safeArea(size);
   const unitsPerPx = SCENE_WIDTH / size.width;
-  const body = BODY_SHARE * Math.min(size.width, size.height) * unitsPerPx;
+  const square = Math.abs(size.width / size.height - 1) < 0.1;
+  const body =
+    (square ? SQUARE_BODY_SHARE : BODY_SHARE) * Math.min(size.width, size.height) * unitsPerPx;
   const lineHeight = body * LINE_HEIGHT;
 
   const landscape = size.width > size.height * 1.2;
@@ -58,7 +62,6 @@ export function letterGeometry(size: Size): LetterGeometry {
   // The last line's descenders stay clear of the tab's cap height plus a gap.
   const textBottom = tabBaseline - body * 1.6;
   const linesPerPage = Math.max(1, Math.floor((textBottom - firstBaseline) / lineHeight) + 1);
-  const maxChars = Math.max(1, Math.floor(textWidth / (body * CHAR_EM)));
 
   return {
     sheet,
@@ -69,18 +72,20 @@ export function letterGeometry(size: Size): LetterGeometry {
     textX,
     textWidth,
     firstBaseline,
-    maxChars,
     linesPerPage,
     tabBaseline,
   };
 }
 
-/** Greedy wrap at word boundaries. A word longer than a line gets a line of its own, unsplit. */
-export function wrapWords(text: string, maxChars: number): string[] {
+/**
+ * Greedy wrap at word boundaries, measuring with the shared `labelWidth` so a line is as wide as
+ * the scene's Label will set it. A word longer than a line gets a line of its own, unsplit.
+ */
+export function wrapWords(text: string, fits: (line: string) => boolean): string[] {
   const lines: string[] = [];
   let line = "";
   for (const word of text.split(/\s+/).filter(Boolean)) {
-    if (line && line.length + 1 + word.length > maxChars) {
+    if (line && !fits(`${line} ${word}`)) {
       lines.push(line);
       line = word;
     } else {
@@ -99,11 +104,14 @@ export type LetterLine = { text: string; kind: LetterLineKind };
  * a page, a paragraph doesn't start with a lone line at a page's foot, and no page is empty.
  */
 export function paginateLetterLines(letter: Letter, size: Size): LetterLine[][] {
-  const { maxChars, linesPerPage } = letterGeometry(size);
+  const { body, textWidth, linesPerPage } = letterGeometry(size);
+  // The greeting and sign-off are set bold (wider glyphs), the body regular.
+  const wrap = (text: string, weight: LabelWeight) =>
+    wrapWords(text, (line) => labelWidth(line, body, weight) <= textWidth);
   const blocks: { kind: LetterLineKind; lines: string[] }[] = [
-    { kind: "greeting" as const, lines: wrapWords(letter.greeting, maxChars) },
-    ...letter.paragraphs.map((p) => ({ kind: "body" as const, lines: wrapWords(p, maxChars) })),
-    { kind: "signOff" as const, lines: wrapWords(letter.signOff, maxChars) },
+    { kind: "greeting" as const, lines: wrap(letter.greeting, 700) },
+    ...letter.paragraphs.map((p) => ({ kind: "body" as const, lines: wrap(p, 400) })),
+    { kind: "signOff" as const, lines: wrap(letter.signOff, 700) },
   ].filter((block) => block.lines.length > 0);
 
   const pages: LetterLine[][] = [];
