@@ -52,7 +52,7 @@ Order lives in `world/stops.ts`. Each stop sits on a day of the city: first-day,
 | letter      | `Letter`    | the congratulations letter, one stop per page                         |
 | closing     | `Closing`   | fireworks over the last day with data and the year's headline numbers |
 
-Cell is the only mascot (ADR-0012); its looks are baked sprite sheets and WebP loops (`src/art.ts`), so the story needs no WebGL. Re-bake after changing a look or motion: `bun scripts/render-art.ts sprite-<id>` (ADR-0013).
+Cell is the only mascot (ADR-0012). Scenes draw it from the baked PNG stills (`CellArt`, `HeadArt` and the archetype cutouts in `world/scenes/kit.tsx`, ids in `src/art.ts`), so the story needs no WebGL. Re-bake after changing a look or motion: `bun scripts/render-art.ts <id>` (ADR-0013).
 
 Privacy: scenes name repositories only through `repoLabel()` (`src/present.ts`). Which repositories reach a scene is decided before the composition, by the data it is given: `toPublicRecap` on public surfaces, the owner's choice in their own story and files ([ADR-0017](../architecture/decisions/0017-private-names-follow-the-owner.md)). Metrics go through `metricValue()`: unavailable keeps its own state, estimates get "~".
 
