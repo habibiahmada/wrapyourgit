@@ -129,3 +129,22 @@ describe("toPublicRecap", () => {
     expect(original.repositories.top).toHaveLength(2);
   });
 });
+
+// The video package can't depend on analytics, so the check that exports carry only the public
+// projection lives here, where both are reachable.
+describe("world exports of the public projection", () => {
+  test("no private repository name reaches the composition props or the file names", async () => {
+    const { sampleRecap } = await import("../../video/src/fixtures/sample-recap");
+    const { worldExportComposition, exportFileName } = await import("../../video/src/world/export");
+    const publicData = toPublicRecap(sampleRecap);
+    const privateNames = sampleRecap.repositories.top
+      .filter((r) => r.isPrivate)
+      .map((r) => r.nameWithOwner);
+    expect(privateNames.length).toBeGreaterThan(0);
+    const exported = JSON.stringify([
+      worldExportComposition(publicData, "9x16"),
+      exportFileName("mp4", publicData, { format: "9x16" }),
+    ]);
+    for (const name of privateNames) expect(exported).not.toContain(name);
+  });
+});

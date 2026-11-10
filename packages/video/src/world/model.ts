@@ -42,3 +42,9 @@ export function buildWorld(
 export function worldDuration(data: RecapData, format: Format, mode: WorldMode): number {
   return buildWorld(data, format, mode, VIDEO_FPS).timeline.durationInFrames;
 }
+export {
+  type ExportFormat,
+  exportFileName,
+  slideFrames,
+  worldExportComposition,
+} from "./export";
