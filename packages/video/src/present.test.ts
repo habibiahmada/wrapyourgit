@@ -9,10 +9,11 @@ describe("repoLabel", () => {
     });
   });
 
-  test("private repos are never named", () => {
-    const label = repoLabel({ nameWithOwner: "octo/secret-client", isPrivate: true });
-    expect(label).toEqual({ name: "Private repository", owner: null });
-    expect(JSON.stringify(label)).not.toContain("secret-client");
+  test("private repos are named too: the projection decides whether they reach a scene", () => {
+    expect(repoLabel({ nameWithOwner: "octo/secret-client", isPrivate: true })).toEqual({
+      name: "secret-client",
+      owner: "octo",
+    });
   });
 });
 

@@ -5,16 +5,47 @@ import type { ArchetypeId, Metric, RecapData, RepoRef } from "@wyg/schema";
  */
 
 /**
- * How a repository is named on screen. The story becomes a shareable MP4, so private repos are
- * never named (AGENTS.md rule 6), here at the last step before pixels, whatever the caller passed.
+ * How a repository is named on screen: the name it is given, private or not. Privacy is enforced
+ * before any scene sees the data, by the projection (ADR-0017): the owner's hidden view
+ * (`withoutPrivateNames`) and every public surface (`toPublicRecap`) drop private repositories,
+ * and the owner's "show" choice passes them through on purpose. A second filter here would make
+ * that choice a no-op.
  */
 export function repoLabel(repo: Pick<RepoRef, "nameWithOwner" | "isPrivate">): {
   name: string;
   owner: string | null;
 } {
-  if (repo.isPrivate) return { name: "Private repository", owner: null };
   const [owner = "", name = repo.nameWithOwner] = repo.nameWithOwner.split("/");
   return { name, owner };
+}
+
+/** Repositories that stand on the projects shelf at most. */
+export const MAX_PROJECT_STACKS = 4;
+
+/** The projects stop's repositories: those with commits, most commits first, at most four. */
+export function shelfRepos<T extends { commits: number }>(top: readonly T[]): T[] {
+  return top
+    .filter((r) => r.commits > 0)
+    .sort((a, b) => b.commits - a.commits)
+    .slice(0, MAX_PROJECT_STACKS);
+}
+
+/** The repository the letter names as the year's main one, or null. */
+export function letterRepo(data: RecapData): RepoRef | null {
+  const repo = data.repositories.top[0];
+  return repo && repo.commits > 0 ? repo : null;
+}
+
+/**
+ * Whether the story draws a private repository's name: on the projects shelf or in the letter,
+ * the only places a repository is named. It decides the files' reminder, so it must follow every
+ * scene: a new scene or letter line that names a repository belongs here too.
+ */
+export function drawsPrivateName(data: RecapData): boolean {
+  return (
+    shelfRepos(data.repositories.top).some((r) => r.isPrivate) ||
+    letterRepo(data)?.isPrivate === true
+  );
 }
 
 /**

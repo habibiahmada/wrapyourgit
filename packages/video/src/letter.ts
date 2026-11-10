@@ -1,6 +1,6 @@
 import type { ArchetypeId, RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS } from "./copy";
-import { repoLabel, runnerUps } from "./present";
+import { letterRepo, repoLabel, runnerUps } from "./present";
 
 /*
  * The congratulations letter at the end of the story. It reads like a note from a friend, not a
@@ -137,7 +137,7 @@ const MEANINGS: Record<ArchetypeId, string> = {
 };
 
 export function congratsLetter(recap: RecapData): Letter {
-  const { contributions, languages, repositories, community, identity, profile, meta } = recap;
+  const { contributions, languages, community, identity, profile, meta } = recap;
   const tier = activityTier(recap);
   const pick = picker(`${profile.login}-${meta.year}`);
   const soFar = meta.isFinal ? "" : " so far";
@@ -177,12 +177,11 @@ export function congratsLetter(recap: RecapData): Letter {
         : `${top.name} was home this year, and you went deep instead of wide.`,
     );
   }
-  const repo = repositories.top[0];
-  if (repo && repo.commits > 0) {
+  const repo = letterRepo(recap);
+  if (repo) {
     craft.push(
-      repo.isPrivate
-        ? "One private project got more of your attention than anything else, and whatever it is, it is better for it."
-        : `The ${repoLabel(repo).name} repository got more of your time than anything else, and it shows.`,
+      // Named even when private: only the owner's "show" choice lets one reach the letter (ADR-0017).
+      `The ${repoLabel(repo).name} repository got more of your time than anything else, and it shows.`,
     );
   }
   if (community.starsGained.status === "ok" && community.starsGained.value > 0) {

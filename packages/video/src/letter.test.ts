@@ -70,19 +70,6 @@ describe("congratsLetter", () => {
     expect(text(provisional)).toContain("so far");
   });
 
-  test("never names a private repository", () => {
-    const privateTop: RecapData = {
-      ...sampleRecap,
-      repositories: {
-        ...sampleRecap.repositories,
-        top: sampleRecap.repositories.top.map((repo, i) =>
-          i === 0 ? { ...repo, nameWithOwner: "octo/secret-client", isPrivate: true } : repo,
-        ),
-      },
-    };
-    expect(text(privateTop)).not.toContain("secret-client");
-  });
-
   test("uses 'an' before a vowel", () => {
     const explorer: RecapData = {
       ...sampleRecap,

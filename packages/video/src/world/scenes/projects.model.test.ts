@@ -20,13 +20,13 @@ const withRepos = (
   },
 });
 
-test("projectsModel: sample takes four stacks, unit 50, ceil crates and a private name redacted", () => {
+test("projectsModel: sample takes four stacks, unit 50, ceil crates, names as given", () => {
   const m = projectsModel(sampleRecap);
   expect(m.unit).toBe(50);
   expect(m.created).toBe(6);
   expect(m.stacks.map((s) => [s.label, s.commits, s.crates])).toEqual([
     ["trailmix", 312, 7],
-    ["Private repository", 188, 4],
+    ["client-portal", 188, 4],
     ["dotfiles", 96, 2],
     ["design-tokens", 41, 1],
   ]);
