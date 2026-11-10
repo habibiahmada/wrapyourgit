@@ -1,6 +1,6 @@
 import type { FieldColor } from "./theme";
 
-/** One move per cut, never repeated (SceneTransition). */
+/** One move per cut, never repeated (the old story's transitions, removed in phase 4). */
 export type TransitionVariant =
   | "dive"
   | "tilt"
@@ -16,8 +16,8 @@ export type TransitionVariant =
  * Remotion. Sections of the soundtrack line up with scene starts (timeline.test.ts checks it):
  * the kick enters on the first cut, the climax lands on identity and the outro on closing.
  * No two neighbouring scenes share a field, so every cell transition is visible (RHYTHM 3).
- * `transition` is how the scene takes over from the one before it (SceneTransition): every cut
- * has its own move, chosen for what the two scenes show; the climax gets the flash.
+ * `transition` was how the old story's scene took over from the one before it (removed in phase
+ * 4): every cut had its own move, chosen for what the two scenes show; the climax got the flash.
  */
 export const TIMELINE = [
   { id: "intro", beats: 8, field: "ink" },

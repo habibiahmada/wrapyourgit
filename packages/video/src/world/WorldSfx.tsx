@@ -4,8 +4,8 @@ import { SFX, type SfxName, sfxFile } from "../audio/sfx";
 
 /**
  * A sound effect at frame `at` of the world, on `@remotion/media`'s `<Audio>`: the browser
- * renderer (`@remotion/web-renderer`) cannot play `Html5Audio`. Same volume and length as the old
- * story's `Sfx`, which stays on `Html5Audio`.
+ * renderer (`@remotion/web-renderer`) cannot play `Html5Audio`. Volume and length come from
+ * `SFX`.
  */
 export function WorldSfx({ at, sound }: { at: number; sound: SfxName }) {
   const { fps } = useVideoConfig();
