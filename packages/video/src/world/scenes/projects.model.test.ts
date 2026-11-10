@@ -62,7 +62,7 @@ test("projectsModel: crates round up, so any commits make at least one", () => {
   expect(m.stacks.map((s) => s.crates)).toEqual([2, 1, 1]);
 });
 
-test("projectsModel: skips repositories without commits and keeps the first four", () => {
+test("projectsModel: skips repositories without commits and keeps the four largest", () => {
   const m = projectsModel(withRepos([0, 30, 20, 0, 10, 5, 4]));
   expect(m.stacks.map((s) => s.commits)).toEqual([30, 20, 10, 5]);
 });

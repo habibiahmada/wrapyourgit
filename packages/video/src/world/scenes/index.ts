@@ -32,7 +32,7 @@ export const SCENE_TONE: Partial<Record<StopKind, SceneTone>> = {
   closing: "dark",
 };
 
-/** The picture each stop draws. Kinds without their own scene yet show the phase 1 card. */
+/** The picture each stop draws. */
 export const SCENES: Record<StopKind, Scene> = {
   hello: Hello,
   "first-day": FirstDay,
