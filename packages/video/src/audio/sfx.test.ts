@@ -10,7 +10,7 @@ describe("SFX", () => {
       const file = Bun.file(join(PUBLIC, sound.file));
       expect(await file.exists()).toBe(true);
       expect(file.size).toBeLessThan(200 * 1024);
-      const header = new TextDecoder().decode(await file.slice(0, 12).arrayBuffer());
+      const header = new TextDecoder("latin1").decode(await file.slice(0, 12).arrayBuffer());
       expect(header.slice(0, 4)).toBe("RIFF");
       expect(header.slice(8, 12)).toBe("WAVE");
       expect(sound.volume).toBeGreaterThan(0);

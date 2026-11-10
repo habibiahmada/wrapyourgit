@@ -19,7 +19,7 @@ import { cardOpacity, enterProgress, reachedStop } from "./fade";
 import { buildWorld } from "./model";
 import { StopLayer } from "./StopLayer";
 import { SCENE_TONE } from "./scenes";
-import { transitionSound } from "./sound";
+import { arrivalSound, travelSound } from "./sound";
 import type { WorldMode } from "./timeline";
 
 export type WorldStoryProps = {
@@ -85,7 +85,16 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
           {stops.slice(1).map((stop, k) => {
             const i = k + 1;
             const at = (timeline.stopFrames[i] ?? 0) - (timeline.moveFrames[i] ?? 0);
-            return <Sfx key={stop.id} at={at} sound={transitionSound(stop.kind)} />;
+            const travel = travelSound(stop.kind, timeline.inPlace?.[i] ?? false);
+            return travel && <Sfx key={stop.id} at={at} sound={travel} />;
+          })}
+          {stops.map((stop, i) => {
+            const arrival = arrivalSound(stop.kind);
+            return (
+              arrival && (
+                <Sfx key={`${stop.id}-arrive`} at={timeline.stopFrames[i] ?? 0} sound={arrival} />
+              )
+            );
           })}
           {music && (
             <Html5Audio

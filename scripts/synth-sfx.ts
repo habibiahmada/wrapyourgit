@@ -145,6 +145,163 @@ const VOICES: Record<SfxName, (step: number) => (t: number, length: number) => n
     const filter = lowPass((t) => 2200 * Math.exp(-t * 2.4) + 180);
     return (t, length) => filter(noise(), t) * Math.sin(Math.PI * (t / length)) ** 0.8 * 2.4;
   },
+  sprout: () => (t) => {
+    // A soft pluck whose pitch climbs a fifth as it grows.
+    const frequency = A5 * 0.5 * (1 + 0.5 * (1 - Math.exp(-t * 14)));
+    return (
+      (sine(frequency, t) + 0.3 * sine(frequency * 2, t)) * Math.min(1, t * 200) * Math.exp(-t * 13)
+    );
+  },
+  lock: () => {
+    // Two metallic clicks: inharmonic partials with a very short ring.
+    return (t) => {
+      let sum = 0;
+      for (const at of [0.02, 0.17]) {
+        const local = t - at;
+        if (local < 0) continue;
+        const ring = sine(2300, local) + 0.6 * sine(3470, local) + 0.4 * sine(5130, local);
+        sum += (ring + 0.5 * noise()) * Math.exp(-local * 85);
+      }
+      return sum;
+    };
+  },
+  flag: () => {
+    // Cloth flap: band-limited noise gated by a fast flutter that slows as it dies.
+    const band = highPass(500);
+    const smooth = lowPass(() => 3500);
+    return (t, length) => {
+      const flutter = 0.55 + 0.45 * Math.sin(2 * Math.PI * (22 - 10 * (t / length)) * t);
+      const envelope = Math.min(1, t * 60) * Math.exp(-t * 6);
+      return smooth(band(noise(), t), t) * flutter * envelope * 2.5;
+    };
+  },
+  chug: () => {
+    // Two soft train chugs: low-passed noise puffs over a low thud.
+    const air = lowPass(() => 900);
+    return (t) => {
+      let sum = 0;
+      for (const at of [0.04, 0.42]) {
+        const local = t - at;
+        if (local < 0) continue;
+        sum +=
+          (air(noise(), t) * 1.6 + 0.6 * sine(70, local)) *
+          Math.min(1, local * 120) *
+          Math.exp(-local * 11);
+      }
+      return sum;
+    };
+  },
+  bloom: () => (t, length) => {
+    // Airy chime: soft sines stepping up A minor pentatonic, each with a slow tail, plus breath.
+    const air = highPass(3000);
+    let sum = 0;
+    [1, 1.189, 1.498].forEach((ratio, i) => {
+      const local = t - i * 0.09;
+      if (local >= 0)
+        sum +=
+          sine(A5 * 0.75 * ratio, local) * Math.min(1, local * 150) * Math.exp(-local * 17) * 0.5;
+    });
+    return sum + air(noise(), t) * 0.05 * Math.sin(Math.PI * (t / length));
+  },
+  crate: () => (t) => {
+    // A wooden knock: a short, damped hollow tone with a click of noise.
+    const frequency = 190 * (1 + 0.25 * Math.exp(-t * 60));
+    return (
+      (sine(frequency, t) + 0.5 * sine(frequency * 2.4, t) + 0.3 * noise() * Math.exp(-t * 200)) *
+      Math.exp(-t * 28)
+    );
+  },
+  twinkle: () => (t) => {
+    // Bell partials at high pitches, struck at staggered times so it sparkles.
+    let sum = 0;
+    [0, 0.07, 0.15, 0.26].forEach((at, i) => {
+      const local = t - at;
+      if (local < 0) return;
+      const base = A5 * 2 * ([1, 1.335, 1.498, 2][i] ?? 1);
+      sum += (sine(base, local) + 0.35 * sine(base * 2.76, local)) * Math.exp(-local * 7) * 0.4;
+    });
+    return sum;
+  },
+  landing: () => {
+    // A soft swoosh that closes down, then a tap as it touches ground.
+    const filter = lowPass((t) => 1800 * Math.exp(-t * 7) + 250);
+    return (t) => {
+      const swoosh =
+        filter(noise(), t) * Math.sin(Math.PI * Math.min(1, t / 0.3)) ** 2 * Math.exp(-t * 4);
+      const local = t - 0.3;
+      const tap = local >= 0 ? sine(160 * (1 - 0.3 * local * 8), local) * Math.exp(-local * 30) : 0;
+      return swoosh * 1.4 + tap * 0.8;
+    };
+  },
+  spotlight: () => (t, length) => {
+    // A low warm thump, then a shimmer of bell partials that fades in over it.
+    const thump = sine(62 + 30 * Math.exp(-t * 25), t) * Math.exp(-t * 9);
+    let shimmer = 0;
+    [1, 1.5, 2, 3].forEach((ratio, i) => {
+      const local = t - 0.08 - i * 0.04;
+      if (local >= 0) shimmer += sine(A5 * ratio * 0.5, local) * Math.exp(-local * 4) * 0.14;
+    });
+    return thump + shimmer * Math.min(1, (length - t) * 6);
+  },
+  seesaw: () => {
+    // A wooden creak: a sawtooth-ish tone gliding one way and back, softened by a low-pass.
+    const soft = lowPass(() => 1200);
+    let phase = 0;
+    return (t, length) => {
+      const frequency = 210 + 90 * Math.sin(Math.PI * (t / length)) ** 2 + 8 * sine(31, t);
+      phase = (phase + frequency / SAMPLE_RATE) % 1;
+      const saw = 2 * phase - 1;
+      return (
+        soft(saw + 0.3 * noise(), t) *
+        Math.sin(Math.PI * (t / length)) ** 4 *
+        (0.2 + 0.8 * Math.abs(sine(7, t)))
+      );
+    };
+  },
+  page: () => {
+    // A paper swish: high band of noise that rises and falls once.
+    const band = highPass(1500);
+    const smooth = lowPass((t) => 3000 + 3000 * Math.sin(Math.PI * Math.min(1, t / 0.3)));
+    return (t, length) => smooth(band(noise(), t), t) * Math.sin(Math.PI * (t / length)) ** 3 * 3;
+  },
+  firework: () => {
+    // A pop, then a crackle tail of random sparse ticks.
+    const filter = lowPass(() => 2500);
+    const ticks = Array.from({ length: 36 }, () => ({
+      at: 0.08 + Math.abs(noise()) * 1.05,
+      pitch: 2500 + Math.abs(noise()) * 3000,
+      gain: 0.15 + Math.abs(noise()) * 0.2,
+    }));
+    return (t) => {
+      let sum =
+        (sine(150 * (1 + 2 * Math.exp(-t * 50)), t) + 0.6 * filter(noise(), t)) * Math.exp(-t * 24);
+      for (const tick of ticks) {
+        const local = t - tick.at;
+        if (local >= 0 && local < 0.02) {
+          sum +=
+            sine(tick.pitch, local) *
+            Math.exp(-local * 200) *
+            tick.gain *
+            (1 - (tick.at / 1.2) * 0.8);
+        }
+      }
+      return sum;
+    };
+  },
+  hello: () => (t) => {
+    // A friendly two-note chime: A5 then the E above it.
+    let sum = 0;
+    [0, 0.14].forEach((at, i) => {
+      const local = t - at;
+      if (local < 0) return;
+      const frequency = A5 * (i === 0 ? 1 : 1.498);
+      sum +=
+        (sine(frequency, local) + 0.25 * sine(frequency * 2, local)) *
+        Math.min(1, local * 300) *
+        Math.exp(-local * 24);
+    });
+    return sum;
+  },
 };
 
 function wav(samples: Float32Array): ArrayBuffer {
