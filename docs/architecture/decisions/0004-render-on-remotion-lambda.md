@@ -1,6 +1,6 @@
 # 0004. Render MP4 on Remotion Lambda (AWS)
 
-- Status: Accepted (cost numbers to be filled after Spike B)
+- Status: Superseded by [0016](0016-exports-in-the-browser.md)
 - Date: 2026-11-04
 
 ## Context
