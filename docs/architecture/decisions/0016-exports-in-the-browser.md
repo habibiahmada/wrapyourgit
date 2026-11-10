@@ -11,11 +11,11 @@ The story world (spec `docs/superpowers/specs/2026-11-06-story-world-design.md`)
 
 ## Decision
 
-1. **Every file is rendered in the viewer's browser.** The MP4 (H.264 + AAC, 30 fps, the four `VIDEO_FORMATS`) uses `renderMediaOnWeb`, the slides `renderStillOnWeb`; the ZIP (fflate) and the PDF (pdf-lib) are assembled in the browser. Code: `apps/web/src/app/recap/world/exports.ts`, loaded on demand by `ExportPanel`, so the renderer never weighs on the player's first load and never reaches server code. No server, Lambda or worker renders the new story.
+1. **Every file is rendered in the viewer's browser.** The MP4 (H.264 + AAC, 30 fps, the four `VIDEO_FORMATS`) uses `renderMediaOnWeb`, the slides `renderStillOnWeb`; the ZIP (fflate) and the PDF (pdf-lib) are assembled in the browser. Code: `apps/web/src/app/recap/exports.ts`, loaded on demand by `ExportPanel`, so the renderer never weighs on the player's first load and never reaches server code. No server, Lambda or worker renders the new story.
 2. **Slides are 4:5** (1080 × 1350, the Instagram feed size the earlier slides used), one per stop with letter pages included, each taken at the stop's rest frame in video mode (`slideFrames`, `worldExportComposition` in `packages/video/src/world/export.ts`).
 3. **Public projection for every file.** Until phase 4 adds the "Show your private repository names?" choice, every export renders `toPublicRecap(data)` (AGENTS.md rule 6). The page passes it beside the full data. The share card (`/api/card`) stays as it is.
 4. **Still behind the development gate.** The old and the new story never ship to users at once. The "Keep your year" screen at the end of `/recap/world` and the dashboard's "Download your story" section render only where `/recap/world` does (`process.env.NODE_ENV !== "production"`). Phase 4 turns both on and switches the story over.
-5. **Removals land with phase 4.** The old story (`StoryFlow`) still uses `/api/story/slide/10` and the slide routes, so `apps/renderer`'s still worker and Lambda deploy, `/api/story/{pdf,zip,slide}`, `server/slides.tsx` and `SLIDE_EXPORTS` are deleted with the switch-over, not before.
+5. **Removals land with phase 4.** The old story (`StoryFlow`) still uses `/api/story/slide/10` and the slide routes, so `apps/renderer`'s still worker and Lambda deploy, `/api/story/{pdf,zip,slide}`, `server/slides.tsx` and `SLIDE_EXPORTS` are deleted with the switch-over, not before. Done in phase 4: all of them are gone, and the dev scripts keep the Node still renderer as `scripts/lib/still.ts`.
 
 ### Web-renderer limits
 
@@ -37,4 +37,4 @@ Every world scene is built inside them, so the Player and the files show the sam
 - A browser without WebCodecs, or without H.264/AAC encoding, cannot make the video. The panel checks first (`exportSupport`), says what it can't make, and still offers the slides when stills work and the share card in any case.
 - A render takes as long as the viewer's device needs, and it stops when the viewer cancels or leaves the screen.
 - Licence: Remotion, `@remotion/web-renderer` included, is free for individuals and companies of three people or fewer (this is a personal project). Re-check https://remotion.dev/license before launch and if the project ever becomes a company product.
-- Until phase 4, Lambda and the slide worker stay in the repository for the old story, and AGENTS.md and `docs/video/scene-system.md` describe both paths.
+- Until phase 4, Lambda and the slide worker stay in the repository for the old story, and AGENTS.md and `docs/video/scene-system.md` describe both paths. Done: phase 4 removed them, and both documents now describe only the browser path.
