@@ -12,7 +12,7 @@
  *   bun scripts/world-stills.ts letter --format 1x1     # one format instead of the default three
  *
  * <kind> is a StopKind; the first stop of that kind is used, or with --page the stop showing that
- * page (letter), written as `<kind>-p<n>…`. Fixtures: sample (default),
+ * page (letter), written as `<kind>-p<n>…`. Fixtures: sample (default), public-sample (what a visitor sees),
  * edge-empty, edge-long-names, edge-provisional, edge-one-language. Writes `<outDir>/<kind>[-<fixture>]-<format>.png` for world-9x16,
  * world-4x5 and world-16x9 (outDir defaults to /tmp/claude-1000/world-stills/). Renders through
  * scripts/lib/still.ts like render-art.ts: one bundle, one headless browser, video mode.
@@ -20,6 +20,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type RecapData, VIDEO_FORMATS, VIDEO_FPS, type VideoFormatId } from "@wyg/schema";
+import { toPublicRecap } from "../packages/analytics/src/public";
 import {
   busyRecap,
   emptyRecap,
@@ -32,6 +33,8 @@ import { renderSceneStill } from "./lib/still";
 
 const FIXTURES: Record<string, RecapData> = {
   sample: sampleRecap,
+  // What a visitor sees: the landing page's frames come from this, never from the raw sample.
+  "public-sample": toPublicRecap(sampleRecap),
   "edge-empty": emptyRecap,
   "edge-long-names": busyRecap,
   "edge-provisional": provisionalRecap,
