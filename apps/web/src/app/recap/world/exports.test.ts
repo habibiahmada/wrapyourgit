@@ -97,6 +97,26 @@ describe("exportSupport", () => {
     expect(support.reason).toEqual(expect.any(String));
   });
 
+  test("checks the widest and the tallest frame, and a portrait limit turns the MP4 off", async () => {
+    const asked: [number, number][] = [];
+    const support = await exportSupport({
+      // An encoder capped at 1920 wide and about 1088 tall: landscape passes, portrait doesn't.
+      canRender: async ({ width, height }) => {
+        asked.push([width, height]);
+        return height > 1088
+          ? canRenderResult(false, [{ type: "video-codec-unsupported", message: "too tall" }])
+          : canRenderResult(true, []);
+      },
+      stillsAvailable: () => true,
+    });
+    expect(asked.sort()).toEqual([
+      [1080, 1920],
+      [1920, 1080],
+    ]);
+    expect(support.mp4).toBe(false);
+    expect(support.reason).toEqual(expect.any(String));
+  });
+
   test("a renderer that throws is the same as one that cannot render", async () => {
     const support = await exportSupport({
       canRender: async () => {

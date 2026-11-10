@@ -72,12 +72,14 @@ const MP4_REASON =
 const STILLS_REASON = "This browser can't draw the slides. Try a recent Chrome, Edge or Firefox.";
 const NOTHING_REASON = "This browser can't make your files. Try a recent Chrome or Edge.";
 
-/** What this browser can render: an H.264/AAC MP4 at the largest format, and PNG stills. */
-export async function exportSupport(overrides: Partial<ExportEngine> = {}): Promise<ExportSupport> {
-  const engine = engineWith(overrides);
-  // 16:9 and 9:16 share the largest frame; if that encodes, every format does.
-  const { width, height } = VIDEO_FORMATS["16x9"];
-  let mp4 = false;
+/**
+ * The two extreme frames: 16:9 is the widest, 9:16 the tallest, and 4:5 and 1:1 are no wider than
+ * the one, no taller than the other and no larger in area. Hardware encoders limit width and height
+ * separately (some cap height near 1088), so a passing landscape check says nothing about portrait.
+ */
+const EXTREMES = [VIDEO_FORMATS["16x9"], VIDEO_FORMATS["9x16"]];
+
+async function encodes(engine: ExportEngine, width: number, height: number): Promise<boolean> {
   try {
     const result = await engine.canRender({
       container: "mp4",
@@ -88,12 +90,21 @@ export async function exportSupport(overrides: Partial<ExportEngine> = {}): Prom
     });
     // Not `result.canRender`: it always folds in a WebGL check, and the world draws no WebGL
     // or 3D CSS (ADR-0013), so a missing WebGL must not cost the reader the video.
-    mp4 = !result.issues.some(
+    return !result.issues.some(
       (issue) => issue.severity === "error" && issue.type !== "webgl-unsupported",
     );
   } catch {
-    mp4 = false;
+    return false;
   }
+}
+
+/** What this browser can render: an H.264/AAC MP4 in every format, and PNG stills. */
+export async function exportSupport(overrides: Partial<ExportEngine> = {}): Promise<ExportSupport> {
+  const engine = engineWith(overrides);
+  const checks = await Promise.all(
+    EXTREMES.map(({ width, height }) => encodes(engine, width, height)),
+  );
+  const mp4 = checks.every(Boolean);
   let stills = false;
   try {
     stills = engine.stillsAvailable();
