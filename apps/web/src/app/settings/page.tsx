@@ -84,12 +84,12 @@ async function Settings({
             <h2 id="private-title" className="border-b border-line pb-2 text-xl font-bold">
               Private repositories
             </h2>
-            <p className="mt-4 font-semibold">
+            <p role="status" className="mt-4 font-semibold">
               {choice === null
                 ? "Not chosen yet; you'll be asked before your story"
                 : choice
                   ? "Shown in your story and your files"
-                  : "Hidden everywhere"}
+                  : "Hidden in your story and your files"}
             </p>
             <p className="mt-1 max-w-2xl text-muted">Your public page never shows them.</p>
             <form action={setPrivateNamesAction} className="mt-5">
