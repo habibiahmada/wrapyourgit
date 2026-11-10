@@ -121,7 +121,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           /u/your-login shows a reduced copy:
         </p>
         <ul>
-          <li>Private repository names and details are removed.</li>
+          <li>
+            Private repository names and details are removed. Their commit counts still show,
+            without a name.
+          </li>
           <li>Your timezone is replaced with UTC.</li>
           <li>The hours of the day you commit are withheld.</li>
         </ul>
