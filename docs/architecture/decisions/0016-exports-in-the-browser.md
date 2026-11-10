@@ -1,6 +1,6 @@
 # 0016. The story's files are rendered in the viewer's browser
 
-- Status: Accepted
+- Status: Accepted; decision 3 amended by [0017](0017-private-names-follow-the-owner.md)
 - Date: 2026-11-10
 - Supersedes: [0004](0004-render-on-remotion-lambda.md) (MP4 on Remotion Lambda), [0011](0011-slides-from-the-composition.md) (slides rendered on the server)
 - Builds on: [0002](0002-one-composition-for-web-and-video.md), [0013](0013-baked-animation-no-webgl.md)
@@ -13,7 +13,7 @@ The story world (spec `docs/superpowers/specs/2026-11-06-story-world-design.md`)
 
 1. **Every file is rendered in the viewer's browser.** The MP4 (H.264 + AAC, 30 fps, the four `VIDEO_FORMATS`) uses `renderMediaOnWeb`, the slides `renderStillOnWeb`; the ZIP (fflate) and the PDF (pdf-lib) are assembled in the browser. Code: `apps/web/src/app/recap/exports.ts`, loaded on demand by `ExportPanel`, so the renderer never weighs on the player's first load and never reaches server code. No server, Lambda or worker renders the new story.
 2. **Slides are 4:5** (1080 × 1350, the Instagram feed size the earlier slides used), one per stop with letter pages included, each taken at the stop's rest frame in video mode (`slideFrames`, `worldExportComposition` in `packages/video/src/world/export.ts`).
-3. **Public projection for every file.** Until phase 4 adds the "Show your private repository names?" choice, every export renders `toPublicRecap(data)` (AGENTS.md rule 6). The page passes it beside the full data. The share card (`/api/card`) stays as it is.
+3. **Public projection for every file.** Until phase 4 adds the "Show your private repository names?" choice, every export renders `toPublicRecap(data)` (AGENTS.md rule 6). The page passes it beside the full data. The share card (`/api/card`) stays as it is. Amended by [ADR-0017](0017-private-names-follow-the-owner.md): the owner's files now follow their private names choice; public surfaces keep `toPublicRecap`.
 4. **Still behind the development gate.** The old and the new story never ship to users at once. The "Keep your year" screen at the end of `/recap/world` and the dashboard's "Download your story" section render only where `/recap/world` does (`process.env.NODE_ENV !== "production"`). Phase 4 turns both on and switches the story over.
 5. **Removals land with phase 4.** The old story (`StoryFlow`) still uses `/api/story/slide/10` and the slide routes, so `apps/renderer`'s still worker and Lambda deploy, `/api/story/{pdf,zip,slide}`, `server/slides.tsx` and `SLIDE_EXPORTS` are deleted with the switch-over, not before. Done in phase 4: all of them are gone, and the dev scripts keep the Node still renderer as `scripts/lib/still.ts`.
 

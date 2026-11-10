@@ -93,15 +93,15 @@ See [ADR-0009](../architecture/decisions/0009-sound-design.md). Files in `packag
 
 ## Export
 
-| Setting | Value                                                                                                                                                       |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Codec   | H.264 + AAC                                                                                                                                                 |
-| FPS     | 30                                                                                                                                                          |
-| Sizes   | 1080×1920, 1080×1350, 1080×1080, 1920×1080                                                                                                                  |
-| Where   | Story world: the viewer's browser ([ADR-0016](../architecture/decisions/0016-exports-in-the-browser.md)); current story: no MP4 (Lambda was never deployed) |
+| Setting | Value                                                                                       |
+| ------- | ------------------------------------------------------------------------------------------- |
+| Codec   | H.264 + AAC                                                                                 |
+| FPS     | 30                                                                                          |
+| Sizes   | 1080×1920, 1080×1350, 1080×1080, 1920×1080                                                  |
+| Where   | The viewer's browser ([ADR-0016](../architecture/decisions/0016-exports-in-the-browser.md)) |
 
-Local test render: `bun run --filter @wyg/video render wrap-9x16 out/test-9x16.mp4`
+Local test render: `bun run --filter @wyg/video render world-9x16 out/test-9x16.mp4`
 
-**The story world** (`WorldStory`, development only until phase 4) renders every file in the viewer's browser ([ADR-0016](../architecture/decisions/0016-exports-in-the-browser.md)): the MP4 with `renderMediaOnWeb`, and slides (PNG, ZIP, PDF) as one 4:5 still (1080 × 1350) per stop, letter pages included, taken at the stop's rest frame (`slideFrames` in `src/world/export.ts`). Every file uses the public projection (`toPublicRecap`). They are made from the end of `/recap/world` ("Keep your year") and from the dashboard ("Download your story"), both by `ExportPanel` (`apps/web/src/app/recap/world/export-panel.tsx`). World scenes stay inside the web renderer's limits listed in ADR-0016 (no `z-index`, no 3D CSS, no SVG `url()` or CSS filters, no `object-position`, fonts only in SVG text, `<Audio>` from `@remotion/media`).
+**The story world** (`WorldStory`) renders every file in the viewer's browser ([ADR-0016](../architecture/decisions/0016-exports-in-the-browser.md)): the MP4 with `renderMediaOnWeb`, and slides (PNG, ZIP, PDF) as one 4:5 still (1080 × 1350) per stop, letter pages included, taken at the stop's rest frame (`slideFrames` in `src/world/export.ts`). They are made from the end of `/recap` ("Keep your year") and from the dashboard ("Download your story"), both by `ExportPanel` (`apps/web/src/app/recap/export-panel.tsx`). The files use the same data as the owner's story: full data when the owner chose to show private repository names, with the reminder "These files include your private repository names.", otherwise `withoutPrivateNames` ([ADR-0017](../architecture/decisions/0017-private-names-follow-the-owner.md)). The share card always uses the public projection (`toPublicRecap`), and visitors on `/u/<login>` cannot export. World scenes stay inside the web renderer's limits listed in ADR-0016 (no `z-index`, no 3D CSS, no SVG `url()` or CSS filters, no `object-position`, fonts only in SVG text, `<Audio>` from `@remotion/media`).
 
-**The current story** (`WrapStory`) has no MP4 export: the Lambda path of [ADR-0004](../architecture/decisions/0004-render-on-remotion-lambda.md) (superseded) was never deployed. Until phase 4 its slides come from the still worker on the server, where that worker runs (on Vercel the slide routes answer 503), as frames of this composition: slide _n_ is the last frame of chapter _n_ in `wrap-4x5` (1080 × 1350), rendered by `renderSceneStill` (`@wyg/renderer/still`), and slide 10 is the letter ([ADR-0011](../architecture/decisions/0011-slides-from-the-composition.md), superseded). A change to a scene changes its slide automatically.
+No server renders the story: the Lambda path ([ADR-0004](../architecture/decisions/0004-render-on-remotion-lambda.md)) and the server slide worker ([ADR-0011](../architecture/decisions/0011-slides-from-the-composition.md)) were removed in phase 4. The Node still renderer in `scripts/lib/still.ts` remains for the dev scripts only: the art bake (`scripts/render-art.ts`) and the story world stills (`scripts/world-stills.ts`).

@@ -12,29 +12,27 @@ Core promise: _every number on screen is correct and explainable._ Visual polish
 
 ```
 apps/web          Next.js 16 (App Router). Landing, GitHub auth, dashboard, live story via @remotion/player.
-apps/renderer     Lambda deploy script (never deployed) + slide worker for the current story; removed in phase 4 (ADR-0016).
 packages/schema   RecapData zod schema + video formats. THE contract between all modules.
 packages/github   GitHub GraphQL client and queries. Raw API shapes live here, nowhere else.
 packages/analytics Pure functions: raw GitHub data -> RecapData. No I/O. Unit-tested.
 packages/video    Remotion compositions & scenes. Shared by web Player and MP4 export.
-scripts/          One-off spikes and maintenance scripts (bun).
+scripts/          One-off spikes and maintenance scripts (bun); lib/still.ts renders stills for the dev scripts.
 docs/             Product, architecture (ADRs), metric definitions, video system, dev setup.
 ```
 
-Data flow: `github` (fetch) → `analytics` (compute) → `RecapData` (validated by `schema`) → `video` (render on web; the story world's MP4 and slides render in the browser, ADR-0016. The current story has no MP4 export, since Lambda was never deployed; its slides come from the still worker where that worker runs, 503 on Vercel, until phase 4).
+Data flow: `github` (fetch) → `analytics` (compute) → `RecapData` (validated by `schema`) → `video` (the story world plays on the web, and its MP4, slides, ZIP and PDF render in the viewer's browser, ADR-0016; no server renders the story).
 
 ## Commands (run from repo root, package manager is **bun**)
 
-| Task                   | Command                                                     |
-| ---------------------- | ----------------------------------------------------------- |
-| Install                | `bun install`                                               |
-| Web dev server         | `bun run dev` (http://localhost:3000)                       |
-| Remotion Studio        | `bun run studio`                                            |
-| Unit tests             | `bun test`                                                  |
-| Typecheck all          | `bun run typecheck`                                         |
-| Lint + format check    | `bun run lint` (fix: `bun run format`)                      |
-| GitHub data spike      | `GITHUB_TOKEN=$(gh auth token) bun scripts/spike-github.ts` |
-| Deploy Lambda renderer | `bun run --filter @wyg/renderer deploy` (needs AWS env)     |
+| Task                | Command                                                     |
+| ------------------- | ----------------------------------------------------------- |
+| Install             | `bun install`                                               |
+| Web dev server      | `bun run dev` (http://localhost:3000)                       |
+| Remotion Studio     | `bun run studio`                                            |
+| Unit tests          | `bun test`                                                  |
+| Typecheck all       | `bun run typecheck`                                         |
+| Lint + format check | `bun run lint` (fix: `bun run format`)                      |
+| GitHub data spike   | `GITHUB_TOKEN=$(gh auth token) bun scripts/spike-github.ts` |
 
 Before declaring work done: `bun run typecheck && bun test && bun run lint`.
 
@@ -45,7 +43,7 @@ Before declaring work done: `bun run typecheck && bun test && bun run lint`.
 3. **Scenes are deterministic.** In `packages/video`, animate only from `useCurrentFrame()` / `interpolate` / `spring`. No Framer Motion, CSS transitions, `Date.now()`, `Math.random()` (use `random(seed)` from remotion), or chart-library animations inside scenes. Framer Motion is fine in `apps/web` UI _outside_ the story.
 4. **Branch on layout family, not ratio.** Scenes use `useLayout()` → `portrait | compact | landscape`. Size things relative to `width`/`height` from `useVideoConfig()`, never fixed px.
 5. **Tokens stay on the server.** GitHub tokens are encrypted at rest and never sent to the browser. GitHub calls happen in server code only.
-6. **Private data never goes public.** Private repo names/details are redacted before building any public recap page, PNG or video that will be shared.
+6. **Private data never goes public.** Every public surface (`/u/<login>`, its card and OG image) renders `toPublicRecap`, which removes private repo names and details. In the owner's own story and files, private names follow the owner's choice (`users.show_private_names`; hidden with `withoutPrivateNames` until they choose to show them). See [ADR-0017](docs/architecture/decisions/0017-private-names-follow-the-owner.md).
 7. **Workspace packages ship TS source** (no build step). If `apps/web` imports a new `@wyg/*` package, add it to `transpilePackages` in `apps/web/next.config.ts`.
 8. **Next.js 16 differs from your training data.** See `apps/web/AGENTS.md`; read `node_modules/next/dist/docs/` before using unfamiliar Next APIs.
 
