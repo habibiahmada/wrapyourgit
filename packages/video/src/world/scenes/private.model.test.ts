@@ -30,3 +30,9 @@ test("privateModel: unavailable is not zero", () => {
     kind: "unavailable",
   });
 });
+
+test("privateModel: an estimated zero is still none, not an estimated count", () => {
+  expect(privateModel(withPrivate({ status: "ok", value: 0, estimated: true }))).toEqual({
+    kind: "none",
+  });
+});
