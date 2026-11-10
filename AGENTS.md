@@ -12,7 +12,7 @@ Core promise: _every number on screen is correct and explainable._ Visual polish
 
 ```
 apps/web          Next.js 16 (App Router). Landing, GitHub auth, dashboard, live story via @remotion/player.
-apps/renderer     Remotion Lambda (AWS) + slide worker for the current story; removed in phase 4 (ADR-0016).
+apps/renderer     Lambda deploy script (never deployed) + slide worker for the current story; removed in phase 4 (ADR-0016).
 packages/schema   RecapData zod schema + video formats. THE contract between all modules.
 packages/github   GitHub GraphQL client and queries. Raw API shapes live here, nowhere else.
 packages/analytics Pure functions: raw GitHub data -> RecapData. No I/O. Unit-tested.
@@ -21,7 +21,7 @@ scripts/          One-off spikes and maintenance scripts (bun).
 docs/             Product, architecture (ADRs), metric definitions, video system, dev setup.
 ```
 
-Data flow: `github` (fetch) → `analytics` (compute) → `RecapData` (validated by `schema`) → `video` (render on web; the story world's MP4 and slides render in the browser, ADR-0016, while the current story's MP4 stays on Lambda until phase 4).
+Data flow: `github` (fetch) → `analytics` (compute) → `RecapData` (validated by `schema`) → `video` (render on web; the story world's MP4 and slides render in the browser, ADR-0016. The current story has no MP4 export, since Lambda was never deployed; its slides come from the still worker where that worker runs, 503 on Vercel, until phase 4).
 
 ## Commands (run from repo root, package manager is **bun**)
 
