@@ -82,11 +82,7 @@ describe("exportRunner", () => {
     await runner.run("zip", "9x16");
     await runner.run("pdf", "9x16");
     expect(downloads.map((name) => name.split(".").pop())).toEqual(["zip", "pdf"]);
-    const steps = [
-      { type: "progress", value: 0.45 },
-      { type: "progress", value: 0.9 },
-      { type: "progress", value: 1 },
-    ];
+    const steps = [0.45, 0.9, 1].map((value) => ({ type: "progress" as const, value }));
     expect(actions.filter((a) => a.type === "progress")).toEqual([...steps, ...steps]);
   });
 
