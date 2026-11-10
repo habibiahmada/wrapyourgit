@@ -3,8 +3,6 @@
  * returns null and the UI draws a badge in the language's own colour with its initials.
  */
 
-import { palette } from "./theme";
-
 const ICONS: Record<string, string> = {
   TypeScript: "typescript",
   JavaScript: "javascript",
@@ -74,7 +72,13 @@ export function languageInitials(name: string): string {
   return name.slice(0, 2);
 }
 
+/**
+ * Third green of GitHub's ramp (theme.palette.heat[2]). Inlined because theme.ts pulls Remotion in,
+ * and this module is imported from Server Components; web-modules.test.ts guards that.
+ */
+const FALLBACK_LANGUAGE_COLOR = "#30A14E";
+
 /** Fill for a language's own colour, or the third green of GitHub's ramp when it has none. */
 export function languageColor(color: string | null): string {
-  return color ?? palette.heat[2];
+  return color ?? FALLBACK_LANGUAGE_COLOR;
 }
