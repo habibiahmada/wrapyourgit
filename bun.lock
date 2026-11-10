@@ -29,6 +29,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@remotion/player": "4.0.540",
+        "@remotion/web-renderer": "4.0.540",
         "@wyg/analytics": "workspace:*",
         "@wyg/github": "workspace:*",
         "@wyg/renderer": "workspace:*",
@@ -91,6 +92,7 @@
         "@react-three/drei": "^10.7.9",
         "@react-three/fiber": "^9.8.2",
         "@remotion/google-fonts": "4.0.540",
+        "@remotion/media": "4.0.540",
         "@remotion/three": "4.0.540",
         "@wyg/schema": "workspace:*",
         "remotion": "4.0.540",

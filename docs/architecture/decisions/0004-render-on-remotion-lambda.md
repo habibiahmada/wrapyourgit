@@ -1,6 +1,6 @@
 # 0004. Render MP4 on Remotion Lambda (AWS)
 
-- Status: Accepted (cost numbers to be filled after Spike B)
+- Status: Superseded by [0016](0016-exports-in-the-browser.md) for the story world. The current story's Lambda path (never deployed) stays in the repository until phase 4 removes it.
 - Date: 2026-11-04
 
 ## Context

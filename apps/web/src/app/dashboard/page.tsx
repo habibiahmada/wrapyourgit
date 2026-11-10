@@ -1,3 +1,4 @@
+import { toPublicRecap } from "@wyg/analytics";
 import type { RecapData } from "@wyg/schema";
 import { EDITION_YEAR } from "@wyg/schema";
 import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "@wyg/video/copy";
@@ -8,6 +9,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { ExportPanel } from "@/app/recap/world/export-panel";
 import { Art } from "@/components/art";
 import { LanguageBadge } from "@/components/language-badge";
 import { LoadingCell } from "@/components/loading-cell";
@@ -100,6 +102,7 @@ async function Dashboard({
                   </p>
                   <YearComparison data={recap.data} />
                 </section>
+                {process.env.NODE_ENV !== "production" && <DownloadSection data={recap.data} />}
                 <ShareSection
                   login={user.login}
                   shared={shared}
@@ -399,6 +402,29 @@ function StarredSection({ data }: { data: RecapData }) {
             </ul>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The story's files, made in this browser. Development only until phase 4, like /recap/world: the
+ * old and the new story never ship to users at once. Every file leaves the site, so the panel gets
+ * the public projection (rule 6). The panel is drawn ink on paper, the letter's language, so it
+ * sits on a paper sheet here rather than on the dark canvas.
+ */
+function DownloadSection({ data }: { data: RecapData }) {
+  return (
+    <section aria-labelledby="download-title">
+      <h2 id="download-title" className={sectionTitle}>
+        Download your story
+      </h2>
+      <p className="mt-2 mb-6 max-w-2xl text-muted">
+        Your story as a video, slides or a PDF, made in this browser. Private repositories are never
+        named.
+      </p>
+      <div className="on-light rounded-xl border border-line bg-paper p-5 text-ink sm:p-8">
+        <ExportPanel data={toPublicRecap(data)} card />
       </div>
     </section>
   );
