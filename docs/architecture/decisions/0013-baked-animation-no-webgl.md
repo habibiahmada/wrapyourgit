@@ -1,6 +1,7 @@
 # 0013. Cell moves through baked loops, with no WebGL in the browser
 
 - Status: Accepted
+- Note (phase 4): the old story's `Sprite` and `SpriteAccent` were removed with it ([0016](0016-exports-in-the-browser.md)). The bake, the pages' art and `head-cell` still work as described.
 - Date: 2026-11-05
 - Supersedes: points 4 and 5 of [0010](0010-live-3d-cast.md) (live rendering on the web Player and on Lambda)
 

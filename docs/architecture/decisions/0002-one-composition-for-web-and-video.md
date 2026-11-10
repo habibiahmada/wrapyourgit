@@ -1,6 +1,7 @@
 # 0002. One Remotion composition powers the web story and MP4 export
 
 - Status: Accepted
+- Note (phase 4): the composition this describes, `WrapStory` and its `wrap-*` compositions, was removed. The story world's `WorldStory` keeps the decision: one composition for the web and the files ([0016](0016-exports-in-the-browser.md)).
 - Date: 2026-11-04
 
 ## Context
