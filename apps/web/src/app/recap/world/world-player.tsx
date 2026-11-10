@@ -1,6 +1,7 @@
 "use client";
 
 import { Player, type PlayerRef } from "@remotion/player";
+import { toPublicRecap } from "@wyg/analytics";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
 import { sampleRecap, WorldStory } from "@wyg/video";
 import { buildWorld, edgeSounds, TAP_SOUND } from "@wyg/video/world";
@@ -17,6 +18,7 @@ import {
   request,
   settle,
 } from "./controller";
+import { ExportPanel, PAPER_BUTTON } from "./export-panel";
 import { useSfx } from "./use-sfx";
 
 const FORMAT_FOR_LAYOUT = { portrait: "9x16", compact: "4x5", landscape: "16x9" } as const;
@@ -59,7 +61,17 @@ function heading(state: ControllerState): number {
  * The story world as a full-screen tap story. The composition never plays: every frame comes from
  * `seekTo`, driven by the controller, so moving forward and back share one path and one cadence.
  */
-export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?: boolean }) {
+export function WorldPlayer({
+  data,
+  exportData,
+  sample = false,
+}: {
+  /** The full recap, for playback on the owner's own screen. */
+  data: RecapData;
+  /** The public projection: the only data the "Keep your year" files are made from. */
+  exportData: RecapData;
+  sample?: boolean;
+}) {
   const router = useRouter();
   const player = useRef<PlayerRef>(null);
   const music = useMusic(MUSIC_SRC, MUSIC_LOOP);
@@ -87,6 +99,12 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
   const [faded, setFaded] = useState(false);
   const raf = useRef(0);
   const fade = useRef(0);
+  // "Keep your year": a web-only screen over the paused closing stop, never part of the story.
+  const [ended, setEnded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const endHeading = useRef<HTMLHeadingElement>(null);
+  const nextZone = useRef<HTMLButtonElement>(null);
+  const last = stops.length - 1;
 
   const commit = useCallback((next: ControllerState) => {
     state.current = next;
@@ -142,9 +160,16 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
         if (result.start) begin();
       };
 
+      // Next at the rested closing stop opens the end screen. Only a fresh tap does: a tap queued
+      // during the flight in must not cover the closing stop before it has been seen.
+      const rest = state.current;
+      if (direction === 1 && !rest.moving && rest.stop >= last) {
+        setEnded(true);
+        return;
+      }
       step(direction);
     },
-    [commit, music, reduced, sfx, stops, timeline],
+    [commit, last, music, reduced, sfx, stops, timeline],
   );
 
   // A new format means new stops (the letter's page count varies) and new frames: drop any move in
@@ -162,9 +187,29 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
 
   useEffect(() => stopLoop, [stopLoop]);
 
+  const closeEnd = useCallback(() => {
+    setEnded(false);
+    // The screen's own controls unmount; hand focus back to where the reader goes next.
+    requestAnimationFrame(() => nextZone.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    if (ended) endHeading.current?.focus();
+  }, [ended]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (ended) {
+        // Arrow keys belong to the format radios while one has focus; a running render keeps the
+        // screen until it ends or is cancelled.
+        const onField = event.target instanceof Element && event.target.closest("input") !== null;
+        if (event.key === "Escape") router.push("/dashboard");
+        else if (event.key === "ArrowLeft" && !onField && !busy) closeEnd();
+        else return;
+        event.preventDefault();
+        return;
+      }
       // A focused button or link activates itself on Enter and Space; handling them here too
       // would move twice.
       const onControl =
@@ -178,7 +223,7 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, router]);
+  }, [busy, closeEnd, ended, go, router]);
 
   const toggleSound = () => {
     const next = !muted;
@@ -187,7 +232,6 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
     sfx.setMuted(next);
   };
 
-  const last = stops.length - 1;
   // The chrome sits on a copy of the stage box, so it stays under the progress bar when the
   // stage is letterboxed.
   const stage = {
@@ -199,6 +243,7 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
     <div className="fixed inset-0 grid place-items-center overflow-hidden bg-paper text-ink">
       <div
         className="[grid-area:1/1]"
+        inert={ended}
         style={{
           ...stage,
           opacity: faded ? 0 : 1,
@@ -226,16 +271,60 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
         type="button"
         aria-label="Previous"
         aria-disabled={at <= 0}
+        inert={ended}
         onClick={() => go(-1)}
         className={`${zone(at <= 0)} left-0 w-1/3`}
       />
+      {/* Never disabled: at the closing stop, Next opens "Keep your year". */}
       <button
+        ref={nextZone}
         type="button"
         aria-label="Next"
-        aria-disabled={at >= last}
+        inert={ended}
         onClick={() => go(1)}
-        className={`${zone(at >= last)} right-0 left-1/3`}
+        className={`${zone(false)} right-0 left-1/3`}
       />
+
+      {ended && (
+        <section
+          aria-labelledby="keep-your-year"
+          className="on-light absolute inset-0 overflow-y-auto bg-paper/85"
+        >
+          {/* Top padding clears the Sound and Close controls, which stay usable above it. */}
+          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-4 pt-20 pb-8">
+            <div className="flex flex-col gap-6 rounded-xl border border-ink/25 bg-paper p-5 sm:p-8">
+              <div className="flex flex-col gap-2">
+                <h2
+                  id="keep-your-year"
+                  ref={endHeading}
+                  tabIndex={-1}
+                  className="text-3xl font-bold tracking-tight sm:text-4xl"
+                >
+                  Keep your year
+                </h2>
+                <p className="text-lg text-ink-soft">
+                  Your story as files to keep and post, made in this browser. Private repositories
+                  are never named.
+                </p>
+              </div>
+              <ExportPanel data={exportData} card={!sample} onBusyChange={setBusy} />
+              <div className="flex flex-col gap-3 border-t border-ink/25 pt-6 sm:flex-row">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={closeEnd}
+                  className={PAPER_BUTTON.secondary}
+                >
+                  Back to the story
+                </button>
+                <Link href="/dashboard" className={PAPER_BUTTON.secondary}>
+                  Go to dashboard
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="pointer-events-none relative [grid-area:1/1]" style={stage}>
         {sample && (
@@ -262,7 +351,7 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
       </div>
 
       <p aria-live="polite" className="sr-only">
-        Stop {at + 1} of {stops.length}
+        {ended ? "End of the story" : `Stop ${at + 1} of ${stops.length}`}
       </p>
     </div>
   );
@@ -273,8 +362,10 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
  * React context, which a server component can't import.
  */
 export function SampleWorldPlayer() {
-  return <WorldPlayer data={sampleRecap} sample />;
+  return <WorldPlayer data={sampleRecap} exportData={SAMPLE_EXPORT} sample />;
 }
+
+const SAMPLE_EXPORT = toPublicRecap(sampleRecap);
 
 function SpeakerIcon({ muted }: { muted: boolean }) {
   return (
