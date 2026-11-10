@@ -138,7 +138,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
                       <PrimaryAction />
                     </Suspense>
                     <a href="#story" className={button.quiet}>
-                      See the nine chapters
+                      See the city
                     </a>
                   </div>
                 </div>

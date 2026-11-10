@@ -1,7 +1,6 @@
 import { type ArchetypeId, EDITION_YEAR } from "@wyg/schema";
-import { ARCHETYPE_LABELS, SCENE_TITLES } from "@wyg/video/copy";
+import { ARCHETYPE_LABELS, STOP_TITLES } from "@wyg/video/copy";
 import { OPENINGS } from "@wyg/video/letter";
-import { TIMELINE } from "@wyg/video/timeline";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { Art } from "@/components/art";
@@ -11,7 +10,7 @@ import { FrameReel } from "./frame-reel";
 /*
  * Landing sections in the GitHub-dark style (DESIGN.md): dark canvas, surface boxes with hairline
  * borders, GitHub's contribution greens as the one accent. Every fact comes from the product
- * itself: chapter lengths from the shared timeline, archetype rules from metrics.md, letter lines
+ * itself: the stops from the story world's copy, archetype rules from metrics.md, letter lines
  * from letter.ts. No invented numbers or quotes (R-17, R-38).
  */
 
@@ -19,34 +18,46 @@ const box = "rounded-xl border border-line bg-surface";
 const heading = "text-4xl leading-[1.05] font-bold tracking-tight text-balance sm:text-6xl";
 const lead = "max-w-xl text-lg text-muted sm:text-xl";
 
-/** The colour each chapter's field has in the story, shown as a small swatch. */
-const FIELD_SWATCH: Record<(typeof TIMELINE)[number]["field"], string> = {
-  ink: "#14130F",
-  persimmon: "#E4572E",
-  paper: "#F4EFE3",
-  cobalt: "#2B39C8",
-};
+/** The world's stops in story order: the object keeps STOP_TITLES' declaration order. */
+const STOPS = Object.entries(STOP_TITLES);
 
-const SECONDS = TIMELINE.reduce((sum, scene) => sum + scene.beats, 0) / 2; // 120 BPM
-
+/** Frames from the public sample (scripts/world-stills.ts --fixture public-sample, 4:5). */
 const FRAMES = [
-  { file: "intro", alt: "Intro chapter: the first week of cells lights up under the handle" },
   {
-    file: "contributions",
-    alt: "Contributions chapter: a large total with active days and the longest streak",
+    file: "hello",
+    alt: "Hello: Cell's head says hi to @octo-sample and asks, ready for your 2026?",
+  },
+  {
+    file: "city",
+    alt: "Your year as a city: 1,284 contributions, one green building per day",
+  },
+  {
+    file: "busiest",
+    alt: "Your busiest day: one tall building under a sign, Saturday, Jan 3, 8 contributions",
   },
   {
     file: "rhythm",
-    alt: "Rhythm chapter: a year of contribution cells, the busiest month and weekday bars",
+    alt: "Your rhythm: contribution cells piled on a train, one wagon per weekday, Tuesday carried the most",
   },
-  { file: "tech", alt: "Languages chapter: each language with its logo and share" },
-  { file: "projects", alt: "Projects chapter: the top repository and the rest scaled to it" },
-  { file: "community", alt: "Community chapter: stars, forks and the most starred repository" },
-  { file: "engineering", alt: "Engineering chapter: pull requests, reviews and issues" },
-  { file: "identity", alt: "Archetype chapter: Builder, with the facts behind it" },
+  {
+    file: "languages",
+    alt: "Languages: one tree per language, TypeScript 42%, JavaScript 28%, Python 18%",
+  },
+  {
+    file: "projects",
+    alt: "Projects: crates on shelves, one crate for about 50 commits, a private repository unnamed",
+  },
+  {
+    file: "community",
+    alt: "Community: a star for 128 stars earned and a signpost for 12 forks, in the night sky",
+  },
+  {
+    file: "archetype",
+    alt: "Your archetype: Builder, Cell in a hard hat under a spotlight, with the reasons",
+  },
   {
     file: "closing",
-    alt: "Summary chapter: handle, four headline facts and the year as a small graph",
+    alt: "The year in one frame: the total, active days and archetype over fireworks",
   },
 ] as const;
 
@@ -56,48 +67,42 @@ export function StorySection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
           <h2 id="story-title" className={`reveal-left ${heading}`}>
-            Nine chapters, about a minute.
+            Your year as a city, one stop at a time.
           </h2>
           <p className={`reveal-right ${lead}`}>
-            The story moves at the pace of its own soundtrack. You step through it chapter by
-            chapter, and every number on screen comes from your GitHub year with a written
+            Every day of your year becomes a building. The camera flies from stop to stop and waits
+            for your tap, and every number on screen comes from your GitHub year with a written
             definition behind it.
           </p>
         </div>
 
-        {/* The real running order, each chapter as wide as its share of the music. */}
+        {/* The real running order of the stops. */}
         <ol
-          aria-label="Chapters in order"
-          className="reveal mt-14 flex flex-col gap-1.5 md:flex-row"
+          aria-label="Stops in order"
+          className="reveal mt-14 grid grid-cols-2 gap-1.5 sm:grid-cols-4 lg:grid-cols-7"
         >
-          {TIMELINE.map((scene, i) => (
+          {STOPS.map(([kind, title], i) => (
             <li
-              key={scene.id}
-              style={{ flexGrow: scene.beats }}
-              className="flex min-h-12 items-center justify-between gap-3 rounded-md border border-line bg-surface px-3 py-2 md:min-h-28 md:basis-0 md:flex-col md:items-start md:justify-end"
+              key={kind}
+              className="flex min-h-12 items-center gap-3 rounded-md border border-line bg-surface px-3 py-2 lg:min-h-24 lg:flex-col lg:items-start lg:justify-end"
             >
-              <span className="flex items-center gap-2 text-xs font-semibold text-muted tabular-nums">
-                <span
-                  aria-hidden
-                  className="size-2.5 rounded-[2px] ring-1 ring-white/20"
-                  style={{ background: FIELD_SWATCH[scene.field] }}
-                />
+              <span className="text-xs font-semibold text-muted tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="text-sm font-semibold leading-tight">{SCENE_TITLES[scene.id]}</span>
+              <span className="text-sm font-semibold leading-tight">{title}</span>
             </li>
           ))}
         </ol>
         <p className="mt-3 text-sm text-muted">
-          {TIMELINE.length} chapters, {SECONDS} seconds of music, then a letter and your downloads.
+          {STOPS.length} stops, the letter sometimes over a few pages, then your downloads.
         </p>
       </div>
 
       <div className="reveal mt-12">
         <FrameReel
-          frames={FRAMES.map((frame, i) => ({
+          frames={FRAMES.map((frame) => ({
             ...frame,
-            label: `${String(i + 1).padStart(2, "0")} ${SCENE_TITLES[TIMELINE[i]?.id ?? "intro"]}`,
+            label: `${String(STOPS.findIndex(([kind]) => kind === frame.file) + 1).padStart(2, "0")} ${STOP_TITLES[frame.file]}`,
           }))}
         />
       </div>
@@ -193,9 +198,9 @@ export function LetterSection() {
             Then Cell writes you a letter.
           </h2>
           <p className={`mt-6 ${lead}`}>
-            After the last chapter comes a letter from Cell, our mascot. It reads your year the way
-            a friend would: fewer numbers, more of what they meant. A quiet year is told it counts.
-            A relentless one is told to rest.
+            Near the end of the story comes a letter from Cell, our mascot. It reads your year the
+            way a friend would: fewer numbers, more of what they meant. A quiet year is told it
+            counts. A relentless one is told to rest.
           </p>
         </div>
         <div className="reveal-right relative flex flex-col gap-5 lg:pl-40">
@@ -238,24 +243,23 @@ function Comment({
   );
 }
 
-const KEEP: { title: string; body: string; soon?: boolean }[] = [
+const KEEP: { title: string; body: string }[] = [
   {
     title: "The story itself",
-    body: "Plays in your browser with its own soundtrack, chapter by chapter, at your pace.",
+    body: "Plays in your browser with its own soundtrack, stop by stop, at your pace.",
   },
   {
-    title: "Ten slides as PNG",
-    body: "One 1080 × 1350 image per chapter plus the letter, ready for a post. Or all ten in a ZIP.",
+    title: "A slide for every stop",
+    body: "One 1080 × 1350 PNG per stop, the letter's pages included, ready for a post. Or all of them in a ZIP.",
   },
-  { title: "One PDF", body: "The same ten slides in a single file, for keeping or printing." },
+  { title: "One PDF", body: "The same slides in a single file, for keeping or printing." },
   {
     title: "A public page",
     body: `Off until you publish it. Then your ${EDITION_YEAR} lives at /u/your-login, with private repository names removed.`,
   },
   {
     title: "An MP4 video",
-    body: "In four shapes for every feed. We are still setting up rendering.",
-    soon: true,
+    body: "In four shapes for every feed, 9:16, 4:5, 1:1 and 16:9, with the soundtrack. Made in your browser.",
   },
 ];
 
@@ -272,10 +276,10 @@ export function KeepSection() {
           aria-hidden
           className="reveal-zoom relative mx-auto h-[26rem] w-full max-w-md sm:h-[32rem]"
         >
-          {(["rhythm", "identity", "contributions"] as const).map((file, i) => (
+          {(["rhythm", "archetype", "city"] as const).map((file, i) => (
             <Image
               key={file}
-              src={`/landing/sample-${file}.webp`}
+              src={`/landing/world-${file}.webp`}
               alt=""
               width={540}
               height={675}
@@ -298,14 +302,7 @@ export function KeepSection() {
                 key={item.title}
                 className="reveal grid gap-1 px-5 py-4 sm:grid-cols-[11rem_1fr] sm:gap-6"
               >
-                <h3 className="flex flex-wrap items-center gap-2 font-semibold">
-                  {item.title}
-                  {item.soon && (
-                    <span className="rounded-full border border-[#9e6a03] px-2 text-xs font-semibold text-[#d29922]">
-                      Coming soon
-                    </span>
-                  )}
-                </h3>
+                <h3 className="font-semibold">{item.title}</h3>
                 <p className="text-muted">{item.body}</p>
               </li>
             ))}
@@ -413,7 +410,7 @@ export const FAQ = [
   },
   {
     q: "Can I download the video?",
-    a: "Not yet. MP4 export is still being set up. Today you can download every slide as a PNG, all of them as a ZIP, or one PDF.",
+    a: "Yes. At the end of your story, and on your dashboard, you can make an MP4 in four shapes, every stop as a PNG, all of them in a ZIP, or one PDF. They are made in your browser, so keep the tab open while a video renders.",
   },
   {
     q: "How do I delete my data?",
