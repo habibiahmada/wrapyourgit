@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test";
-import type { RecapData } from "@wyg/schema";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { archetypeIdSchema, type RecapData } from "@wyg/schema";
+import { ARCHETYPE_LABELS } from "../../copy";
 import { emptyRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import {
@@ -54,4 +57,12 @@ test("wrapLines: a long line breaks at a space near the middle instead of shrink
 
 test("wrapLines: one unbreakable word stays one line", () => {
   expect(wrapLines("Supercalifragilistic", 40, 700, 100, 36)).toEqual(["Supercalifragilistic"]);
+});
+
+test("every archetype has a display label and a cutout still", () => {
+  const art = join(import.meta.dir, "../../../public/art");
+  for (const id of archetypeIdSchema.options) {
+    expect(ARCHETYPE_LABELS[id]?.length ?? 0).toBeGreaterThan(0);
+    expect(existsSync(join(art, `cutout-${id}.png`))).toBe(true);
+  }
 });
