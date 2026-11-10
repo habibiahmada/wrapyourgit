@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
 };
 
-const UPDATED = "4 November 2026";
+const UPDATED = "10 November 2026";
 
 /*
  * Every statement here describes what the code does today (server/auth.ts, server/recaps.ts,
@@ -64,14 +64,16 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
         <li>
           <strong>Your recap</strong>: counts computed from your GitHub activity for the year, such
           as contributions per day, languages, the repositories you committed to, pull requests,
-          issues, reviews and stars. Private repositories appear as counts, and their names are kept
-          out of anything shareable.
+          issues, reviews and stars. Private repositories count toward these numbers, and a count
+          never names a repository. Their names never appear on your public page or its card. Your
+          own story and the files you download show them only if you choose to, and you can change
+          that in Settings.
         </li>
         <li>
           <strong>Repository metadata, only if you choose</strong>: if you install WrapYourGit on
           your account or an organisation to count private repositories you own, it reads the
           metadata of the repositories you select (name, visibility, language, stars). Never their
-          code. Private names still never appear in anything shareable.
+          code. Your public page and its card still never show private names.
         </li>
         <li>
           <strong>Your timezone</strong>: the one your browser reports when you sync, so the recap's
