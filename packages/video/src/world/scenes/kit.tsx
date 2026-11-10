@@ -1,3 +1,4 @@
+import type { ArchetypeId } from "@wyg/schema";
 import type { ReactNode } from "react";
 import { Img, staticFile, useVideoConfig } from "remotion";
 import { type CellPose, HEAD_ART_ID } from "../../art";
@@ -136,6 +137,35 @@ export function HeadArt({ x, y, size }: { x: number; y: number; size: number }) 
         top: (y - (size * HEAD_ASPECT) / 2) * px,
         width: size * px,
         height: size * HEAD_ASPECT * px,
+      }}
+    />
+  );
+}
+
+/** Cell in an archetype's costume (`cutout-<id>`, same 1200×900 frame as the poses), standing on (x, y). */
+export function ArchetypeArt({
+  id,
+  x,
+  y,
+  width,
+}: {
+  id: ArchetypeId;
+  x: number;
+  y: number;
+  width: number;
+}) {
+  const px = useUnitPx();
+  const height = width * CUTOUT_ASPECT;
+  return (
+    <Img
+      src={staticFile(`art/cutout-${id}.png`)}
+      alt=""
+      style={{
+        position: "absolute",
+        left: (x - width / 2) * px,
+        top: (y - height) * px,
+        width: width * px,
+        height: height * px,
       }}
     />
   );

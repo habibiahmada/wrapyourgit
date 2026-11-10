@@ -1,4 +1,5 @@
 import type { StopKind } from "../stops";
+import { Archetype } from "./Archetype";
 import { Busiest } from "./Busiest";
 import { City } from "./City";
 import { FirstDay } from "./FirstDay";
@@ -17,6 +18,7 @@ export type { Scene, SceneProps } from "./types";
 /** Stops drawn on a night sky; the chrome turns paper-coloured over them. Others are light. */
 export const SCENE_TONE: Partial<Record<StopKind, "dark">> = {
   community: "dark",
+  archetype: "dark",
 };
 
 /** The picture each stop draws. Kinds without their own scene yet show the phase 1 card. */
@@ -31,7 +33,7 @@ export const SCENES: Record<StopKind, Scene> = {
   projects: Projects,
   community: Sky,
   engineering: Planes,
-  archetype: Placeholder,
+  archetype: Archetype,
   versus: Placeholder,
   letter: Placeholder,
   closing: Placeholder,
