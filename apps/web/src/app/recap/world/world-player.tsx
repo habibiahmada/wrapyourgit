@@ -3,8 +3,8 @@
 import { Player, type PlayerRef } from "@remotion/player";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
 import { sampleRecap, WorldStory } from "@wyg/video";
-import { loopSeconds, TRACK } from "@wyg/video/track";
 import { arrivalSound, buildWorld, TAP_SOUND, travelSound } from "@wyg/video/world";
+import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -13,8 +13,8 @@ import { type ControllerState, frameAt, initialState, request, settle } from "./
 import { useSfx } from "./use-sfx";
 
 const FORMAT_FOR_LAYOUT = { portrait: "9x16", compact: "4x5", landscape: "16x9" } as const;
-const MUSIC_SRC = `/${TRACK.file}`;
-const MUSIC_LOOP = loopSeconds();
+const MUSIC_SRC = `/${WORLD_TRACK.file}`;
+const MUSIC_LOOP = worldLoopSeconds();
 /** Each half of the reduced-motion crossfade (out, then in). */
 const FADE_MS = 200;
 

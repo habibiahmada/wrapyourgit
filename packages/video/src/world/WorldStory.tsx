@@ -4,11 +4,13 @@ import {
   AbsoluteFill,
   Html5Audio,
   interpolate,
+  Loop,
+  Sequence,
   staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { beats, TRACK } from "../audio/track";
+import { WORLD_TRACK, worldBeats } from "../audio/world-track";
 import { Sfx } from "../components/Sfx";
 import { palette } from "../theme";
 import { Chrome } from "./Chrome";
@@ -96,24 +98,70 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
               )
             );
           })}
-          {music && (
-            <Html5Audio
-              src={staticFile(TRACK.file)}
-              // The track is shorter than the world; looping holds until phase 3 brings its own.
-              loop
-              // "extend" keeps the volume curve on composition frames across loops, so the fade
-              // below lands on the composition's last two beats, not on each pass of the track.
-              loopVolumeCurveBehavior="extend"
-              volume={(f) =>
-                interpolate(f, [end - beats(2, fps), end], [1, 0], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                })
-              }
-            />
-          )}
+          {music && <WorldMusic end={end} fps={fps} />}
         </>
       )}
     </AbsoluteFill>
+  );
+}
+
+/**
+ * The world's track, as the web player plays it: once from the top to the loop end, then the loop
+ * region again for as long as the video lasts. The loop region is rendered circular, so the cut
+ * back to its start is seamless. Fades out over the composition's last two beats.
+ */
+function WorldMusic({ end, fps }: { end: number; fps: number }) {
+  const loopStart = worldBeats(WORLD_TRACK.loop.startBeat, fps);
+  const loopEnd = worldBeats(WORLD_TRACK.loop.endBeat, fps);
+  const loopLength = loopEnd - loopStart;
+  const fade = (frame: number) =>
+    interpolate(frame, [end - worldBeats(2, fps), end], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+  const src = staticFile(WORLD_TRACK.file);
+  return (
+    <>
+      <Html5Audio src={src} durationInFrames={loopEnd} volume={fade} />
+      {end > loopEnd && (
+        <Sequence from={loopEnd} durationInFrames={end - loopEnd}>
+          <Loop durationInFrames={loopLength}>
+            <LoopedRegion
+              src={src}
+              trimBefore={loopStart}
+              length={loopLength}
+              fade={fade}
+              from={loopEnd}
+            />
+          </Loop>
+        </Sequence>
+      )}
+    </>
+  );
+}
+
+/** One pass of the loop region; the volume curve reads composition frames across passes. */
+function LoopedRegion({
+  src,
+  trimBefore,
+  length,
+  fade,
+  from,
+}: {
+  src: string;
+  trimBefore: number;
+  length: number;
+  fade: (frame: number) => number;
+  from: number;
+}) {
+  const iteration = Loop.useLoop()?.iteration ?? 0;
+  const passStart = from + iteration * length;
+  return (
+    <Html5Audio
+      src={src}
+      trimBefore={trimBefore}
+      durationInFrames={length}
+      volume={(f) => fade(passStart + f)}
+    />
   );
 }
