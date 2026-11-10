@@ -48,13 +48,22 @@ export type ExportEngine = {
   renderStill: (options: StillOptions) => Promise<Blob>;
 };
 
+/**
+ * WrapYourGit is a personal project, so Remotion's Free License applies (an individual; see
+ * ADR-0016 and https://remotion.dev/license). If it ever becomes a company's product, this needs
+ * a Company License key instead.
+ */
+const LICENSE_KEY = "free-license";
+
 const defaultEngine: ExportEngine = {
   canRender: canRenderMediaOnWeb,
   // Stills are drawn on an OffscreenCanvas and encoded with convertToBlob.
   stillsAvailable: () =>
     typeof OffscreenCanvas !== "undefined" && "convertToBlob" in OffscreenCanvas.prototype,
-  renderMedia: async (options) => (await renderMediaOnWeb(options)).getBlob(),
-  renderStill: async (options) => (await renderStillOnWeb(options)).blob({ format: "png" }),
+  renderMedia: async (options) =>
+    (await renderMediaOnWeb({ ...options, licenseKey: LICENSE_KEY })).getBlob(),
+  renderStill: async (options) =>
+    (await renderStillOnWeb({ ...options, licenseKey: LICENSE_KEY })).blob({ format: "png" }),
 };
 
 const composition = (data: RecapData, format: ExportFormat): WorldComposition => ({
