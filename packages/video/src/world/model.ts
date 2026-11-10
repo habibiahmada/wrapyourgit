@@ -1,6 +1,8 @@
 import { type RecapData, VIDEO_FPS } from "@wyg/schema";
+import { congratsLetter } from "../letter";
 import { type Camera, stopCamera } from "./camera";
 import { buildCity, type City } from "./city";
+import { paginateLetter } from "./scenes/letter.model";
 import { buildStops, type Stop } from "./stops";
 import { buildTimeline, type Timeline, type WorldMode } from "./timeline";
 
@@ -21,7 +23,9 @@ export function buildWorld(
   fps: number,
 ): WorldModel {
   const city = buildCity(data);
-  const stops = buildStops(data, city);
+  // The letter's pages depend on the frame's size, so each format gets its own count of stops.
+  const letterPages = paginateLetter(congratsLetter(data), format).length;
+  const stops = buildStops(data, city, { letterPages });
   const cameras = stops.map((stop) => stopCamera(stop, city, format));
   return { city, stops, cameras, timeline: buildTimeline(cameras, mode, fps) };
 }

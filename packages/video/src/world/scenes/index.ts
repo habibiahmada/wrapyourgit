@@ -5,6 +5,7 @@ import { City } from "./City";
 import { FirstDay } from "./FirstDay";
 import { Garden } from "./Garden";
 import { Hello } from "./Hello";
+import { Letter } from "./Letter";
 import { Placeholder } from "./Placeholder";
 import { Planes } from "./Planes";
 import { Private } from "./Private";
@@ -20,6 +21,7 @@ export type { Scene, SceneProps } from "./types";
 export const SCENE_TONE: Partial<Record<StopKind, "dark">> = {
   community: "dark",
   archetype: "dark",
+  letter: "dark",
 };
 
 /** The picture each stop draws. Kinds without their own scene yet show the phase 1 card. */
@@ -36,6 +38,6 @@ export const SCENES: Record<StopKind, Scene> = {
   engineering: Planes,
   archetype: Archetype,
   versus: Seesaw,
-  letter: Placeholder,
+  letter: Letter,
   closing: Placeholder,
 };
