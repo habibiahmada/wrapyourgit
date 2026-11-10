@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@remotion/player": "4.0.540",
+    "@remotion/web-renderer": "4.0.540",
     "@wyg/analytics": "workspace:*",
     "@wyg/github": "workspace:*",
     "@wyg/renderer": "workspace:*",
