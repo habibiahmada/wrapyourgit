@@ -159,13 +159,13 @@ One validated document, `RecapData`, is the contract between everything: GitHub 
 
 ## Tech stack
 
-| Area            | Tools                                                                                                             |
-| --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Web             | Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4                                               |
-| Story and video | Remotion 4, baked 3D art (animated WebP and sprite sheets, no WebGL in the browser), a synthesised CC0 soundtrack |
-| Data            | GitHub GraphQL API, Zod 4 schemas, PostgreSQL with Drizzle ORM                                                    |
-| Auth            | GitHub App user authorisation with PKCE, AES-256-GCM token encryption                                             |
-| Tooling         | Bun workspaces, TypeScript strict, Biome, `bun test`, GitHub Actions                                              |
+| Area            | Tools                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| Web             | Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4                                        |
+| Story and video | Remotion 4, baked 3D art (animated WebP and stills, no WebGL in the browser), a synthesised CC0 soundtrack |
+| Data            | GitHub GraphQL API, Zod 4 schemas, PostgreSQL with Drizzle ORM                                             |
+| Auth            | GitHub App user authorisation with PKCE, AES-256-GCM token encryption                                      |
+| Tooling         | Bun workspaces, TypeScript strict, Biome, `bun test`, GitHub Actions                                       |
 
 ## Run it locally
 

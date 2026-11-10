@@ -14,7 +14,6 @@ apps/web/public/art/
 apps/web/public/audio/
 apps/web/public/lang/
 apps/web/public/photos/
-apps/web/public/sprites/
 
 # remotion
 packages/video/out/

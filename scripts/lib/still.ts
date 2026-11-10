@@ -111,7 +111,7 @@ export function renderSceneStill(
       imageFormat: "png",
       puppeteerInstance,
       chromiumOptions,
-      // Fonts, sprite sheets and photos load before the frame is ready.
+      // Fonts, art and photos load before the frame is ready.
       timeoutInMilliseconds: 60_000,
     });
     if (!buffer) throw new Error(`renderStill returned no image for frame ${frame}`);
