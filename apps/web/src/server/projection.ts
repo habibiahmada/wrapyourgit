@@ -8,8 +8,7 @@ export function storyData(data: RecapData, showPrivateNames: boolean): RecapData
   return showPrivateNames ? data : toPublicRecap(data);
 }
 
-/** True when private repository names appear anywhere, so exports deserve a reminder. */
+/** True when the files would differ from the public view, i.e. a private name would appear. */
 export function hasPrivateNames(data: RecapData): boolean {
-  const starred = data.starred.status === "ok" ? data.starred.value.top : [];
-  return [...data.repositories.top, ...starred].some((repo) => repo.isPrivate);
+  return JSON.stringify(data) !== JSON.stringify(toPublicRecap(data));
 }

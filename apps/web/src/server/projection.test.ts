@@ -37,3 +37,36 @@ describe("hasPrivateNames", () => {
     expect(hasPrivateNames(toPublicRecap(fixture))).toBe(false);
   });
 });
+
+describe("hasPrivateNames beyond the top lists", () => {
+  const repo = { ...sampleRecap.repositories.top[0], nameWithOwner: SECRET, isPrivate: true };
+  const publicBase = () => toPublicRecap(sampleRecap);
+
+  test("is true for a private repository only in community.mostForked", () => {
+    const base = publicBase();
+    const data = { ...base, community: { ...base.community, mostForked: repo } };
+    expect(hasPrivateNames(data as typeof base)).toBe(true);
+  });
+
+  test("is true for a private starred repository", () => {
+    const base = publicBase();
+    if (base.starred.status !== "ok") throw new Error("sampleRecap starred is unavailable");
+    const data = {
+      ...base,
+      starred: { ...base.starred, value: { ...base.starred.value, top: [repo] } },
+    };
+    expect(hasPrivateNames(data as typeof base)).toBe(true);
+  });
+
+  test("an unavailable starred metric neither throws nor gives true", () => {
+    const base = publicBase();
+    const data = { ...base, starred: { status: "unavailable", reason: "test" } };
+    expect(hasPrivateNames(data as unknown as typeof base)).toBe(false);
+  });
+
+  test("storyData(false) hides a private name in community.mostStarred", () => {
+    const base = publicBase();
+    const data = { ...base, community: { ...base.community, mostStarred: repo } };
+    expect(JSON.stringify(storyData(data as typeof base, false))).not.toContain(SECRET);
+  });
+});
