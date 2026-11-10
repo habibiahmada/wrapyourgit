@@ -19,7 +19,7 @@ Two projections in `packages/analytics/src/public.ts`, and one rule for each kin
 
 ### Rule 1: every public surface uses the public projection
 
-The public page `/u/<login>`, its card (`/api/card`, the PNG also offered in the owner's files) and its OG image always render `toPublicRecap(data)`, whatever the owner chose. Visitors cannot export.
+The public page `/u/<login>`, the story played on it (the public player, which renders `toPublicRecap(data)` without the letter: `publicWorld` in `apps/web/src/app/recap/public-world.ts`), its card (`/api/card`, the PNG also offered in the owner's files) and its OG image always render `toPublicRecap(data)`, whatever the owner chose. Visitors cannot export.
 
 ### Rule 2: the owner's own story and files follow the owner's choice
 
@@ -29,7 +29,7 @@ The public page `/u/<login>`, its card (`/api/card`, the PNG also offered in the
 - **"Hide them", or not answered** (`false` or `null`): the story and the files use `withoutPrivateNames(data)`. The dashboard's "Download your story" uses this view until the owner answers.
 - **Settings** shows the current choice ("Private repositories") with one button that switches it, and says the public page never shows them.
 
-Code: `apps/web/src/server/privacy.ts` (`getPrivateNamesChoice`, `setPrivateNamesChoice`), `apps/web/src/server/projection.ts` (`storyData`, `hasPrivateNames`, `showFilesReminder`), `apps/web/src/app/recap/private-names-question.tsx`, `apps/web/src/app/recap/reminder.ts`, `apps/web/src/app/settings/page.tsx`.
+Code: `apps/web/src/server/privacy.ts` (`getPrivateNamesChoice`, `setPrivateNamesChoice`), `apps/web/src/server/projection.ts` (`storyData`, `hasPrivateNames`, `showFilesReminder`; the pages import them through `privacy.ts`, which re-exports them), `apps/web/src/app/recap/private-names-question.tsx`, `apps/web/src/app/recap/reminder.ts`, `apps/web/src/app/settings/page.tsx`.
 
 AGENTS.md rule 6 now reads: private repository names never appear on a public surface; in the owner's own story and files they follow the owner's choice (this ADR).
 
