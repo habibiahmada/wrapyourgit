@@ -17,6 +17,9 @@ export type ExportRunner = {
   busy: () => boolean;
 };
 
+/** Slides fill this much of the bar; ZIP or PDF assembly, which reports nothing, the rest. */
+const SLIDES_SHARE = 0.9;
+
 const isAbort = (error: unknown) => error instanceof DOMException && error.name === "AbortError";
 
 /**
@@ -61,7 +64,8 @@ export function exportRunner(
         const slides = await engine.renderSlides(data, {
           signal,
           onProgress: (done, total) =>
-            mine() && dispatch({ type: "progress", value: total > 0 ? done / total : 0 }),
+            mine() &&
+            dispatch({ type: "progress", value: total > 0 ? (done / total) * SLIDES_SHARE : 0 }),
         });
         blob =
           job === "zip"
@@ -69,6 +73,7 @@ export function exportRunner(
             : await engine.pdfSlides(slides, {
                 title: `WrapYourGit ${data.meta.year}: @${data.profile.login}`,
               });
+        if (mine()) dispatch({ type: "progress", value: 1 });
         file = exportFileName(job, data);
       }
       if (!mine() || signal.aborted) return;

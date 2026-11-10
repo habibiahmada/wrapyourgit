@@ -77,16 +77,31 @@ describe("exportRunner", () => {
     expect(runner.busy()).toBe(false);
   });
 
-  test("slides report done/total and end as a ZIP or a PDF", async () => {
+  test("slides fill 90% of the bar, assembly the rest, and end as a ZIP or a PDF", async () => {
     const { runner, downloads, actions } = setup();
     await runner.run("zip", "9x16");
     await runner.run("pdf", "9x16");
     expect(downloads.map((name) => name.split(".").pop())).toEqual(["zip", "pdf"]);
-    expect(actions.filter((a) => a.type === "progress")).toEqual([
-      { type: "progress", value: 0.5 },
+    const steps = [
+      { type: "progress", value: 0.45 },
+      { type: "progress", value: 0.9 },
       { type: "progress", value: 1 },
-      { type: "progress", value: 0.5 },
+    ];
+    expect(actions.filter((a) => a.type === "progress")).toEqual([...steps, ...steps]);
+  });
+
+  test("the bar stays below full until the ZIP is assembled", async () => {
+    const { engine, actions, runner } = setup();
+    const zipped = deferred<Blob>();
+    engine.zipSlides = () => zipped.promise;
+    const running = runner.run("zip", "9x16");
+    await Bun.sleep(0);
+    expect(actions.at(-1)).toEqual({ type: "progress", value: 0.9 });
+    zipped.resolve(blob("zip"));
+    await running;
+    expect(actions.slice(-2)).toEqual([
       { type: "progress", value: 1 },
+      { type: "finish", file: expect.stringMatching(/\.zip$/) },
     ]);
   });
 
