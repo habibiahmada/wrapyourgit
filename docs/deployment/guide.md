@@ -57,7 +57,7 @@ What is set up, and how to set it up again:
 1. **Vercel project** `wrapyourgit` (team "mainan bheeboyy", Hobby), imported from `habibiahmada/wrapyourgit`:
    - Root Directory: `apps/web`, with "Include files outside the root directory" on (the app imports `packages/*`).
    - Install command: `cd ../.. && bun install --frozen-lockfile` (the whole workspace, from the repository root).
-   - Build command: `bun run db:migrate && bun run build`. `build` first copies `art`, `audio`, `lang`, `photos` and `sprites` from `packages/video/public` into `apps/web/public` (`scripts/sync-web-public.ts`): symlinks there made Vercel's output step fail.
+   - Build command: `bun run db:migrate && bun run build`. `build` first copies `art`, `audio`, `lang` and `photos` from `packages/video/public` into `apps/web/public` (`scripts/sync-web-public.ts`): symlinks there made Vercel's output step fail.
    - Settings → Functions → Function Region: Singapore (`sin1`), next to the database.
    - Every push to `main` deploys production; other branches get preview deployments.
 2. **Neon** through Vercel → Storage → Create Database → Neon: region Singapore, free plan, Neon Auth off, connected to the project with the variable prefix `DATABASE` (so the pooled string is `DATABASE_URL`).
@@ -65,7 +65,7 @@ What is set up, and how to set it up again:
 4. **Rate limit:** Vercel → Firewall → Rules → "Rate limit /api and /u/ endpoints": paths starting with `/api` or `/u/`, fixed window of 60 seconds, 60 requests per IP, then **429**, published to production. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish.
 5. **Domain:** Vercel → Domains → add `wrapyourgit.habibiahmada.dev`; Vercel shows a project-specific CNAME target. In Cloudflare (zone `habibiahmada.dev`): `CNAME wrapyourgit → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate.
 
-Verified on 2026-11-05: the site, the copied static folders (`/art`, `/sprites`, `/photos`, `/lang`), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
+Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, `/lang`; `/sprites` was removed later, #63), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
 
 ## Later: production on an AWS VPS
 

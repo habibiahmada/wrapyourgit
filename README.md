@@ -42,7 +42,7 @@ contributions, streaks, the languages you lived in, the projects you built, and 
 <summary><strong>Table of contents</strong></summary>
 
 - [Why WrapYourGit](#why-wrapyourgit)
-- [The story, in nine chapters](#the-story-in-nine-chapters)
+- [The story, as a city](#the-story-as-a-city)
 - [What kind of developer were you?](#what-kind-of-developer-were-you)
 - [What you keep](#what-you-keep)
 - [Privacy by design](#privacy-by-design)
@@ -60,31 +60,31 @@ contributions, streaks, the languages you lived in, the projects you built, and 
 ## Why WrapYourGit
 
 - **Numbers you can trust.** Every metric has a written definition and a GitHub source in [metrics.md](docs/analytics/metrics.md). Your 2026 total matches the "contributions in 2026" on your profile. When GitHub doesn't provide something, the recap says _unavailable_ instead of showing a misleading 0, and estimates are marked with "~".
-- **A story, not a dashboard.** Nine short chapters set to a soundtrack, a warm-up before them, a comparison with last year after, and a letter from Cell that reads your year the way a friend would. A quiet year is told it counts; a relentless one is told to rest.
+- **A story, not a dashboard.** Your year becomes a city with one building per day, and the camera flies through it stop by stop to a soundtrack: your busiest day, your rhythm, your languages, a comparison with last year, and a letter from Cell that reads your year the way a friend would. A quiet year is told it counts; a relentless one is told to rest.
 - **Your private work counts.** Contributions to private repositories, yours and your organisations', are in your total. Your public page and its card never name them; your own story and downloads show the names only if you choose to, and you can change that in Settings.
 - **Read-only, and yours to delete.** Signing in asks GitHub for no repository permissions, the code is never read, and "Delete my data" removes everything and revokes access.
 
 <p align="right"><a href="#readme-top">back to top</a></p>
 
-## The story, in nine chapters
+## The story, as a city
 
-About a minute of music. Each chapter waits for you, so you go at your own pace.
+Your year becomes a city, one building per day. The camera stops at 14 places and waits for your tap, so you go at your own pace; the MP4 holds each stop for about three seconds instead. Nine of the stops:
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="apps/web/public/landing/sample-intro.webp" alt="Intro chapter: the first week of cells lights up under the handle" width="240"><br><b>1. Intro</b><br><sub>Your first week lights up</sub></td>
-    <td align="center" width="33%"><img src="apps/web/public/landing/sample-contributions.webp" alt="Contributions chapter: total, active days and longest streak" width="240"><br><b>2. Contributions</b><br><sub>Total, active days, longest streak</sub></td>
-    <td align="center" width="33%"><img src="apps/web/public/landing/sample-rhythm.webp" alt="Rhythm chapter: the year of cells, busiest month and weekdays" width="240"><br><b>3. Rhythm</b><br><sub>Your calendar, busiest month, weekdays</sub></td>
+    <td align="center" width="33%"><img src="apps/web/public/landing/world-hello.webp" alt="Hello: Cell's head says hi to @octo-sample and asks, ready for your 2026?" width="240"><br><b>1. Hello</b><br><sub>Cell says hi</sub></td>
+    <td align="center" width="33%"><img src="apps/web/public/landing/world-city.webp" alt="Your year as a city: 1,284 contributions, one green building per day" width="240"><br><b>4. Your year as a city</b><br><sub>One building per day</sub></td>
+    <td align="center" width="33%"><img src="apps/web/public/landing/world-busiest.webp" alt="Your busiest day: one tall building under a sign, Saturday, Jan 3, 8 contributions" width="240"><br><b>5. Your busiest day</b><br><sub>The tallest building</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="apps/web/public/landing/sample-tech.webp" alt="Languages chapter: each language with its logo and share" width="240"><br><b>4. Tech DNA</b><br><sub>Languages, weighted by what you committed</sub></td>
-    <td align="center"><img src="apps/web/public/landing/sample-projects.webp" alt="Projects chapter: the top repository and the rest scaled to it" width="240"><br><b>5. Projects</b><br><sub>Your most active repositories</sub></td>
-    <td align="center"><img src="apps/web/public/landing/sample-community.webp" alt="Community chapter: stars and forks gained, and the most starred repository" width="240"><br><b>6. Community</b><br><sub>Stars and forks gained, what you starred</sub></td>
+    <td align="center"><img src="apps/web/public/landing/world-rhythm.webp" alt="Your rhythm: contribution cells piled on a train, one wagon per weekday" width="240"><br><b>6. Your rhythm</b><br><sub>Your weekdays, as a train</sub></td>
+    <td align="center"><img src="apps/web/public/landing/world-languages.webp" alt="Languages: one tree per language, TypeScript 42%, JavaScript 28%, Python 18%" width="240"><br><b>7. Languages</b><br><sub>A garden, weighted by what you committed</sub></td>
+    <td align="center"><img src="apps/web/public/landing/world-projects.webp" alt="Projects: crates on shelves, one crate for about 50 commits, a private repository unnamed" width="240"><br><b>8. Projects</b><br><sub>Where your commits went</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="apps/web/public/landing/sample-engineering.webp" alt="Engineering chapter: pull requests, reviews and issues" width="240"><br><b>7. Engineering</b><br><sub>Pull requests, reviews, issues</sub></td>
-    <td align="center"><img src="apps/web/public/landing/sample-identity.webp" alt="Archetype chapter: Builder, with the facts behind it" width="240"><br><b>8. Identity</b><br><sub>Your archetype and why</sub></td>
-    <td align="center"><img src="apps/web/public/landing/sample-closing.webp" alt="Summary chapter: handle, four headline facts and the year as a small graph" width="240"><br><b>9. Closing</b><br><sub>Your year on one card</sub></td>
+    <td align="center"><img src="apps/web/public/landing/world-community.webp" alt="Community: a star for 128 stars earned and a signpost for 12 forks, in the night sky" width="240"><br><b>9. Community</b><br><sub>Stars and forks</sub></td>
+    <td align="center"><img src="apps/web/public/landing/world-archetype.webp" alt="Your archetype: Builder, Cell in a hard hat under a spotlight, with the reasons" width="240"><br><b>11. Your archetype</b><br><sub>And why</sub></td>
+    <td align="center"><img src="apps/web/public/landing/world-closing.webp" alt="The year in one frame: the total, active days and archetype over fireworks" width="240"><br><b>14. The year in one frame</b><br><sub>Fireworks over the city</sub></td>
   </tr>
 </table>
 
@@ -159,13 +159,13 @@ One validated document, `RecapData`, is the contract between everything: GitHub 
 
 ## Tech stack
 
-| Area            | Tools                                                                                                             |
-| --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Web             | Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4                                               |
-| Story and video | Remotion 4, baked 3D art (animated WebP and sprite sheets, no WebGL in the browser), a synthesised CC0 soundtrack |
-| Data            | GitHub GraphQL API, Zod 4 schemas, PostgreSQL with Drizzle ORM                                                    |
-| Auth            | GitHub App user authorisation with PKCE, AES-256-GCM token encryption                                             |
-| Tooling         | Bun workspaces, TypeScript strict, Biome, `bun test`, GitHub Actions                                              |
+| Area            | Tools                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| Web             | Next.js 16 (App Router, Cache Components), React 19, Tailwind CSS 4                                        |
+| Story and video | Remotion 4, baked 3D art (animated WebP and stills, no WebGL in the browser), a synthesised CC0 soundtrack |
+| Data            | GitHub GraphQL API, Zod 4 schemas, PostgreSQL with Drizzle ORM                                             |
+| Auth            | GitHub App user authorisation with PKCE, AES-256-GCM token encryption                                      |
+| Tooling         | Bun workspaces, TypeScript strict, Biome, `bun test`, GitHub Actions                                       |
 
 ## Run it locally
 

@@ -3,7 +3,7 @@ import type { ArchetypeId } from "@wyg/schema";
 import type { ReactNode } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { NeutralToneMapping } from "three";
-import { CELL_POSES, type CellPose, SPRITES, type SpriteId } from "../art";
+import { CELL_POSES, type CellPose } from "../art";
 import { archetypeRole } from "../cast";
 import { PhotoCard } from "../components/PhotoCard";
 import type { PhotoId } from "../photos";
@@ -11,14 +11,13 @@ import { BlobShadow } from "./BlobShadow";
 import { CELL, Chibi } from "./ChibiCell";
 import { CutoutLights } from "./World";
 
-/** Every baked composition: web art, the letterhead head and the (no longer drawn) sprites. */
+/** Every baked composition: web art and the letterhead head. */
 export type ArtId =
   | `cutout-cell-${CellPose}`
   | `cutout-${ArchetypeId}`
   | `skin-${ArchetypeId}`
   | "hero-cast"
-  | "head-cell"
-  | `sprite-${SpriteId}`;
+  | "head-cell";
 
 /** The landing hero's snapshots, fanned behind Cell. */
 const HERO_PHOTOS: { photo: PhotoId; left: number; top: number; tilt: number }[] = [
@@ -37,7 +36,7 @@ const HEAD_CAMERA: Camera = { position: [0.06, 1.7, 3.0], fov: 30, look: 1.62, l
 /**
  * One loop of Cell for baking (scripts/render-art.ts, ADR-0013): the same rig and looks as the
  * story, so no page shows a different mascot. Time comes from the frame, and every motion repeats
- * after LOOP_SECONDS, so the baked loop plays without a jump. Cutouts and sprites are Cell alone
+ * after LOOP_SECONDS, so the baked loop plays without a jump. Cutouts are Cell alone
  * on a transparent background; `skin-*` and the hero put Cell in front of real photos.
  */
 export function ArtStill({ art }: { art: ArtId }) {
@@ -63,11 +62,6 @@ export function ArtStill({ art }: { art: ArtId }) {
     camera = HEAD_CAMERA;
     shadow = false;
     subject = <Chibi look={CELL} motion="groove" t={t} />;
-  } else if (art.startsWith("sprite-")) {
-    const sprite = SPRITES[art.slice("sprite-".length) as SpriteId];
-    subject = (
-      <Chibi look={sprite.look} motion={sprite.motion} t={t} rotationY={sprite.turn ?? 0} />
-    );
   } else if (art.startsWith("skin-")) {
     const role = archetypeRole(art.slice("skin-".length) as ArchetypeId);
     const w = width * 0.8;

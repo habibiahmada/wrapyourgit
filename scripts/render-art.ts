@@ -2,16 +2,15 @@
  * Bakes every animation of Cell (ADR-0013): one LOOP_SECONDS loop per composition in Root.tsx.
  *
  *   bun scripts/render-art.ts                      # everything
- *   bun scripts/render-art.ts skin-builder sprite-wave
+ *   bun scripts/render-art.ts skin-builder head-cell
  *
  * Web art and the letterhead head go to packages/video/public/art as `<id>.webp` (looping
  * animated WebP for the pages) and `<id>.png` (one frame at the motion's peak, for reduced motion,
- * Open Graph and the letter slide). Sprites go to packages/video/public/sprites/<id>.webp as a
- * grid of frames the story steps through. The web app gets copies of both folders before dev and
- * build (scripts/sync-web-public.ts).
+ * Open Graph, the story world and its letter). The web app gets a copy of the folder before dev
+ * and build (scripts/sync-web-public.ts).
  *
  * Renders with the still renderer (scripts/lib/still.ts: one bundle, one browser,
- * angle-egl) and assembles with ffmpeg (libwebp_anim) and ImageMagick (montage).
+ * angle-egl) and assembles with ffmpeg (libwebp_anim).
  */
 
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -26,9 +25,6 @@ import {
   HEAD_ART_ID,
   LOOP_FRAMES,
   peakFrame,
-  SPRITE_SHEET,
-  SPRITES,
-  type SpriteId,
 } from "../packages/video/src/art";
 import { archetypeRole } from "../packages/video/src/cast";
 import { ART_IDS } from "../packages/video/src/Root";
@@ -37,9 +33,7 @@ import { renderCompositionFrames } from "./lib/still";
 
 const publicDir = resolve(import.meta.dir, "../packages/video/public");
 const artDir = join(publicDir, "art");
-const spriteDir = join(publicDir, "sprites");
 await mkdir(artDir, { recursive: true });
-await mkdir(spriteDir, { recursive: true });
 
 const wanted = process.argv.slice(2);
 const ids = wanted.length > 0 ? ART_IDS.filter((id) => wanted.includes(id)) : ART_IDS;
@@ -50,7 +44,6 @@ function motionOf(id: string): ChibiMotion {
   if (id === "hero-cast") return "wave";
   if (id === HEAD_ART_ID) return "groove";
   if (id.startsWith("cutout-cell-")) return CELL_POSES[id.slice(12) as CellPose].motion;
-  if (id.startsWith("sprite-")) return SPRITES[id.slice(7) as SpriteId].motion;
   return archetypeRole(id.replace(/^(cutout|skin)-/, "") as ArchetypeId).motion;
 }
 
@@ -61,20 +54,12 @@ for (const id of ids) {
     await writeFile(join(work, `${String(frame).padStart(2, "0")}.png`), png);
   }
 
-  if (id.startsWith("sprite-")) {
-    const { size, cols, rows } = SPRITE_SHEET;
-    const sheet = join(work, "sheet.png");
-    await $`montage ${join(work, "[0-9][0-9].png")} -tile ${cols}x${rows} -geometry ${size}x${size}+0+0 -background none ${sheet}`.quiet();
-    await $`convert ${sheet} -quality 82 -define webp:alpha-quality=90 -define webp:method=6 ${join(spriteDir, `${id.slice(7)}.webp`)}`.quiet();
-    console.log(`sprites/${id.slice(7)}.webp`);
-  } else {
-    // Pages show the art at most ~600 CSS px wide: 720 px covers that at 1.2x without the weight.
-    const width = id === HEAD_ART_ID ? 360 : 720;
-    await $`ffmpeg -y -loglevel error -framerate ${BAKE_FPS} -i ${join(work, "%02d.png")} -vf scale=${width}:-1:flags=lanczos -c:v libwebp_anim -lossless 0 -quality 72 -compression_level 4 -loop 0 -pix_fmt yuva420p ${join(artDir, `${id}.webp`)}`.quiet();
-    const still = rendered.get(peakFrame(motionOf(id)));
-    if (still) await writeFile(join(artDir, `${id}.png`), still);
-    console.log(`art/${id}.webp + .png`);
-  }
+  // Pages show the art at most ~600 CSS px wide: 720 px covers that at 1.2x without the weight.
+  const width = id === HEAD_ART_ID ? 360 : 720;
+  await $`ffmpeg -y -loglevel error -framerate ${BAKE_FPS} -i ${join(work, "%02d.png")} -vf scale=${width}:-1:flags=lanczos -c:v libwebp_anim -lossless 0 -quality 72 -compression_level 4 -loop 0 -pix_fmt yuva420p ${join(artDir, `${id}.webp`)}`.quiet();
+  const still = rendered.get(peakFrame(motionOf(id)));
+  if (still) await writeFile(join(artDir, `${id}.png`), still);
+  console.log(`art/${id}.webp + .png`);
   await rm(work, { recursive: true, force: true });
 }
 process.exit(0);

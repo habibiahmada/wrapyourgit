@@ -92,7 +92,7 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
             className={`w-56 shrink-0 sm:w-64 ${i % 2 ? "translate-y-6" : ""}`}
           >
             <Image
-              src={`/landing/sample-${frame.file}.webp`}
+              src={`/landing/world-${frame.file}.webp`}
               alt={frame.alt}
               width={540}
               height={675}

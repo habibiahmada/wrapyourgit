@@ -1,6 +1,6 @@
 /**
  * Copies the story's static files from packages/video/public into apps/web/public, so the web
- * app serves the same art, sprites, photos, language logos and audio the Remotion composition
+ * app serves the same art, photos, language logos and audio the Remotion composition
  * uses. Runs before `dev` and `build` (apps/web/package.json).
  *
  *   bun scripts/sync-web-public.ts
@@ -17,7 +17,7 @@ const root = resolve(import.meta.dir, "..");
 const from = join(root, "packages/video/public");
 const to = join(root, "apps/web/public");
 
-export const SHARED_FOLDERS = ["art", "audio", "lang", "photos", "sprites"] as const;
+export const SHARED_FOLDERS = ["art", "audio", "lang", "photos"] as const;
 
 for (const folder of SHARED_FOLDERS) {
   const source = join(from, folder);

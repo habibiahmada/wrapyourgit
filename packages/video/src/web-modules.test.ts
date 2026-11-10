@@ -12,8 +12,6 @@ const pkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")) as {
 const WEB_FACING = [
   "./copy",
   "./heat",
-  "./timeline",
-  "./track",
   "./world-track",
   "./letter",
   "./languages",

@@ -57,17 +57,25 @@ export function withoutPrivateNames(recap: RecapData): RecapData {
  * The shareable projection of a recap (AGENTS.md rule 6). Anything that names a private
  * repository is removed or anonymised; aggregate counts stay, because a count never identifies a repo. The
  * timezone and commit-hour histogram are withheld too: together they hint at where someone lives
- * and when they sleep, and no public scene needs them. Every public surface (public page, OG/PNG
- * card) renders this, never the stored document.
+ * and when they sleep, and no public scene needs them. For the same reason the night-owl score
+ * (it inverts to the night share) and the night-owl reason (it names the hours) are dropped; the
+ * archetype's label stays. Every public surface (public page, OG/PNG card) renders this, never the
+ * stored document.
  */
 export function toPublicRecap(recap: RecapData): RecapData {
   const named = withoutPrivateNames(recap);
+  const { "night-owl": _nightShare, ...scores } = named.identity.scores;
   return {
     ...named,
     meta: { ...named.meta, timezone: "UTC" },
     contributions: {
       ...named.contributions,
       hourly: { status: "unavailable", reason: "Not shared publicly" },
+    },
+    identity: {
+      ...named.identity,
+      scores,
+      reasons: named.identity.archetype === "night-owl" ? [] : named.identity.reasons,
     },
   };
 }

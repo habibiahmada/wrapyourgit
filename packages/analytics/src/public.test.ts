@@ -118,6 +118,33 @@ describe("toPublicRecap", () => {
     expect(published.contributions.hourly.status).toBe("unavailable");
   });
 
+  test("a night owl keeps the label, but not the hours behind it", () => {
+    const owl: RecapData = {
+      ...recap(),
+      identity: {
+        archetype: "night-owl",
+        scores: { "night-owl": 0.6, builder: 0.5 },
+        reasons: ["55% of sampled commits between 22:00 and 04:00"],
+      },
+    };
+    const published = toPublicRecap(owl);
+    expect(published.identity.archetype).toBe("night-owl");
+    // The score inverts to the night share, and the reason names the window: both are hours.
+    expect(published.identity.scores["night-owl"]).toBeUndefined();
+    expect(published.identity.scores.builder).toBe(0.5);
+    expect(published.identity.reasons).toEqual([]);
+    expect(withoutPrivateNames(owl).identity).toEqual(owl.identity);
+  });
+
+  test("other archetypes keep their reasons and scores, minus a night-owl runner-up's score", () => {
+    expect(toPublicRecap(recap()).identity).toEqual(recap().identity);
+    const runnerUp: RecapData = {
+      ...recap(),
+      identity: { ...recap().identity, scores: { builder: 0.7, "night-owl": 0.45 } },
+    };
+    expect(toPublicRecap(runnerUp).identity).toEqual(recap().identity);
+  });
+
   test("does not mutate the stored recap", () => {
     const original = recap();
     toPublicRecap(original);

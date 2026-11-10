@@ -70,7 +70,7 @@ export function Archetype({ data, size, layout, enter, frame }: SceneProps) {
   const reasonsT = (i: number) => easeOut(Math.min(1, Math.max(0, t * 1.6 - 0.4 - i * 0.12)));
 
   const alt = model
-    ? `${model.intro} ${model.title}. ${model.reasons.join(". ")}. Cell stands in the spotlight in the ${model.title} costume.`
+    ? `${model.intro} ${model.title}. ${model.reasons.map((r) => `${r}. `).join("")}Cell stands in the spotlight in the ${model.title} costume.`
     : `${ARCHETYPE_NONE}. Cell thinks alone in the spotlight.`;
 
   return (

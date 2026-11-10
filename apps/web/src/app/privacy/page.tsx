@@ -130,7 +130,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
             without a name.
           </li>
           <li>Your timezone is replaced with UTC.</li>
-          <li>The hours of the day you commit are withheld.</li>
+          <li>
+            The hours of the day you commit are withheld, including the night-time share behind the
+            Night owl archetype.
+          </li>
         </ul>
         <p>Unpublishing takes the page down immediately.</p>
       </>

@@ -1,7 +1,7 @@
 import type { ArchetypeId } from "@wyg/schema";
 import { archetypeIdSchema } from "@wyg/schema";
 import { archetypeRole, CAST } from "./cast";
-import { CELL, type ChibiMotion, LOOP_SECONDS, type Look } from "./three/pose";
+import { type ChibiMotion, LOOP_SECONDS, type Look } from "./three/pose";
 
 /*
  * The baked animations of Cell (scripts/render-art.ts, ADR-0013). Nothing in the browser runs
@@ -48,50 +48,6 @@ export const CELL_POSES: Record<CellPose, Pose> = {
   proud: CAST.closing,
   sleep: archetypeRole(null),
 };
-
-/**
- * Sprite sheets (`public/sprites/<id>.webp`): LOOP_FRAMES square frames in a grid, framed straight
- * on, a little above. Still baked, but the story world no longer draws them; their removal is a
- * follow-up. `side` sprites face right.
- */
-export type SpriteId =
-  | "wave"
-  | "cheer"
-  | "think"
-  | "hammer"
-  | "proud"
-  | "sleep"
-  | "run-side"
-  | "hop-side"
-  | `arch-${ArchetypeId}`;
-
-export const SPRITES: Record<SpriteId, Pose & { turn?: number }> = {
-  wave: CAST.intro,
-  cheer: CAST.contributions,
-  think: CAST["tech-dna"],
-  hammer: CAST.projects,
-  proud: CAST.closing,
-  sleep: archetypeRole(null),
-  "run-side": { look: CELL, motion: "run", turn: 1.05 },
-  "hop-side": { look: { ...CELL, eyes: "happy" }, motion: "cheer", turn: 1.05 },
-  "arch-builder": archetypeRole("builder"),
-  "arch-consistent": archetypeRole("consistent"),
-  "arch-explorer": archetypeRole("explorer"),
-  "arch-collaborator": archetypeRole("collaborator"),
-  "arch-night-owl": archetypeRole("night-owl"),
-  "arch-open-sourcer": archetypeRole("open-sourcer"),
-};
-
-export const SPRITE_IDS = Object.keys(SPRITES) as SpriteId[];
-
-/** Sprite sheet layout: frames left to right, then top to bottom. */
-export const SPRITE_SHEET = { size: 512, cols: 6, rows: 5 } as const;
-
-/** Which sprite frame to show at `frame` of a composition running at `fps`. */
-export function spriteFrame(frame: number, fps: number): number {
-  const index = Math.floor((frame / fps) * BAKE_FPS);
-  return ((index % LOOP_FRAMES) + LOOP_FRAMES) % LOOP_FRAMES;
-}
 
 /**
  * The loop frame that best shows each motion, for still PNGs (reduced motion, Open Graph, the
