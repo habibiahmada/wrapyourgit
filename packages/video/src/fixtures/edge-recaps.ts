@@ -14,6 +14,7 @@ export const emptyRecap: RecapData = {
     activeDays: 0,
     longestStreak: { days: 0, start: null, end: null },
     busiestMonth: null,
+    busiestDay: null,
     monthly: Array(12).fill(0),
     weekday: Array(7).fill(0),
     calendar: sampleRecap.contributions.calendar.map((day) => ({ ...day, count: 0 })),
@@ -92,4 +93,41 @@ export const busyRecap: RecapData = {
     scores: { collaborator: 0.99 },
     reasons: ["2,877 pull request reviews", "1,204 pull requests to other people's repositories"],
   },
+};
+
+const PROVISIONAL_END = "2026-11-09";
+const provisionalCalendar = sampleRecap.contributions.calendar.filter(
+  (day) => day.date <= PROVISIONAL_END,
+);
+// Earliest day with the highest count, the same rule as analytics' busiestDay.
+const provisionalBusiest = provisionalCalendar.reduce((best, day) =>
+  day.count > best.count ? day : best,
+);
+
+/** A year still running: the period ends Nov 9, later days are not in the calendar yet. */
+export const provisionalRecap: RecapData = {
+  ...sampleRecap,
+  meta: { ...sampleRecap.meta, isFinal: false, periodEnd: PROVISIONAL_END },
+  contributions: {
+    ...sampleRecap.contributions,
+    total: provisionalCalendar.reduce((sum, day) => sum + day.count, 0),
+    activeDays: provisionalCalendar.filter((day) => day.count > 0).length,
+    busiestDay: { date: provisionalBusiest.date, count: provisionalBusiest.count },
+    calendar: provisionalCalendar,
+  },
+  // Last year over the same span (Jan 1 to Nov 9), not the whole of it.
+  previousYear:
+    sampleRecap.previousYear.status === "ok"
+      ? {
+          ...sampleRecap.previousYear,
+          value: {
+            ...sampleRecap.previousYear.value,
+            sameSpan: {
+              ...sampleRecap.previousYear.value.sameSpan,
+              through: "2025-11-09",
+              contributions: 912,
+            },
+          },
+        }
+      : sampleRecap.previousYear,
 };

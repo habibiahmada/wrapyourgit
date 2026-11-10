@@ -53,6 +53,17 @@ test("busiest is the highest count, earliest on a tie; tallest building", () => 
   expect(plotHeight(city.plots[city.busiestIndex ?? 0] as Plot, city.maxCount)).toBe(tallest);
 });
 
+test("busiestIndex follows the busiestDay metric, not its own scan", () => {
+  const data = withCalendar(sampleRecap, { "2026-03-12": 38, "2026-07-01": 38 });
+  const forced = {
+    ...data,
+    contributions: { ...data.contributions, busiestDay: { date: "2026-07-01", count: 38 } },
+  };
+  const city = buildCity(forced);
+  expect(city.plots[city.busiestIndex ?? -1]?.date).toBe("2026-07-01");
+  expect(city.maxCount).toBe(38);
+});
+
 test("an empty year: no busiest, no first active day, all heights finite", () => {
   const city = buildCity(withCalendar(sampleRecap, {}));
   expect(city.busiestIndex).toBeNull();

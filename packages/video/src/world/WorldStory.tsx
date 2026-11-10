@@ -1,23 +1,27 @@
-import type { RecapData } from "@wyg/schema";
+import { layoutForSize, type RecapData } from "@wyg/schema";
 import { useMemo } from "react";
 import {
   AbsoluteFill,
   Html5Audio,
   interpolate,
+  Loop,
+  Sequence,
   staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { beats, TRACK } from "../audio/track";
+import { WORLD_TRACK, worldBeats } from "../audio/world-track";
 import { Sfx } from "../components/Sfx";
 import { palette } from "../theme";
 import { Chrome } from "./Chrome";
 import { CityLayer } from "./CityLayer";
 import { cameraAt } from "./camera";
-import { cardOpacity, reachedStop } from "./fade";
+import { chromeDarkness, edgeTone } from "./chrome-tone";
+import { cardOpacity, enterProgress, reachedStop } from "./fade";
 import { buildWorld } from "./model";
 import { StopLayer } from "./StopLayer";
-import { transitionSound } from "./sound";
+import { SCENE_TONE } from "./scenes";
+import { videoSounds } from "./sound";
 import type { WorldMode } from "./timeline";
 
 export type WorldStoryProps = {
@@ -36,6 +40,7 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
   );
   const { city, stops, cameras, timeline } = world;
   const size = { width, height };
+  const layout = layoutForSize(width, height);
   const camera = cameraAt(frame, cameras, timeline);
   const current = reachedStop(frame, timeline.stopFrames);
   const citySpan = cameras[stops.findIndex((s) => s.kind === "city")]?.span ?? camera.span;
@@ -52,42 +57,109 @@ export function WorldStory({ data, mode, music = true }: WorldStoryProps) {
         return (
           <StopLayer
             key={stop.id}
+            data={data}
             stop={stop}
             stopCam={stopCam}
             camera={camera}
             city={city}
             citySpan={citySpan}
             timelineOpacity={cardOpacity(i, frame, timeline)}
-            frame={size}
+            enter={enterProgress(i, frame, timeline)}
+            compFrame={frame}
+            size={size}
+            layout={layout}
           />
         );
       })}
-      <Chrome stops={stops.length} current={current} year={data.meta.year} frame={size} />
+      <Chrome
+        stops={stops.length}
+        current={current}
+        year={data.meta.year}
+        frame={size}
+        darkness={{
+          top: chromeDarkness(
+            stops.map((stop) => edgeTone(SCENE_TONE[stop.kind], "top")),
+            frame,
+            timeline,
+          ),
+          bottom: chromeDarkness(
+            stops.map((stop) => edgeTone(SCENE_TONE[stop.kind], "bottom")),
+            frame,
+            timeline,
+          ),
+        }}
+      />
       {mode === "video" && (
         <>
-          {stops.slice(1).map((stop, k) => {
-            const i = k + 1;
-            const at = (timeline.stopFrames[i] ?? 0) - (timeline.moveFrames[i] ?? 0);
-            return <Sfx key={stop.id} at={at} sound={transitionSound(stop.kind)} />;
-          })}
-          {music && (
-            <Html5Audio
-              src={staticFile(TRACK.file)}
-              // The track is shorter than the world; looping holds until phase 3 brings its own.
-              loop
-              // "extend" keeps the volume curve on composition frames across loops, so the fade
-              // below lands on the composition's last two beats, not on each pass of the track.
-              loopVolumeCurveBehavior="extend"
-              volume={(f) =>
-                interpolate(f, [end - beats(2, fps), end], [1, 0], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                })
-              }
-            />
-          )}
+          {videoSounds(world).map(({ frame: at, sound }, k) => (
+            // Index keys: the list is fixed for a given world, and one frame can hold two sounds.
+            // biome-ignore lint/suspicious/noArrayIndexKey: see above
+            <Sfx key={`${k}-${sound}`} at={at} sound={sound} />
+          ))}
+          {music && <WorldMusic end={end} fps={fps} />}
         </>
       )}
     </AbsoluteFill>
+  );
+}
+
+/**
+ * The world's track, as the web player plays it: once from the top to the loop end, then the loop
+ * region again for as long as the video lasts. The loop region is rendered circular, so the cut
+ * back to its start is seamless. Fades out over the composition's last two beats.
+ */
+function WorldMusic({ end, fps }: { end: number; fps: number }) {
+  const loopStart = worldBeats(WORLD_TRACK.loop.startBeat, fps);
+  const loopEnd = worldBeats(WORLD_TRACK.loop.endBeat, fps);
+  const loopLength = loopEnd - loopStart;
+  const fade = (frame: number) =>
+    interpolate(frame, [end - worldBeats(2, fps), end], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+  const src = staticFile(WORLD_TRACK.file);
+  return (
+    <>
+      <Html5Audio src={src} durationInFrames={loopEnd} volume={fade} />
+      {end > loopEnd && (
+        <Sequence from={loopEnd} durationInFrames={end - loopEnd}>
+          <Loop durationInFrames={loopLength}>
+            <LoopedRegion
+              src={src}
+              trimBefore={loopStart}
+              length={loopLength}
+              fade={fade}
+              from={loopEnd}
+            />
+          </Loop>
+        </Sequence>
+      )}
+    </>
+  );
+}
+
+/** One pass of the loop region; the volume curve reads composition frames across passes. */
+function LoopedRegion({
+  src,
+  trimBefore,
+  length,
+  fade,
+  from,
+}: {
+  src: string;
+  trimBefore: number;
+  length: number;
+  fade: (frame: number) => number;
+  from: number;
+}) {
+  const iteration = Loop.useLoop()?.iteration ?? 0;
+  const passStart = from + iteration * length;
+  return (
+    <Html5Audio
+      src={src}
+      trimBefore={trimBefore}
+      durationInFrames={length}
+      volume={(f) => fade(passStart + f)}
+    />
   );
 }

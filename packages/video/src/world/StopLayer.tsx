@@ -1,25 +1,32 @@
+import type { LayoutFamily, RecapData } from "@wyg/schema";
 import { AbsoluteFill } from "remotion";
-import { fontFamily, formatCount, palette } from "../theme";
 import { type Camera, project } from "./camera";
 import type { City } from "./city";
-import { contributionsLabel, formatDay, zoomFade } from "./fade";
+import { zoomFade } from "./fade";
+import { SCENES } from "./scenes";
 import type { Stop } from "./stops";
 
-type Frame = { width: number; height: number };
+type Size = { width: number; height: number };
 
 /**
- * Placeholder for a stop's scene (phase 2 replaces it). It lives in world space: frame-sized when
- * the camera equals the stop's camera, scaled and moved with the camera otherwise.
+ * A stop's scene in world space: frame-sized when the camera equals the stop's camera, scaled and
+ * moved with the camera otherwise. The city overview (no plot) gets a layer too, so its scene can
+ * label the whole city.
  */
 export function StopLayer({
+  data,
   stop,
   stopCam,
   camera,
   city,
   citySpan,
   timelineOpacity,
-  frame,
+  enter,
+  compFrame,
+  size,
+  layout,
 }: {
+  data: RecapData;
   stop: Stop;
   stopCam: Camera;
   camera: Camera;
@@ -27,51 +34,34 @@ export function StopLayer({
   citySpan: number;
   /** cardOpacity for this stop at the current frame. */
   timelineOpacity: number;
-  frame: Frame;
+  /** enterProgress for this stop at the current frame. */
+  enter: number;
+  /** Composition frame, passed to the scene as `frame` for idle loops. */
+  compFrame: number;
+  size: Size;
+  layout: LayoutFamily;
 }) {
-  const plot = stop.plot === null ? undefined : city.plots[stop.plot];
   const opacity = timelineOpacity * zoomFade(camera, stopCam, citySpan);
-  if (!plot || opacity <= 0) return null;
-  const centre = project(stopCam, camera, frame);
+  if (opacity <= 0) return null;
+  const centre = project(stopCam, camera, size);
   const scale = stopCam.span / camera.span;
-  const unit = Math.min(frame.width, frame.height) / 100;
+  const Scene = SCENES[stop.kind];
   return (
     <AbsoluteFill
       style={{
         opacity,
-        transform: `translate(${centre.x - frame.width / 2}px, ${centre.y - frame.height / 2}px) scale(${scale})`,
-        backgroundColor: palette.paper,
-        color: palette.ink,
-        fontFamily,
+        transform: `translate(${centre.x - size.width / 2}px, ${centre.y - size.height / 2}px) scale(${scale})`,
       }}
     >
-      {/* Inset so the card's edge stays clear of the progress bar and the copyright line. */}
-      <div
-        style={{
-          position: "absolute",
-          display: "flex",
-          flexDirection: "column",
-          top: unit * 8,
-          left: unit * 8,
-          right: unit * 8,
-          bottom: unit * 8,
-          alignItems: "center",
-          justifyContent: "center",
-          gap: unit * 2,
-          border: `${unit * 0.5}px solid ${palette.ink}`,
-          borderRadius: unit * 3,
-        }}
-      >
-        <div style={{ fontSize: unit * 11, fontWeight: 800, textTransform: "uppercase" }}>
-          {stop.page ? `${stop.kind} ${stop.page}` : stop.kind}
-        </div>
-        <div style={{ fontSize: unit * 5, fontWeight: 400 }}>{formatDay(plot.date)}</div>
-        {stop.kind === "busiest" && (
-          <div style={{ fontSize: unit * 6, fontWeight: 700 }}>
-            {contributionsLabel(plot.count, formatCount(plot.count))}
-          </div>
-        )}
-      </div>
+      <Scene
+        data={data}
+        stop={stop}
+        city={city}
+        size={size}
+        layout={layout}
+        enter={enter}
+        frame={compFrame}
+      />
     </AbsoluteFill>
   );
 }

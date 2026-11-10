@@ -2,7 +2,18 @@ import { expect, test } from "bun:test";
 import { VIDEO_FORMATS } from "@wyg/schema";
 import { sampleRecap } from "../fixtures/sample-recap";
 import { PLOT_SPAN } from "./camera";
-import { cardOpacity, cityOpacity, contributionsLabel, formatDay, reachedStop } from "./fade";
+import {
+  cardOpacity,
+  cityOpacity,
+  contributionsLabel,
+  enterProgress,
+  formatDay,
+  reachedStop,
+  shortDay,
+  WEEKDAYS,
+  weekdayName,
+  zoomFade,
+} from "./fade";
 import { buildWorld } from "./model";
 import type { WorldMode } from "./timeline";
 
@@ -21,18 +32,35 @@ test("cityOpacity: 1 at the city span and wider, 0 at 3 plot spans and closer", 
 for (const mode of ["interactive", "video"] as WorldMode[]) {
   test(`cardOpacity (${mode}): a card shows only at its own stop`, () => {
     const { timeline } = buildWorld(sampleRecap, VIDEO_FORMATS["9x16"], mode, 30);
-    const { stopFrames, moveFrames } = timeline;
+    const { stopFrames, moveFrames, inPlace } = timeline;
+    // The sample letter has several pages in 9x16, so the in-place branch below really runs.
+    expect(inPlace?.filter(Boolean).length).toBeGreaterThan(0);
     for (let i = 0; i < stopFrames.length; i++) {
       const rest = stopFrames[i] as number;
       expect(cardOpacity(i, rest, timeline)).toBe(1);
-      if (i > 0) {
+      if (i > 0 && inPlace?.[i]) {
+        // Letter pages turn in place: the cards cut, so exactly one shows on every frame.
+        const start = rest - (moveFrames[i] as number);
+        expect(cardOpacity(i, stopFrames[i - 1] as number, timeline)).toBe(0);
+        expect(cardOpacity(i, start, timeline)).toBe(0);
+        expect(cardOpacity(i - 1, start, timeline)).toBe(1);
+        expect(cardOpacity(i, start + 1, timeline)).toBe(1);
+        expect(cardOpacity(i - 1, start + 1, timeline)).toBe(0);
+        const mid = rest - Math.round((moveFrames[i] as number) / 2);
+        expect(cardOpacity(i, mid, timeline)).toBe(1);
+        expect(cardOpacity(i - 1, mid, timeline)).toBe(0);
+      } else if (i > 0) {
         expect(cardOpacity(i, stopFrames[i - 1] as number, timeline)).toBe(0);
         const mid = rest - Math.round((moveFrames[i] as number) / 2);
         expect(cardOpacity(i, mid, timeline)).toBeGreaterThan(0);
         expect(cardOpacity(i, mid, timeline)).toBeLessThan(1);
       }
       const next = stopFrames[i + 1];
-      if (next !== undefined) {
+      if (next !== undefined && inPlace?.[i + 1]) {
+        // At this stop's rest (also the next page's move start in interactive mode) only it shows.
+        expect(cardOpacity(i + 1, rest, timeline)).toBe(0);
+        expect(cardOpacity(i, next, timeline)).toBe(0);
+      } else if (next !== undefined) {
         expect(cardOpacity(i, next, timeline)).toBe(0);
         const mid = next - Math.round((moveFrames[i + 1] as number) / 2);
         expect(cardOpacity(i, mid, timeline)).toBeGreaterThan(0);
@@ -75,4 +103,51 @@ test("contributionsLabel uses the singular for exactly one", () => {
   expect(contributionsLabel(1, "1")).toBe("1 contribution");
   expect(contributionsLabel(0, "0")).toBe("0 contributions");
   expect(contributionsLabel(1234, "1,234")).toBe("1,234 contributions");
+});
+
+for (const mode of ["interactive", "video"] as WorldMode[]) {
+  test(`enterProgress (${mode}): 0 before the move in, eased over it, 1 from the rest on`, () => {
+    const { timeline } = buildWorld(sampleRecap, VIDEO_FORMATS["9x16"], mode, 30);
+    const { stopFrames, moveFrames } = timeline;
+    expect(enterProgress(0, 0, timeline)).toBe(1);
+    for (let i = 1; i < stopFrames.length; i++) {
+      const rest = stopFrames[i] as number;
+      const move = moveFrames[i] as number;
+      expect(enterProgress(i, stopFrames[i - 1] as number, timeline)).toBe(0);
+      expect(enterProgress(i, rest - move, timeline)).toBe(0);
+      const mid = enterProgress(i, rest - Math.round(move / 2), timeline);
+      expect(mid).toBeGreaterThan(0);
+      expect(mid).toBeLessThan(1);
+      expect(enterProgress(i, rest, timeline)).toBe(1);
+      // Through the hold and the move out: the scene stays entered while it fades away.
+      const next = stopFrames[i + 1] ?? timeline.durationInFrames - 1;
+      expect(enterProgress(i, next, timeline)).toBe(1);
+      expect(enterProgress(i, Math.round((rest + next) / 2), timeline)).toBe(1);
+    }
+  });
+}
+
+test("enterProgress eases: slow at both ends of the move", () => {
+  const timeline = { stopFrames: [0, 100], moveFrames: [0, 100], durationInFrames: 101 };
+  const early = enterProgress(1, 10, timeline);
+  expect(early).toBeLessThan(0.1);
+  expect(enterProgress(1, 50, timeline)).toBeCloseTo(0.5, 5);
+  expect(enterProgress(1, 90, timeline)).toBeCloseTo(1 - early, 5);
+  expect(enterProgress(5, 50, timeline)).toBe(0);
+});
+
+test("zoomFade: finite and 1 at the city camera, where there is no zoom left to fade over", () => {
+  expect(zoomFade(at(60), at(60), 60)).toBe(1);
+  expect(zoomFade(at(80), at(60), 60)).toBe(1);
+  expect(zoomFade(at(PLOT_SPAN), at(PLOT_SPAN), 60)).toBe(1);
+  expect(zoomFade(at(60), at(PLOT_SPAN), 60)).toBe(0);
+});
+
+test("shortDay and weekdayName: fixed names, read in UTC", () => {
+  expect(shortDay("2026-01-03")).toBe("Jan 3");
+  expect(shortDay("2026-11-09")).toBe("Nov 9");
+  expect(shortDay("2026-09-30")).toBe("Sep 30");
+  expect(weekdayName("2026-01-03")).toBe("Saturday");
+  expect(weekdayName("2026-11-09")).toBe("Monday");
+  expect(WEEKDAYS[0]).toBe("Sunday");
 });

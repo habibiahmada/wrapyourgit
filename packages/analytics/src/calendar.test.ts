@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { busiestMonth, countActiveDays, longestStreak, monthlyTotals } from "./calendar";
+import {
+  busiestDay,
+  busiestMonth,
+  countActiveDays,
+  longestStreak,
+  monthlyTotals,
+} from "./calendar";
 
 const days = (entries: [string, number][]) => entries.map(([date, count]) => ({ date, count }));
 
@@ -59,5 +65,26 @@ describe("monthly aggregates", () => {
 
   test("busiest month is null for an empty year", () => {
     expect(busiestMonth([])).toBeNull();
+  });
+
+  test("busiest day is the highest count (earliest of the 4s)", () => {
+    expect(busiestDay(calendar)).toEqual({ date: "2026-03-01", count: 4 });
+  });
+
+  test("busiest day prefers the earlier date on ties", () => {
+    expect(
+      busiestDay(
+        days([
+          ["2026-02-01", 5],
+          ["2026-01-10", 5],
+          ["2026-03-01", 2],
+        ]),
+      ),
+    ).toEqual({ date: "2026-01-10", count: 5 });
+  });
+
+  test("busiest day is null when every day is zero or the calendar is empty", () => {
+    expect(busiestDay(days([["2026-01-01", 0]]))).toBeNull();
+    expect(busiestDay([])).toBeNull();
   });
 });

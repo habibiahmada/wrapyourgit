@@ -3,18 +3,25 @@
 import { Player, type PlayerRef } from "@remotion/player";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
 import { sampleRecap, WorldStory } from "@wyg/video";
-import { loopSeconds, TRACK } from "@wyg/video/track";
-import { buildWorld, TAP_SOUND, transitionSound } from "@wyg/video/world";
+import { buildWorld, edgeSounds, TAP_SOUND } from "@wyg/video/world";
+import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMusic } from "../use-music";
-import { type ControllerState, frameAt, initialState, request, settle } from "./controller";
+import {
+  type ControllerState,
+  carryStop,
+  frameAt,
+  initialState,
+  request,
+  settle,
+} from "./controller";
 import { useSfx } from "./use-sfx";
 
 const FORMAT_FOR_LAYOUT = { portrait: "9x16", compact: "4x5", landscape: "16x9" } as const;
-const MUSIC_SRC = `/${TRACK.file}`;
-const MUSIC_LOOP = loopSeconds();
+const MUSIC_SRC = `/${WORLD_TRACK.file}`;
+const MUSIC_LOOP = worldLoopSeconds();
 /** Each half of the reduced-motion crossfade (out, then in). */
 const FADE_MS = 200;
 
@@ -97,11 +104,12 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
         const move = state.current.moving;
         if (!move) return;
         sfx.play(TAP_SOUND);
-        const arrival = stops[move.to];
-        if (arrival) sfx.play(transitionSound(arrival.kind));
+        const sounds = edgeSounds(timeline, stops, move.from, move.to);
+        if (sounds.travel) sfx.play(sounds.travel);
         if (!music.isPlaying()) music.play();
 
         const finish = () => {
+          if (sounds.arrival) sfx.play(sounds.arrival);
           const { state: rested, next } = settle(state.current);
           commit(rested);
           if (next !== null) step(next);
@@ -139,14 +147,18 @@ export function WorldPlayer({ data, sample = false }: { data: RecapData; sample?
     [commit, music, reduced, sfx, stops, timeline],
   );
 
-  // A new format means new stop frames: drop any move in flight and rest where it was heading.
+  // A new format means new stops (the letter's page count varies) and new frames: drop any move in
+  // flight and rest on the stop it was heading to, found by id in the new list.
+  const restedIds = useRef<string[]>([]);
   useEffect(() => {
     stopLoop();
     setFaded(false);
-    const stop = heading(state.current);
+    const ids = stops.map((s) => s.id);
+    const stop = carryStop(restedIds.current, heading(state.current), ids);
+    restedIds.current = ids;
     commit({ stop, moving: null, queued: null });
     player.current?.seekTo(timeline.stopFrames[stop] ?? 0);
-  }, [timeline, commit, stopLoop]);
+  }, [stops, timeline, commit, stopLoop]);
 
   useEffect(() => stopLoop, [stopLoop]);
 

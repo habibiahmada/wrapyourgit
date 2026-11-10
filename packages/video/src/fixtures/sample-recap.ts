@@ -6,6 +6,9 @@ const calendar = Array.from({ length: 365 }, (_, i) => {
   return { date, count: (i * 7) % 5 === 0 ? 0 : (i * 13) % 9 };
 });
 
+// Earliest day with the highest count, the same rule as analytics' busiestDay.
+const busiest = calendar.reduce((best, day) => (day.count > best.count ? day : best));
+
 const repo = (nameWithOwner: string, extra: Partial<RepoRef> = {}): RepoRef => ({
   nameWithOwner,
   isPrivate: false,
@@ -37,6 +40,7 @@ export const sampleRecap: RecapData = {
     activeDays: 186,
     longestStreak: { days: 24, start: "2026-06-02", end: "2026-06-25" },
     busiestMonth: { month: 6, count: 214 },
+    busiestDay: { date: busiest.date, count: busiest.count },
     monthly: [80, 75, 120, 98, 110, 214, 130, 90, 101, 95, 88, 83],
     weekday: [90, 220, 240, 230, 210, 190, 104],
     hourly: { status: "unavailable", reason: "Not computed in fixture" },

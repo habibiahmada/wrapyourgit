@@ -1,6 +1,12 @@
 import { type Metric, type RecapData, type RepoRef, SCHEMA_VERSION } from "@wyg/schema";
 import { classifyArchetype, nightShare } from "./archetype";
-import { busiestMonth, countActiveDays, longestStreak, monthlyTotals } from "./calendar";
+import {
+  busiestDay,
+  busiestMonth,
+  countActiveDays,
+  longestStreak,
+  monthlyTotals,
+} from "./calendar";
 
 /**
  * One user's year as fetched by `fetchYearActivity` in @wyg/github. Declared here (not imported)
@@ -123,6 +129,7 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
       activeDays,
       longestStreak: streak,
       busiestMonth: busiestMonth(calendar),
+      busiestDay: busiestDay(calendar),
       monthly: monthlyTotals(calendar),
       weekday: weekdayTotals(calendar),
       hourly,

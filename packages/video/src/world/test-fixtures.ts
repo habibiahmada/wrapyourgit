@@ -1,7 +1,20 @@
 import type { RecapData } from "@wyg/schema";
 
+/** Mirrors analytics' busiestDay (earliest highest day); a provisional recap ignores days after periodEnd. */
+function withBusiestDay(data: RecapData): RecapData {
+  const { periodEnd, isFinal } = data.meta;
+  let best: { date: string; count: number } | null = null;
+  for (const { date, count } of data.contributions.calendar) {
+    if (count <= 0 || (!isFinal && date > periodEnd)) continue;
+    if (!best || count > best.count || (count === best.count && date < best.date)) {
+      best = { date, count };
+    }
+  }
+  return { ...data, contributions: { ...data.contributions, busiestDay: best } };
+}
+
 export function withMeta(data: RecapData, meta: Partial<RecapData["meta"]>): RecapData {
-  return { ...data, meta: { ...data.meta, ...meta } };
+  return withBusiestDay({ ...data, meta: { ...data.meta, ...meta } });
 }
 
 export function withYear(data: RecapData, year: number): RecapData {
@@ -20,5 +33,5 @@ export function withCalendar(data: RecapData, counts: Record<string, number>): R
     const date = new Date(start + i * 86_400_000).toISOString().slice(0, 10);
     return { date, count: counts[date] ?? 0 };
   });
-  return { ...data, contributions: { ...data.contributions, calendar } };
+  return withBusiestDay({ ...data, contributions: { ...data.contributions, calendar } });
 }

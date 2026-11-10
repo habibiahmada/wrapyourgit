@@ -1,6 +1,15 @@
-import { expect, test } from "bun:test";
-import type { Timeline } from "@wyg/video/world";
-import { type ControllerState, frameAt, initialState, request, settle } from "./controller";
+import { describe, expect, test } from "bun:test";
+import { VIDEO_FORMATS } from "@wyg/schema";
+import { sampleRecap } from "@wyg/video";
+import { buildWorld, type Timeline } from "@wyg/video/world";
+import {
+  type ControllerState,
+  carryStop,
+  frameAt,
+  initialState,
+  request,
+  settle,
+} from "./controller";
 
 const timeline: Timeline = {
   stopFrames: [0, 100, 250, 400],
@@ -78,4 +87,35 @@ test("a negative elapsed time never goes before the start frame", () => {
 
 test("settle on a resting state keeps the stop and returns no move", () => {
   expect(settle(atStop(2))).toEqual({ state: atStop(2), next: null });
+});
+
+describe("carryStop: the stop to rest on after a format change", () => {
+  const ids = (format: keyof typeof VIDEO_FORMATS) =>
+    buildWorld(sampleRecap, VIDEO_FORMATS[format], "interactive", 30).stops.map((s) => s.id);
+  const tall = ids("9x16");
+  const wide = ids("16x9");
+
+  test("the formats really differ in letter pages", () => {
+    expect(wide.length).toBeGreaterThan(tall.length);
+  });
+
+  test("closing stays closing both ways", () => {
+    expect(wide[carryStop(tall, tall.indexOf("closing"), wide)]).toBe("closing");
+    expect(tall[carryStop(wide, wide.indexOf("closing"), tall)]).toBe("closing");
+  });
+
+  test("a stop present in both keeps its id", () => {
+    expect(tall[carryStop(wide, wide.indexOf("versus"), tall)]).toBe("versus");
+    expect(tall[carryStop(wide, wide.indexOf("letter-2"), tall)]).toBe("letter-2");
+  });
+
+  test("a letter page past the new page count lands on the last page", () => {
+    const pages = tall.filter((id) => id.startsWith("letter-")).length;
+    expect(tall[carryStop(wide, wide.indexOf("letter-5"), tall)]).toBe(`letter-${pages}`);
+  });
+
+  test("an unknown stop clamps its index into the new list", () => {
+    expect(carryStop(["a", "b", "c"], 2, ["x", "y"])).toBe(1);
+    expect(carryStop(["a"], 0, ["x", "y"])).toBe(0);
+  });
 });
