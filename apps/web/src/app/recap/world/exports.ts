@@ -172,11 +172,19 @@ export async function renderSlides(
 
 const bytes = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer());
 
+/*
+ * fflate and pdf-lib type their output as Uint8Array<ArrayBufferLike>, which BlobPart refuses for
+ * fear of a SharedArrayBuffer. Both allocate a plain ArrayBuffer, so narrow the type instead of
+ * copying a whole ZIP or PDF a second time.
+ */
+const blobOf = (data: Uint8Array, type: string) =>
+  new Blob([data as Uint8Array<ArrayBuffer>], { type });
+
 /** PNGs are already compressed, so entries are stored. */
 export async function zipSlides(slides: Slide[]): Promise<Blob> {
   const files: Record<string, Uint8Array> = {};
   for (const slide of slides) files[slide.name] = await bytes(slide.blob);
-  return new Blob([new Uint8Array(zipSync(files, { level: 0 }))], { type: "application/zip" });
+  return blobOf(zipSync(files, { level: 0 }), "application/zip");
 }
 
 /** The whole story, letter included: one 4:5 page per slide. */
@@ -189,7 +197,7 @@ export async function pdfSlides(slides: Slide[], { title }: { title: string }): 
     const image = await pdf.embedPng(await bytes(slide.blob));
     pdf.addPage([width, height]).drawImage(image, { x: 0, y: 0, width, height });
   }
-  return new Blob([new Uint8Array(await pdf.save())], { type: "application/pdf" });
+  return blobOf(await pdf.save(), "application/pdf");
 }
 
 export function download(blob: Blob, name: string): void {
