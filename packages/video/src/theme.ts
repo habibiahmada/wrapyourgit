@@ -26,7 +26,7 @@ export const textOn: Record<FieldColor, string> = {
   cobalt: palette.paper,
 };
 
-// loadFont blocks rendering (delayRender) until the faces are ready, so Lambda never
+// loadFont blocks rendering (delayRender) until the faces are ready, so a render never
 // captures a frame in the fallback font.
 const { fontFamily } = loadFont("normal", { weights: ["400", "700", "800"], subsets: ["latin"] });
 
