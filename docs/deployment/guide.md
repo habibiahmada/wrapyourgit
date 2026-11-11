@@ -76,7 +76,12 @@ What is set up, and how to set it up again:
    - Every push to `main` deploys production. Other branches are skipped (Settings → Build and Deployment → Ignored Build Step: "Only build production", ADR-0018).
 2. **Neon** through Vercel → Storage → Create Database → Neon: region Singapore, free plan, Neon Auth off, connected to the project with the variable prefix `DATABASE` (so the pooled string is `DATABASE_URL`).
 3. **Environment variables** as in the table and scopes above.
-4. **Rate limit:** Vercel → Firewall → Rules → "Rate limit /api and /u/ endpoints": paths starting with `/api` or `/u/`, fixed window of 60 seconds, 60 requests per IP, then **429**, published to production. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish.
+4. **Rate limit:** Vercel → Firewall → Rules → "Rate limit /api, /u/ and recap pages": fixed window of 60 seconds, 60 requests per IP, then **429**, published to production, matching any of three Request Path conditions (OR):
+   - starts with `/api`;
+   - starts with `/u/` (these redirect to `/<username>`, but `/u/<reserved name>` serves a recap itself);
+   - matches the expression `^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$`: the recap pages `/<username>` and their preview images. Each one can start a GitHub fetch held open for up to `maxDuration` (120 s), so they need the same per-IP ceiling as the API.
+
+   The expression only matches one or two path segments with no dot, so static assets (`/_next/…`, `/art/…`, `/robots.txt`, `/icon.svg`) are never limited. It also matches site pages such as `/settings` and `/privacy`, which is harmless at 60 a minute. This edge limit sits in front of the app's own one (20 new lookups per client per hour, `server/public-policy.ts`), which only counts requests that reach GitHub; if the plan's rule editor ever lacks expression matching, keep the first two conditions and rely on that in-app limit for `/<username>`. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish.
 5. **Domain:** Vercel → Domains → add `wrapyourgit.habibiahmada.dev`; Vercel shows a project-specific CNAME target. In Cloudflare (zone `habibiahmada.dev`): `CNAME wrapyourgit → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate.
 
 Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, `/lang`; `/sprites` was removed later, #63), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
