@@ -7,6 +7,7 @@ import { decrypt, encrypt, hashToken, parseKey, randomToken } from "./crypto";
 import { db, githubTokens, sessions, users } from "./db";
 import { requireEnv } from "./env";
 import { refreshTokens, revokeGrant, type TokenSet, tokenState } from "./oauth";
+import { forgetPublicRecap, setHidden } from "./public-recaps";
 
 /*
  * Data access layer for identity: sessions, the current user and their GitHub token. Every
@@ -20,6 +21,8 @@ const SESSION_DAYS = 30;
 
 export interface CurrentUser {
   id: string;
+  /** GitHub's numeric id: the key public recaps and the hide switch use. */
+  githubId: number;
   login: string;
   name: string | null;
   avatarUrl: string;
@@ -130,7 +133,13 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const [row] = await db
-    .select({ id: users.id, login: users.login, name: users.name, avatarUrl: users.avatarUrl })
+    .select({
+      id: users.id,
+      githubId: users.githubId,
+      login: users.login,
+      name: users.name,
+      avatarUrl: users.avatarUrl,
+    })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
     // Expiry is checked against the database clock, which also keeps `new Date()` out of render.
@@ -198,8 +207,9 @@ export async function getGithubToken(userId: string): Promise<string> {
 
 /**
  * "Delete my data": revokes the app's grant on GitHub, then deletes the user. Sessions, tokens
- * and recaps go with it (ON DELETE CASCADE). Our data is deleted even when revocation can't be
- * done (tokens long expired); the return value tells the UI to point the user at GitHub settings.
+ * and recaps go with it (ON DELETE CASCADE), and the public recap is hidden and forgotten. Our data
+ * is deleted even when revocation can't be done (tokens long expired); the return value tells the
+ * UI to point the user at GitHub settings.
  */
 export async function deleteAccount(userId: string): Promise<{ revoked: boolean }> {
   let revoked = false;
@@ -208,6 +218,16 @@ export async function deleteAccount(userId: string): Promise<{ revoked: boolean 
     revoked = true;
   } catch {
     // Expired grant or GitHub unavailable: still delete everything we hold.
+  }
+  // Deleting the account also hides its public recap, by GitHub id: the page at /<login> would
+  // otherwise be fetched again on the next visit, as if the owner had never asked to leave.
+  const [account] = await db
+    .select({ githubId: users.githubId })
+    .from(users)
+    .where(eq(users.id, userId));
+  if (account) {
+    await setHidden(account.githubId, true);
+    await forgetPublicRecap(account.githubId);
   }
   await db.delete(users).where(eq(users.id, userId));
   (await cookies()).delete(SESSION_COOKIE);
