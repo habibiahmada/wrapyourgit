@@ -72,6 +72,7 @@ let failRecord: boolean;
 let githubError: { lookup?: Error; year?: Error };
 let duringFetch: (() => void) | null;
 let onClaimRefused: (() => void) | null;
+let beforeClaim: (() => void) | null;
 let onSleep: (() => void) | null;
 
 const store: Store = {
@@ -85,6 +86,7 @@ const store: Store = {
     recorded.push(client);
   },
   claim: async (_id, login) => {
+    beforeClaim?.();
     if (othersClaim) {
       onClaimRefused?.();
       return null;
@@ -166,6 +168,7 @@ beforeEach(() => {
   githubError = {};
   duringFetch = null;
   onClaimRefused = null;
+  beforeClaim = null;
   onSleep = null;
   // Failures are logged on purpose; keep the test output clean.
   spyOn(console, "warn").mockImplementation(() => {});
@@ -269,6 +272,32 @@ describe("loadPublicRecapWith", () => {
     failPrevious = true;
     expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
     expect(row?.previous?.span.through).toBe("2025-11-11");
+  });
+
+  test("a fresh recap stored under a renamed account's old login is fetched again", async () => {
+    await seed();
+    clock += HOUR;
+    account = { kind: "user", id: ID, login: "Octocat", remaining: 5000, resetAt: "" };
+    const result = await loadPublicRecapWith(deps, "octocat", "c");
+    if (result.kind !== "recap") throw new Error(`expected a recap, got ${result.kind}`);
+    expect(result.login).toBe("Octocat");
+    expect(result.data.profile.login).toBe("Octocat");
+    expect(calls).toEqual({ lookup: 1, year: 1, previous: 0 });
+    expect(row?.login).toBe("Octocat");
+  });
+
+  test("a claim won just after another request saved serves that recap without fetching", async () => {
+    await seed();
+    clock += 13 * HOUR;
+    const fresh = { ...row?.data } as NonNullable<Row["data"]>;
+    // The other request saves between this request's read and its claim.
+    beforeClaim = () => {
+      if (row) row = { ...row, data: fresh, fetchedAt: new Date(clock), fetchingSince: null };
+    };
+    const result = await loadPublicRecapWith(deps, "octo", "c");
+    expect(result.kind === "recap" && result.data).toBe(fresh);
+    expect(calls).toEqual({ lookup: 1, year: 0, previous: 0 });
+    expect(row?.fetchingSince).toBeNull();
   });
 
   test("a client at the limit gets limited without GitHub being asked", async () => {

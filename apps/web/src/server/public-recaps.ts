@@ -130,7 +130,7 @@ export async function loadPublicRecapWith(
     if (await store.isHidden(account.id)) return { kind: "hidden", login };
 
     const stored = usable(await store.read(account.id));
-    if (stored && isFresh(stored.fetchedAt, deps.now())) {
+    if (stored && isCurrent(stored, login, deps.now())) {
       return { kind: "recap", login, data: stored.data };
     }
     stale = stored;
@@ -141,6 +141,12 @@ export async function loadPublicRecapWith(
     const claimedAt = claimed?.fetchingSince;
     if (!claimed || !claimedAt) {
       return (await waitForOtherFetch(deps, account.id, login)) ?? standIn("busy");
+    }
+    // Another request may have saved between this request's read and its claim.
+    const done = usable(claimed);
+    if (done && isCurrent(done, login, deps.now())) {
+      await store.release(account.id, claimedAt);
+      return { kind: "recap", login, data: done.data };
     }
 
     try {
@@ -170,6 +176,14 @@ async function serveStored(
 ): Promise<PublicResult> {
   if (await store.isHidden(row.githubId)) return { kind: "hidden", login: row.login };
   return { kind: "recap", login: row.login, data: row.data };
+}
+
+/**
+ * Fresh, and fetched under the account's current login: after a rename the stored story, end screen
+ * and share link still show the old one, so a renamed account is fetched again.
+ */
+function isCurrent(row: { data: RecapData; fetchedAt: Date }, login: string, now: Date): boolean {
+  return isFresh(row.fetchedAt, now) && row.data.profile.login === login;
 }
 
 function usable<Row extends StoredRow>(
