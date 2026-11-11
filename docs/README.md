@@ -34,5 +34,6 @@
 | [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets                         | Accepted                             |
 | [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later                               | Accepted, amended by 0018            |
 | [0016](architecture/decisions/0016-exports-in-the-browser.md)            | The story's files are rendered in the viewer's browser                                   | Accepted, decision 3 amended by 0017 |
-| [0017](architecture/decisions/0017-private-names-follow-the-owner.md)    | Private repo names follow the owner in their own story; public surfaces always hide them | Accepted                             |
+| [0017](architecture/decisions/0017-private-names-follow-the-owner.md)    | Private repo names follow the owner in their own story; public surfaces always hide them | Accepted, rule 1 amended by 0019     |
 | [0018](architecture/decisions/0018-production-only-deploys.md)           | Vercel deploys production only; no preview deployments or database branches              | Accepted                             |
+| [0019](architecture/decisions/0019-every-username-has-a-recap.md)        | Every GitHub username has a public recap at /<username>; owners can hide theirs          | Accepted                             |
