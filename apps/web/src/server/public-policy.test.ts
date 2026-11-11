@@ -5,6 +5,7 @@ import {
   firstForwardedAddress,
   hashClient,
   isFresh,
+  previousIsCurrent,
   underClientLimit,
 } from "./public-policy";
 
@@ -55,5 +56,28 @@ describe("client key", () => {
     expect(hashClient("203.0.113.7", "salt-a")).toBe(key);
     expect(hashClient("203.0.113.7", "salt-b")).not.toBe(key);
     expect(hashClient("203.0.113.8", "salt-a")).not.toBe(key);
+  });
+});
+
+describe("previousIsCurrent", () => {
+  const nov = new Date("2026-11-11T12:00:00Z");
+
+  test("missing last year is never current", () => {
+    expect(previousIsCurrent(null, 2026, nov)).toBe(false);
+  });
+
+  test("during the year, a span ending before today's span end is refetched", () => {
+    expect(previousIsCurrent("2025-03-01", 2026, nov)).toBe(false);
+    expect(previousIsCurrent("2025-11-10", 2026, nov)).toBe(false);
+  });
+
+  test("during the year, a span ending today last year is kept", () => {
+    expect(previousIsCurrent("2025-11-11", 2026, nov)).toBe(true);
+  });
+
+  test("once the year is over, whatever is stored is kept for good", () => {
+    const after = new Date("2027-01-02T00:00:00Z");
+    expect(previousIsCurrent("2025-03-01", 2026, after)).toBe(true);
+    expect(previousIsCurrent("2025-12-31", 2026, after)).toBe(true);
   });
 });

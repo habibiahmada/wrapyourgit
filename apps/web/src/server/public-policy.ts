@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { comparisonSpanEnd, yearRange } from "./sync-policy";
 
 /*
  * Pure rules for public recaps: recaps of any GitHub user, fetched with the server's one public
@@ -30,6 +31,17 @@ export function underClientLimit(recentLookups: number): boolean {
 
 export function claimIsStale(since: Date, now: Date): boolean {
   return now.getTime() - since.getTime() > CLAIM_STALE_MS;
+}
+
+/**
+ * Whether last year's stored activity still serves the comparison. Its span runs to the same day
+ * last year as of its fetch, so while the edition year runs it goes stale and is fetched again;
+ * once the year is over it is kept for good. `through` is the stored span end (YYYY-MM-DD).
+ */
+export function previousIsCurrent(through: string | null, year: number, now: Date): boolean {
+  if (through === null) return false;
+  if (now > yearRange(year).to) return true;
+  return through >= comparisonSpanEnd(year, now).toISOString().slice(0, 10);
 }
 
 /** The client's own address: the first hop of x-forwarded-for, which the platform sets. */

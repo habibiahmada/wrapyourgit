@@ -35,7 +35,8 @@ const activity = (login: string): YearActivity => ({
   commitSample: { authoredAt: [], reposSampled: 0, complete: true },
 });
 
-const previousYear: PreviousYearActivity = {
+/** Last year as GitHub returns it: the span ends on the `spanTo` it was asked for. */
+const previousYear = (through: string): PreviousYearActivity => ({
   year: 2025,
   calendar: [{ date: "2025-03-01", count: 1 }],
   span: {
@@ -46,9 +47,9 @@ const previousYear: PreviousYearActivity = {
     reviews: 0,
     reposWithCommits: 1,
     restricted: 0,
-    through: "2025-11-11",
+    through,
   },
-};
+});
 
 let clock: number;
 let row: Row | null;
@@ -59,6 +60,7 @@ let othersClaim: boolean;
 let account: AccountLookup;
 let calls: { year: number; previous: number };
 let failYear: boolean;
+let failPrevious: boolean;
 let onSleep: (() => void) | null;
 
 const store: Store = {
@@ -102,9 +104,10 @@ const deps: Deps = {
     if (failYear) throw new Error("boom");
     return activity(login);
   },
-  fetchPrevious: async () => {
+  fetchPrevious: async (_login, _year, spanTo) => {
     calls.previous++;
-    return previousYear;
+    if (failPrevious) throw new Error("boom");
+    return previousYear(spanTo.toISOString().slice(0, 10));
   },
   store,
   now: () => new Date(clock),
@@ -132,6 +135,7 @@ beforeEach(() => {
   account = { kind: "user", id: ID, login: "Octo", remaining: 5000, resetAt: "" };
   calls = { year: 0, previous: 0 };
   failYear = false;
+  failPrevious = false;
   onSleep = null;
   // Failures are logged on purpose; keep the test output clean.
   spyOn(console, "warn").mockImplementation(() => {});
@@ -168,7 +172,7 @@ describe("loadPublicRecapWith", () => {
     expect(result.login).toBe("Octo");
     expect(result.data.meta.scope).toBe("public");
     expect(result.data.meta.timezone).toBe("UTC");
-    expect(row?.previous).toEqual(previousYear);
+    expect(row?.previous).toEqual(previousYear("2025-11-11"));
     expect(row?.fetchingSince).toBeNull();
     expect(recorded).toEqual(["client-a"]);
     expect(calls).toEqual({ year: 1, previous: 1 });
@@ -182,11 +186,36 @@ describe("loadPublicRecapWith", () => {
     expect(recorded).toEqual([]);
   });
 
-  test("a stale recap is fetched again, without fetching last year again", async () => {
+  test("a stale recap is fetched again; last year is kept while its span is current", async () => {
+    clock = Date.parse("2026-11-11T00:30:00Z");
     await seed();
     clock += 13 * HOUR;
     expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
     expect(calls).toEqual({ year: 1, previous: 0 });
+  });
+
+  test("during the year, a lagging last year is fetched again up to today's span end", async () => {
+    await seed();
+    clock += 13 * HOUR;
+    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect(calls).toEqual({ year: 1, previous: 1 });
+    expect(row?.previous?.span.through).toBe("2025-11-12");
+  });
+
+  test("once the year is over, a lagging last year is never fetched again", async () => {
+    await seed();
+    clock = Date.parse("2027-01-05T00:00:00Z");
+    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect(calls).toEqual({ year: 1, previous: 0 });
+    expect(row?.previous?.span.through).toBe("2025-11-11");
+  });
+
+  test("a failed refetch of last year keeps the stored one", async () => {
+    await seed();
+    clock += 13 * HOUR;
+    failPrevious = true;
+    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect(row?.previous?.span.through).toBe("2025-11-11");
   });
 
   test("over the client limit: limited when nothing is stored, the old recap when it is", async () => {

@@ -20,6 +20,7 @@ import {
   firstForwardedAddress,
   hashClient,
   isFresh,
+  previousIsCurrent,
   underClientLimit,
 } from "./public-policy";
 import { comparisonSpanEnd, yearRange } from "./sync-policy";
@@ -137,16 +138,16 @@ async function fetchAndBuild(
   const now = deps.now();
   const { from, to } = yearRange(EDITION_YEAR);
   const activity = await deps.fetchYear(login, from, to);
-  // Fetched once per account and kept. A failed comparison never fails the fetch: the recap
-  // marks last year as unavailable, and the next fetch tries again.
-  const previous =
-    storedPrevious ??
-    (await deps
-      .fetchPrevious(login, EDITION_YEAR - 1, comparisonSpanEnd(EDITION_YEAR, now))
-      .catch((error) => {
-        console.warn(`public previous year fetch failed: ${errorSummary(error)}`);
-        return null;
-      }));
+  // Kept, and fetched again only while its span lags behind the year (previousIsCurrent). A failed
+  // comparison never fails the fetch: the stored one stays, or last year is marked unavailable.
+  const previous = previousIsCurrent(storedPrevious?.span.through ?? null, EDITION_YEAR, now)
+    ? storedPrevious
+    : await deps
+        .fetchPrevious(login, EDITION_YEAR - 1, comparisonSpanEnd(EDITION_YEAR, now))
+        .catch((error) => {
+          console.warn(`public previous year fetch failed: ${errorSummary(error)}`);
+          return storedPrevious;
+        });
   const recap = buildRecap(
     { ...activity, previous },
     { year: EDITION_YEAR, timezone: "UTC", now, scope: "public" },
