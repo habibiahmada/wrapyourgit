@@ -10,6 +10,7 @@ import {
 } from "@wyg/github";
 import { EDITION_YEAR, type RecapData, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
 import { and, eq, gt, isNull, lt, or, sql } from "drizzle-orm";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { db, hiddenAccounts, publicLookups, publicRecaps } from "./db";
 import { requireEnv } from "./env";
 import { errorSummary } from "./log";
@@ -236,6 +237,17 @@ export async function forgetPublicRecap(githubId: number): Promise<void> {
   await db.delete(publicRecaps).where(eq(publicRecaps.githubId, githubId));
 }
 
+/**
+ * Every client's lookup rows older than the window, for deletion. They count for nothing any
+ * more, and deleting them for all clients (not only the one looking up now) is what keeps the
+ * privacy page's promise: a hashed address is kept about an hour, even if it never returns.
+ */
+export function staleLookups(database: Pick<PgDatabase<PgQueryResultHKT>, "delete">, now: Date) {
+  return database
+    .delete(publicLookups)
+    .where(lt(publicLookups.at, new Date(now.getTime() - CLIENT_WINDOW_MS)));
+}
+
 /** The per-client key for the lookup limit: a salted hash of the address, never the address. */
 export function clientKey(headers: Headers): string {
   // On Vercel the platform sets x-forwarded-for itself, so its first address is the client's.
@@ -291,16 +303,10 @@ const dbStore: PublicStore = {
   },
 
   async recordLookup(client) {
-    // Rows past the window count for nothing; dropping them keeps the table to the last hour.
-    await db
-      .delete(publicLookups)
-      .where(
-        and(
-          eq(publicLookups.client, client),
-          lt(publicLookups.at, new Date(Date.now() - CLIENT_WINDOW_MS)),
-        ),
-      );
-    await db.insert(publicLookups).values({ client });
+    await db.transaction(async (tx) => {
+      await staleLookups(tx, new Date());
+      await tx.insert(publicLookups).values({ client });
+    });
   },
 
   async claim(githubId, login) {

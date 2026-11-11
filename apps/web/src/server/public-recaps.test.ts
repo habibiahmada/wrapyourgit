@@ -6,10 +6,11 @@ import {
   type YearActivity,
 } from "@wyg/github";
 import { SCHEMA_VERSION } from "@wyg/schema";
+import { drizzle } from "drizzle-orm/postgres-js";
 
 // public-recaps.ts is server-only; the guard throws outside a React server bundle.
 mock.module("server-only", () => ({}));
-const { loadPublicRecapWith } = await import("./public-recaps");
+const { loadPublicRecapWith, staleLookups } = await import("./public-recaps");
 type Deps = Parameters<typeof loadPublicRecapWith>[0];
 type Store = Deps["store"];
 type Row = NonNullable<Awaited<ReturnType<Store["read"]>>>;
@@ -429,5 +430,15 @@ describe("loadPublicRecapWith", () => {
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
     expect(clock - start).toBe(60_000);
     expect(calls.year).toBe(0);
+  });
+});
+
+describe("staleLookups", () => {
+  test("deletes every client's rows older than the window, not only the caller's", () => {
+    const now = new Date("2026-11-11T12:00:00Z");
+    const query = staleLookups(drizzle.mock(), now).toSQL();
+    // No client condition: a visitor who never comes back loses their rows too.
+    expect(query.sql).toBe('delete from "public_lookups" where "public_lookups"."at" < $1');
+    expect(query.params).toEqual([new Date(now.getTime() - HOUR).toISOString()]);
   });
 });

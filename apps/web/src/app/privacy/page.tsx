@@ -98,8 +98,8 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
         <li>
           <strong>A hashed address, for the lookup limit</strong>: each visitor can start 20 new
           lookups an hour. To count them we store a salted SHA-256 hash of the visitor's IP address
-          with the time, never the address itself. Rows older than an hour are removed the next time
-          that address looks a name up.
+          with the time, never the address itself. Each row is kept about an hour: rows older than
+          that are deleted, for every address, with the next lookup anyone makes.
         </li>
         <li>
           <strong>Your hide choice</strong>: if you hide your public recap, we keep your numeric
@@ -198,7 +198,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           Public recaps: until the owner hides theirs or deletes their data. A stored recap is read
           again from GitHub when it is more than 12 hours old.
         </li>
-        <li>Hashed addresses for the lookup limit: about an hour, as described above.</li>
+        <li>
+          Hashed addresses for the lookup limit: about an hour, deleted with the next lookup after
+          that.
+        </li>
         <li>
           Your hide choice: until you turn it off. It stays after you delete your data, so your
           public recap stays hidden.
