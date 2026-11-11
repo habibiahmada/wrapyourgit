@@ -44,8 +44,11 @@ export const githubApp = () => ({
   clientSecret: requireEnv("GITHUB_APP_CLIENT_SECRET"),
 });
 
-/** Creates or updates the user from their GitHub identity and stores their tokens encrypted. */
-export async function signInWithTokens(tokens: TokenSet): Promise<string> {
+/**
+ * Creates or updates the user from their GitHub identity and stores their tokens encrypted.
+ * Returns the user and their current login, where sign-in sends them next.
+ */
+export async function signInWithTokens(tokens: TokenSet): Promise<{ id: string; login: string }> {
   const viewer = await fetchViewer(tokens.accessToken);
   const user = await db.transaction(async (tx) => {
     // GitHub logins can be renamed and reused. Whoever signs in with a login now owns it; an
@@ -77,7 +80,7 @@ export async function signInWithTokens(tokens: TokenSet): Promise<string> {
   });
   if (!user) throw new Error("User upsert returned no row");
   await saveTokens(user.id, tokens);
-  return user.id;
+  return { id: user.id, login: viewer.login };
 }
 
 type Executor = Pick<typeof db, "insert">;
