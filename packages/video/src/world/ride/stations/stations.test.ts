@@ -285,6 +285,15 @@ test("city's billboard is only there for the overview", () => {
   expect(build("city", sampleRecap, 1, 10, 1).length).toBeGreaterThan(0);
 });
 
+test("city's billboard is lowered in as the overview settles, not put there all at once", () => {
+  const foot = (overview: number) =>
+    Math.min(...boxes(build("city", sampleRecap, 1, 10, overview), "board").map((b) => b.at[2]));
+  // While the camera is still near the train there is nothing: a billboard that size would fill the frame.
+  expect(build("city", sampleRecap, 1, 10, 0.3)).toEqual([]);
+  expect(foot(0.6)).toBeGreaterThan(foot(1) + 10);
+  expect(foot(0.95)).toBeGreaterThan(foot(1));
+});
+
 test("closing prints the date line, the year and every line of the model", () => {
   const model = closingModel(sampleRecap);
   const text = printed(build("closing", sampleRecap));
