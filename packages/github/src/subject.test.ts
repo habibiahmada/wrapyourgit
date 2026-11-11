@@ -14,7 +14,9 @@ describe("withSubject", () => {
 
   test("works for a query whose only variable is optional", () => {
     const out = withSubject(OWNED_REPOS_QUERY, octo);
-    expect(out).toContain("query OwnedRepos($after: String, $login: String!)");
+    expect(out).toContain(
+      "query OwnedRepos($after: String, $direction: OrderDirection!, $login: String!)",
+    );
     expect(out).toContain("viewer: user(login: $login) {");
   });
 
