@@ -73,10 +73,14 @@ const baseInput = (): ActivityInput => ({
   stars: [
     {
       nameWithOwner: "octo/app",
-      starredAt: ["2026-01-04T00:00:00Z", "2026-01-01T00:00:00Z", "2025-11-01T00:00:00Z"],
+      // Two stars inside the period on one day, four before it.
+      days: [
+        { date: "2026-01-04", count: 2 },
+        { date: "2025-11-01", count: 4 },
+      ],
       complete: true,
     },
-    { nameWithOwner: "octo/new", starredAt: ["2026-01-05T00:00:00Z"], complete: true },
+    { nameWithOwner: "octo/new", days: [{ date: "2026-01-05", count: 1 }], complete: true },
   ],
   forks: [{ nameWithOwner: "octo/app", createdAt: ["2026-01-02T00:00:00Z"], complete: true }],
   commitSample: {

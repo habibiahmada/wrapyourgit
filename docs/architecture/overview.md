@@ -28,7 +28,7 @@
 
 ## Key flows
 
-**Sync:** user signs in → server fetches with the user's token (contributions, repos, PR/issue details, stargazers for owned repos) → analytics builds `RecapData` → validated with `recapDataSchema.parse` → stored as JSON in `recaps` (versioned by `schemaVersion`). Raw responses may be cached briefly to allow recomputation; source code is never fetched.
+**Sync:** user signs in → server fetches with the user's token (contributions, repos, PR/issue details, star history and forks of owned repos) → analytics builds `RecapData` → validated with `recapDataSchema.parse` → stored as JSON in `recaps` (versioned by `schemaVersion`). Raw responses may be cached briefly to allow recomputation; source code is never fetched.
 
 **Story:** the owner's own `/<login>` plays the story world (`WorldStory` in `@wyg/video`, `recap/world-player.tsx`): one stop after another through the year as a city, ending with the congratulations letter (`congratsLetter` in `@wyg/video/letter`, every sentence from a real number) and "Keep your year". Before the first visit it asks once whether to show private repository names (`users.show_private_names`, changeable in Settings; [ADR-0017](decisions/0017-private-names-follow-the-owner.md)).
 

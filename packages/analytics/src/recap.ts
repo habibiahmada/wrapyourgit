@@ -35,8 +35,10 @@ export interface ActivityInput {
   pullRequests: { merged: boolean }[];
   issues: { closed: boolean }[];
   ownedRepos: RepoInput[];
-  /** Null when the token was not allowed to list stargazers. */
-  stars: { nameWithOwner: string; starredAt: string[]; complete: boolean }[] | null;
+  /** Stars per day (`YYYY-MM-DD`). Null when some repo's star history could not be read. */
+  stars:
+    | { nameWithOwner: string; days: { date: string; count: number }[]; complete: boolean }[]
+    | null;
   forks: { nameWithOwner: string; createdAt: string[]; complete: boolean }[];
   commitSample: { authoredAt: string[]; reposSampled: number; complete: boolean };
   /** Last year for comparison (fetchPreviousYear); null or missing when it could not be fetched. */
@@ -158,13 +160,16 @@ export function buildRecap(
       totalStars: sum(ownedRepos.map((repo) => repo.stars)),
       starsGained: input.stars
         ? countGained(
-            input.stars.map((s) => ({ dates: s.starredAt, complete: s.complete })),
+            input.stars.map((s) => ({ events: s.days, complete: s.complete })),
             inPeriod,
           )
-        : { status: "unavailable", reason: "GitHub did not allow listing stargazers" },
+        : { status: "unavailable", reason: "GitHub did not allow reading star history" },
       totalForks: sum(ownedRepos.map((repo) => repo.forks)),
       forksGained: countGained(
-        input.forks.map((f) => ({ dates: f.createdAt, complete: f.complete })),
+        input.forks.map((f) => ({
+          events: f.createdAt.map((date) => ({ date, count: 1 })),
+          complete: f.complete,
+        })),
         inPeriod,
       ),
       mostStarred: maxBy(ownedRepos, (repo) => repo.stars),
@@ -257,16 +262,21 @@ function weekdayTotals(calendar: readonly { date: string; count: number }[]): nu
 }
 
 /**
- * Stars/forks gained: events dated inside the period. A walk stopped by the page cap only saw the
- * newest events, so the sum is a lower bound and marked estimated.
+ * Stars/forks gained: events dated inside the period, each counting `count` times (stars come as
+ * daily totals, forks one by one). A walk stopped early only saw the newest events, so the sum is
+ * a lower bound and marked estimated.
  */
 function countGained(
-  walks: { dates: string[]; complete: boolean }[],
+  walks: { events: { date: string; count: number }[]; complete: boolean }[],
   inPeriod: (iso: string) => boolean,
 ): Metric<number> {
   return {
     status: "ok",
-    value: sum(walks.map((walk) => walk.dates.filter(inPeriod).length)),
+    value: sum(
+      walks.flatMap((walk) =>
+        walk.events.filter((event) => inPeriod(event.date)).map((event) => event.count),
+      ),
+    ),
     estimated: walks.some((walk) => !walk.complete),
   };
 }

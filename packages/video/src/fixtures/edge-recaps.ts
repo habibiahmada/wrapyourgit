@@ -23,7 +23,7 @@ export const emptyRecap: RecapData = {
   repositories: { ownedTotal: 0, contributedTo: 0, createdThisYear: 0, top: [] },
   community: {
     totalStars: 0,
-    starsGained: { status: "unavailable", reason: "GitHub did not allow listing stargazers" },
+    starsGained: { status: "unavailable", reason: "GitHub did not allow reading star history" },
     totalForks: 0,
     forksGained: { status: "ok", value: 0, estimated: false },
     mostStarred: null,

@@ -17,23 +17,24 @@
 
 ## ADRs
 
-| #                                                                        | Decision                                                                                 | Status                               |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------ |
-| [0001](architecture/decisions/0001-bun-workspaces-monorepo.md)           | Bun workspaces monorepo, packages ship TS source                                         | Accepted                             |
-| [0002](architecture/decisions/0002-one-composition-for-web-and-video.md) | One Remotion composition powers the web story and MP4 export                             | Accepted                             |
-| [0003](architecture/decisions/0003-layout-families.md)                   | Four aspect ratios, three layout families                                                | Accepted                             |
-| [0004](architecture/decisions/0004-render-on-remotion-lambda.md)         | Render MP4 on Remotion Lambda (AWS)                                                      | Superseded by 0016                   |
-| [0005](architecture/decisions/0005-environments-and-hosting.md)          | Vercel + Neon for dev/staging, AWS for production                                        | Accepted, cost review pending        |
-| [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions                                 | Accepted                             |
-| [0007](architecture/decisions/0007-soundtrack-sourcing.md)               | Soundtrack: CC0/royalty-free tracks first, generated later                               | Accepted (synth track for MVP)       |
-| [0009](architecture/decisions/0009-sound-design.md)                      | Effects in the composition, music on Web Audio outside the Player                        | Accepted                             |
-| [0010](architecture/decisions/0010-live-3d-cast.md)                      | The story cast is live 3D chibi characters, rendered every frame                         | Partly superseded (0012, 0013)       |
-| [0011](architecture/decisions/0011-slides-from-the-composition.md)       | Exported slides are frames of the story composition                                      | Superseded by 0016                   |
-| [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art                           | Accepted                             |
-| [0013](architecture/decisions/0013-baked-animation-no-webgl.md)          | Cell moves through baked loops, no WebGL in the browser                                  | Accepted                             |
-| [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets                         | Accepted                             |
-| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later                               | Accepted, amended by 0018            |
-| [0016](architecture/decisions/0016-exports-in-the-browser.md)            | The story's files are rendered in the viewer's browser                                   | Accepted, decision 3 amended by 0017 |
-| [0017](architecture/decisions/0017-private-names-follow-the-owner.md)    | Private repo names follow the owner in their own story; public surfaces always hide them | Accepted, rule 1 amended by 0019     |
-| [0018](architecture/decisions/0018-production-only-deploys.md)           | Vercel deploys production only; no preview deployments or database branches              | Accepted                             |
-| [0019](architecture/decisions/0019-every-username-has-a-recap.md)        | Every GitHub username has a public recap at /<username>; owners can hide theirs          | Accepted                             |
+| #                                                                        | Decision                                                                                 | Status                                 |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | -------------------------------------- |
+| [0001](architecture/decisions/0001-bun-workspaces-monorepo.md)           | Bun workspaces monorepo, packages ship TS source                                         | Accepted                               |
+| [0002](architecture/decisions/0002-one-composition-for-web-and-video.md) | One Remotion composition powers the web story and MP4 export                             | Accepted                               |
+| [0003](architecture/decisions/0003-layout-families.md)                   | Four aspect ratios, three layout families                                                | Accepted                               |
+| [0004](architecture/decisions/0004-render-on-remotion-lambda.md)         | Render MP4 on Remotion Lambda (AWS)                                                      | Superseded by 0016                     |
+| [0005](architecture/decisions/0005-environments-and-hosting.md)          | Vercel + Neon for dev/staging, AWS for production                                        | Accepted, cost review pending          |
+| [0006](architecture/decisions/0006-github-app-auth.md)                   | GitHub App user authorization, no repository permissions                                 | Accepted, stars gained amended by 0020 |
+| [0007](architecture/decisions/0007-soundtrack-sourcing.md)               | Soundtrack: CC0/royalty-free tracks first, generated later                               | Accepted (synth track for MVP)         |
+| [0009](architecture/decisions/0009-sound-design.md)                      | Effects in the composition, music on Web Audio outside the Player                        | Accepted                               |
+| [0010](architecture/decisions/0010-live-3d-cast.md)                      | The story cast is live 3D chibi characters, rendered every frame                         | Partly superseded (0012, 0013)         |
+| [0011](architecture/decisions/0011-slides-from-the-composition.md)       | Exported slides are frames of the story composition                                      | Superseded by 0016                     |
+| [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art                           | Accepted                               |
+| [0013](architecture/decisions/0013-baked-animation-no-webgl.md)          | Cell moves through baked loops, no WebGL in the browser                                  | Accepted                               |
+| [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets                         | Accepted                               |
+| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later                               | Accepted, amended by 0018              |
+| [0016](architecture/decisions/0016-exports-in-the-browser.md)            | The story's files are rendered in the viewer's browser                                   | Accepted, decision 3 amended by 0017   |
+| [0017](architecture/decisions/0017-private-names-follow-the-owner.md)    | Private repo names follow the owner in their own story; public surfaces always hide them | Accepted, rule 1 amended by 0019       |
+| [0018](architecture/decisions/0018-production-only-deploys.md)           | Vercel deploys production only; no preview deployments or database branches              | Accepted                               |
+| [0019](architecture/decisions/0019-every-username-has-a-recap.md)        | Every GitHub username has a public recap at /<username>; owners can hide theirs          | Accepted                               |
+| [0020](architecture/decisions/0020-stars-from-star-history.md)           | Stars gained from GitHub star history; star and fork walks run under a time budget       | Accepted                               |

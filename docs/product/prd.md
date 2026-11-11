@@ -89,7 +89,7 @@ Sign-in success rate · sync success rate · story completion rate · MP4 export
 
 ## 9. Changes from v1.1
 
-- **Stars/forks gained** are computable from `stargazers.starredAt` and fork `createdAt`, so no snapshots are needed (see metrics).
+- **Stars/forks gained** are computable from GitHub's star history and fork `createdAt`, so no snapshots are needed (see metrics).
 - **Hour-of-day / Night Owl** need per-commit timestamps and only cover what we can fetch → labelled _estimated_.
 - **Languages** weighted by user's commits × repo language bytes, not raw repo bytes.
 - **Live story uses Remotion Player**, not a separate Framer Motion implementation (ADR-0002).

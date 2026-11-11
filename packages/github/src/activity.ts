@@ -1,4 +1,11 @@
 import { GitHubApiError, githubGraphql, paginate } from "./client";
+import {
+  type ForkWalk,
+  fetchForkWalks,
+  fetchStarHistories,
+  type StarDays,
+  splitName,
+} from "./community";
 import { type Subject, subjectVariables, withSubject } from "./subject";
 
 /**
@@ -32,13 +39,13 @@ export interface YearActivity {
   issues: { closed: boolean }[];
   /** Non-fork repos owned by the user, as of fetch time. */
   ownedRepos: RepoFacts[];
-  /** Newest-first timestamps, fetched until they fall before the period or the page cap hits. */
   /**
-   * Null when the token may not list stargazers: a GitHub App user token needs Metadata access,
-   * which only exists on repos where the app is installed (ADR-0006).
+   * Stars per day from GitHub's star history. Null when the token may not read some repo's
+   * history, so the gain is unavailable rather than a partial sum.
    */
-  stars: { nameWithOwner: string; starredAt: string[]; complete: boolean }[] | null;
-  forks: { nameWithOwner: string; createdAt: string[]; complete: boolean }[];
+  stars: StarDays[] | null;
+  /** Newest-first fork dates, fetched until they fall before the period, the page cap or the budget. */
+  forks: ForkWalk[];
   /**
    * Repositories the viewer starred, newest first, down to the start of the period. `complete` is
    * false when the page cap stopped the walk first. Null when GitHub refused the listing.
@@ -65,8 +72,11 @@ export interface LanguageBytes {
 }
 
 export interface FetchOptions {
-  /** Caps per repo for stargazer/fork pagination (100 per page). Beyond it the gain is a lower bound. */
+  /** Page cap per repo for fork and starred-repo pagination (100 per page). Beyond it the count is a lower bound. */
   maxStarPages?: number;
+  /** Time for all star-history and all fork walks (see fetchStarHistories, fetchForkWalks). */
+  starBudgetMs?: number;
+  forkBudgetMs?: number;
   /** How many top repos to sample commit timestamps from, and page cap per repo. */
   commitSampleRepos?: number;
   maxCommitPages?: number;
@@ -170,7 +180,8 @@ interface RawCommitRepo {
 /**
  * Per-repo commit contributions come as one node per (repo, day), and a connection is capped at
  * 100 nodes. Querying each quarter separately keeps every connection under 92 nodes, so no
- * per-repo pagination is needed. The quarters are aliased into one request.
+ * per-repo pagination is needed. Each quarter is its own request: aliased into one, a heavy
+ * account's query often passed GitHub's ~10 s limit and failed with 502 or 504.
  */
 export function commitReposQuery(ranges: { from: string; to: string }[]): string {
   const collections = ranges.map(
@@ -207,15 +218,15 @@ export function quarterRanges(from: Date, to: Date): { from: string; to: string 
 }
 
 async function fetchCommitRepos(token: string, from: Date, to: Date, subject: Subject) {
-  const data = await githubGraphql<{
-    viewer: Record<string, { commitContributionsByRepository: RawCommitRepo[] }>;
-  }>(
-    token,
-    withSubject(commitReposQuery(quarterRanges(from, to)), subject),
-    subjectVariables(subject),
+  const quarters = await Promise.all(
+    quarterRanges(from, to).map((range) =>
+      githubGraphql<{
+        viewer: Record<string, { commitContributionsByRepository: RawCommitRepo[] }>;
+      }>(token, withSubject(commitReposQuery([range]), subject), subjectVariables(subject)),
+    ),
   );
   const byRepo = new Map<string, YearActivity["commitRepos"][number]>();
-  for (const collection of Object.values(data.viewer)) {
+  for (const collection of quarters.flatMap((data) => Object.values(data.viewer))) {
     for (const entry of collection.commitContributionsByRepository) {
       if (entry.contributions.pageInfo.hasNextPage) {
         // Cannot happen with quarter-sized ranges; fail loudly rather than undercount. The message
@@ -294,28 +305,6 @@ const STARRED_QUERY = /* GraphQL */ `
   }
 `;
 
-const STARGAZERS_QUERY = /* GraphQL */ `
-  query Stargazers($owner: String!, $name: String!, $after: String) {
-    repository(owner: $owner, name: $name) {
-      stargazers(first: 100, after: $after, orderBy: { field: STARRED_AT, direction: DESC }) {
-        pageInfo { hasNextPage endCursor }
-        edges { starredAt }
-      }
-    }
-  }
-`;
-
-const FORKS_QUERY = /* GraphQL */ `
-  query Forks($owner: String!, $name: String!, $after: String) {
-    repository(owner: $owner, name: $name) {
-      forks(first: 100, after: $after, orderBy: { field: CREATED_AT, direction: DESC }) {
-        pageInfo { hasNextPage endCursor }
-        nodes { createdAt }
-      }
-    }
-  }
-`;
-
 const COMMIT_HISTORY_QUERY = /* GraphQL */ `
   query CommitHistory(
     $owner: String!
@@ -350,35 +339,37 @@ function isForbidden(error: unknown): boolean {
   );
 }
 
-function splitName(nameWithOwner: string): { owner: string; name: string } {
-  const [owner = "", name = ""] = nameWithOwner.split("/");
-  return { owner, name };
-}
-
 /**
- * Fetches one user's activity in [from, to]. Requests run sequentially: a full sync is a few
- * dozen requests for typical accounts, and sequential calls keep secondary rate limits quiet.
+ * Fetches one user's activity in [from, to]. The independent parts (overview, commit repos and
+ * their sample, PRs, issues, owned repos and their star and fork walks, starred repos) run side by
+ * side; inside each part, pages follow one another. For a heavy account each part takes tens of
+ * seconds, so in sequence they summed past the public route's 120 s limit (sindresorhus: 95 s
+ * with only the walks parallel). At most about a dozen requests are in flight, well inside
+ * GitHub's secondary rate limits.
  */
 export async function fetchYearActivity(
   token: string,
   from: Date,
   to: Date,
-  { maxStarPages = 10, commitSampleRepos = 5, maxCommitPages = 5 }: FetchOptions = {},
+  {
+    maxStarPages = 10,
+    commitSampleRepos = 5,
+    maxCommitPages = 5,
+    starBudgetMs = 15_000,
+    forkBudgetMs = 20_000,
+  }: FetchOptions = {},
   subject: Subject = { kind: "viewer" },
 ): Promise<YearActivity> {
   const range = { from: from.toISOString(), to: to.toISOString() };
   const fromIso = range.from;
 
-  const overview = await githubGraphql<RawOverview>(token, withSubject(OVERVIEW_QUERY, subject), {
+  const overviewP = githubGraphql<RawOverview>(token, withSubject(OVERVIEW_QUERY, subject), {
     ...range,
     ...subjectVariables(subject),
   });
-  const { viewer } = overview;
-  const collection = viewer.contributionsCollection;
+  const commitReposP = fetchCommitRepos(token, from, to, subject);
 
-  const commitRepos = await fetchCommitRepos(token, from, to, subject);
-
-  const pullRequests = await paginate(async (after) => {
+  const pullRequestsP = paginate(async (after) => {
     const data = await githubGraphql<{
       viewer: {
         contributionsCollection: {
@@ -399,7 +390,7 @@ export async function fetchYearActivity(
     };
   });
 
-  const issues = await paginate(async (after) => {
+  const issuesP = paginate(async (after) => {
     const data = await githubGraphql<{
       viewer: {
         contributionsCollection: {
@@ -420,71 +411,37 @@ export async function fetchYearActivity(
     };
   });
 
-  const ownedRepos = await paginate(async (after) => {
-    const data = await githubGraphql<{ viewer: { repositories: Page<{ nodes: RawRepo[] }> } }>(
-      token,
-      withSubject(OWNED_REPOS_QUERY, subject),
-      { after, ...subjectVariables(subject) },
-    );
-    return {
-      items: data.viewer.repositories.nodes.map(toRepoFacts),
-      pageInfo: data.viewer.repositories.pageInfo,
-    };
-  });
-
-  let stars: YearActivity["stars"] = [];
-  for (const repo of ownedRepos.items.filter((r) => r.stars > 0)) {
-    const result = await paginate(
-      async (after) => {
-        const data = await githubGraphql<{
-          repository: { stargazers: Page<{ edges: { starredAt: string }[] }> };
-        }>(token, STARGAZERS_QUERY, { ...splitName(repo.nameWithOwner), after });
-        const connection = data.repository.stargazers;
-        return {
-          items: connection.edges.map((edge) => edge.starredAt),
-          pageInfo: connection.pageInfo,
-        };
-      },
-      { maxPages: maxStarPages, shouldContinue: (page) => (page.at(-1) ?? "") >= fromIso },
-    ).catch((error: unknown) => {
-      if (isForbidden(error)) return null;
-      throw error;
+  const ownedP = (async () => {
+    const ownedRepos = await paginate(async (after) => {
+      const data = await githubGraphql<{ viewer: { repositories: Page<{ nodes: RawRepo[] }> } }>(
+        token,
+        withSubject(OWNED_REPOS_QUERY, subject),
+        { after, ...subjectVariables(subject) },
+      );
+      return {
+        items: data.viewer.repositories.nodes.map(toRepoFacts),
+        pageInfo: data.viewer.repositories.pageInfo,
+      };
     });
-    if (!result) {
-      stars = null;
-      break;
-    }
-    stars.push({
-      nameWithOwner: repo.nameWithOwner,
-      starredAt: result.items,
-      complete: result.complete,
-    });
-  }
-
-  const forks: YearActivity["forks"] = [];
-  for (const repo of ownedRepos.items.filter((r) => r.forks > 0)) {
-    const result = await paginate(
-      async (after) => {
-        const data = await githubGraphql<{
-          repository: { forks: Page<{ nodes: { createdAt: string }[] }> };
-        }>(token, FORKS_QUERY, { ...splitName(repo.nameWithOwner), after });
-        const connection = data.repository.forks;
-        return {
-          items: connection.nodes.map((node) => node.createdAt),
-          pageInfo: connection.pageInfo,
-        };
-      },
-      { maxPages: maxStarPages, shouldContinue: (page) => (page.at(-1) ?? "") >= fromIso },
-    );
-    forks.push({
-      nameWithOwner: repo.nameWithOwner,
-      createdAt: result.items,
-      complete: result.complete,
-    });
-  }
+    // Each walk has its own time budget. Most-starred and most-forked repos go first: that is
+    // where a budget cut costs least.
+    const byDesc = (key: "stars" | "forks") =>
+      ownedRepos.items
+        .filter((repo) => repo[key] > 0)
+        .sort((a, b) => b[key] - a[key])
+        .map((repo) => repo.nameWithOwner);
+    const [stars, forks] = await Promise.all([
+      fetchStarHistories(token, byDesc("stars"), fromIso, { budgetMs: starBudgetMs }),
+      fetchForkWalks(token, byDesc("forks"), fromIso, {
+        maxPages: maxStarPages,
+        budgetMs: forkBudgetMs,
+      }),
+    ]);
+    return { ownedRepos, stars, forks };
+  })();
 
   // Newest first, so the walk stops as soon as a page reaches back before the period.
-  const starred: YearActivity["starred"] = await paginate(
+  const starredP: Promise<YearActivity["starred"]> = paginate(
     async (after) => {
       const data = await githubGraphql<{
         viewer: {
@@ -512,39 +469,63 @@ export async function fetchYearActivity(
     throw error;
   });
 
-  const sampledRepos = [...commitRepos]
-    .sort((a, b) => b.commits - a.commits)
-    .slice(0, commitSampleRepos);
-  const authoredAt: string[] = [];
-  let sampleComplete = true;
-  for (const { repo } of sampledRepos) {
-    const result = await paginate(
-      async (after) => {
-        const data = await githubGraphql<{
-          repository: {
-            defaultBranchRef: {
-              target: { history?: Page<{ nodes: { authoredDate: string }[] }> };
+  // The sample needs the user's id (overview) and their busiest repos (commit repos).
+  const sampleP = (async () => {
+    const [{ viewer }, commitRepos] = await Promise.all([overviewP, commitReposP]);
+    const sampledRepos = [...commitRepos]
+      .sort((a, b) => b.commits - a.commits)
+      .slice(0, commitSampleRepos);
+    const authoredAt: string[] = [];
+    let sampleComplete = true;
+    for (const { repo } of sampledRepos) {
+      const result = await paginate(
+        async (after) => {
+          const data = await githubGraphql<{
+            repository: {
+              defaultBranchRef: {
+                target: { history?: Page<{ nodes: { authoredDate: string }[] }> };
+              } | null;
             } | null;
-          } | null;
-        }>(token, COMMIT_HISTORY_QUERY, {
-          ...splitName(repo.nameWithOwner),
-          author: viewer.id,
-          since: range.from,
-          until: range.to,
-          after,
-        });
-        const history = data.repository?.defaultBranchRef?.target.history;
-        if (!history) return { items: [], pageInfo: { hasNextPage: false, endCursor: null } };
-        return {
-          items: history.nodes.map((node) => node.authoredDate),
-          pageInfo: history.pageInfo,
-        };
-      },
-      { maxPages: maxCommitPages },
-    );
-    authoredAt.push(...result.items);
-    sampleComplete &&= result.complete;
-  }
+          }>(token, COMMIT_HISTORY_QUERY, {
+            ...splitName(repo.nameWithOwner),
+            author: viewer.id,
+            since: range.from,
+            until: range.to,
+            after,
+          });
+          const history = data.repository?.defaultBranchRef?.target.history;
+          if (!history) return { items: [], pageInfo: { hasNextPage: false, endCursor: null } };
+          return {
+            items: history.nodes.map((node) => node.authoredDate),
+            pageInfo: history.pageInfo,
+          };
+        },
+        { maxPages: maxCommitPages },
+      );
+      authoredAt.push(...result.items);
+      sampleComplete &&= result.complete;
+    }
+    return { authoredAt, sampleComplete, reposSampled: sampledRepos.length };
+  })();
+
+  const [
+    { viewer },
+    commitRepos,
+    pullRequests,
+    issues,
+    { ownedRepos, stars, forks },
+    starred,
+    { authoredAt, sampleComplete, reposSampled },
+  ] = await Promise.all([
+    overviewP,
+    commitReposP,
+    pullRequestsP,
+    issuesP,
+    ownedP,
+    starredP,
+    sampleP,
+  ]);
+  const collection = viewer.contributionsCollection;
 
   return {
     viewer: { id: viewer.id, login: viewer.login, name: viewer.name, avatarUrl: viewer.avatarUrl },
@@ -573,7 +554,7 @@ export async function fetchYearActivity(
     stars,
     forks,
     starred,
-    commitSample: { authoredAt, reposSampled: sampledRepos.length, complete: sampleComplete },
+    commitSample: { authoredAt, reposSampled, complete: sampleComplete },
   };
 }
 
