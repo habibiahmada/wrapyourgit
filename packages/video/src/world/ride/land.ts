@@ -128,13 +128,15 @@ export function land(
     const texts: FaceText[] = (["front", "back"] as const).flatMap((on): FaceText[] =>
       gate.line
         ? [
-            { on, rect: [0.08, 0.5, 0.92, 0.94], text: gate.name, fill: "#ffffff" },
-            { on, rect: [0.08, 0.08, 0.92, 0.44], text: gate.line, fill: "#7ee08f", weight: 700 },
+            { on, rect: [0.06, 0.54, 0.94, 0.94], text: gate.name, fill: "#ffffff" },
+            // As tall as the month: the total is what the sign is for.
+            { on, rect: [0.04, 0.06, 0.96, 0.5], text: gate.line, fill: "#7ee08f" },
           ]
         : [{ on, rect: [0.08, 0.2, 0.92, 0.8], text: gate.name, fill: "#ffffff" }],
     );
     objects.push(
-      railBox(s, 0, 3.9, [0.14, 2.6, 1.25], TONE.ink, { lit: true, tag: "gate-sign", texts }),
+      // Large enough to read from several squares away, so it is in view for longer.
+      railBox(s, 0, 3.9, [0.14, 3.4, 1.6], TONE.ink, { lit: true, tag: "gate-sign", texts }),
     );
   }
 

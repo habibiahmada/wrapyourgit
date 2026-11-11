@@ -181,7 +181,7 @@ At a stop's rest frame, in every format:
 
 ## Timeline, player, sound, exports
 
-- `buildWorld` keeps `stops` and a timeline with `stopFrames`, `moveFrames`, `inPlace` and `durationInFrames`, which is all the player, the controller and `slideFrames` read. Stations are evenly spaced, so moves are about the same length: between 1.6 and 3.2 seconds, the longer ones where a middle shot plays. Holds stay 3 seconds in video mode.
+- `buildWorld` keeps `stops` and a timeline with `stopFrames`, `moveFrames`, `inPlace` and `durationInFrames`, which is all the player, the controller and `slideFrames` read. Stations are evenly spaced, so moves are about the same length: between 1.6 and 4.2 seconds, the longer ones where a middle shot plays. The train pulls away, cruises and pulls in, so its top speed is a third over its average and a gate's sign can be read on the way past. Holds stay 3 seconds in video mode.
 - **Everything builds on the way in.** A hero's build (blocks dropping, crates stacking, numbers counting up) plays during the last part of the move into its station and is finished at the stop's frame. The rest frame is therefore complete and exact in the web story, in the MP4 and in the slides. The spike built its heroes after stopping; that is not the rule.
 - **A station is alive at rest.** The timeline gains a rest loop per stop: a short run of frames after the stop's frame (two seconds) in which only idle motion plays: smoke, Cell blinking and waving, small sway on the hero. Every idle cycle divides the loop's length, so the loop's last frame leads back into its first without a jump (the rule `three/pose.ts` already follows). In interactive mode the player plays this loop while it waits for a tap; in video mode the 3 second hold plays the same motion.
 - The player changes for this: it needs a clock while resting, and a tap must start the move without a visible jump from wherever the loop is. How (finish the loop quickly, or start the move from the loop's current phase) is the builder's choice. Under `prefers-reduced-motion` there is no rest loop and stops crossfade as today.
@@ -211,7 +211,7 @@ Each phase is its own issue, branch and pull request.
 ## Calls made by the author, for the maintainer to check
 
 - The story stays at night (dark), matching the landing.
-- Moves get longer (1.6 to 3.2 s, from 1.1 to 2 s), so a full video grows by roughly 15 to 20 seconds.
+- Moves get longer (1.6 to 4.2 s, from 1.1 to 2 s), so a full video grows by roughly 15 to 20 seconds.
 - One travel sound (rails) replaces the per-stop travel sounds.
 - The letter stays a paper sheet over the scene; it is the one place where text covers the picture, because a letter cannot be read printed on a block.
 - The story's Cell is drawn live from boxes, so it will differ slightly from the baked Cell on the pages.

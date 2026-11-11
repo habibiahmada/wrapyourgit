@@ -9,12 +9,12 @@ export const HOLD_SECONDS = 3;
  */
 export const REST_SECONDS = 2;
 export const MOVE_MIN_SECONDS = 1.6;
-export const MOVE_MAX_SECONDS = 3.2;
+export const MOVE_MAX_SECONDS = 4.2;
 /** A hero builds over the last part of the move in, so it is finished on its stop's frame. */
 export const BUILD_SECONDS = 1.2;
 
 /** Past this distance along the rail a move takes the longest time. */
-const MOVE_SATURATION = 16;
+const MOVE_SATURATION = 24;
 
 export type RideTimeline = Timeline & {
   /** Frames in one rest loop. */
@@ -58,6 +58,22 @@ export function buildRideTimeline(
 }
 
 /** Where the engine's nose is at a frame: at rest through a hold, eased between stops in a move. */
+/** The share of a move spent pulling away, and again pulling in. */
+const RAMP = 0.25;
+
+/**
+ * How far along a move the train is at `t` of its time: it pulls away, holds one speed, and pulls
+ * in. Its top speed is a third over its average, so a month gate's sign can be read on the way
+ * past; a plain ease in and out would cross the middle at three times the average.
+ */
+function cruise(t: number): number {
+  const u = Math.max(0, Math.min(1, t));
+  const top = 1 / (1 - RAMP);
+  if (u < RAMP) return (top * u * u) / (2 * RAMP);
+  if (u > 1 - RAMP) return 1 - (top * (1 - u) * (1 - u)) / (2 * RAMP);
+  return top * (u - RAMP / 2);
+}
+
 export function trainAt(frame: number, stops: readonly RideStop[], timeline: RideTimeline): number {
   for (let i = stops.length - 1; i >= 0; i--) {
     const arrive = timeline.stopFrames[i] ?? 0;
@@ -67,7 +83,7 @@ export function trainAt(frame: number, stops: readonly RideStop[], timeline: Rid
     const move = timeline.moveFrames[i] ?? 0;
     const prev = stops[i - 1];
     if (prev && frame > arrive - move) {
-      return prev.s + (stop.s - prev.s) * easeInOutCubic((frame - (arrive - move)) / move);
+      return prev.s + (stop.s - prev.s) * cruise((frame - (arrive - move)) / move);
     }
   }
   return stops[0]?.s ?? 0;

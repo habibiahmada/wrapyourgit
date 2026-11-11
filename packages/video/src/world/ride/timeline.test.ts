@@ -15,12 +15,14 @@ test("video mode holds three seconds, interactive holds the rest loop", () => {
   expect(video.restFrames).toBe(60);
 });
 
-test("moves take between 1.6 and 3.2 seconds", () => {
+test("moves take between 1.6 and 4.2 seconds", () => {
   expect(video.moveFrames[0]).toBe(0);
   for (const move of video.moveFrames.slice(1)) {
     expect(move).toBeGreaterThanOrEqual(48);
-    expect(move).toBeLessThanOrEqual(96);
+    expect(move).toBeLessThanOrEqual(126);
   }
+  // The sample's five stops stand far apart: its longest move takes the longest time.
+  expect(Math.max(...video.moveFrames)).toBe(126);
 });
 
 test("each stop comes one hold and one move after the last", () => {
@@ -90,4 +92,19 @@ test("the idle clock starts a fresh loop at every stop and never jumps on the wa
       });
     }
   }
+});
+
+test("the train cruises: its top speed on a move is little more than its average", () => {
+  // A month gate's sign has to be read as the train passes under it. Eased like a pendulum, the
+  // train would cross the middle of a move at three times its average speed.
+  video.stopFrames.slice(1).forEach((arrive, k) => {
+    const move = video.moveFrames[k + 1] ?? 0;
+    if (move === 0) return;
+    const from = arrive - move;
+    const distance = trainAt(arrive, stops, video) - trainAt(from, stops, video);
+    let top = 0;
+    for (let f = from; f < arrive; f++)
+      top = Math.max(top, trainAt(f + 1, stops, video) - trainAt(f, stops, video));
+    expect(top / (distance / move)).toBeLessThan(1.4);
+  });
 });
