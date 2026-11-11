@@ -2,7 +2,7 @@ import { EDITION_YEAR } from "@wyg/schema";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Art } from "@/components/art";
+import { HeroArt } from "@/components/landing/hero-art";
 import {
   ArchetypesSection,
   ClosingSection,
@@ -13,7 +13,6 @@ import {
   PrivacySection,
   StorySection,
 } from "@/components/landing/sections";
-import { CellField, demoLevels } from "@/components/site/cell-field";
 import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SignInButton, SiteHeader } from "@/components/site/site-header";
@@ -31,8 +30,6 @@ const NOTICES: Record<string, string> = {
   "deleted=unrevoked":
     "Your data is deleted. To finish, revoke WrapYourGit in your GitHub settings under Applications.",
 };
-
-const HERO_CELLS = demoLevels(53);
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -112,31 +109,28 @@ export default function Home({ searchParams }: PageProps<"/">) {
       <SiteHeader />
       <PageTransition>
         <main id="main" className="flex flex-1 flex-col">
-          {/* 90svh, not vh: on phones vh counts the space behind the address bar, which hides the graph. */}
+          {/* 90svh, not vh: on phones vh counts the space behind the address bar. */}
           <section
             aria-labelledby="hero-title"
-            className="relative flex min-h-[90svh] flex-col overflow-hidden bg-linear-to-b from-canvas to-surface"
+            className="relative flex min-h-[90svh] flex-col overflow-hidden bg-canvas"
           >
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 sm:px-8">
               <Suspense fallback={null}>
                 <Notice searchParams={searchParams} />
               </Suspense>
-              <div className="grid flex-1 items-center gap-10 pt-12 pb-16 sm:pt-16 lg:grid-cols-[1fr_1.05fr]">
+              <div className="grid flex-1 items-center gap-12 pt-12 pb-16 sm:pt-16 lg:grid-cols-[0.85fr_1.15fr]">
                 <div>
                   <h1
                     id="hero-title"
-                    className="text-5xl leading-[1.02] font-bold tracking-tight text-balance sm:text-7xl"
+                    className="max-w-xl text-4xl leading-[1.05] font-bold tracking-tight text-balance sm:text-6xl"
                   >
-                    Every green square has a story.{" "}
-                    <span className="text-green">Here's yours, in motion.</span>
+                    Every <span className="text-green">green square</span> has a story.
                   </h1>
-                  <p className="mt-8 max-w-xl text-lg text-muted sm:text-xl">
-                    Type a GitHub username and watch that developer's {EDITION_YEAR} play back as a
-                    short animated story: their contributions, their rhythm, the languages they
-                    lived in and the kind of developer they turned out to be. Sign in for your own,
-                    with private contributions counted.
+                  <p className="mt-6 max-w-md text-lg text-muted">
+                    Type a GitHub username and watch their {EDITION_YEAR} play back as a short
+                    animated story. Sign in for your own, private work included.
                   </p>
-                  <div className="mt-10">
+                  <div className="mt-8">
                     <Suspense fallback={<HeroForm />}>
                       <HeroFormWithError searchParams={searchParams} />
                     </Suspense>
@@ -150,18 +144,10 @@ export default function Home({ searchParams }: PageProps<"/">) {
                     </a>
                   </div>
                 </div>
-                <div>
-                  <Art
-                    id="hero-cast"
-                    alt="Cell, the WrapYourGit mascot, waving in front of snapshots of a workshop, fireworks and mountains"
-                    priority
-                    className="h-auto w-full motion-safe:animate-[rise_900ms_ease-out_both]"
-                  />
-                </div>
+                {/* A quarter of a year as a city, linked to what the story does with it. */}
+                <HeroArt className="min-w-0" />
               </div>
             </div>
-            {/* A year of cells along the bottom of the hero: the motif the whole product is built on. */}
-            <CellField levels={HERO_CELLS} className="block h-24 w-full sm:h-32 -mb-15" />
           </section>
 
           <StorySection />

@@ -11,7 +11,9 @@
     "./letter": "./src/letter.ts",
     "./languages": "./src/languages.ts",
     "./present": "./src/present.ts",
-    "./world": "./src/world/model.ts"
+    "./world": "./src/world/model.ts",
+    "./city": "./src/world/city.ts",
+    "./sample": "./src/fixtures/sample-recap.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
