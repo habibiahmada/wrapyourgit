@@ -10,6 +10,8 @@ The new hero illustration is the product itself: the year's contribution graph d
 
 This design covers the hero only. The other landing sections follow in their own design once this one is approved and built.
 
+> **Grown while building (maintainer, 2026-11-11):** the full-year strip read as a thin line in the hero, and the maintainer asked to restyle every landing section. The hero became a quarter of the year on a slab with three linked blocks (languages, stars, letter); the full year moved to the closing section; every section's illustration is now isometric line art from shared primitives (`iso.ts`, `section-scenes.ts`); the hero copy was shortened. DESIGN.md records the result.
+
 ## Goals
 
 1. The hero illustration is an isometric city drawn from `sampleRecap`, labelled as sample data.
