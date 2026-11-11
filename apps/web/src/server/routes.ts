@@ -6,23 +6,18 @@
  */
 
 /**
- * The top-level names under app/ (routes.test.ts checks every folder is here), the file routes at
- * the root that a username could look like, and `go`, the landing form's handler (ruling R4).
+ * Every top-level folder under app/ (ruling R4 added `go`, the landing form's handler) and the
+ * file routes served without an extension. Routes served with a dot (/robots.txt, /favicon.ico)
+ * need no entry: a GitHub login has no dots. routes.test.ts checks this list against app/ both ways.
  */
 export const RESERVED: ReadonlySet<string> = new Set([
   "api",
-  "apple-icon",
   "dashboard",
-  "favicon",
   "go",
-  "icon",
-  "manifest",
   "opengraph-image",
   "privacy",
   "recap",
-  "robots",
   "settings",
-  "sitemap",
   "u",
 ]);
 
