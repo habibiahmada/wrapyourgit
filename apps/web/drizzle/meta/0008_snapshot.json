@@ -52,12 +52,8 @@
           "name": "github_tokens_user_id_users_id_fk",
           "tableFrom": "github_tokens",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -286,12 +282,8 @@
           "name": "recaps_user_id_users_id_fk",
           "tableFrom": "recaps",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -299,10 +291,7 @@
       "compositePrimaryKeys": {
         "recaps_user_id_year_pk": {
           "name": "recaps_user_id_year_pk",
-          "columns": [
-            "user_id",
-            "year"
-          ]
+          "columns": ["user_id", "year"]
         }
       },
       "uniqueConstraints": {},
@@ -346,12 +335,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -440,9 +425,7 @@
         "users_github_id_unique": {
           "name": "users_github_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "github_id"
-          ]
+          "columns": ["github_id"]
         }
       },
       "policies": {},
