@@ -48,7 +48,7 @@ export interface PublicStore {
   read(githubId: number): Promise<StoredRow | null>;
   /** The most recently fetched row whose login matches, ignoring case. */
   readByLogin(login: string): Promise<(StoredRow & { githubId: number }) | null>;
-  /** Fetches this client started since `since`. */
+  /** GitHub requests this client caused since `since` (public-policy.ts underClientLimit). */
   countLookups(client: string, since: Date): Promise<number>;
   recordLookup(client: string): Promise<void>;
   /** Takes the fetch claim; returns the row as claimed, or null when another request holds it. */
@@ -91,9 +91,18 @@ export async function loadPublicRecapWith(
     // keeps cached pages working if the token expires. Hidden is checked by the stored id.
     const cached = usable(await store.readByLogin(requested));
     if (cached && isFresh(cached.fetchedAt, deps.now())) {
-      if (await store.isHidden(cached.githubId)) return { kind: "hidden", login: cached.login };
-      return { kind: "recap", login: cached.login, data: cached.data };
+      return serveStored(store, cached);
     }
+
+    // Every request that gets this far asks GitHub at least once (the lookup, maybe a fetch), and
+    // lookups spend the shared token too: the client's limit is checked and one row recorded
+    // before GitHub is asked, so unknown or renamed names can't drain it. Over the limit, a stale
+    // stored recap still plays.
+    const since = new Date(deps.now().getTime() - CLIENT_WINDOW_MS);
+    if (!underClientLimit(await store.countLookups(client, since))) {
+      return cached ? serveStored(store, cached) : { kind: "limited", login };
+    }
+    await store.recordLookup(client);
 
     const account = await deps.lookup(requested);
     if (account.kind === "missing") return { kind: "missing", login };
@@ -108,10 +117,6 @@ export async function loadPublicRecapWith(
     if (storedResult && stored && isFresh(stored.fetchedAt, deps.now())) return storedResult;
 
     // Whenever no new fetch may start, a stored recap, even an old one, beats an error page.
-    const since = new Date(deps.now().getTime() - CLIENT_WINDOW_MS);
-    if (!underClientLimit(await store.countLookups(client, since))) {
-      return storedResult ?? { kind: "limited", login };
-    }
     if (!canStartFetch(account.remaining)) return storedResult ?? { kind: "busy", login };
 
     const claimed = await store.claim(account.id, login);
@@ -120,7 +125,6 @@ export async function loadPublicRecapWith(
       return waited ?? storedResult ?? { kind: "busy", login };
     }
 
-    await store.recordLookup(client);
     try {
       const data = await fetchAndBuild(deps, login, claimed.previous);
       await store.save(account.id, { login, ...data });
@@ -133,6 +137,15 @@ export async function loadPublicRecapWith(
     console.warn(`public recap failed: ${errorSummary(error)}`);
     return { kind: "error", login };
   }
+}
+
+/** A recap found by login, unless its owner hid it (checked by the stored id). */
+async function serveStored(
+  store: PublicStore,
+  row: { githubId: number; login: string; data: RecapData },
+): Promise<PublicResult> {
+  if (await store.isHidden(row.githubId)) return { kind: "hidden", login: row.login };
+  return { kind: "recap", login: row.login, data: row.data };
 }
 
 function usable<Row extends StoredRow>(

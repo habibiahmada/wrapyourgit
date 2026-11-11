@@ -61,6 +61,7 @@ let account: AccountLookup;
 let calls: { lookup: number; year: number; previous: number };
 let failYear: boolean;
 let failPrevious: boolean;
+let failRecord: boolean;
 let onSleep: (() => void) | null;
 
 const store: Store = {
@@ -70,6 +71,7 @@ const store: Store = {
     row && row.login.toLowerCase() === login.toLowerCase() ? { ...row, githubId: ID } : null,
   countLookups: async () => lookups,
   recordLookup: async (client) => {
+    if (failRecord) throw new Error("db down");
     recorded.push(client);
   },
   claim: async (_id, login) => {
@@ -141,6 +143,7 @@ beforeEach(() => {
   calls = { lookup: 0, year: 0, previous: 0 };
   failYear = false;
   failPrevious = false;
+  failRecord = false;
   onSleep = null;
   // Failures are logged on purpose; keep the test output clean.
   spyOn(console, "warn").mockImplementation(() => {});
@@ -205,9 +208,8 @@ describe("loadPublicRecapWith", () => {
   test("a stale stored recap asks GitHub who the login is first", async () => {
     await seed();
     clock += 13 * HOUR;
-    lookups = 20;
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
-    expect(calls).toEqual({ lookup: 1, year: 0, previous: 0 });
+    expect(calls).toEqual({ lookup: 1, year: 1, previous: 1 });
   });
 
   test("a stale recap is fetched again; last year is kept while its span is current", async () => {
@@ -247,22 +249,48 @@ describe("loadPublicRecapWith", () => {
     expect(row?.previous?.span.through).toBe("2025-11-11");
   });
 
-  test("over the client limit: limited when nothing is stored, the old recap when it is", async () => {
+  test("a client at the limit gets limited without GitHub being asked", async () => {
     lookups = 20;
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("limited");
-    lookups = 0;
+    expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
+    expect(recorded).toEqual([]);
+  });
+
+  test("at the limit, a stale stored recap still plays, without a lookup", async () => {
     await seed();
     clock += 13 * HOUR;
     lookups = 20;
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
-    expect(calls.year).toBe(0);
+    expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
+    hidden = true;
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("hidden");
+  });
+
+  test("a lookup that ends without a fetch is still counted", async () => {
+    account = { kind: "missing", remaining: 5000, resetAt: "" };
+    expect((await loadPublicRecapWith(deps, "nobody", "client-a")).kind).toBe("missing");
+    expect(recorded).toEqual(["client-a"]);
+  });
+
+  test("a fetch is counted once, with its lookup", async () => {
+    await loadPublicRecapWith(deps, "octo", "client-a");
+    expect(recorded).toEqual(["client-a"]);
+  });
+
+  test("a failure to count leaves no claim behind and asks GitHub nothing", async () => {
+    await seed();
+    clock += 13 * HOUR;
+    failRecord = true;
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("error");
+    expect(row?.fetchingSince).toBeNull();
+    expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
   });
 
   test("under the quota floor: busy when nothing is stored", async () => {
     account = { kind: "user", id: ID, login: "Octo", remaining: 299, resetAt: "" };
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
     expect(calls.year).toBe(0);
-    expect(recorded).toEqual([]);
+    expect(recorded).toEqual(["c"]);
   });
 
   test("a failed fetch stores nothing, releases the claim and says error", async () => {
@@ -296,7 +324,7 @@ describe("loadPublicRecapWith", () => {
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
     expect(polls).toBe(3);
     expect(calls.year).toBe(0);
-    expect(recorded).toEqual([]);
+    expect(recorded).toEqual(["c"]);
   });
 
   test("gives up after 60 seconds of waiting and says busy", async () => {
