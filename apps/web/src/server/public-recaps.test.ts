@@ -513,6 +513,17 @@ describe("loadPublicRecapWith", () => {
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
     expect(calls.year).toBe(0);
   });
+
+  test("an owner who hides during the wait: the stand-in is not served", async () => {
+    await seed();
+    clock += 13 * HOUR;
+    othersClaim = true;
+    if (row) row = { ...row, fetchingSince: new Date(clock) };
+    onSleep = () => {
+      hidden = true;
+    };
+    expect(await loadPublicRecapWith(deps, "octo", "c")).toEqual({ kind: "hidden", login: "Octo" });
+  });
 });
 
 describe("staleLookups", () => {

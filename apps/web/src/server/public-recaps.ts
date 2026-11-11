@@ -102,12 +102,14 @@ export async function loadPublicRecapWith(
   let login = requested;
   // The stored recap that stands in whenever no new fetch may start (client limit, quota floor,
   // wait timeout, GitHub out of quota), but only while it is within the stale cap: past it, the
-  // visitor gets the answer they would get with nothing stored.
-  let stale: { data: RecapData; fetchedAt: Date } | null = null;
-  const standIn = (otherwise: "busy" | "limited"): PublicResult =>
-    stale && canServeStale(stale.fetchedAt, deps.now())
-      ? { kind: "recap", login, data: stale.data }
-      : { kind: otherwise, login };
+  // visitor gets the answer they would get with nothing stored. Hidden is asked again because the
+  // owner may hide while this request waits for another one's fetch.
+  let stale: { id: number; data: RecapData; fetchedAt: Date } | null = null;
+  const standIn = async (otherwise: "busy" | "limited"): Promise<PublicResult> => {
+    if (!stale || !canServeStale(stale.fetchedAt, deps.now())) return { kind: otherwise, login };
+    if (await store.isHidden(stale.id)) return { kind: "hidden", login };
+    return { kind: "recap", login, data: stale.data };
+  };
   try {
     // A fresh recap stored under this login needs no GitHub call: it saves a point per view and
     // keeps cached pages working if the token expires. Hidden is checked by the stored id.
@@ -136,14 +138,14 @@ export async function loadPublicRecapWith(
     if (stored && isCurrent(stored, login, deps.now())) {
       return { kind: "recap", login, data: stored.data };
     }
-    stale = stored;
+    stale = stored && { id: account.id, data: stored.data, fetchedAt: stored.fetchedAt };
 
-    if (!canStartFetch(account.remaining)) return standIn("busy");
+    if (!canStartFetch(account.remaining)) return await standIn("busy");
 
     const claimed = await store.claim(account.id, login);
     const claimedAt = claimed?.fetchingSince;
     if (!claimed || !claimedAt) {
-      return (await waitForOtherFetch(deps, account.id, login)) ?? standIn("busy");
+      return (await waitForOtherFetch(deps, account.id, login)) ?? (await standIn("busy"));
     }
     // Another request may have saved between this request's read and its claim.
     const done = usable(claimed);
@@ -167,8 +169,12 @@ export async function loadPublicRecapWith(
     }
   } catch (error) {
     console.warn(`public recap failed: ${errorSummary(error)}`);
-    if (isRateLimited(error)) return standIn("busy");
-    return { kind: "error", login };
+    if (!isRateLimited(error)) return { kind: "error", login };
+    try {
+      return await standIn("busy");
+    } catch {
+      return { kind: "error", login };
+    }
   }
 }
 
