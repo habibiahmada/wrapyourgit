@@ -32,8 +32,11 @@ export function IsoArt({
     <svg
       viewBox={viewBox}
       className={className}
-      {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}
+      role={label ? "img" : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
     >
+      {label && <title>{label}</title>}
       {before}
       {ordered.map((box, i) => {
         const faces = boxPaths(box);
