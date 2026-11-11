@@ -10,6 +10,7 @@ import {
   isRateLimited,
   lookupSalt,
   previousIsCurrent,
+  tokenExpiresSoon,
   underClientLimit,
 } from "./public-policy";
 
@@ -37,6 +38,29 @@ describe("canStartFetch", () => {
   test("starts at 300 points left and stops at 299", () => {
     expect(canStartFetch(300)).toBe(true);
     expect(canStartFetch(299)).toBe(false);
+  });
+
+  test("also needs 300 REST requests left: star history spends that quota", () => {
+    expect(canStartFetch(5000, 300)).toBe(true);
+    expect(canStartFetch(5000, 299)).toBe(false);
+  });
+
+  test("an unknown REST quota does not block", () => {
+    expect(canStartFetch(5000, null)).toBe(true);
+    expect(canStartFetch(5000)).toBe(true);
+  });
+});
+
+describe("tokenExpiresSoon", () => {
+  const now = new Date("2027-01-26T12:00:00Z");
+  test("warns from 14 days before GitHub's expiration header", () => {
+    expect(tokenExpiresSoon("2027-02-09 05:34:07 UTC", now)).toBe(true);
+    expect(tokenExpiresSoon("2027-02-10 13:00:00 UTC", now)).toBe(false);
+  });
+
+  test("no header or an unreadable one: no warning", () => {
+    expect(tokenExpiresSoon(null, now)).toBe(false);
+    expect(tokenExpiresSoon("soon", now)).toBe(false);
   });
 });
 

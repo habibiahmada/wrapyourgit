@@ -31,8 +31,25 @@ export function canServeStale(fetchedAt: Date, now: Date): boolean {
   return now.getTime() - fetchedAt.getTime() < STALE_SERVE_MS;
 }
 
-export function canStartFetch(remaining: number): boolean {
-  return remaining >= QUOTA_FLOOR;
+/**
+ * REST requests a new fetch must leave room for. Star history runs four repos at a time for at
+ * most 15 s, about 150 requests for the heaviest account (ADR-0020).
+ */
+export const REST_FLOOR = 300;
+
+/** `restRemaining` null or absent: unknown, which doesn't block (the check is advisory). */
+export function canStartFetch(remaining: number, restRemaining?: number | null): boolean {
+  return remaining >= QUOTA_FLOOR && (restRemaining == null || restRemaining >= REST_FLOOR);
+}
+
+/** Warn this long before the public token expires: it needs a person to renew it. */
+export const TOKEN_WARNING_MS = 14 * 24 * 60 * 60 * 1000;
+
+/** `expiresAt` is GitHub's header, e.g. "2027-02-09 05:34:07 UTC"; unreadable means no warning. */
+export function tokenExpiresSoon(expiresAt: string | null | undefined, now: Date): boolean {
+  if (!expiresAt) return false;
+  const time = Date.parse(expiresAt.replace(" UTC", "Z").replace(" ", "T"));
+  return Number.isFinite(time) && time - now.getTime() < TOKEN_WARNING_MS;
 }
 
 /** `recentLookups`: fetches this client started within the last CLIENT_WINDOW_MS. */

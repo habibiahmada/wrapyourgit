@@ -349,6 +349,19 @@ describe("loadPublicRecapWith", () => {
     expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
   });
 
+  test("under the REST floor: busy too, before any fetch", async () => {
+    account = {
+      kind: "user",
+      id: ID,
+      login: "Octo",
+      remaining: 5000,
+      resetAt: "",
+      restRemaining: 12,
+    };
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect(calls.year).toBe(0);
+  });
+
   test("under the quota floor: busy when nothing is stored", async () => {
     account = { kind: "user", id: ID, login: "Octo", remaining: 299, resetAt: "" };
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");

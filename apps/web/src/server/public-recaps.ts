@@ -26,6 +26,7 @@ import {
   isRateLimited,
   lookupSalt,
   previousIsCurrent,
+  tokenExpiresSoon,
   underClientLimit,
 } from "./public-policy";
 import { comparisonSpanEnd, yearRange } from "./sync-policy";
@@ -129,6 +130,9 @@ export async function loadPublicRecapWith(
     }
 
     const account = await deps.lookup(requested);
+    if (tokenExpiresSoon(account.tokenExpiresAt, deps.now())) {
+      console.warn(`GITHUB_PUBLIC_TOKEN expires ${account.tokenExpiresAt}: renew it`);
+    }
     if (account.kind === "missing") return { kind: "missing", login };
     if (account.kind === "organization") return { kind: "organization", login: account.login };
     login = account.login;
@@ -140,7 +144,7 @@ export async function loadPublicRecapWith(
     }
     stale = stored && { id: account.id, data: stored.data, fetchedAt: stored.fetchedAt };
 
-    if (!canStartFetch(account.remaining)) return await standIn("busy");
+    if (!canStartFetch(account.remaining, account.restRemaining)) return await standIn("busy");
 
     const claimed = await store.claim(account.id, login);
     const claimedAt = claimed?.fetchingSince;
