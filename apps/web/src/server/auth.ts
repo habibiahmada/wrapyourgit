@@ -7,7 +7,7 @@ import { decrypt, encrypt, hashToken, parseKey, randomToken } from "./crypto";
 import { db, githubTokens, sessions, users } from "./db";
 import { requireEnv } from "./env";
 import { refreshTokens, revokeGrant, type TokenSet, tokenState } from "./oauth";
-import { forgetPublicRecap, setHidden } from "./public-recaps";
+import { setPublicRecapHidden } from "./public-recaps";
 
 /*
  * Data access layer for identity: sessions, the current user and their GitHub token. Every
@@ -225,10 +225,7 @@ export async function deleteAccount(userId: string): Promise<{ revoked: boolean 
     .select({ githubId: users.githubId })
     .from(users)
     .where(eq(users.id, userId));
-  if (account) {
-    await setHidden(account.githubId, true);
-    await forgetPublicRecap(account.githubId);
-  }
+  if (account) await setPublicRecapHidden(account.githubId, true);
   await db.delete(users).where(eq(users.id, userId));
   (await cookies()).delete(SESSION_COOKIE);
   return { revoked };

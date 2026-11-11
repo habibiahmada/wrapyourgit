@@ -10,7 +10,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 
 // public-recaps.ts is server-only; the guard throws outside a React server bundle.
 mock.module("server-only", () => ({}));
-const { loadPublicRecapWith, staleLookups } = await import("./public-recaps");
+const { loadPublicRecapWith, setPublicRecapHidden, staleLookups } = await import("./public-recaps");
 type Deps = Parameters<typeof loadPublicRecapWith>[0];
 type Store = Deps["store"];
 type Row = NonNullable<Awaited<ReturnType<Store["read"]>>>;
@@ -449,5 +449,29 @@ describe("staleLookups", () => {
     // No client condition: a visitor who never comes back loses their rows too.
     expect(query.sql).toBe('delete from "public_lookups" where "public_lookups"."at" < $1');
     expect(query.params).toEqual([new Date(now.getTime() - HOUR).toISOString()]);
+  });
+});
+
+describe("setPublicRecapHidden", () => {
+  const log: string[] = [];
+  const hideStore = {
+    setHidden: async (id: number, value: boolean) => {
+      log.push(`hidden ${id} ${value}`);
+    },
+    forget: async (id: number) => {
+      log.push(`forget ${id}`);
+    },
+  };
+
+  test("hiding marks the account hidden and forgets the stored recap", async () => {
+    log.length = 0;
+    await setPublicRecapHidden(7, true, hideStore);
+    expect(log).toEqual(["hidden 7 true", "forget 7"]);
+  });
+
+  test("showing it again only clears the mark", async () => {
+    log.length = 0;
+    await setPublicRecapHidden(7, false, hideStore);
+    expect(log).toEqual(["hidden 7 false"]);
   });
 });

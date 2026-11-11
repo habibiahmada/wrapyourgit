@@ -242,6 +242,25 @@ export async function forgetPublicRecap(githubId: number): Promise<void> {
   await db.delete(publicRecaps).where(eq(publicRecaps.githubId, githubId));
 }
 
+/** The database side of the hide switch; the seam the test replaces. */
+export interface HideStore {
+  setHidden(githubId: number, hidden: boolean): Promise<void>;
+  forget(githubId: number): Promise<void>;
+}
+
+/**
+ * The "Hide my public recap" switch, also thrown by "Delete my data". Hiding deletes the stored
+ * copy too, so nothing of it is left to serve if the switch goes off again.
+ */
+export async function setPublicRecapHidden(
+  githubId: number,
+  hidden: boolean,
+  store: HideStore = { setHidden, forget: forgetPublicRecap },
+): Promise<void> {
+  await store.setHidden(githubId, hidden);
+  if (hidden) await store.forget(githubId);
+}
+
 /**
  * Every client's lookup rows older than the window, for deletion. They count for nothing any
  * more, and deleting them for all clients (not only the one looking up now) is what keeps the
