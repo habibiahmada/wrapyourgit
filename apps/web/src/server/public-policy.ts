@@ -9,6 +9,12 @@ import { comparisonSpanEnd } from "./sync-policy";
 
 /** A public recap younger than this is served as stored. */
 export const PUBLIC_FRESH_MS = 12 * 60 * 60 * 1000;
+/**
+ * How old a stored recap may be and still stand in when no new fetch may start (client limit,
+ * quota floor, busy GitHub). Privacy flags are frozen at fetch time, so an older copy could name a
+ * repository its owner has since made private: past this, visitors get busy or limited instead.
+ */
+export const STALE_SERVE_MS = 7 * 24 * 60 * 60 * 1000;
 /** New fetches stop when GitHub reports fewer points than this left on the public token. */
 export const QUOTA_FLOOR = 300;
 /** New usernames one client may fetch per window. */
@@ -19,6 +25,10 @@ export const CLAIM_STALE_MS = 2 * 60 * 1000;
 
 export function isFresh(fetchedAt: Date, now: Date): boolean {
   return now.getTime() - fetchedAt.getTime() < PUBLIC_FRESH_MS;
+}
+
+export function canServeStale(fetchedAt: Date, now: Date): boolean {
+  return now.getTime() - fetchedAt.getTime() < STALE_SERVE_MS;
 }
 
 export function canStartFetch(remaining: number): boolean {

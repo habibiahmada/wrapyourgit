@@ -17,6 +17,7 @@ import { errorSummary } from "./log";
 import {
   CLAIM_STALE_MS,
   CLIENT_WINDOW_MS,
+  canServeStale,
   canStartFetch,
   claimIsStale,
   firstForwardedAddress,
@@ -94,8 +95,14 @@ export async function loadPublicRecapWith(
 ): Promise<PublicResult> {
   const { store } = deps;
   let login = requested;
-  // What a visitor gets when GitHub is out of quota mid-way: the stored recap if there is one.
-  let fallback: PublicResult | null = null;
+  // The stored recap that stands in whenever no new fetch may start (client limit, quota floor,
+  // wait timeout, GitHub out of quota), but only while it is within the stale cap: past it, the
+  // visitor gets the answer they would get with nothing stored.
+  let stale: { data: RecapData; fetchedAt: Date } | null = null;
+  const standIn = (otherwise: "busy" | "limited"): PublicResult =>
+    stale && canServeStale(stale.fetchedAt, deps.now())
+      ? { kind: "recap", login, data: stale.data }
+      : { kind: otherwise, login };
   try {
     // A fresh recap stored under this login needs no GitHub call: it saves a point per view and
     // keeps cached pages working if the token expires. Hidden is checked by the stored id.
@@ -107,10 +114,12 @@ export async function loadPublicRecapWith(
     // Every request that gets this far asks GitHub at least once (the lookup, maybe a fetch), and
     // lookups spend the shared token too: the client's limit is checked and one row recorded
     // before GitHub is asked, so unknown or renamed names can't drain it. Over the limit, a stale
-    // stored recap still plays.
+    // stored recap within the cap still plays.
     const since = new Date(deps.now().getTime() - CLIENT_WINDOW_MS);
     if (!underClientLimit(await store.countLookups(client, since))) {
-      return cached ? serveStored(store, cached) : { kind: "limited", login };
+      return cached && canServeStale(cached.fetchedAt, deps.now())
+        ? serveStored(store, cached)
+        : { kind: "limited", login };
     }
     await store.recordLookup(client);
 
@@ -121,20 +130,17 @@ export async function loadPublicRecapWith(
     if (await store.isHidden(account.id)) return { kind: "hidden", login };
 
     const stored = usable(await store.read(account.id));
-    const storedResult: PublicResult | null = stored
-      ? { kind: "recap", login, data: stored.data }
-      : null;
-    if (storedResult && stored && isFresh(stored.fetchedAt, deps.now())) return storedResult;
-    fallback = storedResult;
+    if (stored && isFresh(stored.fetchedAt, deps.now())) {
+      return { kind: "recap", login, data: stored.data };
+    }
+    stale = stored;
 
-    // Whenever no new fetch may start, a stored recap, even an old one, beats an error page.
-    if (!canStartFetch(account.remaining)) return storedResult ?? { kind: "busy", login };
+    if (!canStartFetch(account.remaining)) return standIn("busy");
 
     const claimed = await store.claim(account.id, login);
     const claimedAt = claimed?.fetchingSince;
     if (!claimed || !claimedAt) {
-      const waited = await waitForOtherFetch(deps, account.id, login);
-      return waited ?? storedResult ?? { kind: "busy", login };
+      return (await waitForOtherFetch(deps, account.id, login)) ?? standIn("busy");
     }
 
     try {
@@ -152,7 +158,7 @@ export async function loadPublicRecapWith(
     }
   } catch (error) {
     console.warn(`public recap failed: ${errorSummary(error)}`);
-    if (isRateLimited(error)) return fallback ?? { kind: "busy", login };
+    if (isRateLimited(error)) return standIn("busy");
     return { kind: "error", login };
   }
 }

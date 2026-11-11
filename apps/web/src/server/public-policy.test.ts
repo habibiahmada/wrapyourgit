@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { GitHubApiError } from "@wyg/github";
 import {
+  canServeStale,
   canStartFetch,
   claimIsStale,
   firstForwardedAddress,
@@ -15,11 +16,19 @@ const now = new Date("2026-11-11T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
 describe("isFresh", () => {
   test("a recap fetched 11 h 59 m ago is fresh, 12 h 01 m ago is not", () => {
     expect(isFresh(ago(11 * HOUR + 59 * MINUTE), now)).toBe(true);
     expect(isFresh(ago(12 * HOUR + MINUTE), now)).toBe(false);
+  });
+});
+
+describe("canServeStale", () => {
+  test("a recap fetched 6 days 23 h ago may still stand in, one 7 days 1 h old may not", () => {
+    expect(canServeStale(ago(6 * DAY + 23 * HOUR), now)).toBe(true);
+    expect(canServeStale(ago(7 * DAY + HOUR), now)).toBe(false);
   });
 });
 

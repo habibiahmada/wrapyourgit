@@ -17,6 +17,7 @@ type Row = NonNullable<Awaited<ReturnType<Store["read"]>>>;
 
 const ID = 42;
 const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
 
 const activity = (login: string): YearActivity => ({
   viewer: { id: "U_1", login, name: null, avatarUrl: "https://example.com/a.png" },
@@ -287,6 +288,14 @@ describe("loadPublicRecapWith", () => {
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("hidden");
   });
 
+  test("at the limit, a recap older than the stale cap is not served: limited", async () => {
+    await seed();
+    clock += 8 * DAY;
+    lookups = 20;
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("limited");
+    expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
+  });
+
   test("a lookup that ends without a fetch is still counted", async () => {
     account = { kind: "missing", remaining: 5000, resetAt: "" };
     expect((await loadPublicRecapWith(deps, "nobody", "client-a")).kind).toBe("missing");
@@ -314,6 +323,16 @@ describe("loadPublicRecapWith", () => {
     expect(recorded).toEqual(["c"]);
   });
 
+  test("under the quota floor: a stale recap within the cap plays, an older one is busy", async () => {
+    await seed();
+    account = { kind: "user", id: ID, login: "Octo", remaining: 299, resetAt: "" };
+    clock += 13 * HOUR;
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    clock += 8 * DAY;
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect(calls.year).toBe(0);
+  });
+
   test("GitHub out of quota on the lookup says busy, not error", async () => {
     githubError.lookup = new GitHubApiError("limit", 200, [{ type: "RATE_LIMITED" }]);
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
@@ -328,6 +347,14 @@ describe("loadPublicRecapWith", () => {
     clock += 13 * HOUR;
     githubError.year = new GitHubApiError("limit", 429);
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect(row?.fetchingSince).toBeNull();
+  });
+
+  test("GitHub out of quota on the fetch: a recap older than the stale cap is busy", async () => {
+    await seed();
+    clock += 8 * DAY;
+    githubError.year = new GitHubApiError("limit", 429);
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
     expect(row?.fetchingSince).toBeNull();
   });
 
@@ -438,6 +465,19 @@ describe("loadPublicRecapWith", () => {
     const start = clock;
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
     expect(clock - start).toBe(60_000);
+    expect(calls.year).toBe(0);
+  });
+
+  test("after a wait that times out, only a recap within the stale cap stands in", async () => {
+    await seed();
+    clock += 13 * HOUR;
+    othersClaim = true;
+    if (row) row = { ...row, fetchingSince: new Date(clock) };
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+
+    clock += 8 * DAY;
+    if (row) row = { ...row, fetchingSince: new Date(clock) };
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
     expect(calls.year).toBe(0);
   });
 });
