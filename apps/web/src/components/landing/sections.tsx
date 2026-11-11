@@ -3,15 +3,13 @@ import { ARCHETYPE_LABELS, STOP_TITLES } from "@wyg/video/copy";
 import { OPENINGS } from "@wyg/video/letter";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { Art } from "@/components/art";
 import { FrameReel } from "./frame-reel";
-import { SceneArt } from "./scene-art";
-import { archetypeScene, letterScene, vaultScene } from "./section-scenes";
-import { YearCity } from "./year-city";
 
 /*
  * Landing sections in the GitHub-dark style (DESIGN.md): dark canvas, surface boxes with hairline
- * borders, GitHub's contribution greens as the one accent, and isometric line-art dioramas
- * (iso.ts) drawn on the server. Every fact comes from the product
+ * borders, GitHub's contribution greens as the one accent, and isometric dioramas with Cell
+ * (baked loops, ADR-0021; the hero's scene is server-drawn SVG, iso.ts). Every fact comes from the product
  * itself: the stops from the story world's copy, archetype rules from metrics.md, letter lines
  * from letter.ts. No invented numbers or quotes (R-17, R-38).
  */
@@ -115,6 +113,18 @@ export function StorySection() {
   );
 }
 
+/** What each archetype's diorama shows, for its alt text. */
+const SCENES: Record<ArchetypeId, string> = {
+  builder: "Cell in a hard hat hammering in a workshop full of crates, a beaver bringing a plank",
+  consistent: "Cell running laps on a track past a board where the week lights up day by day",
+  explorer: "Cell in a cap and backpack waving on a trail of stepping stones below snowy peaks",
+  collaborator: "Cell in a headset handing a pull request to a teammate between two desks",
+  "night-owl":
+    "Cell in glasses grooving in a room lit by a monitor, the moon in the window, an owl on the shelf",
+  "open-sourcer":
+    "Cell cheering on a stage with friends from other projects under a mural of the year",
+};
+
 const ARCHETYPES: { id: ArchetypeId; rule: string }[] = [
   {
     id: "builder",
@@ -156,9 +166,9 @@ export function ArchetypesSection() {
         <ul className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {ARCHETYPES.map(({ id, rule }) => (
             <li key={id} className={`reveal-zoom overflow-hidden ${box} hover:border-muted`}>
-              {/* Each diorama draws the archetype's rule; the text below states it. */}
-              <div className="flex h-64 items-center justify-center border-b border-line bg-canvas px-6 py-4">
-                <SceneArt scene={archetypeScene(id)} className="h-full w-auto max-w-full" />
+              {/* Each diorama is the place the archetype's rule happens; the text below states it. */}
+              <div className="border-b border-line bg-canvas">
+                <Art id={`skin-${id}`} alt={SCENES[id]} className="h-auto w-full" />
               </div>
               <div className="p-5">
                 <h3 className="text-xl font-bold">{ARCHETYPE_LABELS[id]}</h3>
@@ -187,13 +197,13 @@ export function LetterSection() {
             way a friend would: fewer numbers, more of what they meant. A quiet year is told it
             counts. A relentless one is told to rest.
           </p>
-        </div>
-        <div className="reveal-right relative flex flex-col gap-5 lg:pl-60">
-          {/* The envelope the letters come out of. */}
-          <SceneArt
-            scene={letterScene()}
-            className="mx-auto h-auto w-64 lg:absolute lg:top-1/2 lg:-left-6 lg:w-60 lg:-translate-y-1/2"
+          <Art
+            id="iso-letter"
+            alt="Cell thinking at a writing desk with sheets, a sealed envelope and a post box, a bird waiting for the letter"
+            className="mt-8 h-auto w-full max-w-lg"
           />
+        </div>
+        <div className="reveal-right relative flex flex-col gap-5">
           <Comment label="for a quiet year">{quiet}</Comment>
           <Comment label="for a year that barely stopped" className="sm:ml-12">
             {relentless}
@@ -363,7 +373,11 @@ export function PrivacySection() {
             Read the full privacy policy
           </a>
         </div>
-        <SceneArt scene={vaultScene()} className="reveal-right mx-auto h-auto w-full max-w-sm" />
+        <Art
+          id="iso-privacy"
+          alt="Cell standing guard in a vault room with a locked door, a server rack and a sleeping cat"
+          className="reveal-right h-auto w-full"
+        />
       </div>
     </section>
   );
@@ -457,7 +471,15 @@ export function ClosingSection({ action }: { action: ReactNode }) {
           <div className="mt-10">{action}</div>
         </div>
         {/* The page closes on a whole year: the hero showed a quarter of it. */}
-        <YearCity className="min-w-0" />
+        <figure className="min-w-0">
+          <Art
+            id="iso-closing"
+            alt="A whole sample year as a city of contribution blocks, Cell crowned on a stage in front, fireworks above"
+            width={1600}
+            height={900}
+            className="h-auto w-full"
+          />
+        </figure>
       </div>
     </section>
   );
