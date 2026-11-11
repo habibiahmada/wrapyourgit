@@ -23,9 +23,12 @@ export function Hello({ data, size, enter }: SceneProps) {
   const ph = SCREEN.h * head;
   const greetSize = Math.min(70, head * 0.11);
   // With the scope line, lift the greeting a little so both lines sit inside the safe area.
-  const lineGap = greetSize * 1.15;
+  const lineGap = greetSize * 0.95;
+  const lineSize = greetSize * 0.55;
+  // Room under the baseline for descenders, so the line clears the footer by more than its baseline.
+  const lineDescent = lineSize * 0.3;
   const textY = Math.min(
-    h - safe.bottom - (scopeLine ? lineGap : 0),
+    h - safe.bottom - (scopeLine ? lineGap + lineDescent : 0),
     cy + head / 2 + (h - cy - head / 2) * 0.5,
   );
   return (
@@ -77,7 +80,7 @@ export function Hello({ data, size, enter }: SceneProps) {
               x={500}
               y={textY + lineGap}
               text={scopeLine}
-              size={greetSize * 0.55}
+              size={lineSize}
               weight={700}
               anchor="middle"
               maxWidth={800}
