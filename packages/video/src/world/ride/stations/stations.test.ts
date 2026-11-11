@@ -252,7 +252,7 @@ test("hello prints the year and the login, and the scope line when the recap is 
   const open = printed(
     build("hello", { ...sampleRecap, meta: { ...sampleRecap.meta, scope: "public" } }),
   );
-  expect(open).toContain("Public GitHub activity only");
+  expect(open.join(" ")).toContain("Public GitHub activity only");
 });
 
 test("hello breaks a long login over rows instead of printing it small", () => {

@@ -187,11 +187,13 @@ test("no hero is cut off at its stop, and Cell stands clear of the frame's edge"
 });
 
 test("every line a station prints can be read at its stop, in every format", () => {
+  const publicRecap: RecapData = { ...sampleRecap, meta: { ...sampleRecap.meta, scope: "public" } };
   for (const [name, data] of Object.entries({
     sampleRecap,
     busyRecap,
     emptyRecap,
     provisionalRecap,
+    publicRecap,
   })) {
     for (const [id, format] of Object.entries(VIDEO_FORMATS)) {
       const m = buildRide(data, format, "video", 30);
