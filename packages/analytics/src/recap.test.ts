@@ -89,6 +89,11 @@ const baseInput = (): ActivityInput => ({
 const options = { year: 2026, timezone: "Asia/Jakarta", now: new Date("2026-01-05T12:00:00Z") };
 
 describe("buildRecap", () => {
+  test("scope defaults to full and can be set to public", () => {
+    expect(buildRecap(baseInput(), options).meta.scope).toBe("full");
+    expect(buildRecap(baseInput(), { ...options, scope: "public" }).meta.scope).toBe("public");
+  });
+
   test("produces data that passes the schema", () => {
     expect(() => recapDataSchema.parse(buildRecap(baseInput(), options))).not.toThrow();
   });

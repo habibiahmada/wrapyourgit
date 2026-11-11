@@ -5,7 +5,7 @@ import { z } from "zod";
  * presentation surface (web story, video, PNG, public page).
  * Change it deliberately: bump SCHEMA_VERSION and update docs/analytics/metrics.md.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 export const EDITION_YEAR = 2026;
 
 /**
@@ -87,6 +87,8 @@ export const recapDataSchema = z.object({
      * dates each commit by its own git timezone offset (docs/analytics/metrics.md).
      */
     timezone: z.string(),
+    /** "public" = built from public data only (a visitor's recap of any username); "full" = the owner's own. */
+    scope: z.enum(["full", "public"]),
   }),
   profile: z.object({
     login: z.string(),

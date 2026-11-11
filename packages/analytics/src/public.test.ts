@@ -21,6 +21,7 @@ const recap = (): RecapData => ({
     isFinal: false,
     generatedAt: "2026-11-04T10:00:00.000Z",
     timezone: "Asia/Jakarta",
+    scope: "full",
   },
   profile: { login: "octo", name: "Octo", avatarUrl: "https://example.com/a.png" },
   contributions: {

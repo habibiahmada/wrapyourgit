@@ -34,7 +34,10 @@ import { renderSceneStill } from "./lib/still";
 const FIXTURES: Record<string, RecapData> = {
   sample: sampleRecap,
   // What a visitor sees: the landing page's frames come from this, never from the raw sample.
-  "public-sample": toPublicRecap(sampleRecap),
+  "public-sample": (() => {
+    const pub = toPublicRecap(sampleRecap);
+    return { ...pub, meta: { ...pub.meta, scope: "public" } };
+  })(),
   "edge-empty": emptyRecap,
   "edge-long-names": busyRecap,
   "edge-provisional": provisionalRecap,

@@ -31,6 +31,7 @@ export const sampleRecap: RecapData = {
     isFinal: true,
     generatedAt: "2027-01-01T00:00:00.000Z",
     timezone: "Asia/Jakarta",
+    scope: "full",
   },
   profile: { login: "octo-sample", name: "Sample Dev", avatarUrl: "https://github.com/ghost.png" },
   contributions: {
