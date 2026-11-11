@@ -33,6 +33,7 @@ Reading any account needs a GitHub token on the server. GitHub's GraphQL API giv
 - Public GitHub activity is now visible on this site for every account, not only for people who signed in. The privacy page, the landing FAQ and the README say so, and how to hide it.
 - Capacity is roughly 150 to 200 new usernames an hour on one token; usernames already stored cost nothing. A burst of new names beyond that waits or gets "busy".
 - Accounts named like a site route (`settings`, `privacy`, ...) keep their recap at `/u/<name>`. Routes served with a dot (`/robots.txt`, `/favicon.ico`) need no reservation, because a login has no dots.
+- Migration 0007 runs in the build, while the previous deployment still serves. For those few minutes its dashboard and `/u/<login>` pages fail, because they still read `recap_shares`. That is acceptable now, with no users besides the maintainer; a later table drop with real users would ship one release after the code that stops reading it.
 - The hide list outlives the account it belongs to. Someone who deletes their data and later wants a public recap again signs in and turns the switch off.
 
 ## Alternatives considered
