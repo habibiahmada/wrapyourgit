@@ -208,7 +208,11 @@ function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
       (high, p) => (p && (!high || p[1] < high[1]) ? p : high),
       tops[0] ?? null,
     );
-    const b = projectPoint(cell, cam, frame);
+    // The lowest point on screen: Cell, or a part of the hero that stands lower in the picture.
+    const b = [...tops, projectPoint(cell, cam, frame)].reduce(
+      (low, p) => (p && (!low || p[1] > low[1]) ? p : low),
+      null,
+    );
     // Cell counts among what must stay between the sides, with room for the engine round it.
     const xs = [...ring, ...seat].map((p) => projectPoint(p, cam, frame)?.[0] ?? Number.NaN);
     if (!a || !b || xs.some(Number.isNaN)) return null;

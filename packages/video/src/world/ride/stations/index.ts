@@ -1,4 +1,5 @@
 import type { StopKind } from "../../stops";
+import { busiest } from "./busiest";
 import { city } from "./city";
 import { closing } from "./closing";
 import { firstDay } from "./firstDay";
@@ -14,6 +15,7 @@ export const STATIONS: Partial<Record<StopKind, Station>> = {
   "first-day": firstDay,
   private: privateVault,
   city,
+  busiest,
   languages,
   projects,
   closing,

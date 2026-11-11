@@ -46,6 +46,9 @@ test("neighbouring plazas are on opposite sides of the rail", () => {
   expect(plazas[0]?.side).toBe(-(plazas[1]?.side ?? 0) as 1 | -1);
 });
 
-test("an empty year still gets every station", () => {
-  expect(rideStops(emptyRecap, buildCity(emptyRecap)).map((s) => s.kind)).toEqual(KINDS);
+test("an empty year still gets every station it has something to say at", () => {
+  // All but the busiest day: an empty year has none, and the story has no stop for it.
+  expect(rideStops(emptyRecap, buildCity(emptyRecap)).map((s) => s.kind)).toEqual(
+    KINDS.filter((kind) => kind !== "busiest"),
+  );
 });

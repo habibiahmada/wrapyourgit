@@ -87,15 +87,13 @@ test("January's sign carries one line, a later month's two", () => {
   expect(signTexts(all, later.col)).toEqual([later.name, later.line ?? ""]);
 });
 
-test("a gate next to a plaza is left out", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 20, from: 0, to: 110, overview: 0 });
-  const g = gates(sampleRecap, c);
-  const plazas = stops.filter((s) => s.plaza);
-  const hidden = g.filter((gate) =>
-    plazas.some((p) => Math.abs(weekS(gate.col) - 0.8 - (p.s + 4.5)) < 8),
-  );
-  expect(hidden.length).toBeGreaterThan(0);
-  for (const gate of hidden) expect(signTexts(all, gate.col)).toBeNull();
+test("no gate stands where the train rests at a station", () => {
+  const { city: c, all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
+  for (const gate of gates(sampleRecap, c)) {
+    const s = weekS(gate.col) - 0.8;
+    const under = stops.some((stop) => stop.plaza && s > stop.s - 1 && s < stop.s + 3.5);
+    expect(signTexts(all, gate.col) === null).toBe(under);
+  }
 });
 
 test("a gate the station's camera looks past folds away while the train is in, and stands again after", () => {

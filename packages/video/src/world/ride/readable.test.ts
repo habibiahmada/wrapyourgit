@@ -3,11 +3,12 @@ import { layoutForSize, type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { formatCount } from "../../theme";
+import { busiestModel } from "../scenes/busiest.model";
 import { firstDayModel } from "../scenes/firstDay.model";
 import { gardenModel } from "../scenes/garden.model";
 import { privateModel } from "../scenes/private.model";
 import { commitsText, projectsModel } from "../scenes/projects.model";
-import { buildRide, rideFrame } from "./model";
+import { buildRide, HERO_TAGS, rideFrame } from "./model";
 import { type Box, type Prim, scenePrims } from "./prims";
 import { projectPoint, type RideCamera } from "./project";
 import { STATIONS } from "./stations";
@@ -38,7 +39,8 @@ function restFrames(data: RecapData) {
   return Object.entries(VIDEO_FORMATS).flatMap(([id, format]) => {
     const m = buildRide(data, format, "video", 30);
     return m.stops.flatMap((stop, i) => {
-      if (!["languages", "projects", "first-day", "private"].includes(stop.kind)) return [];
+      if (!["languages", "projects", "first-day", "private", "busiest"].includes(stop.kind))
+        return [];
       const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
       const texts = scenePrims(
         [...frame.ground, ...frame.objects],
@@ -70,6 +72,13 @@ function check(data: RecapData) {
           where,
           value: true,
         });
+    } else if (rest.kind === "busiest") {
+      const day = busiestModel(data);
+      if (day)
+        expect({
+          where,
+          value: biggest(rest.texts, formatCount(day.count)) / rest.short >= HEADLINE,
+        }).toEqual({ where, value: true });
     } else if (rest.kind === "private") {
       const vault = privateModel(data);
       if (vault.kind === "count") {
@@ -176,8 +185,6 @@ function corners(
   return out;
 }
 
-const HERO = ["language", "container", "board", "flag", "first-square", "vault"];
-
 test("no hero is cut off at its stop, and Cell stands clear of the frame's edge", () => {
   for (const data of [sampleRecap, busyRecap, hugeRecap]) {
     for (const [id, format] of Object.entries(VIDEO_FORMATS)) {
@@ -189,7 +196,7 @@ test("no hero is cut off at its stop, and Cell stands clear of the frame's edge"
         const mine = frame.objects.filter(
           (s): s is Box =>
             s.kind === "box" &&
-            HERO.includes(s.tag ?? "") &&
+            HERO_TAGS.includes(s.tag ?? "") &&
             Math.hypot((s.pivot?.[0] ?? 1e9) - centre[0], (s.pivot?.[1] ?? 1e9) - centre[1]) < 0.01,
         );
         const points = mine.flatMap((box) => corners(box, frame.cam, format));

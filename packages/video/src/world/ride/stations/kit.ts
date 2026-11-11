@@ -223,11 +223,13 @@ const SIGN = { wide: 5.5, row: 0.38 };
 export function nameBoard(
   ctx: StationContext,
   lines: readonly BoardLine[],
-  place: { deep: number; fit?: boolean },
+  place: { deep: number; fit?: boolean; scale?: number },
 ): Solid[] {
   const { c, yaw, stop } = ctx;
   // Put out as the hero starts to build: a station the train has not reached shows no words.
   if (ctx.build <= 0) return [];
+  // A tall hero sets the camera further back; its sign is made larger by `scale` to read the same.
+  const scale = place.scale ?? 1;
   const max = Math.floor((SIGN.wide * 0.9) / (0.6 * SIGN.row * 0.92));
   const rows: BoardLine[] = lines.flatMap((line) => {
     const text = typeof line === "string" ? line : line.text;
@@ -235,9 +237,19 @@ export function nameBoard(
       typeof line === "string"
         ? { fill: "#ffffff", weight: 800 }
         : { fill: line.fill ?? "#c9d1d9", weight: line.weight ?? 700 };
-    return wrap(text, max).map((piece) => ({ text: piece, tall: SIGN.row, ...look }));
+    return wrap(text, max).map((piece) => ({ text: piece, tall: SIGN.row * scale, ...look }));
   });
   const dy = stop.side * (place.deep / 2 + 1.4);
   // With `fit` the camera keeps the sign in frame as it does the hero; without, the hero alone sets the shot.
-  return board(c, yaw, -6, dy, SIGN.wide, rows, "along", 0.15, place.fit ? "board" : "sign");
+  return board(
+    c,
+    yaw,
+    -6,
+    dy,
+    SIGN.wide * scale,
+    rows,
+    "along",
+    0.15,
+    place.fit ? "board" : "sign",
+  );
 }

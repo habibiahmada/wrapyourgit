@@ -109,7 +109,9 @@ export function land(
   // A gate per month, with its name and the contributions made before it on the sign.
   for (const gate of gates) {
     const s = weekS(gate.col) - 0.8;
-    if (!inView(s) || byPlaza(s)) continue;
+    // No gate where a train at rest would stand under it, or pull away under one still rising.
+    const atStation = stops.some((stop) => stop.plaza && s > stop.s - 1 && s < stop.s + 3.5);
+    if (!inView(s) || atStation) continue;
     // A gate just behind a station stands in the station camera's foreground, and one a little
     // way ahead at the edge of its picture. Each folds down as the train pulls in and rises again
     // as it leaves; one behind waits until the train has passed under it.

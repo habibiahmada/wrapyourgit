@@ -5,6 +5,7 @@ import { busyRecap, emptyRecap } from "../../../fixtures/edge-recaps";
 import { sampleRecap } from "../../../fixtures/sample-recap";
 import { formatCount } from "../../../theme";
 import { buildCity } from "../../city";
+import { busiestModel } from "../../scenes/busiest.model";
 import { cityModel } from "../../scenes/city.model";
 import { closingModel } from "../../scenes/closing.model";
 import { firstDayModel } from "../../scenes/firstDay.model";
@@ -42,6 +43,7 @@ const printed = (solids: Solid[]) =>
 
 test("the stations built so far exist", () => {
   expect(Object.keys(STATIONS).sort()).toEqual([
+    "busiest",
     "city",
     "closing",
     "first-day",
@@ -308,6 +310,7 @@ test("a station at rest is the same 60 frames later, and still moving in between
     "first-day",
     "private",
     "city",
+    "busiest",
     "languages",
     "projects",
     "closing",
@@ -382,4 +385,45 @@ test("private: the count rises as the vault lands and never reads zero", () => {
     expect(texts).not.toContain("210");
   }
   expect(boxes(build("private", sampleRecap, 0), "vault")).toHaveLength(0);
+});
+
+test("busiest: the lighthouse's base carries the count, the sign the day", () => {
+  const model = busiestModel(sampleRecap);
+  if (!model) throw new Error("the sample has a busiest day");
+  const all = build("busiest", sampleRecap);
+  const base = printed(boxes(all, "lighthouse-base"));
+  expect(base).toContain(formatCount(model.count));
+  expect(base).toContain("contributions");
+  const text = printed(all);
+  expect(text).toContain(model.headline);
+  expect(text).toContain(`${model.weekday}, ${model.date}`);
+});
+
+test("busiest: one contribution is said in the singular", () => {
+  const one: RecapData = {
+    ...sampleRecap,
+    contributions: {
+      ...sampleRecap.contributions,
+      busiestDay: { date: "2026-03-04", count: 1 },
+    },
+  };
+  expect(printed(boxes(build("busiest", one), "lighthouse-base"))).toContain("contribution");
+});
+
+test("busiest: the tower goes up on the way in, the count rises with it and never reads zero", () => {
+  const model = busiestModel(sampleRecap);
+  expect(boxes(build("busiest", sampleRecap, 0), "lighthouse")).toHaveLength(0);
+  const half = boxes(build("busiest", sampleRecap, 0.5), "lighthouse").length;
+  expect(half).toBeLessThan(boxes(build("busiest", sampleRecap, 1), "lighthouse").length);
+  for (const progress of [0.1, 0.5, 0.9]) {
+    const base = printed(boxes(build("busiest", sampleRecap, progress), "lighthouse-base"));
+    expect(base).not.toContain("0");
+    expect(base).not.toContain(formatCount(model?.count ?? 0));
+  }
+});
+
+test("busiest: the lamp's beam turns, and is back where it was after 60 frames", () => {
+  const beam = (frame: number) => boxes(build("busiest", sampleRecap, 1, frame), "beam")[0]?.yaw;
+  expect(beam(10)).not.toBe(beam(25));
+  expect(beam(70)).toBeCloseTo(beam(10) ?? 0);
 });
