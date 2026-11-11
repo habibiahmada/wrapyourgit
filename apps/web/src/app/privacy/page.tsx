@@ -196,7 +196,8 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
         <li>Your recap and tokens: until you delete your data.</li>
         <li>
           Public recaps: until the owner hides theirs or deletes their data. A stored recap is read
-          again from GitHub when it is more than 12 hours old.
+          again from GitHub when it is more than 12 hours old. While GitHub is busy, a copy up to 7
+          days old may be shown in the meantime, never an older one.
         </li>
         <li>
           Hashed addresses for the lookup limit: about an hour, deleted with the next lookup after

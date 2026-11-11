@@ -25,6 +25,7 @@ Reading any account needs a GitHub token on the server. GitHub's GraphQL API giv
    - one request fetches an account at a time; concurrent visitors wait for that fetch;
    - a client may start 20 new lookups an hour, counted by a salted hash of its address, never the address;
    - new fetches stop while GitHub reports fewer than 300 points left. Stored recaps keep playing; a visitor asking for a new name gets "The server is busy, try again in a few minutes".
+   - whenever no new fetch may start (the client limit, the quota floor, a wait that times out, GitHub out of quota), a stored recap past its 12 hours stands in, but only while it is less than 7 days old (`STALE_SERVE_MS`, `canServeStale`). Privacy flags are frozen at fetch time, so an older copy could name a repository its owner has since made private; past the cap the visitor gets "busy" or "limited", as if nothing were stored.
 6. **Owners can hide their public recap.** Settings has a "Hide my public recap" switch. While it is on, the server doesn't fetch the account and visitors read "@x has hidden their recap"; the owner still sees their own recap there. Hiding also deletes the stored public recap. The hide list is keyed by GitHub id (`hidden_accounts`), so a renamed login stays hidden. "Delete my data" hides the public recap and deletes the stored one too, so deleting still removes the recap from the site.
 
 ## Consequences
