@@ -38,7 +38,7 @@ One main archetype plus up to two runner-ups. If none fits yet, the story says s
 - The story itself, in the browser, with its soundtrack.
 - Ten slides as PNG (1080 × 1350, one per chapter plus the letter), or all ten in a ZIP.
 - One PDF with the same ten slides.
-- A public page at /u/<your-login>, off until you publish it; private repository names are removed.
+- A public page at /<your-username>, built from public activity only, for every GitHub username; private repository names never appear, and the owner can hide it in Settings.
 - An MP4 video in four aspect ratios: coming soon, not available yet.
 
 ## Privacy
@@ -46,8 +46,8 @@ One main archetype plus up to two runner-ups. If none fits yet, the story says s
 - Reads: counts GitHub already keeps about your year (contributions, languages, repositories you committed to, stars, pull requests).
 - Never touches: your code. Signing in asks GitHub for no repository permissions.
 - Token: kept on the server only, encrypted at rest, never sent to the browser.
-- Public: nothing until you publish. A published recap drops private repository names, your timezone and the hours you commit.
-- Leaving: Settings, then Delete my data, removes your account and recap and revokes WrapYourGit's access to GitHub.
+- Public: a recap of your public activity at /<your-username>, open to anyone like your GitHub profile. It drops private repository names, your timezone and the hours you commit. Settings has a switch to hide it.
+- Leaving: Settings, then Delete my data, removes your account and recap, hides your public recap and revokes WrapYourGit's access to GitHub.
 - Full policy: https://wrapyourgit.habibiahmada.dev/privacy
 
 ## FAQ
@@ -64,7 +64,9 @@ One main archetype plus up to two runner-ups. If none fits yet, the story says s
 
 **Can I download the video?** Not yet. MP4 export is still being set up. Today you can download every slide as a PNG, all of them as a ZIP, or one PDF.
 
-**How do I delete my data?** Sign in, open Settings and choose Delete my data. It removes your recap and account and revokes WrapYourGit's access to GitHub.
+**Can anyone open a recap of my username?** Yes. Like your GitHub profile, a recap of your public activity is open to anyone at /your-username. It never names private repositories. To hide it, sign in and turn on Hide my public recap in Settings.
+
+**How do I delete my data?** Sign in, open Settings and choose Delete my data. It removes your recap and account, hides your public recap and revokes WrapYourGit's access to GitHub.
 
 ## Author
 

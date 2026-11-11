@@ -27,11 +27,11 @@ export const metadata: Metadata = {
   },
 };
 
-const UPDATED = "10 November 2026";
+const UPDATED = "11 November 2026";
 
 /*
  * Every statement here describes what the code does today (server/auth.ts, server/recaps.ts,
- * analytics/public.ts). Change this page in the same change that changes the behaviour.
+ * server/public-recaps.ts, analytics/public.ts). Change this page in the same change that changes the behaviour.
  */
 
 const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
@@ -41,9 +41,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     body: (
       <>
         <p>
-          WrapYourGit reads activity counts from GitHub to build your yearly recap. It never reads
-          your code, stores only what the recap needs, shares nothing unless you publish it, and
-          deletes everything when you ask.
+          WrapYourGit reads activity counts from GitHub to build yearly recaps. Anyone can open a
+          recap of any GitHub username, built from public activity only, the same activity a GitHub
+          profile shows. It never reads code, stores only what a recap needs, lets you hide your
+          public recap, and deletes everything when you ask.
         </p>
       </>
     ),
@@ -87,6 +88,23 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           <strong>A session</strong>: we store a SHA-256 hash of your session token, never the token
           itself.
         </li>
+        <li>
+          <strong>Public recaps, for any username</strong>: when someone opens /username, we read
+          that account's public activity with our own read-only token and store the public recap and
+          last year's public activity (for the comparison), keyed by the account's numeric GitHub
+          id, to answer the next visit. We read it again when it is more than 12 hours old. No
+          sign-in is involved, and private activity is never read.
+        </li>
+        <li>
+          <strong>A hashed address, for the lookup limit</strong>: each visitor can start 20 new
+          lookups an hour. To count them we store a salted SHA-256 hash of the visitor's IP address
+          with the time, never the address itself. Rows older than an hour are removed the next time
+          that address looks a name up.
+        </li>
+        <li>
+          <strong>Your hide choice</strong>: if you hide your public recap, we keep your numeric
+          GitHub id on a list, so the recap stays hidden even if you rename your account.
+        </li>
       </ul>
     ),
   },
@@ -109,9 +127,9 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     title: "How we use it",
     body: (
       <p>
-        Only to build, show and export your recap: the story, the letter, the video, the slides (as
-        PNG images or one ZIP) and the PDF, all made in your browser, and the public page if you
-        publish one. We do not sell or rent your data and do not use it to train models.
+        Only to build, show and export recaps: the story, the letter, the video, the slides (as PNG
+        images or one ZIP) and the PDF, all made in your browser, and the public recap at /username.
+        We do not sell or rent your data and do not use it to train models.
       </p>
     ),
   },
@@ -121,8 +139,8 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     body: (
       <>
         <p>
-          Nothing, until you publish your recap from the dashboard. A published recap at
-          /u/your-login shows a reduced copy:
+          Every GitHub username has a public recap at /username, open to anyone. It is built from
+          public activity only, read with our token rather than yours, and shows a reduced copy:
         </p>
         <ul>
           <li>
@@ -135,7 +153,11 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
             Night owl archetype.
           </li>
         </ul>
-        <p>Unpublishing takes the page down immediately.</p>
+        <p>
+          Turning on Hide my public recap in Settings takes it down immediately and deletes the
+          stored copy. Visitors then read that you hid it. Your own story, when you are signed in,
+          is never shown to anyone else.
+        </p>
       </>
     ),
   },
@@ -172,6 +194,15 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     body: (
       <ul>
         <li>Your recap and tokens: until you delete your data.</li>
+        <li>
+          Public recaps: until the owner hides theirs or deletes their data. A stored recap is read
+          again from GitHub when it is more than 12 hours old.
+        </li>
+        <li>Hashed addresses for the lookup limit: about an hour, as described above.</li>
+        <li>
+          Your hide choice: until you turn it off. It stays after you delete your data, so your
+          public recap stays hidden.
+        </li>
         <li>Sessions: 30 days, or until you sign out.</li>
         <li>Server logs: error summaries only, without tokens or recap content.</li>
       </ul>
@@ -184,10 +215,13 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
       <ul>
         <li>
           <strong>Delete my data</strong> in Settings removes your account, recap, tokens and
-          sessions, and revokes WrapYourGit's access to GitHub.
+          sessions, hides and deletes your public recap, and revokes WrapYourGit's access to GitHub.
         </li>
         <li>You can also revoke access at any time on GitHub, under Settings, Applications.</li>
-        <li>Unpublish your public recap from the dashboard whenever you like.</li>
+        <li>
+          <strong>Hide my public recap</strong> in Settings, whenever you like. Turn it off again to
+          make it public.
+        </li>
       </ul>
     ),
   },
