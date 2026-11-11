@@ -61,7 +61,6 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
         fontFamily={fontFamily}
         logos={logos}
         roll={roll}
-        zoom={1.1}
       />
       <Chrome
         stops={model.stops.length}

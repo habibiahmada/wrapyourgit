@@ -51,6 +51,13 @@ export type Box = {
   logoSide?: number;
   /** What this box is ("day", "sleeper", "gate-sign"), for tests and debugging; never drawn. */
   tag?: string;
+  /**
+   * For a wide slab that others stand on (a plaza, a tier, a plinth). Faces are sorted by their
+   * middles, and a wide floor's middle can be nearer the camera than a block on its far half, so
+   * it would be painted over the block's foot. A box with `under` is painted before every box
+   * without it; among slabs the higher number goes first (the plaza under the tier under a plinth).
+   */
+  under?: number;
 };
 export type Ball = { kind: "ball"; c: V3; r: number; color: string; opacity?: number };
 export type Solid = Box | Ball;
@@ -91,6 +98,8 @@ export type Prim =
       depth: number;
     };
 
+/** Further than anything in the scene: what `under` adds to a slab's place in the painting order. */
+const UNDER = 10_000;
 /** A puff nearer than this would cover the view. */
 const BALL_NEAR = 3;
 const CAP_HEIGHT = 0.7;
@@ -232,14 +241,16 @@ export function scenePrims(
       if (toward <= 0) continue;
       const corners = world.map(lens.toCamera);
       if (corners.some((c) => c[2] < NEAR)) continue;
-      const depth = lens.toCamera(mid)[2];
-      const colour = fogged(solid.tone[face.tone], depth, solid.lit);
+      const seen = lens.toCamera(mid)[2];
+      const colour = fogged(solid.tone[face.tone], seen, solid.lit);
+      // Where it comes in the painting order; the fog still goes by the real distance.
+      const depth = seen + (solid.under ?? 0) * UNDER;
       prims.push({
         kind: "poly",
         pts: corners.map(lens.toScreen),
         fill: solid.outline ? null : colour,
         stroke: solid.outline
-          ? fogged(solid.tone.top, depth, solid.lit)
+          ? fogged(solid.tone.top, seen, solid.lit)
           : solid.edge === false
             ? colour
             : mixHex(colour, "#000000", 0.35),
@@ -264,7 +275,7 @@ export function scenePrims(
               );
             })
           : [point(u0, v0), point(u1, v0), point(u1, v1), point(u0, v1)];
-        const fill = fogged(decal.fill, depth, solid.lit);
+        const fill = fogged(decal.fill, seen, solid.lit);
         prims.push({
           kind: "poly",
           pts: outline.map(screen),
@@ -274,7 +285,13 @@ export function scenePrims(
         });
       }
 
-      /** The matrix that lays a `wide` by `tall` patch of the face, from `topLeft`, on the screen. */
+      /**
+       * The matrix that lays a `wide` by `tall` patch of the face on the screen. A matrix is flat
+       * and the view is not, so it is taken across the patch's middle: a line of text runs along
+       * the patch's middle line, from the middle of one end to the middle of the other. Taken at
+       * a corner, words on a face seen in steep perspective slant against the face's own edges
+       * and run past the end the view has made short.
+       */
       const patch = (
         topLeft: V3,
         topRight: V3,
@@ -282,17 +299,28 @@ export function scenePrims(
       ): { matrix: Matrix; wide: number; tall: number } => {
         const wide = length(topLeft, topRight);
         const tall = length(topLeft, bottomLeft);
-        const a = screen(topLeft);
-        const b = screen(topRight);
-        const c = screen(bottomLeft);
+        const mid = (p: V3, q: V3): V3 => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
+        const bottomRight: V3 = [
+          topRight[0] + bottomLeft[0] - topLeft[0],
+          topRight[1] + bottomLeft[1] - topLeft[1],
+          topRight[2] + bottomLeft[2] - topLeft[2],
+        ];
+        const left = screen(mid(topLeft, bottomLeft));
+        const right = screen(mid(topRight, bottomRight));
+        const top = screen(mid(topLeft, topRight));
+        const bottom = screen(mid(bottomLeft, bottomRight));
+        // Halfway between the ends on screen, so the patch reaches each end and no further.
+        const centre = [(left[0] + right[0]) / 2, (left[1] + right[1]) / 2] as const;
+        const ax = [(right[0] - left[0]) / wide, (right[1] - left[1]) / wide] as const;
+        const ay = [(bottom[0] - top[0]) / tall, (bottom[1] - top[1]) / tall] as const;
         return {
           matrix: [
-            (b[0] - a[0]) / wide,
-            (b[1] - a[1]) / wide,
-            (c[0] - a[0]) / tall,
-            (c[1] - a[1]) / tall,
-            a[0],
-            a[1],
+            ax[0],
+            ax[1],
+            ay[0],
+            ay[1],
+            centre[0] - (ax[0] * wide) / 2 - (ay[0] * tall) / 2,
+            centre[1] - (ax[1] * wide) / 2 - (ay[1] * tall) / 2,
           ],
           wide,
           tall,
@@ -314,7 +342,7 @@ export function scenePrims(
           x: wide / 2,
           y: tall / 2,
           size,
-          fill: fogged(label.fill, depth, solid.lit),
+          fill: fogged(label.fill, seen, solid.lit),
           weight: label.weight ?? 800,
           capHeightPx: CAP_HEIGHT * size * Math.hypot(matrix[2], matrix[3]),
           depth: depth - 0.03,

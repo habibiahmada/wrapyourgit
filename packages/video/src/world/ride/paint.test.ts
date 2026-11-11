@@ -101,7 +101,8 @@ test("text lies on its face through its matrix, at a font size the browser draws
   // The matrix, then a scale that turns a 100px font into the text's size in world units.
   expect(log).toContain("transform 1 0 0 1 5 6");
   expect(log).toContain("transform 0.005 0 0 0.005 0 0");
-  expect(log).toContain("text 42% @200,400 800 100px Test #ffffff");
+  // A generic family follows the story's own, so a face that has not loaded falls back to sans-serif.
+  expect(log).toContain("text 42% @200,400 800 100px Test, sans-serif #ffffff");
   expect(log[0]).toBe("save");
   expect(log.at(-1)).toBe("restore");
 });

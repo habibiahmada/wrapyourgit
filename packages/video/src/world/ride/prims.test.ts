@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { type Box, fitText, type Prim, scenePrims } from "./prims";
-import type { RideCamera } from "./project";
+import { projectPoint, type RideCamera } from "./project";
 
 const tone = { top: "#111111", left: "#222222", right: "#333333" };
 const box: Box = { kind: "box", at: [0, 0, 0], size: [1, 1, 1], tone };
@@ -154,4 +154,61 @@ test("a flipped text is turned half round in its rect, for reading from the othe
   expect(turned.size).toBeCloseTo(plain.size);
   expect(turned.capHeightPx / plain.capHeightPx).toBeGreaterThan(0.8);
   expect(turned.capHeightPx / plain.capHeightPx).toBeLessThan(1.25);
+});
+
+test("a slab marked as lying under others is painted before what stands on it", () => {
+  // A wide floor, and a block on its far half: the floor's middle is nearer the camera than the
+  // block, so by depth alone the floor's top would be painted over the block's foot.
+  const floor: Box = { kind: "box", at: [-4, -4, 0], size: [8, 8, 0.2], tone, under: 1 };
+  const block: Box = {
+    kind: "box",
+    at: [2, -3.5, 0.2],
+    size: [1, 1, 2],
+    tone: { top: "#aaaaaa", left: "#bbbbbb", right: "#cccccc" },
+  };
+  const fills = polys(scenePrims([block, floor], cam, frame, clear)).map((p) =>
+    p.kind === "poly" ? p.fill : null,
+  );
+  expect(fills.indexOf("#111111")).toBeLessThan(fills.indexOf("#bbbbbb"));
+  expect(fills.lastIndexOf("#222222")).toBeLessThan(fills.indexOf("#aaaaaa"));
+  // Without the mark the floor's top comes after the block's side.
+  const plain = polys(scenePrims([block, { ...floor, under: undefined }], cam, frame, clear)).map(
+    (p) => (p.kind === "poly" ? p.fill : null),
+  );
+  expect(plain.indexOf("#111111")).toBeGreaterThan(plain.indexOf("#bbbbbb"));
+});
+
+test("text on a face seen in steep perspective runs along its middle line, end to end", () => {
+  // A long board close to a wide lens: its top and bottom edges run at different slopes.
+  const near: RideCamera = { pos: [-1, -5, 2], look: [6, 0, 2], fov: 70 };
+  const wall: Box = {
+    kind: "box",
+    at: [0, 0, 0],
+    size: [10, 0.2, 4],
+    tone,
+    texts: [{ on: "all", rect: [0, 0, 1, 1], text: "2026", fill: "#ffffff" }],
+  };
+  // The long face toward the camera: its text is centred 5 along.
+  const text = scenePrims([wall], near, frame, clear).find(
+    (p) => p.kind === "text" && Math.abs(p.x - 5) < 1e-9,
+  );
+  if (text?.kind !== "text") throw new Error("no text");
+  const on = (x: number, z: number) => {
+    const p = projectPoint([x, 0, z], near, frame);
+    if (!p) throw new Error("behind the camera");
+    return p;
+  };
+  const [a, b, c, d, e, f] = text.matrix;
+  // Its middle line runs from the middle of the face's one end to the middle of the other, so
+  // the words never run past an end that the view has made short.
+  const ends = [on(0, 2), on(10, 2)] as const;
+  const wide = text.x * 2;
+  expect(c * text.y + e).toBeCloseTo(ends[0][0], 3);
+  expect(d * text.y + f).toBeCloseTo(ends[0][1], 3);
+  expect(a * wide + c * text.y + e).toBeCloseTo(ends[1][0], 3);
+  expect(b * wide + d * text.y + f).toBeCloseTo(ends[1][1], 3);
+  // Its baseline runs along the face's middle line, not along its top edge.
+  const [left, right] = [on(0, 2), on(10, 2)];
+  const along = Math.atan2(Math.abs(right[1] - left[1]), Math.abs(right[0] - left[0]));
+  expect(Math.atan2(Math.abs(b), Math.abs(a))).toBeCloseTo(along, 3);
 });

@@ -91,7 +91,7 @@ export function paintPrims(brush: Brush, prims: readonly Prim[], extras: PaintEx
         brush.save();
         brush.transform(...p.matrix);
         brush.transform(scale, 0, 0, scale, 0, 0);
-        brush.font = `${p.weight} ${FONT_PX}px ${extras.fontFamily}`;
+        brush.font = `${p.weight} ${FONT_PX}px ${extras.fontFamily}, sans-serif`;
         brush.fillStyle = p.fill;
         brush.fillText(p.text, (p.x * FONT_PX) / p.size, (p.y * FONT_PX) / p.size);
         brush.restore();
