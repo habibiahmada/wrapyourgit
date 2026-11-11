@@ -103,6 +103,7 @@ async function Settings({
                 type="submit"
                 role="switch"
                 aria-checked={hidden}
+                aria-describedby="public-status"
                 name="hide"
                 value={hidden ? "no" : "yes"}
                 className="group inline-flex min-h-11 items-center gap-3 rounded-[var(--radius-control)] px-1 font-semibold"
@@ -127,7 +128,9 @@ async function Settings({
                 </span>
               </button>
             </form>
-            <p role="status" className="mt-2 max-w-2xl text-muted">
+            {/* Read with the switch: after the switch is pressed the page re-renders, and a status
+                region that arrives with it is not announced reliably on its own. */}
+            <p id="public-status" role="status" className="mt-2 max-w-2xl text-muted">
               {hidden
                 ? `Hidden. Visitors read "@${user.login} has hidden their recap".`
                 : "Public. Your private repositories are never named there."}
