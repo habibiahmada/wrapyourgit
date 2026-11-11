@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { GitHubApiError } from "@wyg/github";
 import { comparisonSpanEnd } from "./sync-policy";
 
 /*
@@ -42,6 +43,17 @@ export function claimIsStale(since: Date, now: Date): boolean {
 export function previousIsCurrent(through: string | null, year: number, now: Date): boolean {
   if (through === null) return false;
   return through >= comparisonSpanEnd(year, now).toISOString().slice(0, 10);
+}
+
+/**
+ * Whether GitHub refused for quota: GraphQL's primary limit comes back as an error of type
+ * RATE_LIMITED, its secondary limits as HTTP 403 or 429. Visitors then get "busy", not "error".
+ */
+export function isRateLimited(error: unknown): boolean {
+  if (!(error instanceof GitHubApiError)) return false;
+  if (error.status === 403 || error.status === 429) return true;
+  const details = Array.isArray(error.details) ? error.details : [];
+  return details.some((item) => (item as { type?: unknown } | null)?.type === "RATE_LIMITED");
 }
 
 /** The client's own address: the first hop of x-forwarded-for, which the platform sets. */

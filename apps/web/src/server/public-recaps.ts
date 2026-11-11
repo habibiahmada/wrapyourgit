@@ -20,6 +20,7 @@ import {
   firstForwardedAddress,
   hashClient,
   isFresh,
+  isRateLimited,
   previousIsCurrent,
   underClientLimit,
 } from "./public-policy";
@@ -86,6 +87,8 @@ export async function loadPublicRecapWith(
 ): Promise<PublicResult> {
   const { store } = deps;
   let login = requested;
+  // What a visitor gets when GitHub is out of quota mid-way: the stored recap if there is one.
+  let fallback: PublicResult | null = null;
   try {
     // A fresh recap stored under this login needs no GitHub call: it saves a point per view and
     // keeps cached pages working if the token expires. Hidden is checked by the stored id.
@@ -115,6 +118,7 @@ export async function loadPublicRecapWith(
       ? { kind: "recap", login, data: stored.data }
       : null;
     if (storedResult && stored && isFresh(stored.fetchedAt, deps.now())) return storedResult;
+    fallback = storedResult;
 
     // Whenever no new fetch may start, a stored recap, even an old one, beats an error page.
     if (!canStartFetch(account.remaining)) return storedResult ?? { kind: "busy", login };
@@ -135,6 +139,7 @@ export async function loadPublicRecapWith(
     }
   } catch (error) {
     console.warn(`public recap failed: ${errorSummary(error)}`);
+    if (isRateLimited(error)) return fallback ?? { kind: "busy", login };
     return { kind: "error", login };
   }
 }

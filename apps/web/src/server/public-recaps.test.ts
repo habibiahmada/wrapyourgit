@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
-import type { AccountLookup, PreviousYearActivity, YearActivity } from "@wyg/github";
+import {
+  type AccountLookup,
+  GitHubApiError,
+  type PreviousYearActivity,
+  type YearActivity,
+} from "@wyg/github";
 import { SCHEMA_VERSION } from "@wyg/schema";
 
 // public-recaps.ts is server-only; the guard throws outside a React server bundle.
@@ -62,6 +67,7 @@ let calls: { lookup: number; year: number; previous: number };
 let failYear: boolean;
 let failPrevious: boolean;
 let failRecord: boolean;
+let githubError: { lookup?: Error; year?: Error };
 let onSleep: (() => void) | null;
 
 const store: Store = {
@@ -104,11 +110,13 @@ const store: Store = {
 const deps: Deps = {
   lookup: async () => {
     calls.lookup++;
+    if (githubError.lookup) throw githubError.lookup;
     return account;
   },
   fetchYear: async (login) => {
     calls.year++;
     if (failYear) throw new Error("boom");
+    if (githubError.year) throw githubError.year;
     return activity(login);
   },
   fetchPrevious: async (_login, _year, spanTo) => {
@@ -144,6 +152,7 @@ beforeEach(() => {
   failYear = false;
   failPrevious = false;
   failRecord = false;
+  githubError = {};
   onSleep = null;
   // Failures are logged on purpose; keep the test output clean.
   spyOn(console, "warn").mockImplementation(() => {});
@@ -291,6 +300,23 @@ describe("loadPublicRecapWith", () => {
     expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
     expect(calls.year).toBe(0);
     expect(recorded).toEqual(["c"]);
+  });
+
+  test("GitHub out of quota on the lookup says busy, not error", async () => {
+    githubError.lookup = new GitHubApiError("limit", 200, [{ type: "RATE_LIMITED" }]);
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+  });
+
+  test("GitHub out of quota on the fetch: busy, or the stored recap, and the claim released", async () => {
+    githubError.year = new GitHubApiError("limit", 403);
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect(row?.fetchingSince).toBeNull();
+    githubError = {};
+    await seed();
+    clock += 13 * HOUR;
+    githubError.year = new GitHubApiError("limit", 429);
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect(row?.fetchingSince).toBeNull();
   });
 
   test("a failed fetch stores nothing, releases the claim and says error", async () => {

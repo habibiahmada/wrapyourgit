@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { GitHubApiError } from "@wyg/github";
 import {
   canStartFetch,
   claimIsStale,
   firstForwardedAddress,
   hashClient,
   isFresh,
+  isRateLimited,
   previousIsCurrent,
   underClientLimit,
 } from "./public-policy";
@@ -80,5 +82,20 @@ describe("previousIsCurrent", () => {
     expect(previousIsCurrent("2025-03-01", 2026, after)).toBe(false);
     expect(previousIsCurrent("2025-12-31", 2026, after)).toBe(true);
     expect(previousIsCurrent("2025-12-31", 2026, new Date("2027-06-01T00:00:00Z"))).toBe(true);
+  });
+});
+
+describe("isRateLimited", () => {
+  test("GraphQL's RATE_LIMITED error and the secondary limits (403, 429) count", () => {
+    expect(isRateLimited(new GitHubApiError("x", 200, [{ type: "RATE_LIMITED" }]))).toBe(true);
+    expect(isRateLimited(new GitHubApiError("x", 403))).toBe(true);
+    expect(isRateLimited(new GitHubApiError("x", 429))).toBe(true);
+  });
+
+  test("other failures do not", () => {
+    expect(isRateLimited(new GitHubApiError("x", 401))).toBe(false);
+    expect(isRateLimited(new GitHubApiError("x", 200, [{ type: "NOT_FOUND" }]))).toBe(false);
+    expect(isRateLimited(new GitHubApiError("x", 502))).toBe(false);
+    expect(isRateLimited(new Error("boom"))).toBe(false);
   });
 });
