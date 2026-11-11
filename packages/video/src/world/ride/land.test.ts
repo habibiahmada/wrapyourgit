@@ -3,7 +3,7 @@ import { emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity, type City } from "../city";
 import { gates } from "./gates.model";
-import { land, type View } from "./land";
+import { land, SIGN_LATERAL, type View } from "./land";
 import type { Box, Solid } from "./prims";
 import { rideStops } from "./stops";
 import { at, dayPlace, weekS } from "./track";
@@ -27,11 +27,18 @@ const dayBox = (solids: Solid[], c: City, date: string): Box | undefined => {
     (b) => Math.abs((b.pivot?.[0] ?? 1e9) - x) < 1e-6 && Math.abs((b.pivot?.[1] ?? 1e9) - y) < 1e-6,
   );
 };
-const signTexts = (solids: Solid[], col: number) => {
-  const [x, y] = at(weekS(col) - 0.8);
-  const sign = boxes(solids, "gate-sign").find(
-    (b) => Math.abs((b.pivot?.[0] ?? 1e9) - x) < 1e-6 && Math.abs((b.pivot?.[1] ?? 1e9) - y) < 1e-6,
+/** The month sign at a gate's week, on whichever side of the rail it stands. */
+const signAt = (solids: Solid[], col: number) =>
+  boxes(solids, "gate-sign").find((b) =>
+    [-1, 1].some((side) => {
+      const [x, y] = at(weekS(col) - 0.8, side * SIGN_LATERAL);
+      return (
+        Math.abs((b.pivot?.[0] ?? 1e9) - x) < 1e-6 && Math.abs((b.pivot?.[1] ?? 1e9) - y) < 1e-6
+      );
+    }),
   );
+const signTexts = (solids: Solid[], col: number) => {
+  const sign = signAt(solids, col);
   return sign ? (sign.texts ?? []).filter((t) => t.on === "back").map((t) => t.text) : null;
 };
 
@@ -77,49 +84,58 @@ test("the overview lights every day with data and drops the sleepers", () => {
 });
 
 test("January's sign carries one line, a later month's two", () => {
-  // The train is at the start of the rail, away from every station, so no gate is folded.
   const { city: c, all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
   const g = gates(sampleRecap, c);
   expect(signTexts(all, g[0]?.col ?? 0)).toEqual(["JAN"]);
-  // The first later month whose gate stands clear of every plaza.
-  const later = g.slice(1).find((gate) => gate.line && signTexts(all, gate.col) !== null);
-  if (!later) throw new Error("no gate stands clear of the plazas");
-  expect(signTexts(all, later.col)).toEqual([later.name, later.line ?? ""]);
+  expect(g[2]?.line).not.toBeNull();
+  expect(signTexts(all, g[2]?.col ?? 0)).toEqual(["MAR", g[2]?.line ?? ""]);
 });
 
-test("no gate stands where the train rests at a station", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
-  for (const gate of gates(sampleRecap, c)) {
-    const s = weekS(gate.col) - 0.8;
-    const under = stops.some((stop) => stop.plaza && s > stop.s - 1 && s < stop.s + 3.5);
-    expect(signTexts(all, gate.col) === null).toBe(under);
+test("every month has its sign beside the rail, and it stays put wherever the train is", () => {
+  const view = (trainS: number): View => ({ trainS, from: 0, to: 110, overview: 0 });
+  const g = gates(sampleRecap, city);
+  const far = build(sampleRecap, view(0)).all;
+  for (const gate of g) expect(signAt(far, gate.col)).toBeDefined();
+  // At rest in each station nothing has folded, moved or gone.
+  for (const stop of stops.filter((x) => x.plaza)) {
+    const here = build(sampleRecap, view(stop.s)).all;
+    for (const gate of g) expect(signAt(here, gate.col)).toEqual(signAt(far, gate.col));
   }
 });
 
-test("a gate the station's camera looks past folds away while the train is in, and stands again after", () => {
-  const g = gates(sampleRecap, city);
-  const plazas = stops.filter((stop) => stop.plaza);
-  // Behind where the train rests, but not so near the plaza that it is never built.
-  const pair = plazas
-    .flatMap((stop) => g.map((gate) => ({ stop, gate, s: weekS(gate.col) - 0.8 })))
-    .find(({ stop, s }) => s >= stop.s - 12 && s < stop.s - 3.5);
-  if (!pair) throw new Error("no gate stands just behind a station in the sample");
-  const view = (trainS: number): View => ({ trainS, from: 0, to: 110, overview: 0 });
-  const signAt = (trainS: number) => signTexts(build(sampleRecap, view(trainS)).all, pair.gate.col);
-  expect(signAt(pair.s - 2)).not.toBeNull();
-  expect(signAt(pair.stop.s)).toBeNull();
-  expect(signAt(pair.stop.s + 6)).not.toBeNull();
-});
-
-test("no gate stands near a station while the train rests there", () => {
-  const g = gates(sampleRecap, city);
-  for (const stop of stops.filter((x) => x.plaza)) {
-    const { all } = build(sampleRecap, { trainS: stop.s, from: 0, to: 110, overview: 0 });
-    for (const gate of g) {
-      const s = weekS(gate.col) - 0.8;
-      if (s >= stop.s - 12 && s <= stop.s + 18) expect(signTexts(all, gate.col)).toBeNull();
+test("a month sign is low, and never stands in front of a station's own sign", () => {
+  const { all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
+  const plazas = stops.filter((x) => x.plaza);
+  for (const gate of gates(sampleRecap, city)) {
+    const sign = signAt(all, gate.col);
+    if (!sign) throw new Error(`no sign for ${gate.name}`);
+    // Lower than the train, so it never stands in front of a station's hero.
+    expect(sign.at[2] + sign.size[2]).toBeLessThan(2);
+    const s = weekS(gate.col) - 0.8;
+    for (const plaza of plazas.filter((x) => s > x.s - 5 && s < x.s + 2)) {
+      const [x, y] = at(s, -plaza.side * SIGN_LATERAL);
+      expect(sign.pivot?.[0]).toBeCloseTo(x);
+      expect(sign.pivot?.[1]).toBeCloseTo(y);
     }
   }
+});
+
+test("between two stations a month sign keeps to the side of the one behind it", () => {
+  // The camera's shot in the middle of a move is on the other side: a sign there would pass
+  // between the camera and the train.
+  const { all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
+  const plazas = stops.filter((x) => x.plaza);
+  let checked = 0;
+  for (const gate of gates(sampleRecap, city)) {
+    const s = weekS(gate.col) - 0.8;
+    const behind = plazas.findLast((x) => x.s <= s);
+    if (!behind || plazas.some((x) => s > x.s - 5 && s < x.s + 2)) continue;
+    const [x, y] = at(s, behind.side * SIGN_LATERAL);
+    expect(signAt(all, gate.col)?.pivot?.[0]).toBeCloseTo(x);
+    expect(signAt(all, gate.col)?.pivot?.[1]).toBeCloseTo(y);
+    checked++;
+  }
+  expect(checked).toBeGreaterThan(0);
 });
 
 test("nothing is built outside the view", () => {

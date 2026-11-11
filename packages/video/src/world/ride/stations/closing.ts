@@ -33,12 +33,13 @@ export const closing: Station = ({ data, c, yaw, frame, build }) => {
       decals: [{ on: "back", rect: [0, 0.3, 1, 0.7], fill: "#ffd866" }],
     }),
   );
-  // The board goes up as the train comes in: from the station before, the terminus is bare.
+  // The board is lowered in as the train comes in, like every hero: from the station before, the
+  // terminus is bare, and nothing this large appears on the spot.
   const rise = 1 - (1 - Math.max(0, Math.min(1, build))) ** 3;
   if (rise <= 0) return out;
   out.push(
     ...board(
-      c,
+      [c[0], c[1], c[2] + (1 - rise) * 14],
       yaw,
       5.6,
       0,
@@ -49,7 +50,7 @@ export const closing: Station = ({ data, c, yaw, frame, build }) => {
         ...model.lines.map((text) => ({ text, tall: 0.6 })),
       ],
       "across",
-      1.2 * rise,
+      1.2,
     ),
   );
   // Fireworks: three bursts, each opening and fading in turn, on a 60-frame loop.

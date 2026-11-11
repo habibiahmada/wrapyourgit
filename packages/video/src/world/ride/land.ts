@@ -19,10 +19,10 @@ export const LIGHT_AHEAD = 15;
 const PLAZA_AHEAD = 4.5;
 /** Gates and props keep this far from a plaza, so nothing stands between the camera and a hero. */
 const CLEAR = 8;
-/** A gate this far behind where the train rests is in the station camera's foreground. */
-const BEHIND = 12;
-/** And one this far ahead is at the edge of its picture. */
-const AHEAD = 18;
+/** How far from the rail's middle a month sign stands: clear of the train, and of the camera that rides behind it. */
+export const SIGN_LATERAL = 3;
+/** How far behind and ahead of where the train rests a station's own sign reaches. */
+const SIGN_ZONE = [5, 2] as const;
 const SLEEPER = 0.7;
 
 export type View = {
@@ -106,60 +106,47 @@ export function land(
     }
   }
 
-  // A gate per month, with its name and the contributions made before it on the sign.
+  // A sign per month beside the rail, with its name and the contributions made before it. It is
+  // low, so it never stands in front of a station's hero. A gate over the rail had to fold away
+  // at every station once the stations stood close together.
+  const plazaStops = stops.filter((stop) => stop.plaza);
   for (const gate of gates) {
     const s = weekS(gate.col) - 0.8;
-    // No gate where a train at rest would stand under it, or pull away under one still rising.
-    const atStation = stops.some((stop) => stop.plaza && s > stop.s - 1 && s < stop.s + 3.5);
-    if (!inView(s) || atStation) continue;
-    // A gate just behind a station stands in the station camera's foreground, and one a little
-    // way ahead at the edge of its picture. Each folds down as the train pulls in and rises again
-    // as it leaves; one behind waits until the train has passed under it.
-    const up = Math.min(
-      1,
-      ...stops
-        .filter(
-          (stop) =>
-            stop.plaza &&
-            (s < stop.s ? s >= stop.s - BEHIND && view.trainS >= s : s <= stop.s + AHEAD),
-        )
-        .map((stop) => Math.max(0, (Math.abs(view.trainS - stop.s) - 1) / 2.5)),
+    if (!inView(s)) continue;
+    // Between two stations it keeps to the side of the one behind it: the shot in the middle of
+    // a move is on the other side, and a sign there would pass between the camera and the train.
+    // Where a station's own sign stands between the rail and its plaza, it crosses over.
+    const behind = plazaStops.findLast((stop) => stop.s <= s);
+    const ahead = plazaStops.find((stop) => stop.s > s);
+    const kept = behind ? behind.side : ahead ? -ahead.side : 1;
+    const beside = plazaStops.some(
+      (stop) => stop.side === kept && s > stop.s - SIGN_ZONE[0] && s < stop.s + SIGN_ZONE[1],
     );
-    if (up < 0.1) continue;
-    const tall = 3.3 * up;
-    for (const lateral of [-2.1, 2.1]) {
-      objects.push(railBox(s, lateral, 0, [0.5, 0.5, 0.3], TONE.mid, { tag: "gate-post" }));
+    const lateral = (beside ? -kept : kept) * SIGN_LATERAL;
+    for (const dy of [-0.8, 0.8]) {
       objects.push(
-        railBox(s, lateral, 0.3, [0.28, 0.28, tall], TONE.dark, {
+        railBox(s, lateral + dy, 0, [0.14, 0.14, 0.6], TONE.dark, {
           tag: "gate-post",
-          decals: [{ on: "all", rect: [0, 0.86, 1, 0.94], fill: LIT }],
+          edge: false,
         }),
       );
     }
-    objects.push(
-      railBox(
-        s,
-        0,
-        0.3 + tall,
-        [0.32, 4.6, 0.3],
-        { top: "#56e070", left: LIT, right: "#26a641" },
-        { lit: true, tag: "gate-beam" },
-      ),
-    );
-    // The sign is taken down first: a folding gate carries no words.
-    if (up < 1) continue;
     const texts: FaceText[] = (["front", "back"] as const).flatMap((on): FaceText[] =>
       gate.line
         ? [
             { on, rect: [0.06, 0.54, 0.94, 0.94], text: gate.name, fill: "#ffffff" },
             // As tall as the month: the total is what the sign is for.
-            { on, rect: [0.04, 0.06, 0.96, 0.5], text: gate.line, fill: "#7ee08f" },
+            { on, rect: [0.04, 0.1, 0.96, 0.52], text: gate.line, fill: "#7ee08f" },
           ]
         : [{ on, rect: [0.08, 0.2, 0.92, 0.8], text: gate.name, fill: "#ffffff" }],
     );
     objects.push(
-      // Large enough to read from several squares away, so it is in view for longer.
-      railBox(s, 0, 3.9, [0.14, 3.4, 1.6], TONE.ink, { lit: true, tag: "gate-sign", texts }),
+      railBox(s, lateral, 0.6, [0.12, 2.4, 1.25], TONE.ink, {
+        lit: true,
+        tag: "gate-sign",
+        texts,
+        decals: [{ on: "all", rect: [0, 0, 1, 0.07], fill: LIT }],
+      }),
     );
   }
 

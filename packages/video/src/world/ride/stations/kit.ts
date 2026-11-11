@@ -217,7 +217,8 @@ const SIGN = { wide: 5.5, row: 0.38 };
  * A station's title and what explains its numbers, on a low sign on the ground between the rail
  * and the plaza, where it covers nothing but paving. Every row is the same height, tall enough to
  * read (spec "How big printed text must be"); a line too long for the sign at that size goes onto
- * two rows instead of being set smaller. It stands ahead of the plaza's middle (seen from across
+ * two rows instead of being set smaller. It is always there, like a station's name beside a
+ * platform: a sign that appeared as the train came in read as a glitch. It stands ahead of the plaza's middle (seen from across
  * the rail, what is nearer the rail slides back along it).
  */
 export function nameBoard(
@@ -226,8 +227,6 @@ export function nameBoard(
   place: { deep: number; fit?: boolean; scale?: number },
 ): Solid[] {
   const { c, yaw, stop } = ctx;
-  // Put out as the hero starts to build: a station the train has not reached shows no words.
-  if (ctx.build <= 0) return [];
   // A tall hero sets the camera further back; its sign is made larger by `scale` to read the same.
   const scale = place.scale ?? 1;
   const max = Math.floor((SIGN.wide * 0.9) / (0.6 * SIGN.row * 0.92));

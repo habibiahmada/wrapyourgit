@@ -333,6 +333,9 @@ export function rideCamera(
     const fps = timeline.restFrames / REST_SECONDS;
     const middle = middleShot(to, move / fps);
     const ride = (side: 1 | -1) => shotPose(SHOTS.RIDE, trainS, dest, side);
+    // The middle shot hangs behind the train, where the station it has just left stands: it
+    // takes the side away from that station's plaza, or it would fly through its hero.
+    const clear = from.plaza ? from.side : dest.side;
     const keys: { at: number; pose: Pose }[] =
       from.kind === "city" || dest.kind === "city"
         ? // The overview is one long pull, straight up and out, and straight back down.
@@ -345,8 +348,8 @@ export function rideCamera(
             { at: 0.24, pose: ride(dest.side) },
             ...(middle
               ? [
-                  { at: 0.42, pose: shotPose(SHOTS[middle], trainS, dest, dest.side) },
-                  { at: 0.58, pose: shotPose(SHOTS[middle], trainS, dest, dest.side) },
+                  { at: 0.42, pose: shotPose(SHOTS[middle], trainS, dest, clear) },
+                  { at: 0.58, pose: shotPose(SHOTS[middle], trainS, dest, clear) },
                   { at: 0.76, pose: ride(dest.side) },
                 ]
               : [{ at: 0.7, pose: ride(dest.side) }]),

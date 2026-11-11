@@ -53,7 +53,8 @@ export const busiest: Station = (ctx) => {
         {
           on: "sides",
           rect: [0.05, 0.08, 0.95, 0.37],
-          text: model.count === 1 ? "contribution" : "contributions",
+          // The noun follows the figure shown, so a rising count never reads "1 contributions".
+          text: shown === 1 ? "contribution" : "contributions",
           fill: "#c9d1d9",
           weight: 700,
         },
