@@ -3,20 +3,22 @@ import { ARCHETYPE_LABELS, STOP_TITLES } from "@wyg/video/copy";
 import { OPENINGS } from "@wyg/video/letter";
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { Art } from "@/components/art";
-import { CellField, demoLevels } from "@/components/site/cell-field";
 import { FrameReel } from "./frame-reel";
+import { SceneArt } from "./scene-art";
+import { archetypeScene, letterScene, vaultScene } from "./section-scenes";
+import { YearCity } from "./year-city";
 
 /*
  * Landing sections in the GitHub-dark style (DESIGN.md): dark canvas, surface boxes with hairline
- * borders, GitHub's contribution greens as the one accent. Every fact comes from the product
+ * borders, GitHub's contribution greens as the one accent, and isometric line-art dioramas
+ * (iso.ts) drawn on the server. Every fact comes from the product
  * itself: the stops from the story world's copy, archetype rules from metrics.md, letter lines
  * from letter.ts. No invented numbers or quotes (R-17, R-38).
  */
 
 const box = "rounded-xl border border-line bg-surface";
-const heading = "text-4xl leading-[1.05] font-bold tracking-tight text-balance sm:text-6xl";
-const lead = "max-w-xl text-lg text-muted sm:text-xl";
+const heading = "text-3xl leading-[1.08] font-bold tracking-tight text-balance sm:text-5xl";
+const lead = "max-w-xl text-lg text-muted";
 
 /** The world's stops in story order: the object keeps STOP_TITLES' declaration order. */
 const STOPS = Object.entries(STOP_TITLES);
@@ -113,35 +115,23 @@ export function StorySection() {
   );
 }
 
-const ARCHETYPES: { id: ArchetypeId; wears: string; rule: string }[] = [
+const ARCHETYPES: { id: ArchetypeId; rule: string }[] = [
   {
     id: "builder",
-    wears: "orange, in a hard hat, hammering in the workshop",
     rule: "You created at least two repositories, or made 50 or more commits to your own.",
   },
-  {
-    id: "consistent",
-    wears: "green, in a sweatband, running laps on the track",
-    rule: "You were active on at least 30% of the days so far.",
-  },
-  {
-    id: "explorer",
-    wears: "sky blue, cap and backpack, waving from the mountains",
-    rule: "You wrote in four or more languages.",
-  },
+  { id: "consistent", rule: "You were active on at least 30% of the days so far." },
+  { id: "explorer", rule: "You wrote in four or more languages." },
   {
     id: "collaborator",
-    wears: "pink, in a headset, handing work on over a shared map",
     rule: "You left ten or more reviews, or opened ten or more pull requests on other people's repositories.",
   },
   {
     id: "night-owl",
-    wears: "lavender, owl tufts and glasses, grooving over the city at night",
     rule: "At least 40% of your sampled commits landed between 22:00 and 04:00. Estimated, and labelled as such.",
   },
   {
     id: "open-sourcer",
-    wears: "teal, in a scarf, cheering by a community mural",
     rule: "You contributed to three or more public repositories you don't own.",
   },
 ];
@@ -159,25 +149,20 @@ export function ArchetypesSection() {
             What kind of developer were you?
           </h2>
           <p className={`reveal mt-6 max-w-2xl ${lead}`}>
-            The climax of the story names your archetype, with the facts that earned it. Each one
-            comes with its own Cell: its colour, its pose, its place. You get one, plus up to two
-            runner-ups you came close to. If none fits yet, the story says so honestly.
+            The climax of the story names your archetype, with the facts that earned it. You get
+            one, plus up to two runner-ups you came close to. If none fits yet, the story says so.
           </p>
         </div>
         <ul className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {ARCHETYPES.map(({ id, wears, rule }) => (
+          {ARCHETYPES.map(({ id, rule }) => (
             <li key={id} className={`reveal-zoom overflow-hidden ${box} hover:border-muted`}>
-              <div className="border-b border-line bg-canvas px-4 pt-4">
-                <Art
-                  id={`skin-${id}`}
-                  alt={`Cell as the ${ARCHETYPE_LABELS[id]}: ${wears}`}
-                  className="h-auto w-full"
-                />
+              {/* Each diorama draws the archetype's rule; the text below states it. */}
+              <div className="flex h-52 items-center justify-center border-b border-line bg-canvas px-8 py-6">
+                <SceneArt scene={archetypeScene(id)} className="h-full w-auto max-w-full" />
               </div>
               <div className="p-5">
-                <h3 className="text-2xl font-bold">{ARCHETYPE_LABELS[id]}</h3>
-                <p className="text-sm text-muted">{wears}</p>
-                <p className="mt-3 text-base text-muted">{rule}</p>
+                <h3 className="text-xl font-bold">{ARCHETYPE_LABELS[id]}</h3>
+                <p className="mt-2 text-base text-muted">{rule}</p>
               </div>
             </li>
           ))}
@@ -203,13 +188,11 @@ export function LetterSection() {
             counts. A relentless one is told to rest.
           </p>
         </div>
-        <div className="reveal-right relative flex flex-col gap-5 lg:pl-40">
-          {/* Cell stands beside its letters, unframed. The PNG has room around the character,
-              so negative margins pull it close to the first comment. */}
-          <Art
-            id="cutout-cell-wave"
-            alt=""
-            className="pointer-events-none mx-auto -mt-16 -mb-24 h-auto w-[22rem] lg:absolute lg:top-1/2 lg:-left-44 lg:m-0 lg:w-[30rem] lg:-translate-y-[58%] motion-safe:animate-[bob_2.4s_ease-in-out_infinite]"
+        <div className="reveal-right relative flex flex-col gap-5 lg:pl-60">
+          {/* The envelope the letters come out of. */}
+          <SceneArt
+            scene={letterScene()}
+            className="mx-auto h-auto w-64 lg:absolute lg:top-1/2 lg:-left-6 lg:w-60 lg:-translate-y-1/2"
           />
           <Comment label="for a quiet year">{quiet}</Comment>
           <Comment label="for a year that barely stopped" className="sm:ml-12">
@@ -271,23 +254,27 @@ export function KeepSection() {
       className="overflow-hidden border-t border-line px-4 py-24 sm:px-8 sm:py-32"
     >
       <div className="mx-auto grid max-w-7xl gap-16 lg:grid-cols-[1fr_1fr] lg:items-center">
-        {/* Three slides fanned out. The shadow marks them as printed objects lifted off the page. */}
+        {/* Three real slides laid flat in the page's isometric projection, stacked like prints.
+            The 2D transform maps a rectangle onto an isometric tile, so they match the art. */}
         <div
           aria-hidden
-          className="reveal-zoom relative mx-auto h-[26rem] w-full max-w-md sm:h-[32rem]"
+          className="reveal-zoom relative mx-auto h-[24rem] w-full max-w-md sm:h-[30rem]"
         >
-          {(["rhythm", "archetype", "city"] as const).map((file, i) => (
+          {(["city", "archetype", "rhythm"] as const).map((file, i) => (
             <Image
               key={file}
               src={`/landing/world-${file}.webp`}
               alt=""
               width={540}
               height={675}
-              sizes="18rem"
-              className="absolute top-0 left-1/2 h-auto w-56 rounded-xl border border-line shadow-[0_24px_48px_rgb(1_4_9/0.6)] sm:w-72"
+              sizes="16rem"
+              className="absolute left-1/2 h-auto w-48 rounded-lg border border-line sm:w-60"
               style={{
-                transform: `translateX(-50%) translateX(${(i - 1) * 26}%) rotate(${(i - 1) * 7}deg)`,
-                zIndex: i === 1 ? 3 : i,
+                top: `${8 + i * 18}%`,
+                transform:
+                  "translateX(-50%) rotate(-30deg) skewX(30deg) scaleY(0.864) rotate(0deg)",
+                boxShadow: i === 0 ? "none" : "0 -2px 0 #30363d",
+                zIndex: 3 - i,
               }}
             />
           ))}
@@ -376,11 +363,7 @@ export function PrivacySection() {
             Read the full privacy policy
           </a>
         </div>
-        <Art
-          id="cutout-cell-sleep"
-          alt="Cell asleep: nothing is shared until you say so"
-          className="reveal-right h-auto w-full"
-        />
+        <SceneArt scene={vaultScene()} className="reveal-right mx-auto h-auto w-full max-w-sm" />
       </div>
     </section>
   );
@@ -434,7 +417,6 @@ export function FaqSection() {
           <h2 id="faq-title" className={heading}>
             Questions people ask.
           </h2>
-          <Art id="cutout-cell-think" alt="" className="mt-6 hidden h-auto w-72 lg:block" />
         </div>
         <div className={`divide-y divide-line ${box}`}>
           {FAQ.map(({ q, a }) => (
@@ -458,18 +440,14 @@ export function FaqSection() {
   );
 }
 
-const CLOSING_CELLS = demoLevels(53, 21);
-
 export function ClosingSection({ action }: { action: ReactNode }) {
   return (
     <section
       aria-labelledby="closing-title"
       className="relative overflow-hidden border-t border-line"
     >
-      {/* The page closes on the same year of cells it opened with. */}
-      <CellField levels={CLOSING_CELLS} animate={false} className="block h-24 w-full sm:h-32" />
-      <div className="relative mx-auto grid max-w-7xl items-end gap-6 px-4 pt-16 sm:px-8 sm:pt-24 lg:grid-cols-[1.3fr_1fr]">
-        <div className="pb-16 sm:pb-24">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1fr_1.2fr]">
+        <div>
           <h2 id="closing-title" className={`reveal ${heading}`}>
             Your {EDITION_YEAR}, <span className="text-green">told back to you.</span>
           </h2>
@@ -478,12 +456,8 @@ export function ClosingSection({ action }: { action: ReactNode }) {
           </p>
           <div className="mt-10">{action}</div>
         </div>
-        {/* Cell leans in from the bottom edge, cut off by the section. */}
-        <Art
-          id="cutout-cell-cheer"
-          alt=""
-          className="mx-auto -mb-16 h-auto w-80 sm:w-[28rem] lg:-mb-20 lg:w-[34rem]"
-        />
+        {/* The page closes on a whole year: the hero showed a quarter of it. */}
+        <YearCity className="min-w-0" />
       </div>
     </section>
   );
