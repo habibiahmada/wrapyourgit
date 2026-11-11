@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CARD_SIZE, publicCardPng } from "@/server/card";
 import { clientKey, loadPublicRecap } from "@/server/public-recaps";
+import { isValidLogin } from "@/server/username";
 
 export const size = CARD_SIZE;
 export const contentType = "image/png";
@@ -16,6 +17,7 @@ export const maxDuration = 120;
  */
 export default async function Image({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
+  if (!isValidLogin(username)) notFound();
   const result = await loadPublicRecap(username, clientKey(await headers()));
   if (result.kind !== "recap") notFound();
   const png = await publicCardPng(result.data);

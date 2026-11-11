@@ -10,6 +10,7 @@ import { isFresh } from "@/server/public-policy";
 import { clientKey, loadPublicRecap } from "@/server/public-recaps";
 import { getRecap, type StoredRecap, SyncTooSoonError, syncRecap } from "@/server/recaps";
 import { recapPath, viewerKind } from "@/server/routes";
+import { isValidLogin } from "@/server/username";
 import { OPEN_GRAPH } from "@/site";
 import { PrivateNamesQuestion } from "../recap/private-names-question";
 import { WorldPlayer } from "../recap/world-player";
@@ -110,6 +111,8 @@ async function freshRecap(
 
 /** Anyone else: the public recap, fetched as an outsider sees it (never the owner's own). */
 async function VisitorRecap({ name }: { name: string }) {
+  // Covers /<username> and /u/<reserved name> alike (ruling R11): no lookup, no client-limit row.
+  if (!isValidLogin(name)) return <MissingPage login={name} />;
   const result = await loadPublicRecap(name, clientKey(await headers()));
   switch (result.kind) {
     case "recap":
