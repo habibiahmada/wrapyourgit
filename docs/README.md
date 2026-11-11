@@ -38,3 +38,4 @@
 | [0018](architecture/decisions/0018-production-only-deploys.md)           | Vercel deploys production only; no preview deployments or database branches              | Accepted                               |
 | [0019](architecture/decisions/0019-every-username-has-a-recap.md)        | Every GitHub username has a public recap at /<username>; owners can hide theirs          | Accepted                               |
 | [0020](architecture/decisions/0020-stars-from-star-history.md)           | Stars gained from GitHub star history; star and fork walks run under a time budget       | Accepted                               |
+| [0021](architecture/decisions/0021-isometric-cell-and-dioramas.md)       | Cell and the landing art in crisp isometric 3D                                           | Accepted                               |
