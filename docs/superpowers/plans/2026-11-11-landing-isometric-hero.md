@@ -38,12 +38,11 @@
 
 **Interfaces:**
 
-- Produces: `cityPaths(data: RecapData): CityPaths` where
-  `type CityPaths = { viewBox: string; ground: string; faces: { fill: string; d: string }[]; edges: string; weeks: number; busiest: { x: number; y: number } | null }` (coordinates in viewBox units; `busiest` is the centre of the busiest roof). `faces` holds one entry per distinct fill (top and two side shades per level), so its length is at most 12.
+- Produces: `cityPaths(data: RecapData): CityPaths` with `viewBox`, `ground` (every tile outline), `weeks: { col, buildings: Building[] }[]` and `busiest: { x, y } | null`. A `Building` holds roof, left and right path data and fills, `height` and `roofY`. Revised while building: merging faces by colour breaks back-to-front painting, so each active day keeps its own three paths, grouped by week (a safe painting order, and the unit of the entrance animation).
 
-- [ ] Test: `cityPaths(sampleRecap)` has `faces.length <= 12`, a non-empty `ground`, and `busiest` not null and inside the viewBox.
-- [ ] Test: for a recap whose calendar counts are all 0, `faces` is empty, `busiest` is null, `ground` is non-empty.
-- [ ] Test: the busiest roof is the highest point (its `y` is the minimum top `y` of all buildings).
+- [ ] Test: one building per active day, weeks in column order, non-empty `ground`; roofs only in the four greens.
+- [ ] Test: `busiest` sits on the busiest day's roof, inside the viewBox, on the tallest building.
+- [ ] Test: a recap whose counts are all 0 has no buildings, `busiest` null, and a non-empty `ground`.
 - [ ] Run `bun test apps/web/src/components/landing/city-paths` → fails.
 - [ ] Implement with `buildCity`, `isoPoint`, `plotHeight`, `cityBounds`; faces shaded as top / top mixed 18% toward `#0d1117` / 32% (same rule as `CityLayer.faces`), painted back to front (higher `col + row` later). Run → passes.
 - [ ] Commit `feat(web): build the hero city's SVG paths from a recap`.
