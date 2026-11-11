@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type Box, boxPaths, iso, paintOrder, TONES, viewBoxOf } from "./iso";
+import { type Box, boxPaths, intersects, iso, paintOrder, TONES, viewBoxOf } from "./iso";
 
 describe("iso", () => {
   test("uses the story city's 2:1 projection", () => {
@@ -17,12 +17,30 @@ describe("iso", () => {
     expect(faces.tone).toBe(TONES.dark);
   });
 
-  test("paints far boxes first and stacked boxes after their base", () => {
-    const near: Box = { at: [3, 3, 0], size: [1, 1, 1], tone: TONES.dark };
-    const far: Box = { at: [0, 0, 0], size: [1, 1, 1], tone: TONES.dark };
-    const base: Box = { at: [6, 0, 0], size: [1, 1, 1], tone: TONES.dark };
-    const stacked: Box = { at: [6, 0, 1], size: [1, 1, 1], tone: TONES.lit };
-    expect(paintOrder([near, stacked, far, base])).toEqual([far, near, base, stacked]);
+  test("paints a big base before everything standing on it, wherever its centre is", () => {
+    const slab: Box = { at: [0, 0, -1], size: [13, 7, 1], tone: TONES.deep };
+    const back: Box = { at: [0, 0, 0], size: [1, 1, 3], tone: TONES.dark };
+    const front: Box = { at: [12, 6, 0], size: [1, 1, 1], tone: TONES.dark };
+    const order = paintOrder([front, back, slab]);
+    expect(order.indexOf(slab)).toBeLessThan(order.indexOf(back));
+    expect(order.indexOf(slab)).toBeLessThan(order.indexOf(front));
+  });
+
+  test("paints the box behind before the one in front, and a base before what it carries", () => {
+    const left: Box = { at: [0, 0, 0], size: [1, 1, 2], tone: TONES.dark };
+    const right: Box = { at: [1, 0, 0], size: [1, 1, 1], tone: TONES.dark };
+    const base: Box = { at: [5, 5, 0], size: [1, 1, 1], tone: TONES.dark };
+    const stacked: Box = { at: [5, 5, 1], size: [1, 1, 1], tone: TONES.lit };
+    const order = paintOrder([stacked, right, base, left]);
+    expect(order.indexOf(left)).toBeLessThan(order.indexOf(right));
+    expect(order.indexOf(base)).toBeLessThan(order.indexOf(stacked));
+  });
+
+  test("detects boxes that share volume, not ones that only touch", () => {
+    const a: Box = { at: [0, 0, 0], size: [1, 1, 1], tone: TONES.dark };
+    expect(intersects(a, { at: [0.9, 0, 0], size: [1, 1, 1], tone: TONES.dark })).toBe(true);
+    expect(intersects(a, { at: [1, 0, 0], size: [1, 1, 1], tone: TONES.dark })).toBe(false);
+    expect(intersects(a, { at: [0, 0, 1], size: [1, 1, 1], tone: TONES.dark })).toBe(false);
   });
 
   test("the viewBox holds every corner", () => {

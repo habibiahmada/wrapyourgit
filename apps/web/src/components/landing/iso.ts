@@ -60,10 +60,82 @@ export function boxPaths({ at: [x, y, z], size: [w, d, h], tone }: Box): BoxPath
   };
 }
 
-/** Back to front: farther boxes (smaller x + y) first, lower ones before those stacked on them. */
+const EPS = 1e-6;
+const lo = (b: Box, axis: number) => b.at[axis] ?? 0;
+const hi = (b: Box, axis: number) => (b.at[axis] ?? 0) + (b.size[axis] ?? 0);
+
+/** True when two boxes share volume; boxes that only touch on a face don't. */
+export function intersects(a: Box, b: Box): boolean {
+  return [0, 1, 2].every(
+    (axis) => lo(a, axis) < hi(b, axis) - EPS && lo(b, axis) < hi(a, axis) - EPS,
+  );
+}
+
+/** Screen-space bounding box of a box's corners. */
+function screenBox(b: Box): [number, number, number, number] {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (const cx of [lo(b, 0), hi(b, 0)])
+    for (const cy of [lo(b, 1), hi(b, 1)])
+      for (const cz of [lo(b, 2), hi(b, 2)]) {
+        const [sx, sy] = iso([cx, cy, cz]);
+        xs.push(sx);
+        ys.push(sy);
+      }
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+}
+
+/**
+ * Whether `a` must be painted before `b`. For boxes that don't intersect, one is entirely
+ * behind the other along x or y (the viewer looks from +x, +y) or entirely below it.
+ */
+function behind(a: Box, b: Box): boolean {
+  if (hi(a, 0) <= lo(b, 0) + EPS) return true;
+  if (hi(a, 1) <= lo(b, 1) + EPS) return true;
+  if (hi(a, 2) <= lo(b, 2) + EPS && !(hi(b, 0) <= lo(a, 0) + EPS) && !(hi(b, 1) <= lo(a, 1) + EPS))
+    return true;
+  return false;
+}
+
+/**
+ * Painter's order for non-intersecting boxes: a topological sort over every pair whose screen
+ * footprints overlap, so a big base is drawn before what stands on it and a box behind before
+ * the one in front, whatever their sizes. (Sorting by centre depth fails for mixed sizes: a
+ * slab's centre sits in front of the buildings at its back.) Ties keep the input order.
+ */
 export function paintOrder(boxes: readonly Box[]): Box[] {
-  const depth = (b: Box) => b.at[0] + b.size[0] / 2 + (b.at[1] + b.size[1] / 2);
-  return [...boxes].sort((a, b) => depth(a) - depth(b) || a.at[2] - b.at[2]);
+  const n = boxes.length;
+  const screens = boxes.map(screenBox);
+  const after: number[][] = Array.from({ length: n }, () => []);
+  const incoming = new Array<number>(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const [ax0, ay0, ax1, ay1] = screens[i] ?? [0, 0, 0, 0];
+      const [bx0, by0, bx1, by1] = screens[j] ?? [0, 0, 0, 0];
+      if (ax1 <= bx0 + EPS || bx1 <= ax0 + EPS || ay1 <= by0 + EPS || by1 <= ay0 + EPS) continue;
+      const a = boxes[i] as Box;
+      const b = boxes[j] as Box;
+      const [first, second] = behind(a, b) ? [i, j] : behind(b, a) ? [j, i] : [-1, -1];
+      if (first === -1) continue;
+      after[first]?.push(second);
+      incoming[second] = (incoming[second] ?? 0) + 1;
+    }
+  }
+  const ready = boxes.map((_, i) => i).filter((i) => incoming[i] === 0);
+  const order: number[] = [];
+  while (ready.length > 0) {
+    ready.sort((x, y) => x - y);
+    const next = ready.shift() as number;
+    order.push(next);
+    for (const k of after[next] ?? []) {
+      incoming[k] = (incoming[k] ?? 0) - 1;
+      if (incoming[k] === 0) ready.push(k);
+    }
+  }
+  // A cycle can only come from intersecting boxes, which the scene tests rule out; keep the
+  // rest rather than drop them.
+  for (let i = 0; i < n; i++) if (!order.includes(i)) order.push(i);
+  return order.map((i) => boxes[i] as Box);
 }
 
 /** Screen-space viewBox around every corner of the boxes and extra points, with a margin. */
