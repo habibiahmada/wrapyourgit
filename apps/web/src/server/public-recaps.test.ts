@@ -68,6 +68,8 @@ let failYear: boolean;
 let failPrevious: boolean;
 let failRecord: boolean;
 let githubError: { lookup?: Error; year?: Error };
+let duringFetch: (() => void) | null;
+let onClaimRefused: (() => void) | null;
 let onSleep: (() => void) | null;
 
 const store: Store = {
@@ -81,7 +83,10 @@ const store: Store = {
     recorded.push(client);
   },
   claim: async (_id, login) => {
-    if (othersClaim) return null;
+    if (othersClaim) {
+      onClaimRefused?.();
+      return null;
+    }
     row = row
       ? { ...row, login, fetchingSince: new Date(clock) }
       : {
@@ -94,7 +99,8 @@ const store: Store = {
         };
     return { ...row };
   },
-  save: async (_id, saved) => {
+  save: async (_id, claimedAt, saved) => {
+    if (row?.fetchingSince?.getTime() !== claimedAt.getTime()) return;
     row = {
       ...saved,
       schemaVersion: SCHEMA_VERSION,
@@ -102,8 +108,10 @@ const store: Store = {
       fetchingSince: null,
     };
   },
-  release: async () => {
-    if (row) row = { ...row, fetchingSince: null };
+  release: async (_id, claimedAt) => {
+    if (row && row.fetchingSince?.getTime() === claimedAt.getTime()) {
+      row = { ...row, fetchingSince: null };
+    }
   },
 };
 
@@ -115,6 +123,7 @@ const deps: Deps = {
   },
   fetchYear: async (login) => {
     calls.year++;
+    duringFetch?.();
     if (failYear) throw new Error("boom");
     if (githubError.year) throw githubError.year;
     return activity(login);
@@ -153,6 +162,8 @@ beforeEach(() => {
   failPrevious = false;
   failRecord = false;
   githubError = {};
+  duringFetch = null;
+  onClaimRefused = null;
   onSleep = null;
   // Failures are logged on purpose; keep the test output clean.
   spyOn(console, "warn").mockImplementation(() => {});
@@ -328,19 +339,20 @@ describe("loadPublicRecapWith", () => {
 
   test("while another request fetches, waits for its recap instead of fetching", async () => {
     othersClaim = true;
+    const holderClaim = new Date(clock);
     row = {
       login: "Octo",
       data: null,
       schemaVersion: null,
       previous: null,
       fetchedAt: null,
-      fetchingSince: new Date(clock),
+      fetchingSince: holderClaim,
     };
     let polls = 0;
     onSleep = () => {
       if (++polls === 3) {
         othersClaim = false;
-        void store.save(ID, {
+        void store.save(ID, holderClaim, {
           login: "Octo",
           data: { meta: { scope: "public" } } as never,
           previous: null,
@@ -351,6 +363,56 @@ describe("loadPublicRecapWith", () => {
     expect(polls).toBe(3);
     expect(calls.year).toBe(0);
     expect(recorded).toEqual(["c"]);
+  });
+
+  test("a fetch that finished just before the wait began is served at once", async () => {
+    await seed();
+    clock += 13 * HOUR;
+    othersClaim = true;
+    // The other request saves between this request's refused claim and its first read.
+    const fresh = { ...row?.data } as NonNullable<Row["data"]>;
+    onClaimRefused = () => {
+      if (row) row = { ...row, data: fresh, fetchedAt: new Date(clock), fetchingSince: null };
+    };
+    let polls = 0;
+    onSleep = () => {
+      polls++;
+    };
+    const result = await loadPublicRecapWith(deps, "octo", "c");
+    // The new recap, not the stale one this request read before its claim.
+    expect(result.kind === "recap" && result.data).toBe(fresh);
+    expect(polls).toBe(0);
+    expect(calls.year).toBe(0);
+  });
+
+  test("stops waiting once the other holder's claim has gone stale", async () => {
+    othersClaim = true;
+    row = {
+      login: "Octo",
+      data: null,
+      schemaVersion: null,
+      previous: null,
+      fetchedAt: null,
+      fetchingSince: new Date(clock - 119_000),
+    };
+    const start = clock;
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect(clock - start).toBe(2_000);
+  });
+
+  test("a holder whose claim was taken over neither stores nor releases", async () => {
+    const takeover = new Date(clock + 1);
+    duringFetch = () => {
+      if (row) row = { ...row, fetchingSince: takeover };
+    };
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect(row?.data).toBeNull();
+    expect(row?.fetchingSince).toEqual(takeover);
+
+    failYear = true;
+    row = row && { ...row, fetchingSince: null };
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("error");
+    expect(row?.fetchingSince).toEqual(takeover);
   });
 
   test("gives up after 60 seconds of waiting and says busy", async () => {

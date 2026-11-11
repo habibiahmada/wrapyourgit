@@ -17,6 +17,7 @@ import {
   CLAIM_STALE_MS,
   CLIENT_WINDOW_MS,
   canStartFetch,
+  claimIsStale,
   firstForwardedAddress,
   hashClient,
   isFresh,
@@ -54,12 +55,17 @@ export interface PublicStore {
   recordLookup(client: string): Promise<void>;
   /** Takes the fetch claim; returns the row as claimed, or null when another request holds it. */
   claim(githubId: number, login: string): Promise<StoredRow | null>;
-  /** Stores a fetched recap, stamps fetched_at and releases the claim. */
+  /**
+   * Stores a fetched recap, stamps fetched_at and releases the claim. Like release, it only
+   * touches the row while `claimedAt` is still its claim: a holder slower than CLAIM_STALE_MS,
+   * whose claim was taken over, must not clear the new holder's.
+   */
   save(
     githubId: number,
+    claimedAt: Date,
     row: { login: string; data: RecapData; previous: PreviousYearActivity | null },
   ): Promise<void>;
-  release(githubId: number): Promise<void>;
+  release(githubId: number, claimedAt: Date): Promise<void>;
 }
 
 export interface PublicDeps {
@@ -124,17 +130,18 @@ export async function loadPublicRecapWith(
     if (!canStartFetch(account.remaining)) return storedResult ?? { kind: "busy", login };
 
     const claimed = await store.claim(account.id, login);
-    if (!claimed) {
+    const claimedAt = claimed?.fetchingSince;
+    if (!claimed || !claimedAt) {
       const waited = await waitForOtherFetch(deps, account.id, login);
       return waited ?? storedResult ?? { kind: "busy", login };
     }
 
     try {
       const data = await fetchAndBuild(deps, login, claimed.previous);
-      await store.save(account.id, { login, ...data });
+      await store.save(account.id, claimedAt, { login, ...data });
       return { kind: "recap", login, data: data.data };
     } catch (error) {
-      await store.release(account.id);
+      await store.release(account.id, claimedAt);
       throw error;
     }
   } catch (error) {
@@ -194,7 +201,11 @@ async function waitForOtherFetch(
   githubId: number,
   login: string,
 ): Promise<PublicResult | null> {
-  const claimedAt = (await deps.store.read(githubId))?.fetchingSince;
+  const first = await deps.store.read(githubId);
+  // The other fetch may have finished between our failed claim and this read.
+  const done = usable(first);
+  if (done && isFresh(done.fetchedAt, deps.now())) return { kind: "recap", login, data: done.data };
+  const claimedAt = first?.fetchingSince;
   if (!claimedAt) return null;
   const deadline = deps.now().getTime() + WAIT_MS;
   while (deps.now().getTime() < deadline) {
@@ -202,7 +213,8 @@ async function waitForOtherFetch(
     const row = await deps.store.read(githubId);
     const stored = usable(row);
     if (stored && stored.fetchedAt > claimedAt) return { kind: "recap", login, data: stored.data };
-    if (!row?.fetchingSince) return null;
+    // Released without a recap, or the holder died: nothing more to wait for.
+    if (!row?.fetchingSince || claimIsStale(row.fetchingSince, deps.now())) return null;
   }
   return null;
 }
@@ -295,7 +307,9 @@ const dbStore: PublicStore = {
     const staleSeconds = CLAIM_STALE_MS / 1000;
     const [row] = await db
       .update(publicRecaps)
-      .set({ fetchingSince: sql`now()`, login })
+      // Millisecond precision, so the claim time round-trips through a JS Date exactly and
+      // save/release can match it.
+      .set({ fetchingSince: sql`date_trunc('milliseconds', now())`, login })
       .where(
         and(
           eq(publicRecaps.githubId, githubId),
@@ -309,7 +323,7 @@ const dbStore: PublicStore = {
     return row ?? null;
   },
 
-  async save(githubId, { login, data, previous }) {
+  async save(githubId, claimedAt, { login, data, previous }) {
     await db
       .update(publicRecaps)
       .set({
@@ -320,14 +334,14 @@ const dbStore: PublicStore = {
         fetchedAt: sql`now()`,
         fetchingSince: null,
       })
-      .where(eq(publicRecaps.githubId, githubId));
+      .where(and(eq(publicRecaps.githubId, githubId), eq(publicRecaps.fetchingSince, claimedAt)));
   },
 
-  async release(githubId) {
+  async release(githubId, claimedAt) {
     await db
       .update(publicRecaps)
       .set({ fetchingSince: null })
-      .where(eq(publicRecaps.githubId, githubId));
+      .where(and(eq(publicRecaps.githubId, githubId), eq(publicRecaps.fetchingSince, claimedAt)));
   },
 };
 
