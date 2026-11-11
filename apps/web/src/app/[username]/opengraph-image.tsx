@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
-import { CARD_SIZE, publicCardPng } from "@/server/card";
+import { CARD_SIZE, publicCardPng, siteCardPng } from "@/server/card";
 import { clientKey, loadPublicRecap } from "@/server/public-recaps";
 import { isValidLogin } from "@/server/username";
 
@@ -14,12 +13,15 @@ export const maxDuration = 120;
 /**
  * Link previews use the same card people can download, built from the public recap only. The
  * lookup runs on every request, so a hidden recap stops previewing at once; only the PNG is cached.
+ * Every page under this segment advertises this image, so an address with no recap to show
+ * (invalid, hidden, missing, organisation, busy, limited, error) gets the site's own card rather
+ * than a 404: a broken preview would be cached by crawlers, and the site card reveals nothing.
  */
 export default async function Image({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
-  if (!isValidLogin(username)) notFound();
-  const result = await loadPublicRecap(username, clientKey(await headers()));
-  if (result.kind !== "recap") notFound();
-  const png = await publicCardPng(result.data);
+  const result = isValidLogin(username)
+    ? await loadPublicRecap(username, clientKey(await headers()))
+    : null;
+  const png = result?.kind === "recap" ? await publicCardPng(result.data) : await siteCardPng();
   return new Response(png, { headers: { "Content-Type": "image/png" } });
 }
