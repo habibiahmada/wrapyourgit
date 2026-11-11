@@ -31,6 +31,8 @@ Every number shown anywhere must be defined here. Field names refer to `RecapDat
 | `contributions.monthly` / `weekday` | Sums per month / per weekday (0 = Sunday)                                                                                              | calendar                                                                                                                                                                                                     | ✅                            |
 | `contributions.hourly`              | Commits per local hour                                                                                                                 | per-commit `authoredDate` via repo `history(author:{id}, since, until)` on default branches of the top 5 repos, ≤ 500 commits each. `authoredDate` because rebases and squash merges rewrite `committedDate` | 🟡 always `estimated: true`   |
 
+**Month gates in the story.** The ride's month gates (`packages/video/src/world/ride/gates.model.ts`) print "N so far": `contributions.calendar` summed by date over the days before the 1st of that month. It is a way of showing the calendar, not a metric of its own, so it has no schema field. January shows no figure, and neither does a month that has not started in a provisional year. The last started gate's figure plus the days from that gate to the period's end equals the calendar's sum.
+
 ## Languages
 
 | Field                     | Definition                                                                                                                                    | Source                                                                                                       |     |
