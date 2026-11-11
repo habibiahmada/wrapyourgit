@@ -206,7 +206,16 @@ export async function renderSiteCard(): Promise<ImageResponse> {
         position: "relative",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", width: 600, zIndex: 1 }}>
+      {/* The art starts at x = 624, clear of the 540 px headline column (its longest line,
+          "square has a", ends near x = 590), and is drawn first so text would still paint on top. */}
+      <img
+        src={cast}
+        width={640}
+        height={480}
+        alt=""
+        style={{ position: "absolute", right: -64, bottom: -10 }}
+      />
+      <div style={{ display: "flex", flexDirection: "column", width: 540 }}>
         <span style={{ fontSize: 32, fontWeight: 700 }}>WrapYourGit 2026</span>
         <span style={{ fontSize: 84, fontWeight: 800, lineHeight: 0.95, marginTop: 40 }}>
           Every green square has a story.
@@ -215,13 +224,6 @@ export async function renderSiteCard(): Promise<ImageResponse> {
           Here is yours, in motion.
         </span>
       </div>
-      <img
-        src={cast}
-        width={720}
-        height={540}
-        alt=""
-        style={{ position: "absolute", right: -40, bottom: -20 }}
-      />
     </div>,
     { ...CARD_SIZE, fonts },
   );
