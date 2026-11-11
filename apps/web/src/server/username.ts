@@ -12,3 +12,16 @@ const LOGIN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
 export function isValidLogin(name: string): boolean {
   return LOGIN.test(name);
 }
+
+/**
+ * What someone typed into the landing field, as a login: "@octo" and "https://github.com/octo"
+ * both become "octo". Null when what is left isn't a login GitHub could have issued.
+ */
+export function normalizeUsername(input: string): string | null {
+  const name = input
+    .trim()
+    .replace(/^(?:https?:\/\/)?(?:www\.)?github\.com\//i, "")
+    .replace(/\/$/, "")
+    .replace(/^@/, "");
+  return isValidLogin(name) ? name : null;
+}

@@ -18,7 +18,9 @@ import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SignInButton, SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
+import { UsernameForm } from "@/components/username-form";
 import { getCurrentUser } from "@/server/auth";
+import { recapPath } from "@/server/routes";
 import { OPEN_GRAPH, SITE, siteUrl } from "@/site";
 
 const NOTICES: Record<string, string> = {
@@ -72,7 +74,7 @@ function structuredData() {
         image: `${url}/opengraph-image`,
         applicationCategory: "DeveloperApplication",
         operatingSystem: "Any (web browser)",
-        browserRequirements: "Requires a modern web browser and a GitHub account",
+        browserRequirements: "Requires a modern web browser",
         isAccessibleForFree: true,
         offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
         author: { "@id": `${url}/#author` },
@@ -83,7 +85,7 @@ function structuredData() {
           "Pull requests, reviews and issues",
           "A developer archetype with the facts behind it",
           "Comparison with the same span of last year",
-          "Slides as PNG, a PDF and an opt-in public page",
+          "Slides as PNG, a PDF and a public page for every GitHub username",
         ],
       },
       {
@@ -129,13 +131,19 @@ export default function Home({ searchParams }: PageProps<"/">) {
                     <span className="text-green">Here's yours, in motion.</span>
                   </h1>
                   <p className="mt-8 max-w-xl text-lg text-muted sm:text-xl">
-                    Sign in with GitHub and watch your {EDITION_YEAR} play back as a short animated
-                    story: your contributions, your rhythm, the languages you lived in and the kind
-                    of developer you turned out to be.
+                    Type a GitHub username and watch that developer's {EDITION_YEAR} play back as a
+                    short animated story: their contributions, their rhythm, the languages they
+                    lived in and the kind of developer they turned out to be. Sign in for your own,
+                    with private contributions counted.
                   </p>
-                  <div className="mt-10 flex flex-wrap items-center gap-3">
-                    <Suspense fallback={<SignInButton />}>
-                      <PrimaryAction />
+                  <div className="mt-10">
+                    <Suspense fallback={<HeroForm />}>
+                      <HeroFormWithError searchParams={searchParams} />
+                    </Suspense>
+                  </div>
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <Suspense fallback={<SignInButton variant="secondary" />}>
+                      <PrimaryAction variant="secondary" />
                     </Suspense>
                     <a href="#story" className={button.quiet}>
                       See the city
@@ -176,14 +184,35 @@ export default function Home({ searchParams }: PageProps<"/">) {
   );
 }
 
-async function PrimaryAction() {
+async function PrimaryAction({ variant = "primary" }: { variant?: "primary" | "secondary" }) {
   const user = await getCurrentUser();
-  if (!user) return <SignInButton />;
+  if (!user) return <SignInButton variant={variant} />;
   return (
-    <Link href="/dashboard" transitionTypes={["nav-forward"]} className={button.primary}>
+    <Link
+      href={recapPath(user.login)}
+      transitionTypes={["nav-forward"]}
+      className={`${button[variant]} max-w-full wrap-anywhere`}
+    >
       Open your {EDITION_YEAR} recap, @{user.login}
     </Link>
   );
+}
+
+const INVALID_USERNAME =
+  "That isn't a GitHub username. Use letters, numbers and hyphens, 39 at most, with no hyphen at either end.";
+
+function HeroForm({ error }: { error?: string }) {
+  return <UsernameForm id="hero-username" submit="Play their year" error={error} />;
+}
+
+/** /go sends a name GitHub couldn't issue back here as ?u=invalid; the field says why. */
+async function HeroFormWithError({
+  searchParams,
+}: {
+  searchParams: PageProps<"/">["searchParams"];
+}) {
+  const { u } = await searchParams;
+  return <HeroForm error={u === "invalid" ? INVALID_USERNAME : undefined} />;
 }
 
 async function Notice({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
