@@ -1,3 +1,4 @@
+import { walkFromBothEnds } from "./both-ends";
 import { GitHubApiError, githubGraphql, paginate } from "./client";
 import {
   type ForkWalk,
@@ -284,9 +285,16 @@ const ISSUES_QUERY = /* GraphQL */ `
 `;
 
 export const OWNED_REPOS_QUERY = /* GraphQL */ `
-  query OwnedRepos($after: String) {
+  query OwnedRepos($after: String, $direction: OrderDirection!) {
     viewer {
-      repositories(first: 100, after: $after, ownerAffiliations: OWNER, isFork: false) {
+      repositories(
+        first: 100
+        after: $after
+        ownerAffiliations: OWNER
+        isFork: false
+        orderBy: { field: CREATED_AT, direction: $direction }
+      ) {
+        totalCount
         pageInfo { hasNextPage endCursor }
         nodes { ${REPO_FIELDS} }
       }
@@ -412,17 +420,26 @@ export async function fetchYearActivity(
   });
 
   const ownedP = (async () => {
-    const ownedRepos = await paginate(async (after) => {
-      const data = await githubGraphql<{ viewer: { repositories: Page<{ nodes: RawRepo[] }> } }>(
-        token,
-        withSubject(OWNED_REPOS_QUERY, subject),
-        { after, ...subjectVariables(subject) },
-      );
-      return {
-        items: data.viewer.repositories.nodes.map(toRepoFacts),
-        pageInfo: data.viewer.repositories.pageInfo,
-      };
-    });
+    const ownedRepos = {
+      items: await walkFromBothEnds(
+        async (direction, after) => {
+          const data = await githubGraphql<{
+            viewer: { repositories: Page<{ nodes: RawRepo[]; totalCount: number }> };
+          }>(token, withSubject(OWNED_REPOS_QUERY, subject), {
+            after,
+            direction,
+            ...subjectVariables(subject),
+          });
+          const { repositories } = data.viewer;
+          return {
+            items: repositories.nodes.map(toRepoFacts),
+            pageInfo: repositories.pageInfo,
+            totalCount: repositories.totalCount,
+          };
+        },
+        (repo) => repo.nameWithOwner,
+      ),
+    };
     // Each walk has its own time budget. Most-starred and most-forked repos go first: that is
     // where a budget cut costs least.
     const byDesc = (key: "stars" | "forks") =>
