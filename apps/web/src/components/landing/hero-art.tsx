@@ -114,7 +114,6 @@ export function HeroArt({ className }: { className?: string }) {
           </div>
         )}
       </div>
-      <figcaption className="mt-2 text-right text-sm text-muted">Sample data</figcaption>
     </figure>
   );
 }

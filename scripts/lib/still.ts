@@ -66,9 +66,15 @@ function serveUrl(): Promise<string> {
   return served;
 }
 
+/**
+ * An already-downloaded headless Chrome to use instead of fetching one (about 100 MB), e.g. the
+ * one the Remotion CLI keeps in packages/video/node_modules/.remotion.
+ */
+const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE || null;
+
 function sharedBrowser(): Promise<HeadlessBrowser> {
-  browser ??= ensureBrowser()
-    .then(() => openBrowser("chrome", { chromiumOptions }))
+  browser ??= (browserExecutable ? Promise.resolve() : ensureBrowser())
+    .then(() => openBrowser("chrome", { chromiumOptions, browserExecutable }))
     .catch((error: unknown) => {
       browser = null;
       throw error;
