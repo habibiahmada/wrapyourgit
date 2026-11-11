@@ -35,6 +35,35 @@ test("one slide per 4:5 stop, each inside that stop's hold", () => {
   }
 });
 
+test("the default composition's props are only data and mode, as before the letter option", () => {
+  expect(Object.keys(worldExportComposition(sampleRecap, "9x16").defaultProps)).toEqual([
+    "data",
+    "mode",
+  ]);
+});
+
+test("without the letter: the composition matches the world without it and says so in its props", () => {
+  for (const data of [sampleRecap, busyRecap, emptyRecap]) {
+    for (const format of formats) {
+      const c = worldExportComposition(data, format, { letter: false });
+      const bare = worldDuration(data, VIDEO_FORMATS[format], "video", { letter: false });
+      expect(c.durationInFrames).toBe(bare);
+      expect(bare).toBeLessThan(worldDuration(data, VIDEO_FORMATS[format], "video"));
+      expect(c.defaultProps).toEqual({ data, mode: "video", letter: false });
+    }
+  }
+});
+
+test("without the letter: no letter slides, one slide per remaining 4:5 stop", () => {
+  for (const data of [sampleRecap, busyRecap]) {
+    const world = buildWorld(data, VIDEO_FORMATS["4x5"], "video", 30, { letter: false });
+    const slides = slideFrames(data, { letter: false });
+    expect(slides.some((slide) => slide.stopId.startsWith("letter"))).toBe(false);
+    expect(slides.map((slide) => slide.stopId)).toEqual(world.stops.map((stop) => stop.id));
+    expect(slideFrames(data).some((slide) => slide.stopId.startsWith("letter"))).toBe(true);
+  }
+});
+
 test("file names for each kind, zero-padded index, login sanitised", () => {
   const data = { ...sampleRecap, profile: { ...sampleRecap.profile, login: "Octo_Cat.X" } };
   const base = `wrapyourgit-${data.meta.year}-octo-cat-x`;
