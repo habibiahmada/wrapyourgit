@@ -1,8 +1,10 @@
+import type { PreviousYearActivity } from "@wyg/github";
 import type { RecapData } from "@wyg/schema";
 import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -94,4 +96,40 @@ export const recapShares = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.year] })],
+);
+
+/**
+ * Public recaps of any GitHub user, fetched with the server's public token (server/public-recaps.ts),
+ * keyed by GitHub's numeric id because logins can be renamed. `data` is already the public
+ * projection. A row can exist before its first recap: it also holds the fetch claim.
+ */
+export const publicRecaps = pgTable("public_recaps", {
+  githubId: bigint("github_id", { mode: "number" }).primaryKey(),
+  login: text("login").notNull(),
+  data: jsonb("data").$type<RecapData>(),
+  schemaVersion: integer("schema_version"),
+  /** Last year's raw activity for the comparison: fetched once per account and kept. */
+  previous: jsonb("previous").$type<PreviousYearActivity>(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }),
+  /** Set while one request fetches this account; others wait for it instead of fetching too. */
+  fetchingSince: timestamp("fetching_since", { withTimezone: true }),
+});
+
+/** Accounts whose owner chose "Hide my public recap". By id, so a renamed login stays hidden. */
+export const hiddenAccounts = pgTable("hidden_accounts", {
+  githubId: bigint("github_id", { mode: "number" }).primaryKey(),
+  hiddenAt: timestamp("hidden_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * One row per public fetch a client started, for the per-client limit. `client` is a salted hash
+ * of the address (public-policy.ts hashClient), never the address itself.
+ */
+export const publicLookups = pgTable(
+  "public_lookups",
+  {
+    client: text("client").notNull(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("public_lookups_client_at").on(table.client, table.at)],
 );

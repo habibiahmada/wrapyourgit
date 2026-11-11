@@ -27,8 +27,22 @@ The template is [`.env.example`](../../.env.example). The web app reads these; s
 | `TOKEN_ENCRYPTION_KEY`                             | yes      | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts GitHub tokens at rest. **Changing it makes every stored token unreadable:** users sign in again. |
 | `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET` | yes      | From the GitHub App for that environment.                                                                                                                     |
 | `GITHUB_APP_SLUG`                                  | no       | The app's URL slug; enables the optional install for private repositories (ADR-0008).                                                                         |
+| `GITHUB_PUBLIC_TOKEN`                              | yes      | Fine-grained PAT on the machine account, **Public repositories (read-only)**. Fetches the public recap at `/<username>`; see [Public token](#public-token).   |
 
 `GITHUB_TOKEN` in `.env.example` is for local spikes only; don't set it on a server.
+
+### Public token
+
+Public recaps (anyone's recap at `/<username>`) are fetched with one server token, `GITHUB_PUBLIC_TOKEN`. It lives on **one machine account**, the single automation account GitHub allows next to a personal one. Never add a second token or account to get more quota: spreading requests over accounts breaks GitHub's terms. The app saves quota instead (12-hour cache, one fetch per account at a time, a per-client limit, and no new fetches below 300 points left).
+
+To create it, signed in as the machine account: Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
+
+- **Resource owner:** the machine account. **Repository access:** **Public repositories (read-only)**. No permissions beyond that.
+- **Expiration:** the longest allowed. Note the expiry date.
+
+It cannot see any private repository, so a public recap can never count private contributions the token's owner could see. Store it as a Production-only Vercel _Secret_ variable, like `TOKEN_ENCRYPTION_KEY`; it never reaches the browser and is never logged.
+
+**Renewal:** set a reminder two weeks before the expiry date. Regenerate the token on the machine account (Fine-grained tokens → the token → Regenerate), replace `GITHUB_PUBLIC_TOKEN` in Vercel and redeploy. When it expires, every public recap page shows an error (each visit looks the account up with this token first); signed-in users' own recaps are unaffected.
 
 On Vercel, `DATABASE_URL` and the other `DATABASE_*` variables come from the Neon integration, connected to **Production only**; `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_SECRET` and `TOKEN_ENCRYPTION_KEY` are Production-only too. Vercel builds production only ([ADR-0018](../architecture/decisions/0018-production-only-deploys.md)): there are no preview deployments and no Neon database branches. If previews are ever turned back on, give the Neon connection Preview **together with** "Create Database Branch For Deployment: Preview", or previews would get the production database and migrate it. The two secrets are Vercel _Secret_ variables, entered by the maintainer.
 
@@ -186,3 +200,4 @@ From ADR-0005:
 - [ ] Database backup restored once on a scratch database.
 - [ ] Repository public and `bun scripts/github-settings.ts` run, so `main` is protected (ADR-0014).
 - [ ] Every **Not yet verified** item above confirmed and removed from this guide.
+- [ ] `GITHUB_PUBLIC_TOKEN` set in Production, and a renewal reminder set before its expiry date.

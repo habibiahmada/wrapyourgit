@@ -1,0 +1,304 @@
+import "server-only";
+import { buildRecap, toPublicRecap } from "@wyg/analytics";
+import {
+  type AccountLookup,
+  fetchPreviousYear,
+  fetchYearActivity,
+  lookupAccount,
+  type PreviousYearActivity,
+  type YearActivity,
+} from "@wyg/github";
+import { EDITION_YEAR, type RecapData, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
+import { and, eq, gt, isNull, lt, or, sql } from "drizzle-orm";
+import { db, hiddenAccounts, publicLookups, publicRecaps } from "./db";
+import { requireEnv } from "./env";
+import { errorSummary } from "./log";
+import {
+  CLAIM_STALE_MS,
+  CLIENT_WINDOW_MS,
+  canStartFetch,
+  firstForwardedAddress,
+  hashClient,
+  isFresh,
+  underClientLimit,
+} from "./public-policy";
+import { comparisonSpanEnd, yearRange } from "./sync-policy";
+
+export type PublicResult =
+  | { kind: "recap"; login: string; data: RecapData }
+  | { kind: "missing" | "organization" | "hidden" | "busy" | "limited" | "error"; login: string };
+
+/** How often, and how long, a request waits for another request's fetch of the same account. */
+const POLL_MS = 2_000;
+const WAIT_MS = 60_000;
+
+interface StoredRow {
+  login: string;
+  data: RecapData | null;
+  schemaVersion: number | null;
+  previous: PreviousYearActivity | null;
+  fetchedAt: Date | null;
+  fetchingSince: Date | null;
+}
+
+/** The database side of a public lookup; the seam the orchestration test replaces. */
+export interface PublicStore {
+  isHidden(githubId: number): Promise<boolean>;
+  read(githubId: number): Promise<StoredRow | null>;
+  /** Fetches this client started since `since`. */
+  countLookups(client: string, since: Date): Promise<number>;
+  recordLookup(client: string): Promise<void>;
+  /** Takes the fetch claim; returns the row as claimed, or null when another request holds it. */
+  claim(githubId: number, login: string): Promise<StoredRow | null>;
+  /** Stores a fetched recap, stamps fetched_at and releases the claim. */
+  save(
+    githubId: number,
+    row: { login: string; data: RecapData; previous: PreviousYearActivity | null },
+  ): Promise<void>;
+  release(githubId: number): Promise<void>;
+}
+
+export interface PublicDeps {
+  lookup(login: string): Promise<AccountLookup>;
+  fetchYear(login: string, from: Date, to: Date): Promise<YearActivity>;
+  fetchPrevious(login: string, year: number, spanTo: Date): Promise<PreviousYearActivity>;
+  store: PublicStore;
+  now(): Date;
+  sleep(ms: number): Promise<void>;
+}
+
+/**
+ * The public recap of any GitHub user, as anyone may see it: always the public projection of a
+ * fetch with the server's public token (it cannot see private repositories), built in UTC.
+ * `client` is clientKey() of the request.
+ */
+export function loadPublicRecap(login: string, client: string): Promise<PublicResult> {
+  return loadPublicRecapWith(defaultDeps, login, client);
+}
+
+export async function loadPublicRecapWith(
+  deps: PublicDeps,
+  requested: string,
+  client: string,
+): Promise<PublicResult> {
+  const { store } = deps;
+  let login = requested;
+  try {
+    const account = await deps.lookup(requested);
+    if (account.kind === "missing") return { kind: "missing", login };
+    if (account.kind === "organization") return { kind: "organization", login: account.login };
+    login = account.login;
+    if (await store.isHidden(account.id)) return { kind: "hidden", login };
+
+    const stored = usable(await store.read(account.id));
+    const storedResult: PublicResult | null = stored
+      ? { kind: "recap", login, data: stored.data }
+      : null;
+    if (storedResult && stored && isFresh(stored.fetchedAt, deps.now())) return storedResult;
+
+    // Whenever no new fetch may start, a stored recap, even an old one, beats an error page.
+    const since = new Date(deps.now().getTime() - CLIENT_WINDOW_MS);
+    if (!underClientLimit(await store.countLookups(client, since))) {
+      return storedResult ?? { kind: "limited", login };
+    }
+    if (!canStartFetch(account.remaining)) return storedResult ?? { kind: "busy", login };
+
+    const claimed = await store.claim(account.id, login);
+    if (!claimed) {
+      const waited = await waitForOtherFetch(deps, account.id, login);
+      return waited ?? storedResult ?? { kind: "busy", login };
+    }
+
+    await store.recordLookup(client);
+    try {
+      const data = await fetchAndBuild(deps, login, claimed.previous);
+      await store.save(account.id, { login, ...data });
+      return { kind: "recap", login, data: data.data };
+    } catch (error) {
+      await store.release(account.id);
+      throw error;
+    }
+  } catch (error) {
+    console.warn(`public recap failed: ${errorSummary(error)}`);
+    return { kind: "error", login };
+  }
+}
+
+function usable(row: StoredRow | null): (StoredRow & { data: RecapData; fetchedAt: Date }) | null {
+  if (!row?.data || !row.fetchedAt || row.schemaVersion !== SCHEMA_VERSION) return null;
+  return { ...row, data: row.data, fetchedAt: row.fetchedAt };
+}
+
+async function fetchAndBuild(
+  deps: PublicDeps,
+  login: string,
+  storedPrevious: PreviousYearActivity | null,
+): Promise<{ data: RecapData; previous: PreviousYearActivity | null }> {
+  const now = deps.now();
+  const { from, to } = yearRange(EDITION_YEAR);
+  const activity = await deps.fetchYear(login, from, to);
+  // Fetched once per account and kept. A failed comparison never fails the fetch: the recap
+  // marks last year as unavailable, and the next fetch tries again.
+  const previous =
+    storedPrevious ??
+    (await deps
+      .fetchPrevious(login, EDITION_YEAR - 1, comparisonSpanEnd(EDITION_YEAR, now))
+      .catch((error) => {
+        console.warn(`public previous year fetch failed: ${errorSummary(error)}`);
+        return null;
+      }));
+  const recap = buildRecap(
+    { ...activity, previous },
+    { year: EDITION_YEAR, timezone: "UTC", now, scope: "public" },
+  );
+  return { data: recapDataSchema.parse(toPublicRecap(recap)), previous };
+}
+
+/**
+ * Another request holds the claim: wait for its result instead of spending quota on the same
+ * account. Null when it doesn't finish within WAIT_MS or gives up without a recap.
+ */
+async function waitForOtherFetch(
+  deps: PublicDeps,
+  githubId: number,
+  login: string,
+): Promise<PublicResult | null> {
+  const claimedAt = (await deps.store.read(githubId))?.fetchingSince;
+  if (!claimedAt) return null;
+  const deadline = deps.now().getTime() + WAIT_MS;
+  while (deps.now().getTime() < deadline) {
+    await deps.sleep(POLL_MS);
+    const row = await deps.store.read(githubId);
+    const stored = usable(row);
+    if (stored && stored.fetchedAt > claimedAt) return { kind: "recap", login, data: stored.data };
+    if (!row?.fetchingSince) return null;
+  }
+  return null;
+}
+
+/** Whether the owner chose "Hide my public recap". */
+export async function isHidden(githubId: number): Promise<boolean> {
+  return dbStore.isHidden(githubId);
+}
+
+export async function setHidden(githubId: number, hidden: boolean): Promise<void> {
+  if (hidden) {
+    await db.insert(hiddenAccounts).values({ githubId }).onConflictDoNothing();
+  } else {
+    await db.delete(hiddenAccounts).where(eq(hiddenAccounts.githubId, githubId));
+  }
+}
+
+export async function forgetPublicRecap(githubId: number): Promise<void> {
+  await db.delete(publicRecaps).where(eq(publicRecaps.githubId, githubId));
+}
+
+/** The per-client key for the lookup limit: a salted hash of the address, never the address. */
+export function clientKey(headers: Headers): string {
+  return hashClient(
+    firstForwardedAddress(headers.get("x-forwarded-for")),
+    requireEnv("TOKEN_ENCRYPTION_KEY"),
+  );
+}
+
+const storedColumns = {
+  login: publicRecaps.login,
+  data: publicRecaps.data,
+  schemaVersion: publicRecaps.schemaVersion,
+  previous: publicRecaps.previous,
+  fetchedAt: publicRecaps.fetchedAt,
+  fetchingSince: publicRecaps.fetchingSince,
+};
+
+const dbStore: PublicStore = {
+  async isHidden(githubId) {
+    const [row] = await db
+      .select({ githubId: hiddenAccounts.githubId })
+      .from(hiddenAccounts)
+      .where(eq(hiddenAccounts.githubId, githubId));
+    return Boolean(row);
+  },
+
+  async read(githubId) {
+    const [row] = await db
+      .select(storedColumns)
+      .from(publicRecaps)
+      .where(eq(publicRecaps.githubId, githubId));
+    return row ?? null;
+  },
+
+  async countLookups(client, since) {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(publicLookups)
+      .where(and(eq(publicLookups.client, client), gt(publicLookups.at, since)));
+    return row?.count ?? 0;
+  },
+
+  async recordLookup(client) {
+    // Rows past the window count for nothing; dropping them keeps the table to the last hour.
+    await db
+      .delete(publicLookups)
+      .where(
+        and(
+          eq(publicLookups.client, client),
+          lt(publicLookups.at, new Date(Date.now() - CLIENT_WINDOW_MS)),
+        ),
+      );
+    await db.insert(publicLookups).values({ client });
+  },
+
+  async claim(githubId, login) {
+    await db.insert(publicRecaps).values({ githubId, login }).onConflictDoNothing();
+    // One statement: of N parallel requests for the same account, exactly one gets a row back.
+    const staleSeconds = CLAIM_STALE_MS / 1000;
+    const [row] = await db
+      .update(publicRecaps)
+      .set({ fetchingSince: sql`now()`, login })
+      .where(
+        and(
+          eq(publicRecaps.githubId, githubId),
+          or(
+            isNull(publicRecaps.fetchingSince),
+            lt(publicRecaps.fetchingSince, sql`now() - make_interval(secs => ${staleSeconds})`),
+          ),
+        ),
+      )
+      .returning(storedColumns);
+    return row ?? null;
+  },
+
+  async save(githubId, { login, data, previous }) {
+    await db
+      .update(publicRecaps)
+      .set({
+        login,
+        data,
+        schemaVersion: SCHEMA_VERSION,
+        previous,
+        fetchedAt: sql`now()`,
+        fetchingSince: null,
+      })
+      .where(eq(publicRecaps.githubId, githubId));
+  },
+
+  async release(githubId) {
+    await db
+      .update(publicRecaps)
+      .set({ fetchingSince: null })
+      .where(eq(publicRecaps.githubId, githubId));
+  },
+};
+
+const publicToken = () => requireEnv("GITHUB_PUBLIC_TOKEN");
+
+const defaultDeps: PublicDeps = {
+  lookup: (login) => lookupAccount(publicToken(), login),
+  fetchYear: (login, from, to) =>
+    fetchYearActivity(publicToken(), from, to, {}, { kind: "user", login }),
+  fetchPrevious: (login, year, spanTo) =>
+    fetchPreviousYear(publicToken(), year, spanTo, { kind: "user", login }),
+  store: dbStore,
+  now: () => new Date(),
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+};
