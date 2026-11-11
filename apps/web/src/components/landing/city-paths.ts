@@ -8,7 +8,15 @@ const CANVAS = "#0d1117";
 /** Share of a tile a building covers, so neighbouring days read as separate blocks. */
 const FOOTPRINT = 0.84;
 /** Room above the city for the glow and Cell on the busiest roof, in tile units. */
-const HEADROOM = 3.2;
+const HEADROOM = 2.6;
+/**
+ * The hero draws the story's city at about half height: line art reads as a quiet skyline,
+ * and the busiest day still stands clear of its neighbours.
+ */
+const HEIGHT_SCALE = 0.5;
+/** Dark sides for every building but the busiest: the roofs carry the year (DESIGN.md "Web"). */
+const SIDE_LEFT = "#161b22";
+const SIDE_RIGHT = "#11161d";
 const MARGIN = 0.6;
 
 export type Building = {
@@ -60,10 +68,12 @@ export function cityPaths(data: RecapData): CityPaths {
   const ground: string[] = [];
   const weeks = new Map<number, Building[]>();
   let busiest: CityPaths["busiest"] = null;
+  let highest = Number.POSITIVE_INFINITY;
 
   const ordered = [...city.plots].sort((a, b) => a.col - b.col || a.row - b.row);
   for (const plot of ordered) {
     const { x, y } = isoPoint(plot.col, plot.row);
+    highest = Math.min(highest, y - h);
     ground.push(
       poly([
         [x, y - h],
@@ -74,7 +84,9 @@ export function cityPaths(data: RecapData): CityPaths {
     );
     if (plot.state !== "active") continue;
 
-    const lift = plotHeight(plot, city.maxCount);
+    const lift = plotHeight(plot, city.maxCount) * HEIGHT_SCALE;
+    const isBusiest = plot.index === city.busiestIndex;
+    highest = Math.min(highest, y - h - lift);
     const top = GREENS[(levels[plot.index] ?? 1) - 1] ?? GREENS[0];
     const building: Building = {
       date: plot.date,
@@ -97,16 +109,19 @@ export function cityPaths(data: RecapData): CityPaths {
         [x, y + h],
       ]),
       top,
-      leftFill: mix(top, CANVAS, 0.4),
-      rightFill: mix(top, CANVAS, 0.6),
+      // Only the busiest building is green all over: the page's one lit object.
+      leftFill: isBusiest ? mix(top, CANVAS, 0.3) : SIDE_LEFT,
+      rightFill: isBusiest ? mix(top, CANVAS, 0.5) : SIDE_RIGHT,
       height: lift,
       roofY: n(y - lift),
     };
-    if (plot.index === city.busiestIndex) busiest = { x: n(x), y: building.roofY };
+    if (isBusiest) busiest = { x: n(x), y: building.roofY };
     weeks.set(plot.col, [...(weeks.get(plot.col) ?? []), building]);
   }
 
-  const box = cityBounds(city);
+  // cityBounds measures the story's full-height city; the sides and bottom match, the top is
+  // the highest scaled roof (or the ground, for a year with no buildings).
+  const box = { ...cityBounds(city), minY: highest };
   const minX = box.minX - MARGIN;
   const minY = box.minY - HEADROOM;
   const width = box.maxX - box.minX + 2 * MARGIN;
