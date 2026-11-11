@@ -12,6 +12,7 @@
     "./languages": "./src/languages.ts",
     "./present": "./src/present.ts",
     "./world": "./src/world/model.ts",
+    "./ride": "./src/world/ride/model.ts",
     "./city": "./src/world/city.ts",
     "./sample": "./src/fixtures/sample-recap.ts"
   },

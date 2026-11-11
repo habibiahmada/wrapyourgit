@@ -87,16 +87,17 @@ export function train(s: number): Solid[] {
 }
 
 /**
- * Smoke from the chimney: a puff every 5 frames that rises and fades over 35, left where the
- * train was when it was made. `trainAtFrame` tells where that was.
+ * Smoke from the chimney: a puff every 5 frames that rises and fades over 35. The faster the
+ * train goes, the further back along the rail an older puff has fallen; at rest every puff stands
+ * over the chimney, so a station's rest loop repeats exactly.
  */
-export function smoke(frame: number, trainAtFrame: (frame: number) => number): Solid[] {
+export function smoke(frame: number, trainS: number, speed: number): Solid[] {
   const out: Solid[] = [];
   for (let k = 0; k < 8; k++) {
     const born = Math.floor(frame / 5) * 5 - k * 5;
     const age = (frame - born) / 35;
     if (age < 0 || age > 1) continue;
-    const [x, y] = at(trainAtFrame(born) + CHIMNEY);
+    const [x, y] = at(trainS + CHIMNEY - age * 35 * speed);
     out.push({
       kind: "ball",
       c: [x, y, 1.6 + age * 2.4],

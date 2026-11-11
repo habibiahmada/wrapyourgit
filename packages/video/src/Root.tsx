@@ -6,6 +6,8 @@ import { type ArtId, ArtStill } from "./three/ArtStill";
 import { DioramaStill } from "./three/diorama/DioramaStill";
 import { DIORAMA_IDS, type LandingDioramaId } from "./three/diorama/scenes";
 import { worldDuration } from "./world/model";
+import { rideDuration } from "./world/ride/model";
+import { RideStory, type RideStoryProps } from "./world/ride/RideStory";
 import { RIDE_FRAMES, RideSpike } from "./world/spike/RideSpike";
 import { WorldStory, type WorldStoryProps } from "./world/WorldStory";
 
@@ -44,6 +46,28 @@ export function Root() {
         width={1080}
         height={1920}
       />
+      {/* The story ride (phase 1): the same props and formats as the story world, beside it. */}
+      {(Object.keys(VIDEO_FORMATS) as VideoFormatId[]).map((formatId) => {
+        const format = VIDEO_FORMATS[formatId];
+        const defaultProps: RideStoryProps = { data: sampleRecap, mode: "video" };
+        return (
+          <Composition
+            key={`ride-${formatId}`}
+            id={`ride-${formatId}`}
+            component={RideStory}
+            durationInFrames={rideDuration(sampleRecap, format, "video")}
+            calculateMetadata={({ props }) => ({
+              durationInFrames: rideDuration(props.data, format, props.mode, {
+                letter: props.letter,
+              }),
+            })}
+            fps={VIDEO_FPS}
+            width={format.width}
+            height={format.height}
+            defaultProps={defaultProps}
+          />
+        );
+      })}
       {/* The story world, video mode: duration depends on the data, so it comes from the props. */}
       {(Object.keys(VIDEO_FORMATS) as VideoFormatId[]).map((formatId) => {
         const format = VIDEO_FORMATS[formatId];

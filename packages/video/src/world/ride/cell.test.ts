@@ -51,6 +51,14 @@ test("Cell carries a pack on its back, so it reads from behind", () => {
   expect(pack?.decals?.some((d) => d.on === "back" && d.fill === LIT)).toBe(true);
 });
 
+test("Cell's eyes are open on the frames slides are taken from", () => {
+  // A stop's slide is its rest frame, a multiple of the loop: a blink there would close Cell's
+  // eyes in every exported picture.
+  for (const f of [0, 1, 60, 61]) {
+    expect((body(f, "idle")?.decals ?? []).some((d) => d.fill === "#ffffff")).toBe(true);
+  }
+});
+
 test("Cell wears its crest of three cells", () => {
   expect(tagged(cell([0, 0, 0], 0, 0, "idle"), "cell-crest")).toHaveLength(3);
 });

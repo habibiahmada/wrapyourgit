@@ -34,12 +34,18 @@ test("the wheels show their hubs on both sides", () => {
 });
 
 test("smoke repeats every five frames while the train rests", () => {
-  expect(smoke(100, () => 30)).toEqual(smoke(105, () => 30));
-  expect(smoke(100, () => 30).length).toBeGreaterThan(3);
+  expect(smoke(100, 30, 0)).toEqual(smoke(105, 30, 0));
+  expect(smoke(100, 30, 0).length).toBeGreaterThan(3);
+});
+
+test("smoke streams back along the rail while the train moves, and stands over the chimney at rest", () => {
+  const xs = (speed: number) => smoke(100, 30, speed).map((s) => (s.kind === "ball" ? s.c[0] : 0));
+  expect(new Set(xs(0).map((x) => x.toFixed(6))).size).toBe(1);
+  expect(Math.min(...xs(0.4))).toBeLessThan(Math.min(...xs(0)) - 1);
 });
 
 test("smoke rises and fades", () => {
-  const puffs = smoke(100, () => 30).filter((s) => s.kind === "ball");
+  const puffs = smoke(100, 30, 0).filter((s) => s.kind === "ball");
   const sorted = [...puffs].sort((a, b) =>
     a.kind === "ball" && b.kind === "ball" ? a.c[2] - b.c[2] : 0,
   );
