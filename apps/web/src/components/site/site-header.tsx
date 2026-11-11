@@ -61,8 +61,10 @@ export function SiteHeader(
   );
 }
 
-/** A plain link: the sign-in route redirects to GitHub, so prefetching it would be wasted. */
-/** Secondary where another action on screen is the primary one (the landing hero's field). */
+/**
+ * A plain link: the sign-in route redirects to GitHub, so prefetching it would be wasted.
+ * `secondary` where another action on screen is the primary one (the landing hero's field).
+ */
 export function SignInButton({ variant = "primary" }: { variant?: "primary" | "secondary" }) {
   return (
     <a href="/api/auth/signin" className={button[variant]}>
