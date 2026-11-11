@@ -31,7 +31,8 @@ const UPDATED = "11 November 2026";
 
 /*
  * Every statement here describes what the code does today (server/auth.ts, server/recaps.ts,
- * server/public-recaps.ts, analytics/public.ts). Change this page in the same change that changes the behaviour.
+ * server/public-recaps.ts, analytics/public.ts, components/site/page-analytics.tsx). Change this
+ * page in the same change that changes the behaviour.
  */
 
 const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
@@ -102,6 +103,13 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           that are deleted, for every address, with the next lookup anyone makes.
         </li>
         <li>
+          <strong>Page views</strong>: Vercel Web Analytics counts which page was opened and when,
+          the site that linked to it, the country and region, and the browser, operating system and
+          device type. We remove the address's query string first. It sets no cookies: visits are
+          told apart by a hash of the request that is discarded after 24 hours, and we see totals,
+          not people.
+        </li>
+        <li>
           <strong>Your hide choice</strong>: if you hide your public recap, we keep your numeric
           GitHub id on a list, so the recap stays hidden even if you rename your account.
         </li>
@@ -118,7 +126,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           installation asks for metadata only.
         </li>
         <li>Your email address, your followers or anything outside your year's activity.</li>
-        <li>Analytics, advertising or tracking data. The site loads no third-party trackers.</li>
+        <li>
+          Advertising data, or anything that follows you to other sites. The page-view counts above
+          are the only analytics, and they set no cookies.
+        </li>
       </ul>
     ),
   },
@@ -182,9 +193,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     title: "Who else is involved",
     body: (
       <p>
-        GitHub, whose API we read your activity from under its own privacy statement. The service
-        runs on cloud infrastructure; the hosting and database providers will be named here before
-        the public launch.
+        GitHub, whose API we read your activity from under its own privacy statement. Vercel, which
+        counts page views (Web Analytics) under its own privacy policy. The service runs on cloud
+        infrastructure; the hosting and database providers will be named here before the public
+        launch.
       </p>
     ),
   },
@@ -208,6 +220,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           public recap stays hidden.
         </li>
         <li>Sessions: 30 days, or until you sign out.</li>
+        <li>
+          Page-view counts: kept by Vercel as totals. The request hash that tells visits apart is
+          discarded after 24 hours.
+        </li>
         <li>Server logs: error summaries only, without tokens or recap content.</li>
       </ul>
     ),
