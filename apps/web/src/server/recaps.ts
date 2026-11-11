@@ -1,10 +1,10 @@
 import "server-only";
-import { buildRecap, toPublicRecap } from "@wyg/analytics";
+import { buildRecap } from "@wyg/analytics";
 import { fetchPreviousYear, fetchYearActivity } from "@wyg/github";
 import { EDITION_YEAR, type RecapData, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { getGithubToken } from "./auth";
-import { db, recapShares, recaps, users } from "./db";
+import { db, recaps, users } from "./db";
 import { errorSummary } from "./log";
 import { comparisonSpanEnd, SYNC_COOLDOWN_MS, safeTimezone, yearRange } from "./sync-policy";
 
@@ -97,49 +97,4 @@ async function runSync(userId: string, timezone: unknown): Promise<StoredRecap> 
     .values({ userId, year: EDITION_YEAR, ...row })
     .onConflictDoUpdate({ target: [recaps.userId, recaps.year], set: row });
   return { data, syncedAt: now };
-}
-
-/** Whether the user has published this year's recap. */
-export async function isShared(userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ userId: recapShares.userId })
-    .from(recapShares)
-    .where(and(eq(recapShares.userId, userId), eq(recapShares.year, EDITION_YEAR)));
-  return Boolean(row);
-}
-
-export async function setShared(userId: string, shared: boolean): Promise<void> {
-  if (shared) {
-    await db.insert(recapShares).values({ userId, year: EDITION_YEAR }).onConflictDoNothing();
-  } else {
-    await db
-      .delete(recapShares)
-      .where(and(eq(recapShares.userId, userId), eq(recapShares.year, EDITION_YEAR)));
-  }
-}
-
-/**
- * The public projection of a shared recap, looked up by GitHub login (case-insensitive), or null
- * when that login has no recap or hasn't shared it. Never returns the stored document.
- */
-export async function getPublicRecap(
-  login: string,
-): Promise<{ userId: string; data: RecapData; syncedAt: Date } | null> {
-  const [row] = await db
-    .select({
-      userId: users.id,
-      data: recaps.data,
-      schemaVersion: recaps.schemaVersion,
-      syncedAt: recaps.syncedAt,
-    })
-    .from(users)
-    .innerJoin(
-      recapShares,
-      and(eq(recapShares.userId, users.id), eq(recapShares.year, EDITION_YEAR)),
-    )
-    .innerJoin(recaps, and(eq(recaps.userId, users.id), eq(recaps.year, EDITION_YEAR)))
-    .where(eq(sql`lower(${users.login})`, login.toLowerCase()))
-    .limit(1);
-  if (!row || row.schemaVersion !== SCHEMA_VERSION) return null;
-  return { userId: row.userId, data: toPublicRecap(row.data), syncedAt: row.syncedAt };
 }

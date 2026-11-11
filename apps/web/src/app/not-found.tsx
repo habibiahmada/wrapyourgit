@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 
-/** Unknown pages and recaps that aren't shared (their owner may have taken them down). */
+/** Unknown pages. A username that GitHub doesn't know has its own page under app/[username]. */
 export default function NotFound() {
   return (
     <>
@@ -18,8 +18,8 @@ export default function NotFound() {
                 Nothing here.
               </h1>
               <p className="mt-6 max-w-xl text-lg text-muted sm:text-xl">
-                This page doesn't exist, or the recap you followed isn't shared any more. Its owner
-                can publish it again from their dashboard.
+                This page doesn't exist. A recap's address is a GitHub username after the slash,
+                like /octocat.
               </p>
               <Link href="/" transitionTypes={["nav-back"]} className={`${button.primary} mt-10`}>
                 Back to WrapYourGit

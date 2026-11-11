@@ -152,10 +152,9 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
 }
 
 /**
- * The card as PNG bytes, cached per user and sync time. Rendering is the expensive part, and the
- * public OG route is reachable anonymously (security review M1), so each recap version renders
- * once; a new sync changes `_syncedAtIso` and with it the cache key. The share check stays with
- * the caller, so unpublishing takes effect immediately.
+ * The owner's card as PNG bytes (/api/card), cached per user and sync time. Rendering is the
+ * expensive part, so each recap version renders once; a new sync changes `_syncedAtIso` and with
+ * it the cache key.
  */
 export async function cardPng(
   userId: string,

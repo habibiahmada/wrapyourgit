@@ -35,13 +35,3 @@ export function comparisonSpanEnd(year: number, now: Date): Date {
   spanTo.setUTCFullYear(year - 1);
   return spanTo;
 }
-
-/**
- * Publishing needs a recent sync. Privacy flags are stored as of the last sync, so a repository
- * made private since then would still be named publicly until the next sync (security review M2).
- */
-export const PUBLISH_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-
-export function canPublish(syncedAt: Date | null, now: Date): boolean {
-  return syncedAt !== null && now.getTime() - syncedAt.getTime() <= PUBLISH_MAX_AGE_MS;
-}

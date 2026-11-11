@@ -50,6 +50,13 @@
       "when": 1794368957312,
       "tag": "0006_careful_captain_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794372181647,
+      "tag": "0007_chemical_fenris",
+      "breakpoints": true
     }
   ]
 }

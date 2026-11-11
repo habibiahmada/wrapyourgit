@@ -1,0 +1,1 @@
+DROP TABLE "recap_shares" CASCADE;

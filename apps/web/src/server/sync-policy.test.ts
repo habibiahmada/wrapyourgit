@@ -1,9 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-  canPublish,
   comparisonSpanEnd,
   nextSyncAt,
-  PUBLISH_MAX_AGE_MS,
   SYNC_COOLDOWN_MS,
   safeTimezone,
   yearRange,
@@ -37,14 +35,6 @@ describe("yearRange", () => {
     const { from, to } = yearRange(2026);
     expect(from.toISOString()).toBe("2026-01-01T00:00:00.000Z");
     expect(to.toISOString()).toBe("2026-12-31T23:59:59.000Z");
-  });
-});
-
-describe("canPublish", () => {
-  test("needs a sync within the last 24 hours", () => {
-    expect(canPublish(null, now)).toBe(false);
-    expect(canPublish(new Date(now.getTime() - PUBLISH_MAX_AGE_MS), now)).toBe(true);
-    expect(canPublish(new Date(now.getTime() - PUBLISH_MAX_AGE_MS - 1), now)).toBe(false);
   });
 });
 

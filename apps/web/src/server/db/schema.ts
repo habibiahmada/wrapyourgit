@@ -83,22 +83,6 @@ export const recaps = pgTable(
 );
 
 /**
- * A row means the user chose to publish that year's recap at /u/<login>. Sharing is opt-in and
- * off by default; deleting the row (or the user) takes the page down.
- */
-export const recapShares = pgTable(
-  "recap_shares",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    year: integer("year").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.year] })],
-);
-
-/**
  * Public recaps of any GitHub user, fetched with the server's public token (server/public-recaps.ts),
  * keyed by GitHub's numeric id because logins can be renamed. `data` is already the public
  * projection. A row can exist before its first recap: it also holds the fetch claim.

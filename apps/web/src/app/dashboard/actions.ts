@@ -2,12 +2,10 @@
 
 import { GitHubApiError } from "@wyg/github";
 import { refresh } from "next/cache";
-import { redirect } from "next/navigation";
 import { getCurrentUser, ReauthorizeError } from "@/server/auth";
 import { errorSummary } from "@/server/log";
 import { isNetworkError } from "@/server/network";
-import { getRecap, SyncTooSoonError, setShared, syncRecap } from "@/server/recaps";
-import { canPublish } from "@/server/sync-policy";
+import { SyncTooSoonError, syncRecap } from "@/server/recaps";
 
 export type SyncState =
   | { status: "idle" }
@@ -35,19 +33,4 @@ export async function syncAction(_previous: SyncState, form: FormData): Promise<
   }
   refresh();
   return { status: "done" };
-}
-
-/** Publishes or unpublishes the recap page. Re-checks the session; sharing is always opt-in. */
-export async function setShareAction(form: FormData): Promise<void> {
-  const user = await getCurrentUser();
-  if (!user) return;
-  const share = form.get("share") === "on";
-  if (share) {
-    // Privacy flags are as of the last sync; publishing old data could name a repo made private
-    // since then (security review M2).
-    const recap = await getRecap(user.id);
-    if (!canPublish(recap?.syncedAt ?? null, new Date())) redirect("/dashboard?share=stale");
-  }
-  await setShared(user.id, share);
-  refresh();
 }
