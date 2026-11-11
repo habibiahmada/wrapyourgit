@@ -32,17 +32,15 @@ const block = (at: Vec, size: Vec, tone: Tone = TONES.dark): Box => ({ at, size,
 export function archetypeScene(id: ArchetypeId): Scene {
   switch (id) {
     case "builder":
-      // New repositories going up: stacked blocks, the newest one lowered into place.
+      // New repositories going up: one stack, each block smaller, the newest lowered on a line.
       return {
         boxes: [
           plinth(),
-          block([0.3, 0.3, 0], [1.1, 1.1, 1.1], tower(TONES.low)),
-          block([1.7, 0.3, 0], [1.1, 1.1, 2.2], tower(TONES.mid)),
-          block([0.3, 1.7, 0], [1.1, 1.1, 0.6], tower(TONES.faint)),
-          block([1.7, 1.7, 0], [1.1, 1.1, 1.1], tower(TONES.low)),
-          block([1.7, 1.7, 2.1], [1.1, 1.1, 0.9], TONES.lit),
+          block([0.5, 0.5, 0], [3, 3, 0.8], tower(TONES.low)),
+          block([0.95, 0.95, 0.8], [2.1, 2.1, 0.8], tower(TONES.mid)),
+          block([1.4, 1.4, 2.25], [1.2, 1.2, 0.8], TONES.lit),
         ],
-        glyphs: [{ kind: "link", from: [2.25, 2.25, 3.0], to: [2.25, 2.25, 4.4] }],
+        glyphs: [{ kind: "link", from: [2, 2, 3.05], to: [2, 2, 4.4] }],
       };
     case "consistent":
       // Active on most days: an even streak of seven, today's lit as the streak carries on.
@@ -64,10 +62,10 @@ export function archetypeScene(id: ArchetypeId): Scene {
       return {
         boxes: [
           plinth(),
-          block([0.2, 2.9, 0], [1, 1, 0.4], tower(TONES.faint)),
-          block([1.1, 2.0, 0], [1, 1, 0.9], tower(TONES.low)),
-          block([2.0, 1.1, 0], [1, 1, 1.4], tower(TONES.mid)),
-          block([2.9, 0.2, 0], [1, 1, 1.9], TONES.lit),
+          block([0.1, 3.1, 0], [0.9, 0.9, 0.4], tower(TONES.faint)),
+          block([1.1, 2.1, 0], [0.9, 0.9, 0.9], tower(TONES.low)),
+          block([2.1, 1.1, 0], [0.9, 0.9, 1.4], tower(TONES.mid)),
+          block([3.1, 0.1, 0], [0.9, 0.9, 1.9], TONES.lit),
         ],
         glyphs: [],
       };
@@ -100,22 +98,22 @@ export function archetypeScene(id: ArchetypeId): Scene {
         glyphs: [{ kind: "moon", at: [0.6, 0.4, 3.6] }],
       };
     case "open-sourcer":
-      // Three or more repositories you don't own: a hub linked to the projects around it.
+      // Three or more repositories you don't own: a hub wired to the projects around it. The
+      // wires are thin lit slabs on the plinth, so they take part in the painting order.
       return {
         boxes: [
           plinth(),
-          block([1.6, 1.6, 0], [1.1, 1.1, 1.2], TONES.lit),
-          block([0.2, 0.2, 0], [0.8, 0.8, 0.6], tower(TONES.low)),
-          block([3.3, 0.4, 0], [0.8, 0.8, 0.8], tower(TONES.mid)),
-          block([0.3, 3.3, 0], [0.8, 0.8, 0.5], tower(TONES.faint)),
-          block([3.2, 3.2, 0], [0.8, 0.8, 0.9], tower(TONES.low)),
+          block([1.55, 1.55, 0], [1.1, 1.1, 1.2], TONES.lit),
+          block([1.7, 0.05, 0], [0.8, 0.8, 0.8], tower(TONES.low)),
+          block([3.35, 1.7, 0], [0.8, 0.8, 0.6], tower(TONES.mid)),
+          block([1.7, 3.35, 0], [0.8, 0.8, 0.9], tower(TONES.faint)),
+          block([0.05, 1.7, 0], [0.8, 0.8, 0.5], tower(TONES.low)),
+          block([2.04, 0.85, 0], [0.12, 0.7, 0.03], TONES.lit),
+          block([2.65, 2.04, 0], [0.7, 0.12, 0.03], TONES.lit),
+          block([2.04, 2.65, 0], [0.12, 0.7, 0.03], TONES.lit),
+          block([0.85, 2.04, 0], [0.7, 0.12, 0.03], TONES.lit),
         ],
-        glyphs: [
-          { kind: "link", from: [2.15, 2.15, 0.02], to: [0.6, 0.6, 0.02] },
-          { kind: "link", from: [2.15, 2.15, 0.02], to: [3.7, 0.8, 0.02] },
-          { kind: "link", from: [2.15, 2.15, 0.02], to: [0.7, 3.7, 0.02] },
-          { kind: "link", from: [2.15, 2.15, 0.02], to: [3.6, 3.6, 0.02] },
-        ],
+        glyphs: [],
       };
   }
 }

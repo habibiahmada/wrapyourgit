@@ -157,7 +157,7 @@ export function ArchetypesSection() {
           {ARCHETYPES.map(({ id, rule }) => (
             <li key={id} className={`reveal-zoom overflow-hidden ${box} hover:border-muted`}>
               {/* Each diorama draws the archetype's rule; the text below states it. */}
-              <div className="flex h-52 items-center justify-center border-b border-line bg-canvas px-8 py-6">
+              <div className="flex h-64 items-center justify-center border-b border-line bg-canvas px-6 py-4">
                 <SceneArt scene={archetypeScene(id)} className="h-full w-auto max-w-full" />
               </div>
               <div className="p-5">
