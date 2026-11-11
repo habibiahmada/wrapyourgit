@@ -39,6 +39,8 @@ export type Box = {
   texts?: FaceText[];
   /** An image printed near the top of each upright face that is tall enough for it. */
   logo?: string;
+  /** What this box is ("day", "sleeper", "gate-sign"), for tests and debugging; never drawn. */
+  tag?: string;
 };
 export type Ball = { kind: "ball"; c: V3; r: number; color: string; opacity?: number };
 export type Solid = Box | Ball;
