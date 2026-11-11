@@ -165,6 +165,12 @@ describe("fetchStarHistories limits", () => {
       )) as unknown as typeof fetch;
     expect(await fetchStarHistories("t", ["o/a"], "2026-01-01T00:00:00.000Z")).toBeNull();
   });
+
+  test("GitHub's 422 (validation failed, or the endpoint was spammed) is unavailable too", async () => {
+    globalThis.fetch = (async () =>
+      Response.json({ message: "Validation Failed" }, { status: 422 })) as unknown as typeof fetch;
+    expect(await fetchStarHistories("t", ["o/a"], "2026-01-01T00:00:00.000Z")).toBeNull();
+  });
 });
 
 describe("paginate with a deadline", () => {

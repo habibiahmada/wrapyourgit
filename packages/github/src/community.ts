@@ -91,8 +91,8 @@ export interface WalkLimits {
  *
  * - A repo the budget did not reach, or whose history GitHub failed to serve (5xx), comes back
  *   empty and incomplete, so the gain is an estimate.
- * - Null when any repo is unreadable or the rate limit is spent: a partial sum shown as the
- *   account's gain would be wrong, and unavailable is honest.
+ * - Null when any repo is unreadable, GitHub refuses the history (422) or the rate limit is
+ *   spent: a partial sum shown as the account's gain would be wrong, and unavailable is honest.
  */
 export async function fetchStarHistories(
   token: string,
@@ -112,7 +112,11 @@ export async function fetchStarHistories(
     });
     return results.every((result) => result !== null) ? results : null;
   } catch (error) {
-    if (error instanceof GitHubApiError && error.status === 429) return null;
+    // 429: the rate limit is spent. 422: GitHub refuses the history ("validation failed, or the
+    // endpoint has been spammed"). Neither says anything about the gain, so it is unavailable.
+    if (error instanceof GitHubApiError && (error.status === 429 || error.status === 422)) {
+      return null;
+    }
     throw error;
   }
 }
