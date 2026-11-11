@@ -136,24 +136,21 @@ export function ErrorPage({ login }: { login: string }) {
   );
 }
 
-/** The owner's auto-sync failed and there is no earlier recap to play instead. */
+/**
+ * The owner's auto-sync failed or is already running, and there is no earlier recap to play
+ * instead (freshRecap serves a stored one whenever it exists). So there is nothing to open on
+ * the dashboard either, which would only send the owner back here: the one action is to retry.
+ */
 export function OwnerErrorPage({ login, building }: { login: string; building: boolean }) {
   return (
     <ResultPage
       title={building ? "Your recap is already being built" : `Couldn't read your ${EDITION_YEAR}`}
       art="cutout-cell-think"
-      action={
-        <div className="flex flex-wrap gap-3">
-          <Retry login={login} />
-          <Link href="/dashboard" className={button.secondary}>
-            Go to dashboard
-          </Link>
-        </div>
-      }
+      action={<Retry login={login} label={building ? "Check again" : "Try again"} />}
     >
       {building
-        ? "A sync of your account is already running. Try again in a minute."
-        : "Something went wrong while asking GitHub for your activity. Nothing was saved."}
+        ? "A sync of your account is already running. Check again in a minute."
+        : "Something went wrong while asking GitHub for your activity. Nothing was saved, so there is no recap to open yet."}
     </ResultPage>
   );
 }
