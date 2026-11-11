@@ -33,7 +33,7 @@ The template is [`.env.example`](../../.env.example). The web app reads these; s
 
 ### Public token
 
-Public recaps (anyone's recap at `/<username>`) are fetched with one server token, `GITHUB_PUBLIC_TOKEN`. It lives on **one machine account**, the single automation account GitHub allows next to a personal one. Never add a second token or account to get more quota: spreading requests over accounts breaks GitHub's terms. The app saves quota instead (12-hour cache, one fetch per account at a time, a per-client limit, and no new fetches below 300 points left).
+Public recaps (anyone's recap at `/<username>`) are fetched with one server token, `GITHUB_PUBLIC_TOKEN`. It lives on **one machine account**, the single automation account GitHub allows next to a personal one. Never add a second token or account to get more quota: spreading requests over accounts breaks GitHub's terms. The app saves quota instead: a 12-hour cache, one fetch per account at a time, a per-client limit, a 10-minute memory of names GitHub says don't exist, and no new fetches below 300 GraphQL points or 300 REST requests left. Star history spends the REST quota (ADR-0020).
 
 To create it, signed in as the machine account: Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
 
@@ -42,7 +42,7 @@ To create it, signed in as the machine account: Settings → Developer settings 
 
 It cannot see any private repository, so a public recap can never count private contributions the token's owner could see. Store it as a Production-only Vercel _Secret_ variable, like `TOKEN_ENCRYPTION_KEY`; it never reaches the browser and is never logged.
 
-**Renewal:** set a reminder two weeks before the expiry date. Regenerate the token on the machine account (Fine-grained tokens → the token → Regenerate), replace `GITHUB_PUBLIC_TOKEN` in Vercel and redeploy. When it expires, recaps fetched in the last 12 hours keep playing (they are served without a GitHub call), every other public recap page shows an error, and signed-in users' own recaps are unaffected.
+**Renewal:** set a reminder two weeks before the expiry date. As a backstop, from 14 days before expiry every public lookup logs `GITHUB_PUBLIC_TOKEN expires <date>: renew it` (read from GitHub's `github-authentication-token-expiration` header); search Vercel → Logs for it. Regenerate the token on the machine account (Fine-grained tokens → the token → Regenerate), replace `GITHUB_PUBLIC_TOKEN` in Vercel and redeploy. When it expires, recaps fetched in the last 12 hours keep playing (they are served without a GitHub call), every other public recap page shows an error, and signed-in users' own recaps are unaffected.
 
 On Vercel, `DATABASE_URL` and the other `DATABASE_*` variables come from the Neon integration, connected to **Production only**; `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_SECRET` and `TOKEN_ENCRYPTION_KEY` are Production-only too. Vercel builds production only ([ADR-0018](../architecture/decisions/0018-production-only-deploys.md)): there are no preview deployments and no Neon database branches. If previews are ever turned back on, give the Neon connection Preview **together with** "Create Database Branch For Deployment: Preview", or previews would get the production database and migrate it. The two secrets are Vercel _Secret_ variables, entered by the maintainer.
 
@@ -85,6 +85,23 @@ What is set up, and how to set it up again:
 5. **Domain:** Vercel → Domains → add `wrapyourgit.habibiahmada.dev`; Vercel shows a project-specific CNAME target. In Cloudflare (zone `habibiahmada.dev`): `CNAME wrapyourgit → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate.
 
 Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, `/lang`; `/sprites` was removed later, #63), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
+
+### Backups and monitoring
+
+Not set up yet (M6). The checklist:
+
+- **Database backups.**
+  - Neon keeps a restore window for point-in-time recovery; how long depends on the plan. Check it under Neon → the project → Settings, and write it here.
+  - For a copy outside Neon, run `pg_dump -Fc "<direct connection string>"` on a schedule, keeping about 14 days. `pg_dump` needs the direct (unpooled) string from Neon → Connect, not the pooled `DATABASE_URL`. Check whether the Vercel integration also added it as a variable.
+  - Restore one dump into a scratch Neon branch before launch.
+- **What to watch:**
+  - **Vercel → Logs.** Search for:
+    - `public recap failed` (a public fetch that errored; it carries no login);
+    - `Auto-sync failed`;
+    - `GITHUB_PUBLIC_TOKEN expires`.
+  - **Vercel → Usage.** Function duration and invocations: a first public fetch takes about 20–55 s, so they dominate.
+  - **Neon → Monitoring.** Compute hours and storage against the free plan's limits.
+- **Quota.** `bun --env-file=apps/web/.env.local` with a short script against `https://api.github.com/rate_limit` shows the public token's GraphQL and REST quota left. That call costs nothing.
 
 ## Later: production on an AWS VPS
 
@@ -206,3 +223,4 @@ From ADR-0005:
 - [ ] Repository public and `bun scripts/github-settings.ts` run, so `main` is protected (ADR-0014).
 - [ ] Every **Not yet verified** item above confirmed and removed from this guide.
 - [ ] `GITHUB_PUBLIC_TOKEN` set in Production, and a renewal reminder set before its expiry date.
+- [ ] Backups and monitoring set up as in [Backups and monitoring](#backups-and-monitoring), and Neon's restore window written down.
