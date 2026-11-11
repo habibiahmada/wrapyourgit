@@ -101,6 +101,7 @@ Not set up yet (M6). The checklist:
     - `GITHUB_PUBLIC_TOKEN expires`.
   - **Vercel → Usage.** Function duration and invocations: a first public fetch takes about 20–55 s, so they dominate.
   - **Neon → Monitoring.** Compute hours and storage against the free plan's limits.
+  - **Vercel → Analytics.** Page views, top pages, referrers, countries and devices from Vercel Web Analytics (`components/site/page-analytics.tsx`, which strips query strings first). Enable it once under the project's Analytics tab; the privacy page describes what it collects.
 - **Quota.** `bun --env-file=apps/web/.env.local` with a short script against `https://api.github.com/rate_limit` shows the public token's GraphQL and REST quota left. That call costs nothing.
 
 ## Later: production on an AWS VPS
