@@ -6,11 +6,14 @@ import {
   type YearActivity,
 } from "@wyg/github";
 import { SCHEMA_VERSION } from "@wyg/schema";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { underClientLimit } from "./public-policy";
 
 // public-recaps.ts is server-only; the guard throws outside a React server bundle.
 mock.module("server-only", () => ({}));
-const { loadPublicRecapWith, setPublicRecapHidden, staleLookups } = await import("./public-recaps");
+const { loadPublicRecapWith, lookupLock, recentLookups, setPublicRecapHidden, staleLookups } =
+  await import("./public-recaps");
 type Deps = Parameters<typeof loadPublicRecapWith>[0];
 type Store = Deps["store"];
 type Row = NonNullable<Awaited<ReturnType<Store["read"]>>>;
@@ -80,10 +83,11 @@ const store: Store = {
   read: async () => (row ? { ...row } : null),
   readByLogin: async (login) =>
     row && row.login.toLowerCase() === login.toLowerCase() ? { ...row, githubId: ID } : null,
-  countLookups: async () => lookups,
-  recordLookup: async (client) => {
+  admitLookup: async (client) => {
     if (failRecord) throw new Error("db down");
+    if (!underClientLimit(lookups)) return false;
     recorded.push(client);
+    return true;
   },
   claim: async (_id, login) => {
     beforeClaim?.();
@@ -518,6 +522,27 @@ describe("staleLookups", () => {
     // No client condition: a visitor who never comes back loses their rows too.
     expect(query.sql).toBe('delete from "public_lookups" where "public_lookups"."at" < $1');
     expect(query.params).toEqual([new Date(now.getTime() - HOUR).toISOString()]);
+  });
+});
+
+describe("lookupLock", () => {
+  test("locks one client's key for the transaction, under the lookup log's own namespace", () => {
+    const query = new PgDialect().sqlToQuery(lookupLock("client-a"));
+    expect(query.sql).toBe(
+      "select pg_advisory_xact_lock(hashtext('public_lookups'), hashtext($1))",
+    );
+    expect(query.params).toEqual(["client-a"]);
+  });
+});
+
+describe("recentLookups", () => {
+  test("counts only this client's rows inside the window", () => {
+    const since = new Date("2026-11-11T11:00:00Z");
+    const query = recentLookups(drizzle.mock(), "client-a", since).toSQL();
+    expect(query.sql).toBe(
+      'select count(*)::int from "public_lookups" where ("public_lookups"."client" = $1 and "public_lookups"."at" > $2)',
+    );
+    expect(query.params).toEqual(["client-a", since.toISOString()]);
   });
 });
 

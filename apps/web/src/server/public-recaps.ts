@@ -53,9 +53,13 @@ export interface PublicStore {
   read(githubId: number): Promise<StoredRow | null>;
   /** The most recently fetched row whose login matches, ignoring case. */
   readByLogin(login: string): Promise<(StoredRow & { githubId: number }) | null>;
-  /** GitHub requests this client caused since `since` (public-policy.ts underClientLimit). */
-  countLookups(client: string, since: Date): Promise<number>;
-  recordLookup(client: string): Promise<void>;
+  /**
+   * Checks the client's limit (public-policy.ts underClientLimit) and records one lookup, in one
+   * step so a burst from one client can't all pass the check before any of them records. False,
+   * with nothing recorded, when the client is at the limit. Every call also deletes every client's
+   * expired rows (staleLookups), recorded or not.
+   */
+  admitLookup(client: string, now: Date): Promise<boolean>;
   /** Takes the fetch claim; returns the row as claimed, or null when another request holds it. */
   claim(githubId: number, login: string): Promise<StoredRow | null>;
   /**
@@ -116,13 +120,11 @@ export async function loadPublicRecapWith(
     // lookups spend the shared token too: the client's limit is checked and one row recorded
     // before GitHub is asked, so unknown or renamed names can't drain it. Over the limit, a stale
     // stored recap within the cap still plays.
-    const since = new Date(deps.now().getTime() - CLIENT_WINDOW_MS);
-    if (!underClientLimit(await store.countLookups(client, since))) {
+    if (!(await store.admitLookup(client, deps.now()))) {
       return cached && canServeStale(cached.fetchedAt, deps.now())
         ? serveStored(store, cached)
         : { kind: "limited", login };
     }
-    await store.recordLookup(client);
 
     const account = await deps.lookup(requested);
     if (account.kind === "missing") return { kind: "missing", login };
@@ -293,6 +295,26 @@ export function staleLookups(database: Pick<PgDatabase<PgQueryResultHKT>, "delet
     .where(lt(publicLookups.at, new Date(now.getTime() - CLIENT_WINDOW_MS)));
 }
 
+/** This client's lookup rows inside the window that starts at `since`. */
+export function recentLookups(
+  database: Pick<PgDatabase<PgQueryResultHKT>, "select">,
+  client: string,
+  since: Date,
+) {
+  return database
+    .select({ count: sql<number>`count(*)::int` })
+    .from(publicLookups)
+    .where(and(eq(publicLookups.client, client), gt(publicLookups.at, since)));
+}
+
+/**
+ * A transaction-scoped lock on one client's key, so that client's check and record run one at a
+ * time; other clients don't wait. The first key keeps these locks apart from any others.
+ */
+export function lookupLock(client: string) {
+  return sql`select pg_advisory_xact_lock(hashtext('public_lookups'), hashtext(${client}))`;
+}
+
 /** The per-client key for the lookup limit: a salted hash of the address, never the address. */
 export function clientKey(headers: Headers): string {
   // On Vercel the platform sets x-forwarded-for itself, so its first address is the client's.
@@ -339,18 +361,17 @@ const dbStore: PublicStore = {
     return row ?? null;
   },
 
-  async countLookups(client, since) {
-    const [row] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(publicLookups)
-      .where(and(eq(publicLookups.client, client), gt(publicLookups.at, since)));
-    return row?.count ?? 0;
-  },
-
-  async recordLookup(client) {
-    await db.transaction(async (tx) => {
-      await staleLookups(tx, new Date());
+  async admitLookup(client, now) {
+    return db.transaction(async (tx) => {
+      await tx.execute(lookupLock(client));
+      // Every check purges, even one that records nothing, so hashes don't outlive the window
+      // just because no one new got through.
+      await staleLookups(tx, now);
+      // Read committed: this count sees every row committed by the lock's previous holder.
+      const [row] = await recentLookups(tx, client, new Date(now.getTime() - CLIENT_WINDOW_MS));
+      if (!underClientLimit(row?.count ?? 0)) return false;
       await tx.insert(publicLookups).values({ client });
+      return true;
     });
   },
 
