@@ -139,6 +139,11 @@ export async function loadPublicRecapWith(
 
     try {
       const data = await fetchAndBuild(deps, login, claimed.previous);
+      // The owner may have hidden the recap while it was being fetched: store nothing then.
+      if (await store.isHidden(account.id)) {
+        await store.release(account.id, claimedAt);
+        return { kind: "hidden", login };
+      }
       await store.save(account.id, claimedAt, { login, ...data });
       return { kind: "recap", login, data: data.data };
     } catch (error) {

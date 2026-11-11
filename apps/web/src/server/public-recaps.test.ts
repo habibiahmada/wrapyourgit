@@ -416,6 +416,15 @@ describe("loadPublicRecapWith", () => {
     expect(row?.fetchingSince).toEqual(takeover);
   });
 
+  test("an owner who hides during the fetch: nothing is stored and the visitor sees hidden", async () => {
+    duringFetch = () => {
+      hidden = true;
+    };
+    expect(await loadPublicRecapWith(deps, "octo", "c")).toEqual({ kind: "hidden", login: "Octo" });
+    expect(row?.data).toBeNull();
+    expect(row?.fetchingSince).toBeNull();
+  });
+
   test("gives up after 60 seconds of waiting and says busy", async () => {
     othersClaim = true;
     row = {
