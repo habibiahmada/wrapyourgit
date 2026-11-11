@@ -130,3 +130,28 @@ test("a logo prints on the upright faces that are tall enough", () => {
   const prims = scenePrims([{ ...box, size: [1, 1, 2], logo: "lang/x.svg" }], cam, frame, clear);
   expect(prims.filter((p) => p.kind === "image")).toHaveLength(2);
 });
+
+test("a flipped text is turned half round in its rect, for reading from the other side", () => {
+  const rect: [number, number, number, number] = [0.1, 0.2, 0.9, 0.8];
+  const one = (flip: boolean) => {
+    const prim = scenePrims(
+      [{ ...box, texts: [{ on: "top", rect, text: "A", fill: "#ffffff", flip }] }],
+      cam,
+      frame,
+      clear,
+    ).find((p) => p.kind === "text");
+    if (prim?.kind !== "text") throw new Error("no text");
+    return prim;
+  };
+  const plain = one(false);
+  const turned = one(true);
+  // Both axes point the other way. The sizes differ a little because the two are laid out from
+  // opposite corners, and perspective makes the far corner smaller.
+  const along = turned.matrix[0] * plain.matrix[0] + turned.matrix[1] * plain.matrix[1];
+  const down = turned.matrix[2] * plain.matrix[2] + turned.matrix[3] * plain.matrix[3];
+  expect(along).toBeLessThan(0);
+  expect(down).toBeLessThan(0);
+  expect(turned.size).toBeCloseTo(plain.size);
+  expect(turned.capHeightPx / plain.capHeightPx).toBeGreaterThan(0.8);
+  expect(turned.capHeightPx / plain.capHeightPx).toBeLessThan(1.25);
+});

@@ -19,7 +19,15 @@ type Rect = [u0: number, v0: number, u1: number, v1: number];
  */
 export type Decal = { on: FaceSet; rect: Rect; fill: string; round?: boolean };
 /** One line of text fitted inside `rect` on a face, lying on the face. */
-export type FaceText = { on: FaceSet; rect: Rect; text: string; fill: string; weight?: number };
+export type FaceText = {
+  on: FaceSet;
+  rect: Rect;
+  text: string;
+  fill: string;
+  weight?: number;
+  /** Turn the text half round in its rect: for words on the ground read from the other side. */
+  flip?: boolean;
+};
 
 export type Box = {
   kind: "box";
@@ -39,6 +47,8 @@ export type Box = {
   texts?: FaceText[];
   /** An image printed near the top of each upright face that is tall enough for it. */
   logo?: string;
+  /** The logo's side in world units; by default 62% of the face's shorter side. */
+  logoSide?: number;
   /** What this box is ("day", "sleeper", "gate-sign"), for tests and debugging; never drawn. */
   tag?: string;
 };
@@ -292,7 +302,9 @@ export function scenePrims(
       for (const label of solid.texts ?? []) {
         if (!isOn(label.on, face.name) || label.text === "") continue;
         const [u0, v0, u1, v1] = label.rect;
-        const { matrix, wide, tall } = patch(point(u0, v1), point(u1, v1), point(u0, v0));
+        const { matrix, wide, tall } = label.flip
+          ? patch(point(u1, v0), point(u0, v0), point(u1, v1))
+          : patch(point(u0, v1), point(u1, v1), point(u0, v0));
         if (!(wide > 0 && tall > 0)) continue;
         const size = fitText(label.text, wide, tall);
         prims.push({
@@ -311,7 +323,7 @@ export function scenePrims(
 
       if (solid.logo && face.name !== "top") {
         const faceWide = length(world[0], world[1]);
-        const side = Math.min(faceWide, h) * 0.62;
+        const side = solid.logoSide ?? Math.min(faceWide, h) * 0.62;
         if (h < side * 1.15) continue;
         const inset = (faceWide - side) / 2 / faceWide;
         const top = 1 - (side * 0.14) / h;

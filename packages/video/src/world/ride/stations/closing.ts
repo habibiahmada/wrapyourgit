@@ -41,9 +41,9 @@ export const closing: Station = ({ data, c, yaw, frame }) => {
       0,
       7.5,
       [
-        { text: model.date, tall: 0.6, fill: "#c9d1d9", weight: 700 },
-        { text: String(model.year), tall: 1.7, fill: LIT },
-        ...model.lines.map((text) => ({ text, tall: 0.7 })),
+        { text: model.date, tall: 0.5, fill: "#c9d1d9", weight: 700 },
+        { text: String(model.year), tall: 1.4, fill: LIT },
+        ...model.lines.map((text) => ({ text, tall: 0.6 })),
       ],
       "across",
       1.2,

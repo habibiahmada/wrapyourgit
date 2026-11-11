@@ -14,6 +14,7 @@ import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
 import { STATIONS } from "./index";
 import { clip, stationContext } from "./kit";
+import { blockHeight, blockName } from "./languages";
 
 const oneLanguage: RecapData = {
   ...sampleRecap,
@@ -53,7 +54,7 @@ test("languages: every tree's label and name are printed, in the model's words",
   const text = printed(build("languages", sampleRecap));
   for (const tree of model.trees) {
     expect(text).toContain(tree.label);
-    expect(text).toContain(clip(tree.name, 12));
+    expect(text).toContain(blockName(tree.name));
   }
   expect(text).toContain("Top languages");
   expect(text).toContain(model.title);
@@ -65,7 +66,11 @@ test("languages: a block is as tall as its share says, at rest", () => {
   const blocks = boxes(build("languages", sampleRecap), "language");
   expect(blocks).toHaveLength(model.trees.length);
   const first = blocks.find((b) => b.texts?.some((t) => t.text === model.trees[0]?.label));
-  expect(first?.size[2]).toBeCloseTo(3.0 + (model.trees[0]?.share ?? 0) * 4.6);
+  expect(first?.size[2]).toBeCloseTo(blockHeight(model.trees[0]?.share ?? 0, "landscape"));
+  // A bigger share stands taller, in every layout.
+  for (const layout of ["portrait", "compact", "landscape"] as const) {
+    expect(blockHeight(0.6, layout)).toBeGreaterThan(blockHeight(0.2, layout));
+  }
   expect(first?.at[2]).toBeCloseTo(0.47);
 });
 
@@ -115,15 +120,76 @@ test("languages: one language builds one block, none builds none and says so", (
   }
 });
 
-test("languages: five languages fit on the plaza without touching", () => {
-  const blocks = boxes(build("languages", busyRecap), "language");
-  const spans = blocks
-    .map((b) => [b.at[0], b.at[0] + b.size[0]] as const)
-    .sort((a, b) => a[0] - b[0]);
-  for (let i = 1; i < spans.length; i++)
-    expect(spans[i]?.[0] ?? 0).toBeGreaterThanOrEqual(spans[i - 1]?.[1] ?? 0);
-  const width = (spans.at(-1)?.[1] ?? 0) - (spans[0]?.[0] ?? 0);
-  expect(width).toBeLessThanOrEqual(9.6);
+test("languages: five languages stand on two tiers, none touching, all on the plaza", () => {
+  const city = buildCity(busyRecap);
+  const stop = rideStops(busyRecap, city).find((x) => x.kind === "languages");
+  if (!stop) throw new Error("no stop");
+  const station = STATIONS.languages as NonNullable<typeof STATIONS.languages>;
+  const all = station(stationContext(busyRecap, city, stop, 1, 0, 0, "portrait"));
+  const blocks = boxes(all, "language");
+  expect(blocks).toHaveLength(5);
+  // Three on the raised tier behind, two in front of it.
+  expect(blocks.filter((b) => b.at[2] > 1.5).length).toBe(3);
+  expect(boxes(all, "tier")).toHaveLength(1);
+  const overlap = (a: Box, b: Box) =>
+    a.at[0] < b.at[0] + b.size[0] &&
+    b.at[0] < a.at[0] + a.size[0] &&
+    a.at[1] < b.at[1] + b.size[1] &&
+    b.at[1] < a.at[1] + a.size[1];
+  blocks.forEach((a, i) => {
+    for (const b of blocks.slice(i + 1)) expect(overlap(a, b)).toBe(false);
+  });
+  const slab = boxes(all, "plaza")[0] as Box;
+  for (const b of blocks) {
+    expect(b.at[0]).toBeGreaterThanOrEqual(slab.at[0]);
+    expect(b.at[0] + b.size[0]).toBeLessThanOrEqual(slab.at[0] + slab.size[0]);
+    expect(b.at[1]).toBeGreaterThanOrEqual(slab.at[1]);
+    expect(b.at[1] + b.size[1]).toBeLessThanOrEqual(slab.at[1] + slab.size[1]);
+  }
+  expect(slab.size[0]).toBeLessThanOrEqual(14);
+});
+
+test("languages: a wide frame keeps five languages in one row", () => {
+  const all = build("languages", busyRecap);
+  expect(boxes(all, "tier")).toHaveLength(0);
+  expect(boxes(all, "language")).toHaveLength(5);
+});
+
+test("languages: up to three languages stand in one row on the plaza", () => {
+  const all = build("languages", sampleRecap);
+  expect(boxes(all, "tier")).toHaveLength(0);
+  expect(new Set(boxes(all, "language").map((b) => b.at[2].toFixed(3))).size).toBe(1);
+});
+
+test("projects: a narrow frame stands the plaques as a wall, two across, with the towers on a tier behind", () => {
+  const city = buildCity(sampleRecap);
+  const stop = rideStops(sampleRecap, city).find((x) => x.kind === "projects");
+  if (!stop) throw new Error("no stop");
+  const station = STATIONS.projects as NonNullable<typeof STATIONS.projects>;
+  for (const layout of ["portrait", "compact"] as const) {
+    const all = station(stationContext(sampleRecap, city, stop, 1, 0, 0, layout));
+    const plaques = boxes(all, "plaque");
+    expect(plaques).toHaveLength(projectsModel(sampleRecap).stacks.length);
+    // No two plaques share space on the wall.
+    plaques.forEach((a, i) => {
+      for (const b of plaques.slice(i + 1)) {
+        const apart =
+          a.at[0] + a.size[0] <= b.at[0] + 1e-9 ||
+          b.at[0] + b.size[0] <= a.at[0] + 1e-9 ||
+          a.at[2] + a.size[2] <= b.at[2] + 1e-9 ||
+          b.at[2] + b.size[2] <= a.at[2] + 1e-9;
+        expect(apart).toBe(true);
+      }
+    });
+    expect(boxes(all, "tier")).toHaveLength(1);
+    const tier = boxes(all, "tier")[0] as Box;
+    for (const crate of boxes(all, "crate"))
+      expect(crate.at[2]).toBeGreaterThanOrEqual(tier.at[2] + tier.size[2]);
+  }
+  // A wide frame keeps the row: every plaque at one height, no tier.
+  const wide = build("projects", sampleRecap);
+  expect(new Set(boxes(wide, "plaque").map((p) => p.at[2].toFixed(3))).size).toBe(1);
+  expect(boxes(wide, "tier")).toHaveLength(0);
 });
 
 test("languages: blocks drop in before the stop and none is in the air at rest", () => {
@@ -138,14 +204,25 @@ test("projects: every stack's label and exact commits are printed at rest, and c
   const model = projectsModel(sampleRecap);
   const rest = printed(build("projects", sampleRecap));
   for (const stack of model.stacks) {
-    expect(rest).toContain(clip(stack.label, 16));
-    expect(rest).toContain(commitsText(stack.commits));
+    // The model's words, on two lines: the figure large, its unit under it.
+    const [figure, unit] = commitsText(stack.commits).split(" ");
+    expect(rest).toContain(clip(stack.label, 14));
+    expect(rest).toContain(figure as string);
+    expect(rest).toContain(unit as string);
   }
   expect(rest).toContain("Repositories");
   expect(rest).toContain(model.title);
-  const first = model.stacks[0];
-  if (first)
-    expect(printed(build("projects", sampleRecap, 0.3))).not.toContain(commitsText(first.commits));
+  const figure = commitsText(model.stacks[0]?.commits ?? 0).split(" ")[0] as string;
+  expect(printed(build("projects", sampleRecap, 0.3))).not.toContain(figure);
+});
+
+test("projects: no plaque shows a figure before its tower starts, and never a zero", () => {
+  expect(boxes(build("projects", sampleRecap, 0), "plaque")).toHaveLength(0);
+  for (const progress of [0.05, 0.2, 0.5, 0.8]) {
+    for (const text of printed(boxes(build("projects", sampleRecap, progress), "plaque"))) {
+      expect(text).not.toBe("0");
+    }
+  }
 });
 
 test("projects: a tower has as many crates as the model says", () => {
@@ -158,7 +235,7 @@ test("projects: long names are cut, an empty shelf says so", () => {
   const labels = boxes(build("projects", busyRecap), "plaque").flatMap((b) =>
     (b.texts ?? []).map((t) => t.text),
   );
-  for (const label of labels) expect(label.length).toBeLessThanOrEqual(16);
+  for (const label of labels) expect(label.length).toBeLessThanOrEqual(14);
   const none = projectsModel(emptyRecap);
   const empty = build("projects", {
     ...emptyRecap,
@@ -171,12 +248,12 @@ test("projects: long names are cut, an empty shelf says so", () => {
 test("projects: no station names a repository the data hides", () => {
   const hidden = withoutPrivateNames(sampleRecap);
   const model = projectsModel(hidden);
-  const text = boxes(build("projects", hidden), "plaque").flatMap((b) =>
-    (b.texts ?? []).map((t) => t.text),
-  );
-  // A plaque prints on both of its faces, so every name appears twice.
-  const names = [...new Set(text.filter((t) => !/commit/.test(t)))].sort();
-  expect(names).toEqual(model.stacks.map((s) => clip(s.label, 16)).sort());
+  const text = printed(boxes(build("projects", hidden), "plaque"));
+  // A plaque prints on both of its faces, so every name appears twice; figures and units are not names.
+  const names = [
+    ...new Set(text.filter((t) => !/^commits?$/.test(t) && !/^[\d,.k]+$/.test(t))),
+  ].sort();
+  expect(names).toEqual(model.stacks.map((stack) => clip(stack.label, 14)).sort());
 });
 
 test("hello prints the year and the login, and the scope line when the recap is public", () => {

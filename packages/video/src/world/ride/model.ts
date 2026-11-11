@@ -3,7 +3,7 @@
  * and the whole picture at any frame as a camera and two lists of solids. RideStory only draws
  * what `rideFrame` returns, and the web reads stop frames from `buildRide` without React.
  */
-import { type RecapData, VIDEO_FPS } from "@wyg/schema";
+import { layoutForSize, type RecapData, VIDEO_FPS } from "@wyg/schema";
 import { congratsLetter } from "../../letter";
 import { buildCity, type City } from "../city";
 import { paginateLetter } from "../scenes/letter.model";
@@ -32,6 +32,9 @@ export type RideModel = { city: City; stops: RideStop[]; timeline: RideTimeline;
 /** `letter: false` builds the ride without the letter's pages, for the public page. */
 export type RideOptions = { letter?: boolean };
 
+/** The parts of a station that carry its chapter: the camera keeps these in frame. */
+const HERO_TAGS = ["language", "crate", "plaque", "board", "covered", "shuttered"];
+
 export function buildRide(
   data: RecapData,
   format: Frame,
@@ -42,7 +45,41 @@ export function buildRide(
   const city = buildCity(data);
   const letter = options.letter ?? true;
   const letterPages = letter ? paginateLetter(congratsLetter(data), format).length : 1;
-  const stops = rideStops(data, city, { letterPages, letter });
+  const layout = layoutForSize(format.width, format.height);
+  // How tall each station's finished hero is, so the camera can frame it whatever the data.
+  const stops = rideStops(data, city, { letterPages, letter }).map((stop) => {
+    const station = STATIONS[stop.kind];
+    if (!stop.plaza || !station) return stop;
+    const ctx = stationContext(data, city, stop, 1, 0, 0, layout);
+    let heroTop = 0;
+    // The corner that reaches furthest in each of sixteen directions from the plaza's centre.
+    const edge: ([number, number, number] | null)[] = Array.from({ length: 16 }, () => null);
+    const reach: number[] = Array.from({ length: 16 }, () => -1);
+    for (const solid of station(ctx)) {
+      // The plaza itself may run out of frame; what must stay in is what carries the chapter.
+      if (solid.kind !== "box" || !HERO_TAGS.includes(solid.tag ?? "")) continue;
+      heroTop = Math.max(heroTop, solid.at[2] + solid.size[2]);
+      const [px, py] = solid.pivot ?? [ctx.c[0], ctx.c[1]];
+      const cos = Math.cos(solid.yaw ?? 0);
+      const sin = Math.sin(solid.yaw ?? 0);
+      for (const x of [solid.at[0], solid.at[0] + solid.size[0]]) {
+        for (const y of [solid.at[1], solid.at[1] + solid.size[1]]) {
+          const wx = px + (x - px) * cos - (y - py) * sin;
+          const wy = py + (x - px) * sin + (y - py) * cos;
+          for (let k = 0; k < 16; k++) {
+            const a = (k / 16) * Math.PI * 2;
+            const along = (wx - ctx.c[0]) * Math.cos(a) + (wy - ctx.c[1]) * Math.sin(a);
+            if (along > (reach[k] ?? -1)) {
+              reach[k] = along;
+              edge[k] = [wx, wy, solid.at[2] + solid.size[2] / 2];
+            }
+          }
+        }
+      }
+    }
+    const heroEdge = edge.filter((point): point is [number, number, number] => point !== null);
+    return { ...stop, heroTop, heroEdge };
+  });
   return { city, stops, timeline: buildRideTimeline(stops, mode, fps), gates: gates(data, city) };
 }
 
@@ -90,6 +127,7 @@ export function rideFrame(
   const trainS = trainAt(frameIndex, stops, timeline);
   const { cam, roll, speed } = rideCamera(frameIndex, stops, timeline, format);
   const overview = overviewAt(frameIndex, model);
+  const layout = layoutForSize(format.width, format.height);
   const weeks = Math.max(...city.plots.map((plot) => plot.col)) + 1;
   const view = {
     trainS,
@@ -143,7 +181,7 @@ export function rideFrame(
     // The overview's billboard stands by the middle of the rail, wherever the train is.
     if (stop.kind !== "city" && (stop.s < view.from - 12 || stop.s > view.to + 12)) return;
     const build = buildProgress(i, frameIndex, timeline, fps);
-    objects.push(...station(stationContext(data, city, stop, build, clock, overview)));
+    objects.push(...station(stationContext(data, city, stop, build, clock, overview, layout)));
   });
 
   const reach = Math.hypot(

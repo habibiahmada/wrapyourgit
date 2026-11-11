@@ -26,7 +26,7 @@ export const SHOTS = {
   /** Low and close beside the train, wheels at eye level. */
   SIDE: { theta: Math.PI * 0.56, radius: 5.6, height: 1.2, fov: 50, look: "train" },
   /** The landing's angle on a station: 45 degrees round, 30 up, far away through a long lens. */
-  ISO: { theta: Math.PI * 0.75, radius: 19.5, height: 11.3, fov: 25, look: "hero" },
+  ISO: { theta: Math.PI * 0.75, radius: 19.5, height: 11.3, fov: 22, look: "hero" },
   /** hello: from the front and a little to the side, Cell and the platform board in frame. */
   HELLO: { theta: 1.0, radius: 3.2, height: 1.9, fov: 56, look: "cell" },
 } as const satisfies Record<string, Shot>;
@@ -38,6 +38,8 @@ const CELL_SEAT = -0.35;
 const MIDDLE_MIN_SECONDS = 2.2;
 const CITY_FOV = 34;
 const CITY_MARGIN = 0.06;
+/** The frame height the shots' lenses are written for (16:9). */
+const REFERENCE_HEIGHT = 1080;
 
 /** The shot in the middle of the move into stop `i`: they alternate, and a short move has none. */
 export function middleShot(i: number, moveSeconds: number): "OVER" | "SIDE" | null {
@@ -70,7 +72,7 @@ const logLerp = (a: number, b: number, t: number) => Math.exp(lerp(Math.log(a), 
 /** The centre of a stop's hero: its plaza, or for closing the board at the buffers. */
 function heroPoint(stop: RideStop): V3 {
   if (stop.plaza) return at(stop.s + PLAZA_AHEAD, stop.side * PLAZA_LATERAL, 3.4);
-  return at(stop.s + 3.2, 0, 2.4);
+  return at(stop.s + 5.6, 0, 4.0);
 }
 
 function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
@@ -86,17 +88,22 @@ function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
   }
 }
 
-/** The lens widens on the narrower layouts so the train and the hero both fit. */
+/**
+ * The lens for this frame. On the ride the narrower layouts get a wider lens, so the rail ahead
+ * fills the frame. At a station every format gets the same focal length in pixels as 16:9, so a
+ * printed number is the same size on screen whatever the format (spec "How big printed text must
+ * be"); in between the two blend.
+ */
 function lens(fov: number, frame: Frame): number {
-  const iso = Math.max(0, Math.min(1, (56 - fov) / 31));
-  switch (layoutForSize(frame.width, frame.height)) {
-    case "portrait":
-      return fov * (1.42 + 0.5 * iso);
-    case "compact":
-      return fov * (1.15 + 0.45 * iso);
-    case "landscape":
-      return fov;
-  }
+  const station = Math.max(
+    0,
+    Math.min(1, (SHOTS.RIDE.fov - fov) / (SHOTS.RIDE.fov - SHOTS.ISO.fov)),
+  );
+  const family = layoutForSize(frame.width, frame.height);
+  const ride = fov * (family === "portrait" ? 1.42 : family === "compact" ? 1.15 : 1);
+  const tall = frame.height / REFERENCE_HEIGHT;
+  const sameFocal = (2 * Math.atan(tall * Math.tan(((fov / 2) * Math.PI) / 180)) * 180) / Math.PI;
+  return ride + (sameFocal - ride) * station;
 }
 
 /** A shot taken round the train at `trainS`. `side` mirrors it across the rail. */
@@ -156,10 +163,100 @@ function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
   return pose;
 }
 
+/** Where the hero and Cell may sit in the frame at a stop, as shares of its height and width. */
+const HERO_TOP = 0.07;
+const CELL_LOW = 0.9;
+const SIDE_MARGIN = 0.04;
+/** How much closer or further than the shot's own distance the fit may go. */
+const NEAREST = 0.55;
+const FURTHEST = 2.2;
+
+/**
+ * The isometric shot on a station, fitted to its hero. The camera looks at the middle of what
+ * must be in frame (the hero's top and Cell) and comes as close as it can while the hero's top,
+ * its sides and Cell all stay inside the frame, so printed numbers are as large as the frame
+ * allows whatever the data and the format. The fit is made for the train at rest and reused
+ * while it pulls in, so the shot does not drift.
+ */
+function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
+  const base = shotPose(SHOTS.ISO, stop.s, stop, stop.side);
+  const centre = heroPoint(stop);
+  const top: V3 = [centre[0], centre[1], (stop.heroTop ?? 3.4) + 0.2];
+  const cell = at(stop.s + CELL_SEAT, 0, 0.6);
+  // The hero's own outermost corners when known, else a ring round the plaza.
+  const ring: V3[] =
+    stop.heroEdge && stop.heroEdge.length > 0
+      ? stop.heroEdge
+      : Array.from({ length: 8 }, (_, k): V3 => {
+          const a = (k / 8) * Math.PI * 2;
+          return [centre[0] + Math.cos(a) * 5, centre[1] + Math.sin(a) * 5, 1];
+        });
+  const measure = (pose: Pose) => {
+    const cam = poseCamera(pose, frame);
+    const a = projectPoint(top, cam, frame);
+    const b = projectPoint(cell, cam, frame);
+    const xs = ring.map((p) => projectPoint(p, cam, frame)?.[0] ?? Number.NaN);
+    if (!a || !b || xs.some(Number.isNaN)) return null;
+    return {
+      span: (b[1] - a[1]) / frame.height,
+      middle: (a[1] + b[1]) / 2 / frame.height,
+      perUnit: Math.abs(b[1] - a[1]) / Math.max(0.5, top[2] - cell[2]),
+      left: Math.min(...xs) / frame.width,
+      right: Math.max(...xs) / frame.width,
+    };
+  };
+  const target = (HERO_TOP + CELL_LOW) / 2;
+  const room = CELL_LOW - HERO_TOP;
+  let rest = base;
+  for (let i = 0; i < 200; i++) {
+    const m = measure(rest);
+    if (!m) break;
+    const scale = rest.radius / base.radius;
+    const tooBig = m.span > room || m.left < SIDE_MARGIN || m.right > 1 - SIDE_MARGIN;
+    const roomy = m.span < room * 0.94 && m.left > SIDE_MARGIN * 2 && m.right < 1 - SIDE_MARGIN * 2;
+    const offCentre = (m.left + m.right) / 2 - 0.5;
+    if (Math.abs(offCentre) > 0.01) {
+      // Turn the camera toward the side the hero leans to, so both its sides have the same room.
+      const cam = poseCamera(rest, frame);
+      const dx = cam.look[0] - cam.pos[0];
+      const dy = cam.look[1] - cam.pos[1];
+      const flat = Math.hypot(dx, dy) || 1;
+      const shift = (offCentre * frame.width) / m.perUnit;
+      rest = {
+        ...rest,
+        look: [
+          rest.look[0] + (dy / flat) * shift,
+          rest.look[1] - (dx / flat) * shift,
+          rest.look[2],
+        ],
+      };
+    } else if (tooBig && scale < FURTHEST) {
+      rest = { ...rest, radius: rest.radius * 1.02, height: rest.height * 1.02 };
+    } else if (roomy && scale > NEAREST) {
+      rest = { ...rest, radius: rest.radius / 1.015, height: rest.height / 1.015 };
+    } else if (Math.abs(m.middle - target) > 0.004) {
+      // Looking at a higher point moves the picture down the frame, and the other way round.
+      const z = rest.look[2] + ((target - m.middle) * frame.height) / m.perUnit;
+      rest = { ...rest, look: [rest.look[0], rest.look[1], z] };
+    } else break;
+  }
+  const now = shotPose(SHOTS.ISO, trainS, stop, stop.side);
+  // While the train pulls in, the look point keeps the offset the fit found for the train at rest.
+  const moved: V3 = [
+    now.look[0] + (rest.look[0] - base.look[0]),
+    now.look[1] + (rest.look[1] - base.look[1]),
+    rest.look[2],
+  ];
+  return {
+    ...now,
+    radius: rest.radius,
+    height: rest.height,
+    look: trainS === stop.s ? rest.look : moved,
+  };
+}
+
 function restPose(stop: RideStop, stops: readonly RideStop[], frame: Frame): Pose {
-  if (stop.kind === "city") return cityPose(stops, frame);
-  if (stop.kind === "hello") return shotPose(SHOTS.HELLO, stop.s, stop, 1);
-  return shotPose(SHOTS.ISO, stop.s, stop, stop.side);
+  return restPoseAt(stop, stops, frame, stop.s);
 }
 
 /** The camera at a stop's rest frame, for this frame's size. */
@@ -269,5 +366,5 @@ function restPoseAt(
 ): Pose {
   if (stop.kind === "city") return cityPose(stops, frame);
   if (stop.kind === "hello") return shotPose(SHOTS.HELLO, trainS, stop, 1);
-  return shotPose(SHOTS.ISO, trainS, stop, stop.side);
+  return stationPose(stop, trainS, frame);
 }

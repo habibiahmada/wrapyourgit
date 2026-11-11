@@ -21,6 +21,10 @@ export type RideStop = Stop & {
   /** Which side of the rail its plaza is on: 1 is the right. */
   side: 1 | -1;
   plaza: boolean;
+  /** How high the stop's hero stands, so the camera can frame it. Filled in by `buildRide`. */
+  heroTop?: number;
+  /** The hero's outermost corners, one per compass direction, so the camera can keep its sides in frame. Filled in by `buildRide`. */
+  heroEdge?: [number, number, number][];
 };
 
 /**

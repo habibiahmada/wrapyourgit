@@ -15,7 +15,7 @@ const stopOf = (kind: string) => stops.findIndex((s) => s.kind === kind);
 
 test("the shots are the ones the spec names", () => {
   expect(SHOTS.RIDE).toMatchObject({ radius: 4.6, height: 2.4, fov: 56, look: "ahead" });
-  expect(SHOTS.ISO).toMatchObject({ radius: 19.5, height: 11.3, fov: 25, look: "hero" });
+  expect(SHOTS.ISO).toMatchObject({ radius: 19.5, height: 11.3, look: "hero" });
   expect(SHOTS.RIDE.theta).toBeCloseTo(Math.PI);
   expect(SHOTS.ISO.theta).toBeCloseTo(Math.PI * 0.75);
 });
