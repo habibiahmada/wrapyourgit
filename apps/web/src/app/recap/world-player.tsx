@@ -16,6 +16,7 @@ import {
   request,
   settle,
 } from "./controller";
+import { endScreenFor, shareCardFor } from "./end-screen";
 import { ExportPanel } from "./export-panel";
 import { PAPER_BUTTON } from "./paper-button";
 import { publicWorld } from "./public-world";
@@ -102,7 +103,8 @@ export type WorldPlayerProps =
   | {
       /**
        * A visitor on someone else's /<username>: the public projection (`publicWorld`), no
-       * letter, no files. Close, Escape, and Next at the rested closing stop all call `onExit`.
+       * letter. After the last stop, the files made from that projection and the ways to a recap
+       * of their own. Close and Escape call `onExit`.
        */
       variant: "public";
       data: RecapData;
@@ -161,7 +163,12 @@ export function WorldPlayer(props: WorldPlayerProps) {
   const nextZone = useRef<HTMLButtonElement>(null);
   const cue = useRef<HTMLButtonElement>(null);
   const last = stops.length - 1;
-  const lastStopNote = owner ? ". Keep your year is next." : ". Next closes the story.";
+  const login = data.profile.login;
+  // A visitor keeps someone else's year: "your" would name the wrong person.
+  const keepLabel = owner ? "Keep your year" : `Keep @${login}'s year`;
+  const lastStopNote = `. ${keepLabel} is next.`;
+  const endScreen = endScreenFor(props.variant);
+  const card = shareCardFor(props.variant, data);
   // Scene units kept clear of the copyright line (the composition's own safe area).
   const footerClear = safeArea({ width, height }).bottom;
 
@@ -220,18 +227,16 @@ export function WorldPlayer(props: WorldPlayerProps) {
         if (result.start) begin();
       };
 
-      // Next at the rested closing stop opens the end screen (a visitor leaves instead). Only a
-      // fresh tap does: a tap queued during the flight in must not end the story before the
-      // closing stop has been seen.
+      // Next at the rested closing stop opens the end screen. Only a fresh tap does: a tap queued
+      // during the flight in must not end the story before the closing stop has been seen.
       const rest = state.current;
       if (direction === 1 && !rest.moving && rest.stop >= last) {
-        if (onExit) onExit();
-        else setEnded(true);
+        setEnded(true);
         return;
       }
       step(direction);
     },
-    [commit, last, music, onExit, reduced, sfx, stops, timeline],
+    [commit, last, music, reduced, sfx, stops, timeline],
   );
 
   // A new format means new stops (the letter's page count varies) and new frames: drop any move in
@@ -271,11 +276,13 @@ export function WorldPlayer(props: WorldPlayerProps) {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
       if (ended) {
         // Arrow keys belong to the format radios while one has focus. A running render keeps the
-        // screen until it ends or is cancelled: Escape, Back, Close and "Go to dashboard" all wait,
-        // since leaving would throw away minutes of encoding without a word.
+        // screen until it ends or is cancelled: Escape, Back, Close and the links all wait, since
+        // leaving would throw away minutes of encoding without a word.
         const onField = event.target instanceof Element && event.target.closest("input") !== null;
-        if (event.key === "Escape" && !busy) router.push("/dashboard");
-        else if (event.key === "ArrowLeft" && !onField && !busy) closeEnd();
+        if (event.key === "Escape" && !busy) {
+          if (onExit) onExit();
+          else router.push("/dashboard");
+        } else if (event.key === "ArrowLeft" && !onField && !busy) closeEnd();
         else return;
         event.preventDefault();
         return;
@@ -353,7 +360,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
         onClick={() => go(-1)}
         className={`${zone(at <= 0)} left-0 w-1/3`}
       />
-      {/* Never disabled: at the closing stop, Next opens "Keep your year" (or leaves, for a visitor). */}
+      {/* Never disabled: at the closing stop, Next opens the end screen. */}
       <button
         ref={nextZone}
         type="button"
@@ -363,7 +370,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
         className={`${zone(false)} right-0 left-1/3`}
       />
 
-      {owner && ended && (
+      {ended && (
         <section
           aria-labelledby="keep-your-year"
           className="on-light absolute inset-0 overflow-y-auto bg-paper/85"
@@ -381,16 +388,29 @@ export function WorldPlayer(props: WorldPlayerProps) {
                   tabIndex={-1}
                   className="text-3xl font-bold tracking-tight sm:text-4xl"
                 >
-                  Keep your year
+                  {keepLabel}
                 </h2>
                 <p className="text-lg text-ink-soft">
-                  Your story as files to keep and post, made in this browser.
-                  {privateNames ? "" : " Private repositories are never named."}
+                  {owner ? (
+                    <>
+                      Your story as files to keep and post, made in this browser.
+                      {privateNames ? "" : " Private repositories are never named."}
+                    </>
+                  ) : (
+                    `@${login}'s story as files to keep and post, made in this browser from their public GitHub activity.`
+                  )}
                 </p>
               </div>
-              <ExportPanel data={data} privateNames={privateNames} card onBusyChange={setBusy} />
+              {endScreen.exports && (
+                <ExportPanel
+                  data={data}
+                  privateNames={privateNames}
+                  card={card}
+                  onBusyChange={setBusy}
+                />
+              )}
               <div className="flex flex-col gap-3 border-t border-ink/25 pt-6">
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <button
                     type="button"
                     disabled={busy}
@@ -400,19 +420,26 @@ export function WorldPlayer(props: WorldPlayerProps) {
                   >
                     Back to the story
                   </button>
-                  {busy ? (
-                    <button
-                      type="button"
-                      disabled
-                      aria-describedby={LEAVE_BLOCKED}
-                      className={PAPER_BUTTON.secondary}
-                    >
-                      Go to dashboard
-                    </button>
-                  ) : (
-                    <Link href="/dashboard" className={PAPER_BUTTON.secondary}>
-                      Go to dashboard
-                    </Link>
+                  {endScreen.links.map((link) =>
+                    busy ? (
+                      <button
+                        key={link.href}
+                        type="button"
+                        disabled
+                        aria-describedby={LEAVE_BLOCKED}
+                        className={PAPER_BUTTON.secondary}
+                      >
+                        {link.label}
+                      </button>
+                    ) : link.route ? (
+                      <a key={link.href} href={link.href} className={PAPER_BUTTON.secondary}>
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link key={link.href} href={link.href} className={PAPER_BUTTON.secondary}>
+                        {link.label}
+                      </Link>
+                    ),
                   )}
                 </div>
                 {busy && (
@@ -445,12 +472,9 @@ export function WorldPlayer(props: WorldPlayerProps) {
             >
               <SpeakerIcon muted={muted} />
             </button>
-            {/* Client navigation, so the panel's beforeunload guard can't catch it: off while busy. */}
-            {onExit ? (
-              <button type="button" aria-label="Close story" onClick={onExit} className={CONTROL}>
-                <CloseIcon />
-              </button>
-            ) : busy ? (
+            {/* Client navigation (or the visitor's exit, which unmounts the panel), so the panel's
+                beforeunload guard can't catch it: off while busy. */}
+            {busy ? (
               <button
                 type="button"
                 disabled
@@ -458,6 +482,10 @@ export function WorldPlayer(props: WorldPlayerProps) {
                 aria-describedby={LEAVE_BLOCKED}
                 className={CONTROL_OFF}
               >
+                <CloseIcon />
+              </button>
+            ) : onExit ? (
+              <button type="button" aria-label="Close story" onClick={onExit} className={CONTROL}>
                 <CloseIcon />
               </button>
             ) : (
@@ -471,7 +499,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
             copyright line's safe area: the closing scene keeps that corner to the skyline (Cell
             stands centre in tall frames, right in landscape; the text is at the top or left-top).
             After Close in tab order: it is the last control, so its visual spot can differ. */}
-        {owner && resting && at === last && !ended && (
+        {resting && at === last && !ended && (
           <button
             ref={cue}
             type="button"
@@ -479,7 +507,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
             className={`pointer-events-auto absolute left-3 ${CUE}`}
             style={{ bottom: `${(footerClear / 10).toFixed(3)}cqw` }}
           >
-            Keep your year
+            {keepLabel}
           </button>
         )}
       </div>

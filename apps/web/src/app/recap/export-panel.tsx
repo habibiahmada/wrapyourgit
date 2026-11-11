@@ -3,6 +3,7 @@
 import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import type { ExportFormat } from "@wyg/video/world";
 import { useEffect, useId, useReducer, useRef, useState } from "react";
+import type { ShareCard } from "./end-screen";
 import { type ExportRunner, exportRunner } from "./export-runner";
 import { announcement, type ExportJob, exportReducer, IDLE, NOUN, percent } from "./export-state";
 import type { ExportSupport } from "./exports";
@@ -24,9 +25,9 @@ const KEEP_OPEN: Record<ExportJob, string> = {
 const ratio = (format: ExportFormat) => format.replace("x", ":");
 
 /**
- * The files of the story, made in this browser. `data` must already be the owner's story
- * projection (`storyData`, ADR-0017): everything here leaves the site, so private names are in it
- * only when the owner chose to show them. The renderer is imported on mount, so it never weighs
+ * The files of the story, made in this browser. `data` must already be a projection: the owner's
+ * story (`storyData`, ADR-0017) or a visitor's (`publicWorld`). Everything here leaves the site, so
+ * private names are in it only when the owner chose to show them. The renderer is imported on mount, so it never weighs
  * on the player's first load.
  */
 export function ExportPanel({
@@ -38,8 +39,8 @@ export function ExportPanel({
   data: RecapData;
   /** True when `data` names a private repository: a reminder line then sits above the buttons. */
   privateNames: boolean;
-  /** Whether `/api/card` can answer: it needs a signed-in user with a recap. */
-  card: boolean;
+  /** Where the share card downloads from (`shareCardFor`), or why there is none. */
+  card: ShareCard;
   onBusyChange?: (busy: boolean) => void;
 }) {
   const [state, dispatch] = useReducer(exportReducer, IDLE);
@@ -180,15 +181,15 @@ export function ExportPanel({
         >
           PDF
         </button>
-        {card && !busy ? (
-          <a href="/api/card" download className={PAPER_BUTTON.secondary}>
+        {"href" in card && !busy ? (
+          <a href={card.href} download={card.filename ?? true} className={PAPER_BUTTON.secondary}>
             Share card (PNG)
           </a>
         ) : (
           <button
             type="button"
             disabled
-            aria-describedby={card ? undefined : `${ids}-card`}
+            aria-describedby={"reason" in card ? `${ids}-card` : undefined}
             className={PAPER_BUTTON.secondary}
           >
             Share card (PNG)
@@ -201,9 +202,9 @@ export function ExportPanel({
           {reason}
         </p>
       )}
-      {!card && (
+      {"reason" in card && (
         <p id={`${ids}-card`} className="text-base text-ink-soft">
-          The share card is made from your saved recap. Sign in and build it to get one.
+          {card.reason}
         </p>
       )}
 

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { OWNER_CARD } from "@/app/recap/end-screen";
 import { ExportPanel } from "@/app/recap/export-panel";
 import { Art } from "@/components/art";
 import { LanguageBadge } from "@/components/language-badge";
@@ -430,7 +431,7 @@ function DownloadSection({ data, privateNames }: { data: RecapData; privateNames
         {privateNames ? "" : " Private repositories are never named."}
       </p>
       <div className="on-light rounded-xl border border-line bg-paper p-5 text-ink sm:p-8">
-        <ExportPanel data={data} privateNames={privateNames} card />
+        <ExportPanel data={data} privateNames={privateNames} card={OWNER_CARD} />
       </div>
     </section>
   );
