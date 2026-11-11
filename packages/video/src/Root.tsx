@@ -6,6 +6,7 @@ import { type ArtId, ArtStill } from "./three/ArtStill";
 import { DioramaStill } from "./three/diorama/DioramaStill";
 import { DIORAMA_IDS, type LandingDioramaId } from "./three/diorama/scenes";
 import { worldDuration } from "./world/model";
+import { RIDE_FRAMES, RideSpike } from "./world/spike/RideSpike";
 import { WorldStory, type WorldStoryProps } from "./world/WorldStory";
 
 /** Every baked loop: web art and the letterhead head (art.ts). */
@@ -26,6 +27,23 @@ export function artSize(art: ArtId): { width: number; height: number } {
 export function Root() {
   return (
     <>
+      {/* THROWAWAY SPIKE: the ride into the screen. */}
+      <Composition
+        id="ride-spike-16x9"
+        component={RideSpike}
+        durationInFrames={RIDE_FRAMES}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="ride-spike-9x16"
+        component={RideSpike}
+        durationInFrames={RIDE_FRAMES}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
       {/* The story world, video mode: duration depends on the data, so it comes from the props. */}
       {(Object.keys(VIDEO_FORMATS) as VideoFormatId[]).map((formatId) => {
         const format = VIDEO_FORMATS[formatId];
