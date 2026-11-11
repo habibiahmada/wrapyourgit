@@ -75,9 +75,10 @@ describe("previousIsCurrent", () => {
     expect(previousIsCurrent("2025-11-11", 2026, nov)).toBe(true);
   });
 
-  test("once the year is over, whatever is stored is kept for good", () => {
+  test("after the year, a mid-year span is refetched, one at 31 December is kept", () => {
     const after = new Date("2027-01-02T00:00:00Z");
-    expect(previousIsCurrent("2025-03-01", 2026, after)).toBe(true);
+    expect(previousIsCurrent("2025-03-01", 2026, after)).toBe(false);
     expect(previousIsCurrent("2025-12-31", 2026, after)).toBe(true);
+    expect(previousIsCurrent("2025-12-31", 2026, new Date("2027-06-01T00:00:00Z"))).toBe(true);
   });
 });

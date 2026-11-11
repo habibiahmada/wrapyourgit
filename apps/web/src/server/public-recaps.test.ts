@@ -226,12 +226,17 @@ describe("loadPublicRecapWith", () => {
     expect(row?.previous?.span.through).toBe("2025-11-12");
   });
 
-  test("once the year is over, a lagging last year is never fetched again", async () => {
+  test("after the year, a mid-year span is refetched once, then kept at 31 December", async () => {
     await seed();
     clock = Date.parse("2027-01-05T00:00:00Z");
     expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
-    expect(calls).toEqual({ lookup: 1, year: 1, previous: 0 });
-    expect(row?.previous?.span.through).toBe("2025-11-11");
+    expect(calls).toEqual({ lookup: 1, year: 1, previous: 1 });
+    expect(row?.previous?.span.through).toBe("2025-12-31");
+
+    clock += 13 * HOUR;
+    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect(calls).toEqual({ lookup: 2, year: 2, previous: 1 });
+    expect(row?.previous?.span.through).toBe("2025-12-31");
   });
 
   test("a failed refetch of last year keeps the stored one", async () => {
