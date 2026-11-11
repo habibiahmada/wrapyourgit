@@ -77,7 +77,8 @@ test("the overview lights every day with data and drops the sleepers", () => {
 });
 
 test("January's sign carries one line, a later month's two", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 20, from: 0, to: 110, overview: 0 });
+  // The train is at the start of the rail, away from every station, so no gate is folded.
+  const { city: c, all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
   const g = gates(sampleRecap, c);
   expect(signTexts(all, g[0]?.col ?? 0)).toEqual(["JAN"]);
   // The first later month whose gate stands clear of every plaza.

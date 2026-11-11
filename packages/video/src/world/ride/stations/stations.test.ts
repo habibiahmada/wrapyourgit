@@ -47,6 +47,7 @@ test("the stations built so far exist", () => {
     "first-day",
     "hello",
     "languages",
+    "private",
     "projects",
   ]);
 });
@@ -293,7 +294,15 @@ test("closing prints the date line, the year and every line of the model", () =>
 });
 
 test("a station at rest is the same 60 frames later, and still moving in between", () => {
-  for (const kind of ["hello", "first-day", "city", "languages", "projects", "closing"] as const) {
+  for (const kind of [
+    "hello",
+    "first-day",
+    "private",
+    "city",
+    "languages",
+    "projects",
+    "closing",
+  ] as const) {
     expect(build(kind, sampleRecap, 1, 10)).toEqual(build(kind, sampleRecap, 1, 70));
   }
   expect(build("closing", sampleRecap, 1, 10)).not.toEqual(build("closing", sampleRecap, 1, 25));
@@ -325,4 +334,43 @@ test("first-day: a year with no contributions has no flag and no date, and says 
   expect(boxes(all, "flag")).toHaveLength(0);
   expect(boxes(all, "sprout")).toHaveLength(0);
   expect(printed(all).join(" ")).toContain("A blank graph: no contributions this year");
+});
+
+const withPrivate = (privateCount: RecapData["contributions"]["privateCount"]): RecapData => ({
+  ...sampleRecap,
+  contributions: { ...sampleRecap.contributions, privateCount },
+});
+
+test("private: the vault carries the count, the sign the model's phrase, and nothing is named", () => {
+  const all = build("private", sampleRecap);
+  expect(printed(boxes(all, "vault"))).toContain("210");
+  expect(printed(all).join(" ")).toContain("private contributions, counted");
+  const text = printed(all).join(" ");
+  for (const repo of sampleRecap.repositories.top) {
+    for (const part of repo.nameWithOwner.split("/")) expect(text).not.toContain(part);
+  }
+});
+
+test("private: an estimated count says about", () => {
+  const all = build("private", withPrivate({ status: "ok", value: 1500, estimated: true }));
+  expect(printed(boxes(all, "vault"))).toContain("about 1,500");
+});
+
+test("private: none and unavailable print their own words and no figure, never a zero", () => {
+  const none = printed(build("private", withPrivate({ status: "ok", value: 0, estimated: false })));
+  expect(none.join(" ")).toContain("Nothing private this year");
+  const unread = printed(
+    build("private", withPrivate({ status: "unavailable", reason: "not granted" })),
+  );
+  expect(unread.join(" ")).toContain("Private contributions couldn't be read");
+  for (const text of [...none, ...unread]) expect(text).not.toMatch(/\d/);
+});
+
+test("private: the count rises as the vault lands and never reads zero", () => {
+  for (const progress of [0.1, 0.4, 0.8]) {
+    const texts = printed(boxes(build("private", sampleRecap, progress), "vault"));
+    expect(texts).not.toContain("0");
+    expect(texts).not.toContain("210");
+  }
+  expect(boxes(build("private", sampleRecap, 0), "vault")).toHaveLength(0);
 });

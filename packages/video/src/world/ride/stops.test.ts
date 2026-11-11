@@ -3,10 +3,11 @@ import { emptyRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity } from "../city";
 import type { StopKind } from "../stops";
-import { rideStops } from "./stops";
+import { RIDE_KINDS, rideStops } from "./stops";
 import { FIRST_PLATFORM, terminus } from "./track";
 
-const KINDS: StopKind[] = ["hello", "first-day", "city", "languages", "projects", "closing"];
+// The ride draws its stops in the story's order; a letter page past the first is left out here.
+const KINDS: StopKind[] = [...RIDE_KINDS];
 
 test("the ride keeps the story's order and only the stations it can draw", () => {
   const stops = rideStops(sampleRecap, buildCity(sampleRecap), { letter: false });
@@ -35,11 +36,9 @@ test("the city overview waits between its neighbours and has no plaza", () => {
 
 test("only chapters with a hero get a plaza", () => {
   const stops = rideStops(sampleRecap, buildCity(sampleRecap));
-  expect(stops.filter((s) => s.plaza).map((s) => s.kind)).toEqual([
-    "first-day",
-    "languages",
-    "projects",
-  ]);
+  expect(stops.filter((s) => s.plaza).map((s) => s.kind)).toEqual(
+    KINDS.filter((kind) => !["hello", "city", "closing"].includes(kind)),
+  );
 });
 
 test("neighbouring plazas are on opposite sides of the rail", () => {

@@ -7,6 +7,7 @@ import { stationPlace } from "./track";
 export const RIDE_KINDS: readonly StopKind[] = [
   "hello",
   "first-day",
+  "private",
   "city",
   "languages",
   "projects",

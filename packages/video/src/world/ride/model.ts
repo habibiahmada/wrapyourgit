@@ -43,6 +43,7 @@ const HERO_TAGS = [
   "flag",
   "first-square",
   "sprout",
+  "vault",
 ];
 
 export function buildRide(

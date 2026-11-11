@@ -2,8 +2,10 @@ import { expect, test } from "bun:test";
 import { layoutForSize, type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
+import { formatCount } from "../../theme";
 import { firstDayModel } from "../scenes/firstDay.model";
 import { gardenModel } from "../scenes/garden.model";
+import { privateModel } from "../scenes/private.model";
 import { commitsText, projectsModel } from "../scenes/projects.model";
 import { buildRide, rideFrame } from "./model";
 import { type Box, type Prim, scenePrims } from "./prims";
@@ -36,7 +38,7 @@ function restFrames(data: RecapData) {
   return Object.entries(VIDEO_FORMATS).flatMap(([id, format]) => {
     const m = buildRide(data, format, "video", 30);
     return m.stops.flatMap((stop, i) => {
-      if (!["languages", "projects", "first-day"].includes(stop.kind)) return [];
+      if (!["languages", "projects", "first-day", "private"].includes(stop.kind)) return [];
       const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
       const texts = scenePrims(
         [...frame.ground, ...frame.objects],
@@ -68,6 +70,15 @@ function check(data: RecapData) {
           where,
           value: true,
         });
+    } else if (rest.kind === "private") {
+      const vault = privateModel(data);
+      if (vault.kind === "count") {
+        const figure = `${vault.estimated ? "about " : ""}${formatCount(vault.count)}`;
+        expect({ where, value: biggest(rest.texts, figure) / rest.short >= HEADLINE }).toEqual({
+          where,
+          value: true,
+        });
+      }
     } else if (rest.kind === "languages") {
       const top = garden.trees[0];
       if (top)
@@ -165,7 +176,7 @@ function corners(
   return out;
 }
 
-const HERO = ["language", "container", "board", "flag", "first-square"];
+const HERO = ["language", "container", "board", "flag", "first-square", "vault"];
 
 test("no hero is cut off at its stop, and Cell stands clear of the frame's edge", () => {
   for (const data of [sampleRecap, busyRecap, hugeRecap]) {

@@ -4,6 +4,7 @@ import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-rec
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildRide, rideDuration, rideFrame } from "./model";
 import { type Box, type Solid, scenePrims } from "./prims";
+import { RIDE_KINDS } from "./stops";
 
 const f = VIDEO_FORMATS["16x9"];
 const printed = (solids: Solid[]) =>
@@ -13,14 +14,7 @@ const tagged = (solids: Solid[], tag: string) =>
 
 test("the ride has the player's timeline shape and a duration to match", () => {
   const m = buildRide(sampleRecap, f, "video", 30);
-  expect(m.stops.map((s) => s.kind)).toEqual([
-    "hello",
-    "first-day",
-    "city",
-    "languages",
-    "projects",
-    "closing",
-  ]);
+  expect(m.stops.map((s) => s.kind)).toEqual([...RIDE_KINDS]);
   expect(m.timeline.stopFrames).toHaveLength(m.stops.length);
   expect(rideDuration(sampleRecap, f, "video")).toBe(m.timeline.durationInFrames);
   expect(m.gates).toHaveLength(12);
