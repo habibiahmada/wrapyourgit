@@ -19,6 +19,10 @@ export const LIGHT_AHEAD = 15;
 const PLAZA_AHEAD = 4.5;
 /** Gates and props keep this far from a plaza, so nothing stands between the camera and a hero. */
 const CLEAR = 8;
+/** A gate this far behind where the train rests is in the station camera's foreground. */
+const BEHIND = 12;
+/** And one this far ahead is at the edge of its picture. */
+const AHEAD = 18;
 const SLEEPER = 0.7;
 
 export type View = {
@@ -106,10 +110,25 @@ export function land(
   for (const gate of gates) {
     const s = weekS(gate.col) - 0.8;
     if (!inView(s) || byPlaza(s)) continue;
+    // A gate just behind a station stands in the station camera's foreground, and one a little
+    // way ahead at the edge of its picture. Each folds down as the train pulls in and rises again
+    // as it leaves; one behind waits until the train has passed under it.
+    const up = Math.min(
+      1,
+      ...stops
+        .filter(
+          (stop) =>
+            stop.plaza &&
+            (s < stop.s ? s >= stop.s - BEHIND && view.trainS >= s : s <= stop.s + AHEAD),
+        )
+        .map((stop) => Math.max(0, (Math.abs(view.trainS - stop.s) - 1) / 2.5)),
+    );
+    if (up < 0.1) continue;
+    const tall = 3.3 * up;
     for (const lateral of [-2.1, 2.1]) {
       objects.push(railBox(s, lateral, 0, [0.5, 0.5, 0.3], TONE.mid, { tag: "gate-post" }));
       objects.push(
-        railBox(s, lateral, 0.3, [0.28, 0.28, 3.3], TONE.dark, {
+        railBox(s, lateral, 0.3, [0.28, 0.28, tall], TONE.dark, {
           tag: "gate-post",
           decals: [{ on: "all", rect: [0, 0.86, 1, 0.94], fill: LIT }],
         }),
@@ -119,12 +138,14 @@ export function land(
       railBox(
         s,
         0,
-        3.6,
+        0.3 + tall,
         [0.32, 4.6, 0.3],
         { top: "#56e070", left: LIT, right: "#26a641" },
         { lit: true, tag: "gate-beam" },
       ),
     );
+    // The sign is taken down first: a folding gate carries no words.
+    if (up < 1) continue;
     const texts: FaceText[] = (["front", "back"] as const).flatMap((on): FaceText[] =>
       gate.line
         ? [

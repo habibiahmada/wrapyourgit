@@ -13,7 +13,7 @@ const BURSTS: { dx: number; dy: number; z: number; colour: string }[] = [
  * The terminus: buffers at the end of the rail, a large board with the year's headline numbers,
  * and fireworks of small cubes that loop every 60 frames.
  */
-export const closing: Station = ({ data, c, yaw, frame }) => {
+export const closing: Station = ({ data, c, yaw, frame, build }) => {
   const model = closingModel(data);
   const out: Solid[] = [];
   // Buffers across the rail: a beam on two posts, a lamp on each.
@@ -33,6 +33,9 @@ export const closing: Station = ({ data, c, yaw, frame }) => {
       decals: [{ on: "back", rect: [0, 0.3, 1, 0.7], fill: "#ffd866" }],
     }),
   );
+  // The board goes up as the train comes in: from the station before, the terminus is bare.
+  const rise = 1 - (1 - Math.max(0, Math.min(1, build))) ** 3;
+  if (rise <= 0) return out;
   out.push(
     ...board(
       c,
@@ -46,7 +49,7 @@ export const closing: Station = ({ data, c, yaw, frame }) => {
         ...model.lines.map((text) => ({ text, tall: 0.6 })),
       ],
       "across",
-      1.2,
+      1.2 * rise,
     ),
   );
   // Fireworks: three bursts, each opening and fading in turn, on a 60-frame loop.

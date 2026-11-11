@@ -21,8 +21,10 @@ test("moves take between 1.6 and 4.2 seconds", () => {
     expect(move).toBeGreaterThanOrEqual(48);
     expect(move).toBeLessThanOrEqual(126);
   }
-  // The sample's five stops stand far apart: its longest move takes the longest time.
-  expect(Math.max(...video.moveFrames)).toBe(126);
+  // The moves up to the overview and down from it take the longest time, however near the stops.
+  const overview = stops.findIndex((stop) => stop.kind === "city");
+  expect(video.moveFrames[overview]).toBe(126);
+  expect(video.moveFrames[overview + 1]).toBe(126);
 });
 
 test("each stop comes one hold and one move after the last", () => {

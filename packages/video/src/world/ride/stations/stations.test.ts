@@ -7,6 +7,7 @@ import { formatCount } from "../../../theme";
 import { buildCity } from "../../city";
 import { cityModel } from "../../scenes/city.model";
 import { closingModel } from "../../scenes/closing.model";
+import { firstDayModel } from "../../scenes/firstDay.model";
 import { gardenModel } from "../../scenes/garden.model";
 import { commitsText, projectsModel } from "../../scenes/projects.model";
 import type { StopKind } from "../../stops";
@@ -39,10 +40,11 @@ const boxes = (solids: Solid[], tag: string) =>
 const printed = (solids: Solid[]) =>
   solids.flatMap((s) => (s.kind === "box" ? (s.texts ?? []).map((t) => t.text) : []));
 
-test("the five stations of this phase exist", () => {
+test("the stations built so far exist", () => {
   expect(Object.keys(STATIONS).sort()).toEqual([
     "city",
     "closing",
+    "first-day",
     "hello",
     "languages",
     "projects",
@@ -291,8 +293,36 @@ test("closing prints the date line, the year and every line of the model", () =>
 });
 
 test("a station at rest is the same 60 frames later, and still moving in between", () => {
-  for (const kind of ["hello", "city", "languages", "projects", "closing"] as const) {
+  for (const kind of ["hello", "first-day", "city", "languages", "projects", "closing"] as const) {
     expect(build(kind, sampleRecap, 1, 10)).toEqual(build(kind, sampleRecap, 1, 70));
   }
   expect(build("closing", sampleRecap, 1, 10)).not.toEqual(build("closing", sampleRecap, 1, 25));
+});
+
+test("first-day: the flag carries the date and the weekday, the sign the title", () => {
+  const model = firstDayModel(sampleRecap);
+  if (!model) throw new Error("the sample has a first day");
+  const all = build("first-day", sampleRecap);
+  expect(printed(boxes(all, "flag"))).toEqual(expect.arrayContaining([model.date, model.weekday]));
+  expect(printed(all)).toContain("First square");
+  expect(boxes(all, "first-square")).toHaveLength(1);
+});
+
+test("first-day: the sprout grows on the way in and the flag is raised with it", () => {
+  const tall = (progress: number) =>
+    Math.max(
+      0,
+      ...boxes(build("first-day", sampleRecap, progress), "sprout").map((b) => b.at[2] + b.size[2]),
+    );
+  expect(tall(0.3)).toBeLessThan(tall(1));
+  expect(boxes(build("first-day", sampleRecap, 0), "flag")).toHaveLength(0);
+  expect(boxes(build("first-day", sampleRecap, 1), "flag")).toHaveLength(1);
+});
+
+test("first-day: a year with no contributions has no flag and no date, and says so", () => {
+  const all = build("first-day", emptyRecap);
+  expect(firstDayModel(emptyRecap)).toBeNull();
+  expect(boxes(all, "flag")).toHaveLength(0);
+  expect(boxes(all, "sprout")).toHaveLength(0);
+  expect(printed(all).join(" ")).toContain("A blank graph: no contributions this year");
 });

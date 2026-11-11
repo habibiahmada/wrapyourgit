@@ -226,6 +226,8 @@ export function nameBoard(
   place: { deep: number; fit?: boolean },
 ): Solid[] {
   const { c, yaw, stop } = ctx;
+  // Put out as the hero starts to build: a station the train has not reached shows no words.
+  if (ctx.build <= 0) return [];
   const max = Math.floor((SIGN.wide * 0.9) / (0.6 * SIGN.row * 0.92));
   const rows: BoardLine[] = lines.flatMap((line) => {
     const text = typeof line === "string" ? line : line.text;
@@ -235,7 +237,7 @@ export function nameBoard(
         : { fill: line.fill ?? "#c9d1d9", weight: line.weight ?? 700 };
     return wrap(text, max).map((piece) => ({ text: piece, tall: SIGN.row, ...look }));
   });
-  const dy = stop.side * (place.deep / 2 + 2.2);
+  const dy = stop.side * (place.deep / 2 + 1.4);
   // With `fit` the camera keeps the sign in frame as it does the hero; without, the hero alone sets the shot.
   return board(c, yaw, -6, dy, SIGN.wide, rows, "along", 0.15, place.fit ? "board" : "sign");
 }

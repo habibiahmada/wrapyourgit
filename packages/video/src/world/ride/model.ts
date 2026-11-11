@@ -34,7 +34,16 @@ export type RideModel = { city: City; stops: RideStop[]; timeline: RideTimeline;
 export type RideOptions = { letter?: boolean };
 
 /** The parts of a station that carry its chapter: the camera keeps these in frame. */
-const HERO_TAGS = ["language", "container", "board", "covered", "shuttered"];
+const HERO_TAGS = [
+  "language",
+  "container",
+  "board",
+  "covered",
+  "shuttered",
+  "flag",
+  "first-square",
+  "sprout",
+];
 
 export function buildRide(
   data: RecapData,

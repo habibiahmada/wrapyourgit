@@ -6,6 +6,7 @@ import { stationPlace } from "./track";
 /** The stops this build can draw. Phase 2 of the story ride grows it to every StopKind. */
 export const RIDE_KINDS: readonly StopKind[] = [
   "hello",
+  "first-day",
   "city",
   "languages",
   "projects",

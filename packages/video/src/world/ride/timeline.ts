@@ -37,9 +37,12 @@ export function buildRideTimeline(
   stops.forEach((stop, i) => {
     const prev = stops[i - 1];
     const distance = prev ? Math.abs(stop.s - prev.s) : 0;
-    const seconds =
-      MOVE_MIN_SECONDS +
-      (MOVE_MAX_SECONDS - MOVE_MIN_SECONDS) * Math.min(1, distance / MOVE_SATURATION);
+    // The camera climbs to the overview and comes down from it: a long way, whatever the rail's distance.
+    const far = stop.kind === "city" || prev?.kind === "city";
+    const seconds = far
+      ? MOVE_MAX_SECONDS
+      : MOVE_MIN_SECONDS +
+        (MOVE_MAX_SECONDS - MOVE_MIN_SECONDS) * Math.min(1, distance / MOVE_SATURATION);
     // A letter's pages share a place: nothing travels, so the move is the page turn alone.
     const move = !prev || distance === 0 ? 0 : Math.round(seconds * fps);
     if (prev) frame += holdFrames + move;

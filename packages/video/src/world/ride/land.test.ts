@@ -80,9 +80,10 @@ test("January's sign carries one line, a later month's two", () => {
   const { city: c, all } = build(sampleRecap, { trainS: 20, from: 0, to: 110, overview: 0 });
   const g = gates(sampleRecap, c);
   expect(signTexts(all, g[0]?.col ?? 0)).toEqual(["JAN"]);
-  // March stands clear of every plaza in the sample year.
-  expect(g[2]?.line).not.toBeNull();
-  expect(signTexts(all, g[2]?.col ?? 0)).toEqual(["MAR", g[2]?.line ?? ""]);
+  // The first later month whose gate stands clear of every plaza.
+  const later = g.slice(1).find((gate) => gate.line && signTexts(all, gate.col) !== null);
+  if (!later) throw new Error("no gate stands clear of the plazas");
+  expect(signTexts(all, later.col)).toEqual([later.name, later.line ?? ""]);
 });
 
 test("a gate next to a plaza is left out", () => {
@@ -94,6 +95,32 @@ test("a gate next to a plaza is left out", () => {
   );
   expect(hidden.length).toBeGreaterThan(0);
   for (const gate of hidden) expect(signTexts(all, gate.col)).toBeNull();
+});
+
+test("a gate the station's camera looks past folds away while the train is in, and stands again after", () => {
+  const g = gates(sampleRecap, city);
+  const plazas = stops.filter((stop) => stop.plaza);
+  // Behind where the train rests, but not so near the plaza that it is never built.
+  const pair = plazas
+    .flatMap((stop) => g.map((gate) => ({ stop, gate, s: weekS(gate.col) - 0.8 })))
+    .find(({ stop, s }) => s >= stop.s - 12 && s < stop.s - 3.5);
+  if (!pair) throw new Error("no gate stands just behind a station in the sample");
+  const view = (trainS: number): View => ({ trainS, from: 0, to: 110, overview: 0 });
+  const signAt = (trainS: number) => signTexts(build(sampleRecap, view(trainS)).all, pair.gate.col);
+  expect(signAt(pair.s - 2)).not.toBeNull();
+  expect(signAt(pair.stop.s)).toBeNull();
+  expect(signAt(pair.stop.s + 6)).not.toBeNull();
+});
+
+test("no gate stands near a station while the train rests there", () => {
+  const g = gates(sampleRecap, city);
+  for (const stop of stops.filter((x) => x.plaza)) {
+    const { all } = build(sampleRecap, { trainS: stop.s, from: 0, to: 110, overview: 0 });
+    for (const gate of g) {
+      const s = weekS(gate.col) - 0.8;
+      if (s >= stop.s - 12 && s <= stop.s + 18) expect(signTexts(all, gate.col)).toBeNull();
+    }
+  }
 });
 
 test("nothing is built outside the view", () => {

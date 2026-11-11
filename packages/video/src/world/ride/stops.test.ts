@@ -6,7 +6,7 @@ import type { StopKind } from "../stops";
 import { rideStops } from "./stops";
 import { FIRST_PLATFORM, terminus } from "./track";
 
-const KINDS: StopKind[] = ["hello", "city", "languages", "projects", "closing"];
+const KINDS: StopKind[] = ["hello", "first-day", "city", "languages", "projects", "closing"];
 
 test("the ride keeps the story's order and only the stations it can draw", () => {
   const stops = rideStops(sampleRecap, buildCity(sampleRecap), { letter: false });
@@ -35,7 +35,11 @@ test("the city overview waits between its neighbours and has no plaza", () => {
 
 test("only chapters with a hero get a plaza", () => {
   const stops = rideStops(sampleRecap, buildCity(sampleRecap));
-  expect(stops.filter((s) => s.plaza).map((s) => s.kind)).toEqual(["languages", "projects"]);
+  expect(stops.filter((s) => s.plaza).map((s) => s.kind)).toEqual([
+    "first-day",
+    "languages",
+    "projects",
+  ]);
 });
 
 test("neighbouring plazas are on opposite sides of the rail", () => {
