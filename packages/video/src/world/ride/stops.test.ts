@@ -1,0 +1,47 @@
+import { expect, test } from "bun:test";
+import { emptyRecap } from "../../fixtures/edge-recaps";
+import { sampleRecap } from "../../fixtures/sample-recap";
+import { buildCity } from "../city";
+import { rideStops } from "./stops";
+import { FIRST_PLATFORM, terminus } from "./track";
+
+const KINDS = ["hello", "city", "languages", "projects", "closing"];
+
+test("the ride keeps the story's order and only the stations it can draw", () => {
+  const stops = rideStops(sampleRecap, buildCity(sampleRecap), { letter: false });
+  expect(stops.map((s) => s.kind)).toEqual(KINDS);
+});
+
+test("stations run forward along the rail and never share a place", () => {
+  const s = rideStops(sampleRecap, buildCity(sampleRecap))
+    .filter((x) => x.kind !== "city")
+    .map((x) => x.s);
+  for (let i = 1; i < s.length; i++) expect(s[i] ?? 0).toBeGreaterThan(s[i - 1] ?? 0);
+});
+
+test("the ride starts on the first platform and ends at the terminus", () => {
+  const stops = rideStops(sampleRecap, buildCity(sampleRecap));
+  expect(stops[0]?.s).toBe(FIRST_PLATFORM);
+  expect(stops.at(-1)?.s).toBeCloseTo(terminus(53));
+});
+
+test("the city overview waits between its neighbours and has no plaza", () => {
+  const stops = rideStops(sampleRecap, buildCity(sampleRecap));
+  const i = stops.findIndex((x) => x.kind === "city");
+  expect(stops[i]?.s).toBeCloseTo(((stops[i - 1]?.s ?? 0) + (stops[i + 1]?.s ?? 0)) / 2);
+  expect(stops[i]?.plaza).toBe(false);
+});
+
+test("only chapters with a hero get a plaza", () => {
+  const stops = rideStops(sampleRecap, buildCity(sampleRecap));
+  expect(stops.filter((s) => s.plaza).map((s) => s.kind)).toEqual(["languages", "projects"]);
+});
+
+test("neighbouring plazas are on opposite sides of the rail", () => {
+  const plazas = rideStops(sampleRecap, buildCity(sampleRecap)).filter((s) => s.plaza);
+  expect(plazas[0]?.side).toBe(-(plazas[1]?.side ?? 0) as 1 | -1);
+});
+
+test("an empty year still gets every station", () => {
+  expect(rideStops(emptyRecap, buildCity(emptyRecap)).map((s) => s.kind)).toEqual(KINDS);
+});
