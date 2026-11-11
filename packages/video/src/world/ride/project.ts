@@ -1,6 +1,6 @@
 /*
  * The ride's camera: a pinhole that turns a point in the world (x and y on the ground, z up) into
- * a point on screen. Pure maths, no WebGL (ADR-0013): prims.ts builds the SVG picture on top of it.
+ * a point on screen. Pure maths, no WebGL (ADR-0013): prims.ts builds the picture on top of it.
  */
 
 export type V3 = [number, number, number];

@@ -1,6 +1,6 @@
 /*
  * From solids to a picture: boxes (with detail and words painted on their faces) and balls go
- * through the camera and come out as flat SVG primitives, far to near, ready to paint in order.
+ * through the camera and come out as flat primitives, far to near, ready to paint in order.
  * A box face is dropped when it looks away or crosses the lens; what is left keeps the landing's
  * crisp look: one flat colour per facing, a hairline edge, fog with distance.
  */

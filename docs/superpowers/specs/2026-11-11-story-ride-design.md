@@ -173,8 +173,8 @@ At a stop's rest frame, in every format:
 
 ## Renderer
 
-- A new module in `packages/video/src/world/ride/`: a pure projection (`project`, face culling, depth sort, decals) and a React layer that turns the result into SVG polygons. Ground pieces and standing objects are sorted in two passes so the ground never covers an object.
-- Boxes may be turned about the vertical axis. Faces carry decals: rectangles or discs in the face's own units. Logos print on faces as SVG images.
+- A new module in `packages/video/src/world/ride/`: a pure projection (`project`, face culling, depth sort, decals) and a React layer that paints the result on one `<canvas>` (2D context, not WebGL). The first build drew SVG elements, and failed the gate: `@remotion/web-renderer` writes an `<svg>` out as text and loads it back as an image on every frame, which cost about 129 ms a frame for some 2,000 shapes; it draws a canvas as it is. Ground pieces and standing objects are sorted in two passes so the ground never covers an object.
+- Boxes may be turned about the vertical axis. Faces carry decals: rectangles or discs in the face's own units. Logos print on faces as images drawn under the face's matrix.
 - Only what the camera can see is built for a frame (squares, sleepers, props and gates within a window along the rail).
 - Everything is a function of the frame: `interpolate`, `spring`, `random(seed)`. No `Math.random`, no time, no CSS transitions (AGENTS.md rule 3).
 - Inside the web-renderer limits of ADR-0016: no z-index, no 3D CSS transforms, no filters, no clip paths. The frame's roll uses a 2D rotate on one wrapper.
