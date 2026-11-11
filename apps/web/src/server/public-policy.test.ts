@@ -9,6 +9,7 @@ import {
   isFresh,
   isRateLimited,
   lookupSalt,
+  missIsFresh,
   previousIsCurrent,
   tokenExpiresSoon,
   underClientLimit,
@@ -48,6 +49,14 @@ describe("canStartFetch", () => {
   test("an unknown REST quota does not block", () => {
     expect(canStartFetch(5000, null)).toBe(true);
     expect(canStartFetch(5000)).toBe(true);
+  });
+});
+
+describe("missIsFresh", () => {
+  test("a missing name is trusted for ten minutes", () => {
+    const now = new Date("2026-11-11T12:00:00Z");
+    expect(missIsFresh(new Date(now.getTime() - 9 * 60 * 1000), now)).toBe(true);
+    expect(missIsFresh(new Date(now.getTime() - 10 * 60 * 1000), now)).toBe(false);
   });
 });
 

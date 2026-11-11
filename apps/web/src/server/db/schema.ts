@@ -111,6 +111,15 @@ export const hiddenAccounts = pgTable("hidden_accounts", {
 });
 
 /**
+ * Logins GitHub said don't exist, by lower-cased login, so repeat visits to a typo or a deleted
+ * account don't each spend a lookup. Trusted for public-policy.ts MISS_FRESH_MS only.
+ */
+export const publicMisses = pgTable("public_misses", {
+  login: text("login").primaryKey(),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
  * One row per public fetch a client started, for the per-client limit. `client` is a salted hash
  * of the address (public-policy.ts hashClient), never the address itself.
  */

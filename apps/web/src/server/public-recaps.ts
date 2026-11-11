@@ -11,7 +11,7 @@ import {
 import { EDITION_YEAR, type RecapData, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
 import { and, eq, gt, isNull, lt, or, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { db, hiddenAccounts, publicLookups, publicRecaps } from "./db";
+import { db, hiddenAccounts, publicLookups, publicMisses, publicRecaps } from "./db";
 import { requireEnv } from "./env";
 import { errorSummary } from "./log";
 import {
@@ -25,6 +25,8 @@ import {
   isFresh,
   isRateLimited,
   lookupSalt,
+  MISS_FRESH_MS,
+  missIsFresh,
   previousIsCurrent,
   tokenExpiresSoon,
   underClientLimit,
@@ -54,6 +56,10 @@ export interface PublicStore {
   read(githubId: number): Promise<StoredRow | null>;
   /** The most recently fetched row whose login matches, ignoring case. */
   readByLogin(login: string): Promise<(StoredRow & { githubId: number }) | null>;
+  /** When GitHub last said this login (any case) doesn't exist, or null. */
+  missedAt(login: string): Promise<Date | null>;
+  /** Records that GitHub said this login doesn't exist; also drops misses past MISS_FRESH_MS. */
+  rememberMissing(login: string, now: Date): Promise<void>;
   /**
    * Checks the client's limit (public-policy.ts underClientLimit) and records one lookup, in one
    * step so a burst from one client can't all pass the check before any of them records. False,
@@ -119,6 +125,11 @@ export async function loadPublicRecapWith(
       return serveStored(store, cached);
     }
 
+    // A name GitHub just said doesn't exist is answered without asking again, and without
+    // counting against the client: a shared link with a typo shouldn't use up anyone's lookups.
+    const missed = await store.missedAt(requested);
+    if (missed && missIsFresh(missed, deps.now())) return { kind: "missing", login };
+
     // Every request that gets this far asks GitHub at least once (the lookup, maybe a fetch), and
     // lookups spend the shared token too: the client's limit is checked and one row recorded
     // before GitHub is asked, so unknown or renamed names can't drain it. Over the limit, a stale
@@ -133,7 +144,11 @@ export async function loadPublicRecapWith(
     if (tokenExpiresSoon(account.tokenExpiresAt, deps.now())) {
       console.warn(`GITHUB_PUBLIC_TOKEN expires ${account.tokenExpiresAt}: renew it`);
     }
-    if (account.kind === "missing") return { kind: "missing", login };
+    if (account.kind === "missing") {
+      // Best effort: failing to remember costs a lookup next time, nothing else.
+      await store.rememberMissing(requested, deps.now()).catch(() => {});
+      return { kind: "missing", login };
+    }
     if (account.kind === "organization") return { kind: "organization", login: account.login };
     login = account.login;
     if (await store.isHidden(account.id)) return { kind: "hidden", login };
@@ -371,6 +386,24 @@ const dbStore: PublicStore = {
       .orderBy(sql`${publicRecaps.fetchedAt} desc nulls last`)
       .limit(1);
     return row ?? null;
+  },
+
+  async missedAt(login) {
+    const [row] = await db
+      .select({ checkedAt: publicMisses.checkedAt })
+      .from(publicMisses)
+      .where(eq(publicMisses.login, login.toLowerCase()));
+    return row?.checkedAt ?? null;
+  },
+
+  async rememberMissing(login, now) {
+    await db
+      .delete(publicMisses)
+      .where(lt(publicMisses.checkedAt, new Date(now.getTime() - MISS_FRESH_MS)));
+    await db
+      .insert(publicMisses)
+      .values({ login: login.toLowerCase(), checkedAt: now })
+      .onConflictDoUpdate({ target: publicMisses.login, set: { checkedAt: now } });
   },
 
   async admitLookup(client, now) {

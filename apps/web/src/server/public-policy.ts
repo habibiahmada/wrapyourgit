@@ -57,6 +57,17 @@ export function underClientLimit(recentLookups: number): boolean {
   return recentLookups < CLIENT_LIMIT;
 }
 
+/**
+ * How long "no such account" is trusted. Short, because the name can be registered or a renamed
+ * account can take it at any time; long enough that a link with a typo, opened many times, costs
+ * one lookup.
+ */
+export const MISS_FRESH_MS = 10 * 60 * 1000;
+
+export function missIsFresh(checkedAt: Date, now: Date): boolean {
+  return now.getTime() - checkedAt.getTime() < MISS_FRESH_MS;
+}
+
 export function claimIsStale(since: Date, now: Date): boolean {
   return now.getTime() - since.getTime() > CLAIM_STALE_MS;
 }

@@ -77,12 +77,17 @@ let duringFetch: (() => void) | null;
 let onClaimRefused: (() => void) | null;
 let beforeClaim: (() => void) | null;
 let onSleep: (() => void) | null;
+let misses: Map<string, Date>;
 
 const store: Store = {
   isHidden: async () => hidden,
   read: async () => (row ? { ...row } : null),
   readByLogin: async (login) =>
     row && row.login.toLowerCase() === login.toLowerCase() ? { ...row, githubId: ID } : null,
+  missedAt: async (login) => misses.get(login.toLowerCase()) ?? null,
+  rememberMissing: async (login, now) => {
+    misses.set(login.toLowerCase(), now);
+  },
   admitLookup: async (client) => {
     if (failRecord) throw new Error("db down");
     if (!underClientLimit(lookups)) return false;
@@ -159,6 +164,7 @@ async function seed() {
 
 beforeEach(() => {
   clock = Date.parse("2026-11-11T12:00:00Z");
+  misses = new Map();
   row = null;
   hidden = false;
   lookups = 0;
@@ -195,6 +201,23 @@ describe("loadPublicRecapWith", () => {
       login: "Vercel",
     });
     expect(calls.year).toBe(0);
+  });
+
+  test("a missing name is remembered: the next visit asks GitHub nothing and spends no lookup", async () => {
+    account = { kind: "missing", remaining: 5000, resetAt: "" };
+    expect((await loadPublicRecapWith(deps, "Nobody", "c")).kind).toBe("missing");
+    expect((await loadPublicRecapWith(deps, "nobody", "c")).kind).toBe("missing");
+    expect(calls.lookup).toBe(1);
+    expect(recorded).toEqual(["c"]);
+  });
+
+  test("a remembered miss expires after ten minutes, so a new account shows up", async () => {
+    account = { kind: "missing", remaining: 5000, resetAt: "" };
+    await loadPublicRecapWith(deps, "newbie", "c");
+    clock += 10 * 60 * 1000 + 1;
+    account = { kind: "user", id: ID, login: "newbie", remaining: 5000, resetAt: "" };
+    expect((await loadPublicRecapWith(deps, "newbie", "c")).kind).toBe("recap");
+    expect(calls.lookup).toBe(2);
   });
 
   test("a hidden account is never fetched", async () => {
