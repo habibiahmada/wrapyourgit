@@ -1,7 +1,11 @@
 import type { MetadataRoute } from "next";
 import { siteUrl } from "@/site";
 
-/** Public pages are indexable; signed-in pages and the API are not. */
+/**
+ * Public pages are indexable; signed-in pages and the API are not. Recaps at /<username> stay
+ * crawlable, so link previews can read them (each page itself says noindex). /recap only
+ * redirects now, to the signed-in user's own recap.
+ */
 export default function robots(): MetadataRoute.Robots {
   const base = siteUrl();
   return {

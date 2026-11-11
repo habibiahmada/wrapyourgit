@@ -172,3 +172,14 @@ export async function cardPng(
   const card = await renderCard(toPublicRecap(row.data));
   return new Uint8Array(await card.arrayBuffer());
 }
+
+/**
+ * A public recap's card (loadPublicRecap's data, already public) as PNG bytes. The data is the
+ * cache key: a refetch that changes nothing renders nothing, and a changed recap renders once.
+ */
+export async function publicCardPng(data: RecapData): Promise<Uint8Array<ArrayBuffer>> {
+  "use cache";
+  cacheLife("days");
+  const card = await renderCard(data);
+  return new Uint8Array(await card.arrayBuffer());
+}

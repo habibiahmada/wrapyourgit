@@ -5,7 +5,10 @@ import { siteUrl } from "@/site";
 // crawlers every page changed on every deploy.
 const UPDATED = new Date("2026-11-04");
 
-/** Static public pages. Shared recaps are opt-in and come and go, so they are not listed. */
+/**
+ * Static public pages. Every GitHub account has a recap at /<username>, and those pages ask not to
+ * be indexed, so none are listed.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = siteUrl();
   return [

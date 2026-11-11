@@ -31,7 +31,8 @@ export function LoadingCell({ label }: { label: string; tone?: "paper" | "ink" }
           />
         ))}
       </div>
-      <p className="text-lg font-semibold">{label}</p>
+      {/* A label can carry a 39-character username, wider than a phone. */}
+      <p className="max-w-full text-lg font-semibold wrap-anywhere">{label}</p>
     </div>
   );
 }

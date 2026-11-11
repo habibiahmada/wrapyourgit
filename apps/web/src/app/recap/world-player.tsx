@@ -84,7 +84,10 @@ function heading(state: ControllerState): number {
 
 export type WorldPlayerProps =
   | {
-      /** The owner on /recap: the letter, and "Keep your year" with the files after the last stop. */
+      /**
+       * The owner on their own /<username>: the letter, and "Keep your year" with the files after
+       * the last stop.
+       */
       variant: "owner";
       /**
        * The owner's story projection (`storyData`): private names only when they chose to show
@@ -98,8 +101,8 @@ export type WorldPlayerProps =
     }
   | {
       /**
-       * A visitor on /u/<login>: the public projection (`publicWorld`), no letter, no files. Close,
-       * Escape, and Next at the rested closing stop all call `onExit`.
+       * A visitor on someone else's /<username>: the public projection (`publicWorld`), no
+       * letter, no files. Close, Escape, and Next at the rested closing stop all call `onExit`.
        */
       variant: "public";
       data: RecapData;
