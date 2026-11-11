@@ -78,16 +78,21 @@ export const busiest: Station = (ctx) => {
   const lampZ = z;
   const lamp = piece(4, 0.9, 0.75, TONE.lamp, true);
   piece(4, 1.15, 0.25);
-  // The beam: one turn every 60 frames, so a rest loop ends where it began.
+  // The beam: one turn every 60 frames, so a rest loop ends where it began. It is two arms that
+  // start outside the lamp room, not one bar through it: faces are painted in order of their
+  // middles, and a bar's middle is the lamp's own, so it was painted over the roof or under it
+  // at the wrong moments.
   if (lamp >= 1) {
     const turn = (((frame % 60) + 60) % 60) / 60;
-    out.push(
-      part(c, yaw + turn * Math.PI * 2, 0, 0, lampZ + 0.28, [6, 0.18, 0.18], TONE.lamp, {
-        tag: "beam",
-        lit: true,
-        edge: false,
-      }),
-    );
+    for (const arm of [-1, 1]) {
+      out.push(
+        part(c, yaw + turn * Math.PI * 2, arm * 2.1, 0, lampZ + 0.3, [3.2, 0.2, 0.14], TONE.lamp, {
+          tag: "beam",
+          lit: true,
+          edge: false,
+        }),
+      );
+    }
   }
   return out;
 };
