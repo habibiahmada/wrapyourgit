@@ -1,0 +1,104 @@
+/*
+ * Paints the ride's primitives onto a canvas. The scene is a few thousand shapes that are rebuilt
+ * on every frame; as SVG elements, @remotion/web-renderer has to write the whole <svg> out as
+ * text and load it back as an image for each frame, which made the ride's export several times
+ * slower than the story it replaces. A canvas is drawn by the renderer as it is.
+ */
+import type { Prim } from "./prims";
+
+/** The part of a canvas 2D context the painter uses. */
+export type Brush = Pick<
+  CanvasRenderingContext2D,
+  | "save"
+  | "restore"
+  | "beginPath"
+  | "closePath"
+  | "moveTo"
+  | "lineTo"
+  | "arc"
+  | "fill"
+  | "stroke"
+  | "transform"
+  | "fillText"
+  | "drawImage"
+  | "fillStyle"
+  | "strokeStyle"
+  | "globalAlpha"
+  | "font"
+  | "lineWidth"
+  | "lineJoin"
+  | "textAlign"
+  | "textBaseline"
+>;
+
+export type PaintExtras = {
+  fontFamily: string;
+  /** Loaded pictures by the `href` their primitives carry. One that is missing is not drawn. */
+  images: ReadonlyMap<string, CanvasImageSource>;
+};
+
+/**
+ * Text is set at this size and scaled down to its size in world units: browsers round or refuse
+ * the sub-pixel font sizes a face's matrix would otherwise need.
+ */
+const FONT_PX = 100;
+
+/** Paints `prims` in the order given (scenePrims returns them far to near). */
+export function paintPrims(brush: Brush, prims: readonly Prim[], extras: PaintExtras): void {
+  brush.lineWidth = 1;
+  brush.lineJoin = "round";
+  brush.textAlign = "center";
+  brush.textBaseline = "middle";
+  for (const p of prims) {
+    switch (p.kind) {
+      case "poly": {
+        brush.beginPath();
+        p.pts.forEach(([x, y], i) => {
+          if (i === 0) brush.moveTo(x, y);
+          else brush.lineTo(x, y);
+        });
+        brush.closePath();
+        if (p.fill) {
+          brush.fillStyle = p.fill;
+          brush.fill();
+        }
+        if (p.stroke) {
+          brush.strokeStyle = p.stroke;
+          brush.stroke();
+        }
+        break;
+      }
+      case "circle": {
+        brush.globalAlpha = p.opacity;
+        brush.fillStyle = p.fill;
+        brush.beginPath();
+        brush.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        brush.fill();
+        brush.globalAlpha = 1;
+        break;
+      }
+      case "image": {
+        const image = extras.images.get(p.href);
+        if (!image) break;
+        brush.save();
+        brush.transform(...p.matrix);
+        brush.drawImage(image, 0, 0, 1, 1);
+        brush.restore();
+        break;
+      }
+      case "text": {
+        const scale = p.size / FONT_PX;
+        brush.save();
+        brush.transform(...p.matrix);
+        brush.transform(scale, 0, 0, scale, 0, 0);
+        brush.font = `${p.weight} ${FONT_PX}px ${extras.fontFamily}, sans-serif`;
+        brush.fillStyle = p.fill;
+        brush.fillText(p.text, (p.x * FONT_PX) / p.size, (p.y * FONT_PX) / p.size);
+        brush.restore();
+        break;
+      }
+      default:
+        p satisfies never;
+    }
+  }
+}
