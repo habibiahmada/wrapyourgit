@@ -48,6 +48,15 @@ test("the last gate plus the rest of the year is the total", () => {
   expect((dec?.before ?? 0) + sum("2026-12-01")).toBe(sum("2026-01-01"));
 });
 
+test("the last gate that has a total, plus the days after it, is the recap's own total", () => {
+  // The spec's check, on a fixture whose total is its calendar's sum, as analytics computes it.
+  const nov = gates(provisionalRecap, buildCity(provisionalRecap))[10];
+  const after = provisionalRecap.contributions.calendar
+    .filter((d) => d.date >= "2026-11-01")
+    .reduce((n, d) => n + d.count, 0);
+  expect((nov?.before ?? 0) + after).toBe(provisionalRecap.contributions.total);
+});
+
 test("a month that has not started has no total", () => {
   const g = gates(provisionalRecap, buildCity(provisionalRecap));
   expect(g[10]?.before).not.toBeNull();

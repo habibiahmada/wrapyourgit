@@ -1,13 +1,14 @@
 import { expect, test } from "bun:test";
-import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
-import { busyRecap } from "../../fixtures/edge-recaps";
+import { layoutForSize, type RecapData, VIDEO_FORMATS } from "@wyg/schema";
+import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { gardenModel } from "../scenes/garden.model";
 import { commitsText, projectsModel } from "../scenes/projects.model";
 import { buildRide, rideFrame } from "./model";
 import { type Box, type Prim, scenePrims } from "./prims";
 import { projectPoint, type RideCamera } from "./project";
-import { clip } from "./stations/kit";
+import { STATIONS } from "./stations";
+import { clip, stationContext } from "./stations/kit";
 import { blockName } from "./stations/languages";
 import { at } from "./track";
 import { CELL_SEAT } from "./train";
@@ -17,6 +18,17 @@ const HEADLINE = 0.04;
 const NAME = 0.022;
 
 type Text = Extract<Prim, { kind: "text" }>;
+
+/** One repository far larger than the rest: the stack must still read. */
+const hugeRecap: RecapData = {
+  ...busyRecap,
+  repositories: {
+    ...busyRecap.repositories,
+    top: busyRecap.repositories.top.map((repo, i) =>
+      i === 0 ? { ...repo, commits: 30_000 } : repo,
+    ),
+  },
+};
 
 /** For each stop of interest in each format: the texts drawn at its rest frame, and where Cell is. */
 function restFrames(data: RecapData) {
@@ -74,7 +86,7 @@ function check(data: RecapData) {
       }
     } else {
       const top = projects.stacks[0];
-      const figure = top ? (commitsText(top.commits).split(" ")[0] ?? "") : "";
+      const figure = top ? commitsText(top.commits) : "";
       if (top) {
         expect({ where, value: biggest(rest.texts, figure) / rest.short >= HEADLINE }).toEqual({
           where,
@@ -110,6 +122,10 @@ test("the same holds with five languages and long repository names", () => {
   check(busyRecap);
 });
 
+test("the same holds when one repository has 30,000 commits", () => {
+  check(hugeRecap);
+});
+
 /** Corners of a box on screen, as shares of the frame. */
 function corners(
   box: Box,
@@ -141,16 +157,16 @@ function corners(
   return out;
 }
 
-const HERO = ["language", "crate", "plaque", "board"];
+const HERO = ["language", "container", "board"];
 
 test("no hero is cut off at its stop, and Cell stands clear of the frame's edge", () => {
-  for (const data of [sampleRecap, busyRecap]) {
+  for (const data of [sampleRecap, busyRecap, hugeRecap]) {
     for (const [id, format] of Object.entries(VIDEO_FORMATS)) {
       const m = buildRide(data, format, "video", 30);
       m.stops.forEach((stop, i) => {
-        if (!stop.plaza) return;
+        if (stop.kind === "hello" || stop.kind === "city") return;
         const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
-        const centre = at(stop.s + 4.5, stop.side * 8);
+        const centre = stationContext(data, m.city, stop, 1, 0, 0).c;
         const mine = frame.objects.filter(
           (s): s is Box =>
             s.kind === "box" &&
@@ -162,8 +178,42 @@ test("no hero is cut off at its stop, and Cell stands clear of the frame's edge"
         const inside = points.every(([x, y]) => x > 0.01 && x < 0.99 && y > 0.03 && y < 0.97);
         expect({ where, inside }).toEqual({ where, inside: true });
         const cell = projectPoint(at(stop.s + CELL_SEAT, 0, 1.0), frame.cam, format);
-        const clear = cell ? cell[1] / format.height < 0.9 && cell[0] / format.width > 0.06 : false;
+        const cx = cell ? cell[0] / format.width : -1;
+        const clear = cell ? cell[1] / format.height < 0.9 && cx > 0.06 && cx < 0.94 : false;
         expect({ where, clear }).toEqual({ where, clear: true });
+      });
+    }
+  }
+});
+
+test("every line a station prints can be read at its stop, in every format", () => {
+  for (const [name, data] of Object.entries({
+    sampleRecap,
+    busyRecap,
+    emptyRecap,
+    provisionalRecap,
+  })) {
+    for (const [id, format] of Object.entries(VIDEO_FORMATS)) {
+      const m = buildRide(data, format, "video", 30);
+      const layout = layoutForSize(format.width, format.height);
+      const short = Math.min(format.width, format.height);
+      m.stops.forEach((stop, i) => {
+        const station = STATIONS[stop.kind];
+        if (!station) return;
+        const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
+        const overview = stop.kind === "city" ? 1 : 0;
+        const solids = station(stationContext(data, m.city, stop, 1, 0, overview, layout));
+        const texts = scenePrims(solids, frame.cam, format, frame.fog).filter(
+          (p): p is Text => p.kind === "text",
+        );
+        const small = [...new Set(texts.map((t) => t.text))]
+          .map((text) => ({ text, size: biggest(texts, text) / short }))
+          .filter((line) => line.size < NAME)
+          .map((line) => `${line.text} ${(line.size * 100).toFixed(1)}%`);
+        expect({ where: `${name} ${id} ${stop.kind}`, small }).toEqual({
+          where: `${name} ${id} ${stop.kind}`,
+          small: [],
+        });
       });
     }
   }

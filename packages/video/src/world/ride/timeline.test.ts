@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity } from "../city";
 import { rideStops } from "./stops";
-import { buildProgress, buildRideTimeline, trainAt } from "./timeline";
+import { buildProgress, buildRideTimeline, idleClock, trainAt } from "./timeline";
 
 const stops = rideStops(sampleRecap, buildCity(sampleRecap));
 const video = buildRideTimeline(stops, "video", 30);
@@ -71,4 +71,23 @@ test("the timeline keeps the shape the player and the slides read", () => {
   expect(video.stopFrames).toHaveLength(stops.length);
   expect(video.moveFrames).toHaveLength(stops.length);
   expect(video.inPlace).toEqual(stops.map(() => false));
+});
+
+test("the idle clock starts a fresh loop at every stop and never jumps on the way", () => {
+  for (const mode of ["video", "interactive"] as const) {
+    const t = buildRideTimeline(stops, mode, 30);
+    for (const at of t.stopFrames) expect(idleClock(at, t)).toBe(0);
+    // Through a hold it counts frames, so a rest loop is exact.
+    const first = t.stopFrames[1] ?? 0;
+    expect(idleClock(first + 37, t)).toBe(37);
+    for (let frame = 0; frame < t.durationInFrames - 1; frame++) {
+      // Idle motion repeats every 60 frames, so what must not jump is the phase.
+      const step = (((idleClock(frame + 1, t) - idleClock(frame, t)) % 60) + 60) % 60;
+      expect({ mode, frame, smooth: step > 0.4 && step < 2 }).toEqual({
+        mode,
+        frame,
+        smooth: true,
+      });
+    }
+  }
 });

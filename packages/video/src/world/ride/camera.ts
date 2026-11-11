@@ -9,7 +9,7 @@ import { easeInOutCubic } from "../timeline";
 import { type Frame, projectPoint, type RideCamera, type V3 } from "./project";
 import type { RideStop } from "./stops";
 import { REST_SECONDS, type RideTimeline, trainAt } from "./timeline";
-import { at, FIRST_PLATFORM, heading, PLAZA_LATERAL } from "./track";
+import { at, billboardAt, FIRST_PLATFORM, heading, OVERVIEW_THETA, PLAZA_LATERAL } from "./track";
 
 export type Look = "ahead" | "cell" | "train" | "hero";
 /**
@@ -141,7 +141,7 @@ function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
   const pose: Pose = {
     anchor: at(middle),
     heading: 0,
-    theta: Math.PI * 0.75,
+    theta: OVERVIEW_THETA[layoutForSize(frame.width, frame.height)],
     radius: 30,
     height: 30 * 0.75,
     fov: CITY_FOV,
@@ -155,7 +155,15 @@ function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
     const my = frame.height * CITY_MARGIN;
     return s[0] > mx && s[0] < frame.width - mx && s[1] > my && s[1] < frame.height - my;
   };
-  const ends = [at(FIRST_PLATFORM), at(end), at(middle, 8), at(middle, -8)];
+  // Both ends of the rail, the squares beside it, and the billboard from foot to top.
+  const layout = layoutForSize(frame.width, frame.height);
+  const ends = [
+    at(FIRST_PLATFORM),
+    at(end),
+    at(middle, 8),
+    at(middle, -8),
+    ...billboardAt(middle, layout).corners,
+  ];
   while (!ends.every(inside) && pose.radius < 600) {
     pose.radius *= 1.06;
     pose.height = pose.radius * 0.75;
@@ -191,11 +199,18 @@ function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
           const a = (k / 8) * Math.PI * 2;
           return [centre[0] + Math.cos(a) * 5, centre[1] + Math.sin(a) * 5, 1];
         });
+  const seat = [-0.8, 0.8].map((d) => at(stop.s + CELL_SEAT + d, 0, 0.6));
   const measure = (pose: Pose) => {
     const cam = poseCamera(pose, frame);
-    const a = projectPoint(top, cam, frame);
+    // The highest point on screen: the hero's top over its centre, or a far corner that stands higher in the picture.
+    const tops = [top, ...ring].map((p) => projectPoint(p, cam, frame));
+    const a = tops.reduce(
+      (high, p) => (p && (!high || p[1] < high[1]) ? p : high),
+      tops[0] ?? null,
+    );
     const b = projectPoint(cell, cam, frame);
-    const xs = ring.map((p) => projectPoint(p, cam, frame)?.[0] ?? Number.NaN);
+    // Cell counts among what must stay between the sides, with room for the engine round it.
+    const xs = [...ring, ...seat].map((p) => projectPoint(p, cam, frame)?.[0] ?? Number.NaN);
     if (!a || !b || xs.some(Number.isNaN)) return null;
     return {
       span: (b[1] - a[1]) / frame.height,

@@ -67,3 +67,36 @@ export function stationPlace(
   const s = count <= 1 ? FIRST_PLATFORM : FIRST_PLATFORM + (index * span) / (count - 1);
   return { s, side: index % 2 === 0 ? -1 : 1 };
 }
+
+/**
+ * Where the overview camera stands round the middle of the rail, as an angle from the direction
+ * of travel. A wide frame looks across the rail; a tall one looks more along it, so the year runs
+ * up the frame instead of across a third of it.
+ */
+export const OVERVIEW_THETA = {
+  landscape: Math.PI * 0.75,
+  compact: Math.PI * 0.85,
+  portrait: Math.PI * 0.85,
+} as const;
+
+/** The overview's billboard: how far from the rail it stands, how wide it is, how high it can reach. */
+export const BILLBOARD = { lateral: 17, wide: 38, top: 32 };
+
+/**
+ * Where the billboard stands beside the middle of the rail at `s`, turned square to the overview
+ * camera so its words run level across the frame, and the corners the camera must keep in frame.
+ */
+export function billboardAt(s: number, layout: keyof typeof OVERVIEW_THETA) {
+  const c = at(s, BILLBOARD.lateral);
+  const yaw = OVERVIEW_THETA[layout] - Math.PI / 2;
+  const half = BILLBOARD.wide / 2;
+  const corners = [-half, half].flatMap((d): V3[] => {
+    const x = c[0] + Math.cos(yaw) * d;
+    const y = c[1] + Math.sin(yaw) * d;
+    return [
+      [x, y, 0],
+      [x, y, BILLBOARD.top],
+    ];
+  });
+  return { c, yaw, corners };
+}

@@ -56,7 +56,6 @@ test("languages: every tree's label and name are printed, in the model's words",
     expect(text).toContain(tree.label);
     expect(text).toContain(blockName(tree.name));
   }
-  expect(text).toContain("Top languages");
   expect(text).toContain(model.title);
   if (model.otherNote) expect(text).toContain(model.otherNote);
 });
@@ -161,35 +160,34 @@ test("languages: up to three languages stand in one row on the plaza", () => {
   expect(new Set(boxes(all, "language").map((b) => b.at[2].toFixed(3))).size).toBe(1);
 });
 
-test("projects: a narrow frame stands the plaques as a wall, two across, with the towers on a tier behind", () => {
-  const city = buildCity(sampleRecap);
-  const stop = rideStops(sampleRecap, city).find((x) => x.kind === "projects");
-  if (!stop) throw new Error("no stop");
-  const station = STATIONS.projects as NonNullable<typeof STATIONS.projects>;
-  for (const layout of ["portrait", "compact"] as const) {
-    const all = station(stationContext(sampleRecap, city, stop, 1, 0, 0, layout));
-    const plaques = boxes(all, "plaque");
-    expect(plaques).toHaveLength(projectsModel(sampleRecap).stacks.length);
-    // No two plaques share space on the wall.
-    plaques.forEach((a, i) => {
-      for (const b of plaques.slice(i + 1)) {
-        const apart =
-          a.at[0] + a.size[0] <= b.at[0] + 1e-9 ||
-          b.at[0] + b.size[0] <= a.at[0] + 1e-9 ||
-          a.at[2] + a.size[2] <= b.at[2] + 1e-9 ||
-          b.at[2] + b.size[2] <= a.at[2] + 1e-9;
-        expect(apart).toBe(true);
-      }
+test("projects: one container per repository, stacked with the first at the bottom", () => {
+  const stacks = projectsModel(sampleRecap).stacks;
+  for (const layout of ["portrait", "compact", "landscape"] as const) {
+    const city = buildCity(sampleRecap);
+    const stop = rideStops(sampleRecap, city).find((x) => x.kind === "projects");
+    if (!stop) throw new Error("no stop");
+    const station = STATIONS.projects as NonNullable<typeof STATIONS.projects>;
+    const containers = boxes(
+      station(stationContext(sampleRecap, city, stop, 1, 0, 0, layout)),
+      "container",
+    );
+    expect(containers).toHaveLength(stacks.length);
+    // Each stands on the one before it: nothing floats and nothing shares space.
+    containers.forEach((box, i) => {
+      const below = containers[i - 1];
+      if (below) expect(box.at[2]).toBeCloseTo(below.at[2] + below.size[2]);
     });
-    expect(boxes(all, "tier")).toHaveLength(1);
-    const tier = boxes(all, "tier")[0] as Box;
-    for (const crate of boxes(all, "crate"))
-      expect(crate.at[2]).toBeGreaterThanOrEqual(tier.at[2] + tier.size[2]);
+    expect(printed([containers[0] as Box])).toContain(clip(stacks[0]?.label ?? "", 14));
   }
-  // A wide frame keeps the row: every plaque at one height, no tier.
-  const wide = build("projects", sampleRecap);
-  expect(new Set(boxes(wide, "plaque").map((p) => p.at[2].toFixed(3))).size).toBe(1);
-  expect(boxes(wide, "tier")).toHaveLength(0);
+});
+
+test("projects: a container's lit band is as long as its share of the largest repository", () => {
+  const stacks = projectsModel(sampleRecap).stacks;
+  const most = Math.max(...stacks.map((stack) => stack.commits));
+  boxes(build("projects", sampleRecap), "container").forEach((box, i) => {
+    const band = (box.decals ?? []).find((d) => d.on === "sides" && d.rect[0] === 0);
+    expect(band?.rect[2] ?? 0).toBeCloseTo((stacks[i]?.commits ?? 0) / most);
+  });
 });
 
 test("languages: blocks drop in before the stop and none is in the air at rest", () => {
@@ -204,55 +202,46 @@ test("projects: every stack's label and exact commits are printed at rest, and c
   const model = projectsModel(sampleRecap);
   const rest = printed(build("projects", sampleRecap));
   for (const stack of model.stacks) {
-    // The model's words, on two lines: the figure large, its unit under it.
-    const [figure, unit] = commitsText(stack.commits).split(" ");
+    // The model's figure, with its unit beside it.
     expect(rest).toContain(clip(stack.label, 14));
-    expect(rest).toContain(figure as string);
-    expect(rest).toContain(unit as string);
+    expect(rest).toContain(commitsText(stack.commits));
   }
-  expect(rest).toContain("Repositories");
   expect(rest).toContain(model.title);
-  const figure = commitsText(model.stacks[0]?.commits ?? 0).split(" ")[0] as string;
+  const figure = commitsText(model.stacks[0]?.commits ?? 0);
   expect(printed(build("projects", sampleRecap, 0.3))).not.toContain(figure);
 });
 
-test("projects: no plaque shows a figure before its tower starts, and never a zero", () => {
-  expect(boxes(build("projects", sampleRecap, 0), "plaque")).toHaveLength(0);
+test("projects: no container is there before it lands, and none ever reads zero", () => {
+  expect(boxes(build("projects", sampleRecap, 0), "container")).toHaveLength(0);
   for (const progress of [0.05, 0.2, 0.5, 0.8]) {
-    for (const text of printed(boxes(build("projects", sampleRecap, progress), "plaque"))) {
+    for (const text of printed(boxes(build("projects", sampleRecap, progress), "container"))) {
       expect(text).not.toBe("0");
     }
   }
 });
 
-test("projects: a tower has as many crates as the model says", () => {
-  const model = projectsModel(sampleRecap);
-  const crates = boxes(build("projects", sampleRecap), "crate");
-  expect(crates).toHaveLength(model.stacks.reduce((n, s) => n + s.crates, 0));
-});
-
 test("projects: long names are cut, an empty shelf says so", () => {
-  const labels = boxes(build("projects", busyRecap), "plaque").flatMap((b) =>
+  const labels = boxes(build("projects", busyRecap), "container").flatMap((b) =>
     (b.texts ?? []).map((t) => t.text),
   );
-  for (const label of labels) expect(label.length).toBeLessThanOrEqual(14);
+  for (const label of labels.filter((text) => !/ commits?$/.test(text)))
+    expect(label.length).toBeLessThanOrEqual(14);
   const none = projectsModel(emptyRecap);
   const empty = build("projects", {
     ...emptyRecap,
     repositories: { ...emptyRecap.repositories, top: [] },
   });
-  expect(boxes(empty, "crate")).toHaveLength(0);
-  expect(printed(empty)).toContain(none.empty ? none.title : "No repository commits yet");
+  expect(boxes(empty, "container")).toHaveLength(0);
+  // The sign may break a long title over two rows.
+  expect(printed(empty).join(" ")).toContain(none.empty ? none.title : "No repository commits yet");
 });
 
 test("projects: no station names a repository the data hides", () => {
   const hidden = withoutPrivateNames(sampleRecap);
   const model = projectsModel(hidden);
-  const text = printed(boxes(build("projects", hidden), "plaque"));
-  // A plaque prints on both of its faces, so every name appears twice; figures and units are not names.
-  const names = [
-    ...new Set(text.filter((t) => !/^commits?$/.test(t) && !/^[\d,.k]+$/.test(t))),
-  ].sort();
+  const text = printed(boxes(build("projects", hidden), "container"));
+  // A container prints on both of its long sides, so every name appears twice; the commits are not names.
+  const names = [...new Set(text.filter((t) => !/ commits?$/.test(t)))].sort();
   expect(names).toEqual(model.stacks.map((stack) => clip(stack.label, 14)).sort());
 });
 
@@ -266,16 +255,26 @@ test("hello prints the year and the login, and the scope line when the recap is 
   expect(open).toContain("Public GitHub activity only");
 });
 
+test("hello breaks a long login over rows instead of printing it small", () => {
+  const login = `@${busyRecap.profile.login}`;
+  const text = [...new Set(printed(build("hello", busyRecap)))];
+  const rows = text.filter((line) => line !== String(busyRecap.meta.year));
+  expect(rows.length).toBeGreaterThan(1);
+  expect(rows.join("")).toBe(login);
+  for (const row of rows) expect(row.length).toBeLessThanOrEqual(20);
+});
+
 test("city prints the model's headline, the exact total and the legend of a year still running", () => {
   const model = cityModel(sampleRecap);
   const text = printed(build("city", sampleRecap));
-  expect(text).toContain(model.headline);
+  // The billboard may break a long line over two rows.
+  expect(text.join(" ")).toContain(model.headline);
   expect(text).toContain(formatCount(model.total));
   const running: RecapData = {
     ...sampleRecap,
     meta: { ...sampleRecap.meta, isFinal: false, periodEnd: "2026-11-09" },
   };
-  expect(printed(build("city", running))).toContain(cityModel(running).legend ?? "");
+  expect(printed(build("city", running)).join(" ")).toContain(cityModel(running).legend ?? "");
 });
 
 test("city's billboard is only there for the overview", () => {

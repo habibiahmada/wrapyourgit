@@ -79,13 +79,17 @@ export function plaza(
   const out: Solid[] = [
     part(c, yaw, 0, 0, 0, [long, deep, PLAZA_TOP], TONE.plaza, {
       tag: "plaza",
+      under: 3,
       decals: [
         { on: "top", rect: [0.02, 0.04, 0.98, 0.96], fill: "#323b46" },
         { on: "all", rect: [0, 0.7, 1, 1], fill: "#26a641" },
       ],
     }),
     // The rail is on the plaza's left when the plaza is right of the rail, and the other way round.
-    part(c, yaw, 0, stop.side * (deep / 2 + 0.4), 0, [3.2, 0.8, 0.12], TONE.plaza, { tag: "step" }),
+    part(c, yaw, 0, stop.side * (deep / 2 + 0.4), 0, [3.2, 0.8, 0.12], TONE.plaza, {
+      tag: "step",
+      under: 3,
+    }),
   ];
   for (const dx of [-(long / 2 - 0.3), long / 2 - 0.3]) {
     for (const dy of [-(deep / 2 - 0.3), deep / 2 - 0.3]) {
@@ -122,6 +126,7 @@ export function board(
   lines: readonly BoardLine[],
   way: "across" | "along" = "across",
   lift = 1.5,
+  tag = "board",
 ): Solid[] {
   const rows = lines
     .map((line, i) =>
@@ -181,7 +186,7 @@ export function board(
       { top: "#21262d", left: INK, right: INK },
       {
         lit: true,
-        tag: "board",
+        tag,
         texts,
         decals: faces.map((on) => ({ on, rect: [0, 0, 1, Math.min(0.08, 0.1 / tall)], fill: LIT })),
       },
@@ -189,66 +194,48 @@ export function board(
   ];
 }
 
+/** `text` on lines of at most `max` characters: parts joined by " · " split first, then words. */
+export function wrap(text: string, max: number): string[] {
+  const out: string[] = [];
+  for (const part of text.split(" · ")) {
+    let line = "";
+    for (const word of part.split(" ")) {
+      if (line !== "" && line.length + 1 + word.length > max) {
+        out.push(line);
+        line = word;
+      } else line = line === "" ? word : `${line} ${word}`;
+    }
+    if (line !== "") out.push(line);
+  }
+  return out;
+}
+
+/** The station sign: how wide it is, and how tall one of its rows. */
+const SIGN = { wide: 5.5, row: 0.38 };
+
 /**
- * A station's name, placed where it hides none of the hero's words and none of them hide it. A
- * wide frame has room beside the hero, so a board stands across the far end of the plaza. A
- * narrow frame has no room to spare beside the hero or above it, so there the name is painted on
- * the plaza's floor in front of the hero, turned to be read from across the rail.
+ * A station's title and what explains its numbers, on a low sign on the ground between the rail
+ * and the plaza, where it covers nothing but paving. Every row is the same height, tall enough to
+ * read (spec "How big printed text must be"); a line too long for the sign at that size goes onto
+ * two rows instead of being set smaller. It stands ahead of the plaza's middle (seen from across
+ * the rail, what is nearer the rail slides back along it).
  */
 export function nameBoard(
   ctx: StationContext,
   lines: readonly BoardLine[],
-  place: { long: number; deep: number; front: number },
+  place: { deep: number; fit?: boolean },
 ): Solid[] {
   const { c, yaw, stop } = ctx;
-  if (ctx.layout === "landscape") {
-    // Past the far end and a little toward the rail, so the hero's last block does not stand in front of it.
-    return board(c, yaw, place.long / 2 + 1.9, stop.side * 1.3, 4.4, lines);
-  }
-  const rows = lines
-    .map((line, i) =>
+  const max = Math.floor((SIGN.wide * 0.9) / (0.6 * SIGN.row * 0.92));
+  const rows: BoardLine[] = lines.flatMap((line) => {
+    const text = typeof line === "string" ? line : line.text;
+    const look =
       typeof line === "string"
-        ? {
-            text: line,
-            tall: i === 0 ? 0.3 : 0.52,
-            fill: i === 0 ? "#c9d1d9" : "#ffffff",
-            weight: i === 0 ? 700 : 800,
-          }
-        : { fill: "#c9d1d9", weight: 700, ...line, tall: line.tall * 0.75 },
-    )
-    .filter((row) => row.text !== "");
-  // The strip of floor between the hero and the plaza's edge toward the rail.
-  const strip = place.deep / 2 - place.front - 0.15;
-  const used = rows.reduce((sum, row) => sum + row.tall, 0) + 0.08 * Math.max(0, rows.length - 1);
-  const scale = Math.min(1, strip / used);
-  // The camera stands across the rail: on that side the words' tops point away from it.
-  const flip = stop.side === 1;
-  let from = 0;
-  const texts: FaceText[] = rows.map((row) => {
-    const tall = (row.tall * scale) / strip;
-    const far = from;
-    from += tall + (0.08 * scale) / strip;
-    // The first line is the furthest from the camera: low v on its side of the plaza, high on the other.
-    const rect: [number, number, number, number] = flip
-      ? [0.02, far, 0.98, far + tall]
-      : [0.02, 1 - far - tall, 0.98, 1 - far];
-    return { on: "top", rect, text: row.text, fill: row.fill, weight: row.weight, flip };
+        ? { fill: "#ffffff", weight: 800 }
+        : { fill: line.fill ?? "#c9d1d9", weight: line.weight ?? 700 };
+    return wrap(text, max).map((piece) => ({ text: piece, tall: SIGN.row, ...look }));
   });
-  const middle = stop.side * (place.front + 0.05 + strip / 2);
-  return [
-    part(
-      c,
-      yaw,
-      0,
-      middle,
-      PLAZA_TOP,
-      [place.long - 1.2, strip, 0.012],
-      { top: "#323b46", left: "#323b46", right: "#323b46" },
-      {
-        edge: false,
-        tag: "board",
-        texts,
-      },
-    ),
-  ];
+  const dy = stop.side * (place.deep / 2 + 2.2);
+  // With `fit` the camera keeps the sign in frame as it does the hero; without, the hero alone sets the shot.
+  return board(c, yaw, -6, dy, SIGN.wide, rows, "along", 0.15, place.fit ? "board" : "sign");
 }

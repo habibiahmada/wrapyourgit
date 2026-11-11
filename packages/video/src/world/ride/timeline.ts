@@ -85,3 +85,29 @@ export function buildProgress(
   const t = (frame - ((timeline.stopFrames[i] ?? 0) - frames)) / frames;
   return easeInOutCubic(Math.max(0, Math.min(1, t)));
 }
+
+/** Idle motion (a blink, a bob, the fireworks) repeats over this many frames. */
+const IDLE_LOOP = 60;
+
+/**
+ * The clock idle motion runs on. It is 0 at every stop's own frame, so a slide taken there never
+ * catches a blink, and counts frames through the hold, so a rest loop is exact. On the way to the
+ * next stop it runs a little fast or slow, to land on a whole number of loops as the train
+ * arrives: nothing that idles jumps at a station.
+ */
+export function idleClock(frame: number, timeline: RideTimeline): number {
+  const { stopFrames, holdFrames } = timeline;
+  const i = Math.max(
+    0,
+    stopFrames.findLastIndex((at) => frame >= at),
+  );
+  const since = frame - (stopFrames[i] ?? 0);
+  const next = stopFrames[i + 1];
+  if (since <= holdFrames || next === undefined) return since;
+  const move = next - (stopFrames[i] ?? 0) - holdFrames;
+  const loops = Math.max(
+    Math.floor(holdFrames / IDLE_LOOP) + 1,
+    Math.round((holdFrames + move) / IDLE_LOOP),
+  );
+  return holdFrames + ((since - holdFrames) * (loops * IDLE_LOOP - holdFrames)) / move;
+}

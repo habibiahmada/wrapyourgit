@@ -22,6 +22,7 @@ import {
   BUILD_SECONDS,
   buildProgress,
   buildRideTimeline,
+  idleClock,
   type RideTimeline,
   trainAt,
 } from "./timeline";
@@ -33,7 +34,7 @@ export type RideModel = { city: City; stops: RideStop[]; timeline: RideTimeline;
 export type RideOptions = { letter?: boolean };
 
 /** The parts of a station that carry its chapter: the camera keeps these in frame. */
-const HERO_TAGS = ["language", "crate", "plaque", "board", "covered", "shuttered"];
+const HERO_TAGS = ["language", "container", "board", "covered", "shuttered"];
 
 export function buildRide(
   data: RecapData,
@@ -49,7 +50,7 @@ export function buildRide(
   // How tall each station's finished hero is, so the camera can frame it whatever the data.
   const stops = rideStops(data, city, { letterPages, letter }).map((stop) => {
     const station = STATIONS[stop.kind];
-    if (!stop.plaza || !station) return stop;
+    if (!station) return stop;
     const ctx = stationContext(data, city, stop, 1, 0, 0, layout);
     let heroTop = 0;
     // The corner that reaches furthest in each of sixteen directions from the plaza's centre.
@@ -71,7 +72,7 @@ export function buildRide(
             const along = (wx - ctx.c[0]) * Math.cos(a) + (wy - ctx.c[1]) * Math.sin(a);
             if (along > (reach[k] ?? -1)) {
               reach[k] = along;
-              edge[k] = [wx, wy, solid.at[2] + solid.size[2] / 2];
+              edge[k] = [wx, wy, solid.at[2] + solid.size[2]];
             }
           }
         }
@@ -166,9 +167,7 @@ export function rideFrame(
   const building = Boolean(dest?.plaza) && moving && built > 0;
   const mood: Mood = building ? "cheer" : moving ? "ride" : "idle";
   const amount = building ? Math.sin(built * Math.PI) ** 2 : Math.min(1, speed * 4);
-  // Idle motion counts from the last stop reached, so a stop's own frame is always the first
-  // frame of its loop: the slide taken there never catches a blink.
-  const clock = frameIndex - (timeline.stopFrames[resting ? stops.indexOf(resting) : 0] ?? 0);
+  const clock = idleClock(frameIndex, timeline);
   const yaw = heading(trainS) + (turnTo ? SHOTS.ISO.theta * turnTo.side * 0.85 * turn : 0);
 
   objects.push(...train(trainS));
