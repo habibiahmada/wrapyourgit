@@ -43,6 +43,13 @@
       "when": 1794368574853,
       "tag": "0005_normal_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794368957312,
+      "tag": "0006_careful_captain_marvel",
+      "breakpoints": true
     }
   ]
 }

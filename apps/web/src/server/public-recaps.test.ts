@@ -58,7 +58,7 @@ let lookups: number;
 let recorded: string[];
 let othersClaim: boolean;
 let account: AccountLookup;
-let calls: { year: number; previous: number };
+let calls: { lookup: number; year: number; previous: number };
 let failYear: boolean;
 let failPrevious: boolean;
 let onSleep: (() => void) | null;
@@ -66,6 +66,8 @@ let onSleep: (() => void) | null;
 const store: Store = {
   isHidden: async () => hidden,
   read: async () => (row ? { ...row } : null),
+  readByLogin: async (login) =>
+    row && row.login.toLowerCase() === login.toLowerCase() ? { ...row, githubId: ID } : null,
   countLookups: async () => lookups,
   recordLookup: async (client) => {
     recorded.push(client);
@@ -98,7 +100,10 @@ const store: Store = {
 };
 
 const deps: Deps = {
-  lookup: async () => account,
+  lookup: async () => {
+    calls.lookup++;
+    return account;
+  },
   fetchYear: async (login) => {
     calls.year++;
     if (failYear) throw new Error("boom");
@@ -122,7 +127,7 @@ async function seed() {
   const result = await loadPublicRecapWith(deps, "octo", "client-a");
   expect(result.kind).toBe("recap");
   recorded = [];
-  calls = { year: 0, previous: 0 };
+  calls = { lookup: 0, year: 0, previous: 0 };
 }
 
 beforeEach(() => {
@@ -133,7 +138,7 @@ beforeEach(() => {
   recorded = [];
   othersClaim = false;
   account = { kind: "user", id: ID, login: "Octo", remaining: 5000, resetAt: "" };
-  calls = { year: 0, previous: 0 };
+  calls = { lookup: 0, year: 0, previous: 0 };
   failYear = false;
   failPrevious = false;
   onSleep = null;
@@ -175,15 +180,34 @@ describe("loadPublicRecapWith", () => {
     expect(row?.previous).toEqual(previousYear("2025-11-11"));
     expect(row?.fetchingSince).toBeNull();
     expect(recorded).toEqual(["client-a"]);
-    expect(calls).toEqual({ year: 1, previous: 1 });
+    expect(calls).toEqual({ lookup: 1, year: 1, previous: 1 });
   });
 
-  test("a fresh stored recap is served without fetching or counting", async () => {
+  test("a fresh stored recap is served by login without asking GitHub at all", async () => {
     await seed();
     clock += 11 * HOUR;
-    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
-    expect(calls.year).toBe(0);
+    account = { kind: "missing", remaining: 0, resetAt: "" };
+    expect(await loadPublicRecapWith(deps, "OCTO", "client-b")).toMatchObject({
+      kind: "recap",
+      login: "Octo",
+    });
+    expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
     expect(recorded).toEqual([]);
+  });
+
+  test("a fresh stored recap of a hidden account is hidden, by its stored id", async () => {
+    await seed();
+    hidden = true;
+    expect(await loadPublicRecapWith(deps, "octo", "c")).toEqual({ kind: "hidden", login: "Octo" });
+    expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
+  });
+
+  test("a stale stored recap asks GitHub who the login is first", async () => {
+    await seed();
+    clock += 13 * HOUR;
+    lookups = 20;
+    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect(calls).toEqual({ lookup: 1, year: 0, previous: 0 });
   });
 
   test("a stale recap is fetched again; last year is kept while its span is current", async () => {
@@ -191,14 +215,14 @@ describe("loadPublicRecapWith", () => {
     await seed();
     clock += 13 * HOUR;
     expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
-    expect(calls).toEqual({ year: 1, previous: 0 });
+    expect(calls).toEqual({ lookup: 1, year: 1, previous: 0 });
   });
 
   test("during the year, a lagging last year is fetched again up to today's span end", async () => {
     await seed();
     clock += 13 * HOUR;
     expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
-    expect(calls).toEqual({ year: 1, previous: 1 });
+    expect(calls).toEqual({ lookup: 1, year: 1, previous: 1 });
     expect(row?.previous?.span.through).toBe("2025-11-12");
   });
 
@@ -206,7 +230,7 @@ describe("loadPublicRecapWith", () => {
     await seed();
     clock = Date.parse("2027-01-05T00:00:00Z");
     expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
-    expect(calls).toEqual({ year: 1, previous: 0 });
+    expect(calls).toEqual({ lookup: 1, year: 1, previous: 0 });
     expect(row?.previous?.span.through).toBe("2025-11-11");
   });
 

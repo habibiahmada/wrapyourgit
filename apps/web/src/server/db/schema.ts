@@ -103,17 +103,22 @@ export const recapShares = pgTable(
  * keyed by GitHub's numeric id because logins can be renamed. `data` is already the public
  * projection. A row can exist before its first recap: it also holds the fetch claim.
  */
-export const publicRecaps = pgTable("public_recaps", {
-  githubId: bigint("github_id", { mode: "number" }).primaryKey(),
-  login: text("login").notNull(),
-  data: jsonb("data").$type<RecapData>(),
-  schemaVersion: integer("schema_version"),
-  /** Last year's raw activity for the comparison: fetched once per account and kept. */
-  previous: jsonb("previous").$type<PreviousYearActivity>(),
-  fetchedAt: timestamp("fetched_at", { withTimezone: true }),
-  /** Set while one request fetches this account; others wait for it instead of fetching too. */
-  fetchingSince: timestamp("fetching_since", { withTimezone: true }),
-});
+export const publicRecaps = pgTable(
+  "public_recaps",
+  {
+    githubId: bigint("github_id", { mode: "number" }).primaryKey(),
+    login: text("login").notNull(),
+    data: jsonb("data").$type<RecapData>(),
+    schemaVersion: integer("schema_version"),
+    /** Last year's raw activity for the comparison: fetched once per account and kept. */
+    previous: jsonb("previous").$type<PreviousYearActivity>(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }),
+    /** Set while one request fetches this account; others wait for it instead of fetching too. */
+    fetchingSince: timestamp("fetching_since", { withTimezone: true }),
+  },
+  // Visits look a recap up by login before asking GitHub; not unique, since logins get reused.
+  (table) => [index("public_recaps_login_lower").on(sql`lower(${table.login})`)],
+);
 
 /** Accounts whose owner chose "Hide my public recap". By id, so a renamed login stays hidden. */
 export const hiddenAccounts = pgTable("hidden_accounts", {

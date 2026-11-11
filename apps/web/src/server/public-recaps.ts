@@ -46,6 +46,8 @@ interface StoredRow {
 export interface PublicStore {
   isHidden(githubId: number): Promise<boolean>;
   read(githubId: number): Promise<StoredRow | null>;
+  /** The most recently fetched row whose login matches, ignoring case. */
+  readByLogin(login: string): Promise<(StoredRow & { githubId: number }) | null>;
   /** Fetches this client started since `since`. */
   countLookups(client: string, since: Date): Promise<number>;
   recordLookup(client: string): Promise<void>;
@@ -85,6 +87,14 @@ export async function loadPublicRecapWith(
   const { store } = deps;
   let login = requested;
   try {
+    // A fresh recap stored under this login needs no GitHub call: it saves a point per view and
+    // keeps cached pages working if the token expires. Hidden is checked by the stored id.
+    const cached = usable(await store.readByLogin(requested));
+    if (cached && isFresh(cached.fetchedAt, deps.now())) {
+      if (await store.isHidden(cached.githubId)) return { kind: "hidden", login: cached.login };
+      return { kind: "recap", login: cached.login, data: cached.data };
+    }
+
     const account = await deps.lookup(requested);
     if (account.kind === "missing") return { kind: "missing", login };
     if (account.kind === "organization") return { kind: "organization", login: account.login };
@@ -125,7 +135,9 @@ export async function loadPublicRecapWith(
   }
 }
 
-function usable(row: StoredRow | null): (StoredRow & { data: RecapData; fetchedAt: Date }) | null {
+function usable<Row extends StoredRow>(
+  row: Row | null,
+): (Row & { data: RecapData; fetchedAt: Date }) | null {
   if (!row?.data || !row.fetchedAt || row.schemaVersion !== SCHEMA_VERSION) return null;
   return { ...row, data: row.data, fetchedAt: row.fetchedAt };
 }
@@ -225,6 +237,16 @@ const dbStore: PublicStore = {
       .select(storedColumns)
       .from(publicRecaps)
       .where(eq(publicRecaps.githubId, githubId));
+    return row ?? null;
+  },
+
+  async readByLogin(login) {
+    const [row] = await db
+      .select({ ...storedColumns, githubId: publicRecaps.githubId })
+      .from(publicRecaps)
+      .where(eq(sql`lower(${publicRecaps.login})`, login.toLowerCase()))
+      .orderBy(sql`${publicRecaps.fetchedAt} desc nulls last`)
+      .limit(1);
     return row ?? null;
   },
 
