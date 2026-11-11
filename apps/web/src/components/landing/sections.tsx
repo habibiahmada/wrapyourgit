@@ -255,7 +255,7 @@ const KEEP: { title: string; body: string }[] = [
   { title: "One PDF", body: "The same slides in a single file, for keeping or printing." },
   {
     title: "A public page",
-    body: `Off until you publish it. Then your ${EDITION_YEAR} lives at /u/your-login, with private repository names removed.`,
+    body: "Every GitHub username has one at /username, built from public activity only. Private repository names never appear, and Settings has a switch to hide yours.",
   },
   {
     title: "An MP4 video",
@@ -330,7 +330,7 @@ const PRIVACY = [
   {
     term: "What goes public",
     detail:
-      "Nothing, until you publish. A published recap drops private repository names, your timezone and the hours you commit.",
+      "A recap of your public activity at /your-username, the same activity your GitHub profile shows. It leaves out private repository names, your timezone and the hours you commit. You can hide it in Settings.",
   },
   {
     term: "How to leave",
@@ -413,8 +413,12 @@ export const FAQ = [
     a: "Yes. At the end of your story, and on your dashboard, you can make an MP4 in four shapes, every stop as a PNG, all of them in a ZIP, or one PDF. They are made in your browser, so keep the tab open while a video renders.",
   },
   {
+    q: "Can anyone open a recap of my username?",
+    a: "Yes. Like your GitHub profile, a recap of your public activity is open to anyone at /your-username. It never names private repositories. To hide it, sign in and turn on Hide my public recap in Settings.",
+  },
+  {
     q: "How do I delete my data?",
-    a: "Sign in, open Settings and choose Delete my data. It removes your recap and account and revokes WrapYourGit's access to GitHub.",
+    a: "Sign in, open Settings and choose Delete my data. It removes your recap and account, hides your public recap and revokes WrapYourGit's access to GitHub.",
   },
 ];
 

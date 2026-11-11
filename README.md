@@ -62,7 +62,8 @@ contributions, streaks, the languages you lived in, the projects you built, and 
 - **Numbers you can trust.** Every metric has a written definition and a GitHub source in [metrics.md](docs/analytics/metrics.md). Your 2026 total matches the "contributions in 2026" on your profile. When GitHub doesn't provide something, the recap says _unavailable_ instead of showing a misleading 0, and estimates are marked with "~".
 - **A story, not a dashboard.** Your year becomes a city with one building per day, and the camera flies through it stop by stop to a soundtrack: your busiest day, your rhythm, your languages, a comparison with last year, and a letter from Cell that reads your year the way a friend would. A quiet year is told it counts; a relentless one is told to rest.
 - **Your private work counts.** Contributions to private repositories, yours and your organisations', are in your total. Your public page and its card never name them; your own story and downloads show the names only if you choose to, and you can change that in Settings.
-- **Read-only, and yours to delete.** Signing in asks GitHub for no repository permissions, the code is never read, and "Delete my data" removes everything and revokes access.
+- **Anyone's year, by username.** Type a GitHub username and its public recap plays, read with the server's own read-only token. Signing in adds your private contribution counts to your own.
+- **Read-only, and yours to delete.** Signing in asks GitHub for no repository permissions, the code is never read, and "Delete my data" removes everything, hides your public recap and revokes access.
 
 <p align="right"><a href="#readme-top">back to top</a></p>
 
@@ -118,7 +119,7 @@ The climax of the story names your archetype, with the facts that earned it. You
 | 🎬 **The story**     | Plays in your browser with its own soundtrack, stop by stop.                                                               |
 | 🖼️ **Slides as PNG** | One 1080 × 1350 image per stop of the story, letter pages included, or all of them in a ZIP. Rendered in your own browser. |
 | 📄 **One PDF**       | The same slides in a single file, for keeping or printing.                                                                 |
-| 🔗 **A public page** | Off until you publish it. Then your year lives at `/u/<your-login>`, with private repository names removed.                |
+| 🔗 **A public page** | Every GitHub username has one at `/<username>`, built from public activity only. You can hide yours in Settings.           |
 | 🪪 **A share card**  | A 1200 × 630 image for social posts, also used as the page's preview.                                                      |
 | 🎞️ **An MP4 video**  | In 9:16, 4:5, 1:1 and 16:9, with the soundtrack, rendered in your own browser.                                             |
 
@@ -126,12 +127,12 @@ The dashboard adds a profile-style overview: your calendar, highlights, language
 
 ## Privacy by design
 
-<img align="right" src="packages/video/public/art/cutout-cell-sleep.png" alt="Cell asleep: nothing is shared until you say so" width="220">
+<img align="right" src="packages/video/public/art/cutout-cell-sleep.png" alt="Cell asleep: private work stays private" width="220">
 
 - **What it reads:** the counts GitHub keeps about your year (contributions, languages, repositories you committed to, stars, pull requests).
 - **What it never touches:** your code. Signing in asks for no repository permissions at all.
 - **Where your token lives:** on the server only, encrypted with AES-256-GCM. Never sent to your browser.
-- **What goes public:** nothing until you publish. A published recap drops private repository names, your timezone and the hours you commit.
+- **What goes public:** a recap of your public GitHub activity at `/<your-username>`, like your profile. It never shows private repository names, your timezone or the hours you commit, and Settings has a switch to hide it.
 - **How to leave:** Settings → Delete my data removes everything and revokes WrapYourGit's access.
 
 Full policy: [wrapyourgit.habibiahmada.dev/privacy](https://wrapyourgit.habibiahmada.dev/privacy).
@@ -145,11 +146,12 @@ Full policy: [wrapyourgit.habibiahmada.dev/privacy](https://wrapyourgit.habibiah
 ```mermaid
 flowchart LR
   user([You]) -->|Sign in with GitHub| web[apps/web<br>Next.js]
-  web -->|your token, server only| gh[packages/github<br>GraphQL queries]
+  visitor([Anyone]) -->|types a username| web
+  web -->|your token, or the public token,<br>server only| gh[packages/github<br>GraphQL queries]
   gh -->|raw activity| an[packages/analytics<br>pure functions]
   an -->|validated by packages/schema| rd[(RecapData<br>Postgres)]
   rd --> player[Story in the browser<br>Remotion Player]
-  rd --> pub[Public page<br>private names removed]
+  rd --> pub[Public recap at /username<br>public activity only]
   rd --> card[Share card]
   video[packages/video<br>Remotion scenes] --> player
   video --> exports[MP4 · PNG · ZIP · PDF<br>rendered in your browser]
@@ -221,7 +223,8 @@ docs/           Product spec, metric definitions, ADRs, design, setup
 ## Roadmap
 
 - [x] Sign in with GitHub, sync, dashboard and the nine-chapter story
-- [x] Slides as PNG, ZIP and PDF; opt-in public page and share card
+- [x] Slides as PNG, ZIP and PDF; public page and share card
+- [x] A recap for any GitHub username at `/<username>`, which its owner can hide
 - [x] Comparison with last year; repositories you starred
 - [x] The story as one continuous world with a moving camera ([design](docs/superpowers/specs))
 - [x] MP4, slides and PDF rendered in your browser, in four aspect ratios

@@ -78,6 +78,8 @@ export interface BuildOptions {
   timezone: string;
   /** Sync time. Passed in so the function stays pure and testable. */
   now: Date;
+  /** "public" when the input came from public data only. Defaults to "full". */
+  scope?: "full" | "public";
 }
 
 const TOP_REPOS = 5;
@@ -85,7 +87,10 @@ const TOP_LANGUAGES = 5;
 /** Languages below this share don't count towards `distinctCount` (metrics.md). */
 const DISTINCT_LANGUAGE_MIN_SHARE = 0.01;
 
-export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildOptions): RecapData {
+export function buildRecap(
+  input: ActivityInput,
+  { year, timezone, now, scope = "full" }: BuildOptions,
+): RecapData {
   const periodStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
   const today = localDate(now, timezone);
@@ -116,6 +121,7 @@ export function buildRecap(input: ActivityInput, { year, timezone, now }: BuildO
       isFinal: today > yearEnd,
       generatedAt: now.toISOString(),
       timezone,
+      scope,
     },
     profile: {
       login: input.viewer.login,

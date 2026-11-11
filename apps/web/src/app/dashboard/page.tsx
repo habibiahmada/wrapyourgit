@@ -1,5 +1,4 @@
 import type { RecapData } from "@wyg/schema";
-import { EDITION_YEAR } from "@wyg/schema";
 import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "@wyg/video/copy";
 import { runnerUps } from "@wyg/video/present";
 import type { Metadata } from "next";
@@ -8,6 +7,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { OWNER_CARD } from "@/app/recap/end-screen";
 import { ExportPanel } from "@/app/recap/export-panel";
 import { Art } from "@/components/art";
 import { LanguageBadge } from "@/components/language-badge";
@@ -22,9 +22,9 @@ import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 import { getPrivateNamesChoice, showFilesReminder, storyData } from "@/server/privacy";
-import { getRecap, isShared } from "@/server/recaps";
+import { getRecap } from "@/server/recaps";
+import { recapPath } from "@/server/routes";
 import { nextSyncAt } from "@/server/sync-policy";
-import { setShareAction } from "./actions";
 import { YearComparison } from "./compare";
 import { InstallPrivate } from "./install-private";
 import { SyncForm } from "./sync-form";
@@ -37,7 +37,7 @@ import { SyncForm } from "./sync-form";
 /** Signed-in only: nothing here for search engines. */
 export const metadata: Metadata = { title: "Dashboard", robots: { index: false, follow: false } };
 
-export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
+export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
       <Suspense
@@ -48,7 +48,7 @@ export default function DashboardPage({ searchParams }: PageProps<"/dashboard">)
         }
       >
         <RevealTransition>
-          <Dashboard searchParams={searchParams} />
+          <Dashboard />
         </RevealTransition>
       </Suspense>
     </div>
@@ -59,22 +59,18 @@ const n = (value: number) => value.toLocaleString("en-US");
 const box = "rounded-xl border border-line bg-surface";
 const sectionTitle = "text-2xl font-bold sm:text-3xl";
 
-async function Dashboard({
-  searchParams,
-}: {
-  searchParams: PageProps<"/dashboard">["searchParams"];
-}) {
+async function Dashboard() {
   // Request-time render: the sync cooldown below depends on the current time.
   await connection();
   const user = await getCurrentUser();
   if (!user) redirect("/");
   const recap = await getRecap(user.id);
-  const retryAt = nextSyncAt(recap?.syncedAt ?? null, new Date());
-  const shared = recap ? await isShared(user.id) : false;
+  // No recap yet: the owner's own page builds it on the first visit, so that is where to go.
+  if (!recap) redirect(recapPath(user.login));
+  const retryAt = nextSyncAt(recap.syncedAt, new Date());
   // Unanswered counts as hidden: the files never name a private repository before the owner says so.
-  const choice = recap ? await getPrivateNamesChoice(user.id) : null;
+  const choice = await getPrivateNamesChoice(user.id);
   const showNames = choice ?? false;
-  const { share: shareFlag } = await searchParams;
 
   return (
     <>
@@ -82,75 +78,38 @@ async function Dashboard({
 
       <PageTransition>
         <main id="main" className="flex flex-1 flex-col">
-          {recap ? (
-            <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[18rem_1fr]">
-              <Profile
-                data={recap.data}
-                avatarUrl={user.avatarUrl}
-                login={user.login}
-                syncedAt={recap.syncedAt}
-                retryAt={retryAt}
+          <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[18rem_1fr]">
+            <Profile
+              data={recap.data}
+              avatarUrl={user.avatarUrl}
+              login={user.login}
+              syncedAt={recap.syncedAt}
+              retryAt={retryAt}
+            />
+            <div className="flex min-w-0 flex-col gap-10">
+              <Overview data={recap.data} />
+              <Highlights data={recap.data} />
+              <StarredSection data={recap.data} />
+              <section aria-labelledby="compare-title">
+                <h2 id="compare-title" className={sectionTitle}>
+                  {recap.data.meta.year} vs {recap.data.meta.year - 1}
+                </h2>
+                <p className="mt-2 mb-6 max-w-2xl text-muted">
+                  The same stretch of both years, side by side, so the comparison is fair while{" "}
+                  {recap.data.meta.year} is still running.
+                </p>
+                <YearComparison data={recap.data} />
+              </section>
+              <DownloadSection
+                data={storyData(recap.data, showNames)}
+                privateNames={showFilesReminder(choice, recap.data)}
               />
-              <div className="flex min-w-0 flex-col gap-10">
-                <Overview data={recap.data} />
-                <Highlights data={recap.data} />
-                <StarredSection data={recap.data} />
-                <section aria-labelledby="compare-title">
-                  <h2 id="compare-title" className={sectionTitle}>
-                    {recap.data.meta.year} vs {recap.data.meta.year - 1}
-                  </h2>
-                  <p className="mt-2 mb-6 max-w-2xl text-muted">
-                    The same stretch of both years, side by side, so the comparison is fair while{" "}
-                    {recap.data.meta.year} is still running.
-                  </p>
-                  <YearComparison data={recap.data} />
-                </section>
-                <DownloadSection
-                  data={storyData(recap.data, showNames)}
-                  privateNames={showFilesReminder(choice, recap.data)}
-                />
-                <ShareSection
-                  login={user.login}
-                  shared={shared}
-                  syncedAt={recap.syncedAt}
-                  stale={shareFlag === "stale"}
-                />
-              </div>
             </div>
-          ) : (
-            <EmptyState />
-          )}
-          {recap && <InstallPrivate />}
+          </div>
+          <InstallPrivate />
         </main>
       </PageTransition>
     </>
-  );
-}
-
-function EmptyState() {
-  return (
-    <section className="flex-1 px-4 py-16 sm:px-8">
-      <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
-        <div className="max-w-2xl">
-          <h1 className="text-5xl leading-[1.02] font-bold tracking-tight sm:text-6xl">
-            Cell is ready when you are.
-          </h1>
-          <p className="mt-6 text-lg text-muted sm:text-xl">
-            Build your {EDITION_YEAR} recap from your GitHub activity. WrapYourGit reads your
-            contribution counts, never your code. It takes about 20 seconds.
-          </p>
-          <div className="mt-10">
-            <SyncForm label={`Build my ${EDITION_YEAR} recap`} retryAt={null} />
-          </div>
-        </div>
-        <Art
-          id="cutout-cell-sleep"
-          alt="Cell asleep, waiting for your first recap"
-          priority
-          className="h-auto w-full"
-        />
-      </div>
-    </section>
   );
 }
 
@@ -184,7 +143,11 @@ function Profile({
         {profile.name && <p className="text-2xl font-bold">{profile.name}</p>}
         <p className="text-xl text-muted">@{login}</p>
       </div>
-      <Link href="/recap" transitionTypes={["nav-forward"]} className={`${button.primary} w-full`}>
+      <Link
+        href={recapPath(login)}
+        transitionTypes={["nav-forward"]}
+        className={`${button.primary} w-full`}
+      >
         Play your story
       </Link>
       <div>
@@ -430,69 +393,7 @@ function DownloadSection({ data, privateNames }: { data: RecapData; privateNames
         {privateNames ? "" : " Private repositories are never named."}
       </p>
       <div className="on-light rounded-xl border border-line bg-paper p-5 text-ink sm:p-8">
-        <ExportPanel data={data} privateNames={privateNames} card />
-      </div>
-    </section>
-  );
-}
-
-/**
- * Publishing is opt-in. The public page and the PNG card show the public projection: counts
- * only, private repositories never named.
- */
-function ShareSection({
-  login,
-  shared,
-  syncedAt,
-  stale,
-}: {
-  login: string;
-  shared: boolean;
-  syncedAt: Date;
-  stale: boolean;
-}) {
-  const path = `/u/${login}`;
-  const synced = syncedAt.toLocaleString("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-  });
-  return (
-    <section aria-labelledby="share-title" className={`p-6 ${box}`}>
-      <h2 id="share-title" className={sectionTitle}>
-        Share your recap
-      </h2>
-      <p className="mt-3 max-w-2xl text-muted">
-        {shared
-          ? "Your recap page is public. Anyone with the link can see your counts and play your story. Private repositories are never named."
-          : "Publish a page anyone can open, with your counts and your story. Private repositories are never named. It stays off until you turn it on."}{" "}
-        It shows your data as of your last sync ({synced} UTC). If you make a repository private,
-        sync again so the page stops naming it.
-      </p>
-      {stale && (
-        <p role="alert" className="mt-3 font-semibold text-[#d29922]">
-          Sync first: publishing needs data from the last 24 hours, so private repositories are up
-          to date.
-        </p>
-      )}
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <form action={setShareAction}>
-          <input type="hidden" name="share" value={shared ? "off" : "on"} />
-          <button type="submit" className={shared ? button.secondary : button.primary}>
-            {shared ? "Stop sharing" : "Publish my recap page"}
-          </button>
-        </form>
-        {shared && (
-          <a
-            href={path}
-            className="inline-flex min-h-11 items-center font-semibold text-blue hover:underline"
-          >
-            Open {path}
-          </a>
-        )}
-        <a href="/api/card" download className={button.quiet}>
-          Download share card (PNG)
-        </a>
+        <ExportPanel data={data} privateNames={privateNames} card={OWNER_CARD} />
       </div>
     </section>
   );

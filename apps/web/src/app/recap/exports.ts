@@ -66,8 +66,15 @@ const defaultEngine: ExportEngine = {
     (await renderStillOnWeb({ ...options, licenseKey: LICENSE_KEY })).blob({ format: "png" }),
 };
 
-const composition = (data: RecapData, format: ExportFormat): WorldComposition => ({
-  ...worldExportComposition(data, format),
+/** `letter: false` leaves the letter's pages out, as a visitor's story does; it is on by default. */
+export type LetterOption = { letter?: boolean };
+
+const composition = (
+  data: RecapData,
+  format: ExportFormat,
+  { letter }: LetterOption,
+): WorldComposition => ({
+  ...worldExportComposition(data, format, { letter }),
   component: WorldStory,
 });
 
@@ -127,10 +134,14 @@ export async function exportSupport(overrides: Partial<ExportEngine> = {}): Prom
 export function renderMp4(
   data: RecapData,
   format: ExportFormat,
-  { onProgress, signal }: { onProgress: (p: number) => void; signal: AbortSignal },
+  {
+    onProgress,
+    signal,
+    letter,
+  }: { onProgress: (p: number) => void; signal: AbortSignal } & LetterOption,
   overrides: Partial<ExportEngine> = {},
 ): Promise<Blob> {
-  const world = composition(data, format);
+  const world = composition(data, format, { letter });
   return cancellable(signal, () =>
     engineWith(overrides).renderMedia({
       composition: world,
@@ -159,13 +170,16 @@ async function cancellable<T>(signal: AbortSignal, run: () => Promise<T>): Promi
 /** One PNG per stop, one at a time: the web renderer is single-threaded and shares the tab. */
 export async function renderSlides(
   data: RecapData,
-  options: { onProgress: (done: number, total: number) => void; signal: AbortSignal },
+  options: {
+    onProgress: (done: number, total: number) => void;
+    signal: AbortSignal;
+  } & LetterOption,
   overrides: Partial<ExportEngine> = {},
 ): Promise<Slide[]> {
   const engine = engineWith(overrides);
-  const { onProgress, signal } = options;
-  const world = composition(data, "4x5");
-  const frames = slideFrames(data);
+  const { onProgress, signal, letter } = options;
+  const world = composition(data, "4x5", { letter });
+  const frames = slideFrames(data, { letter });
   const slides: Slide[] = [];
   onProgress(0, frames.length);
   for (const [i, { stopId, frame }] of frames.entries()) {
@@ -196,7 +210,7 @@ export async function zipSlides(slides: Slide[]): Promise<Blob> {
   return blobOf(zipSync(files, { level: 0 }), "application/zip");
 }
 
-/** The whole story, letter included: one 4:5 page per slide. */
+/** The whole story as rendered (letter included unless left out): one 4:5 page per slide. */
 export async function pdfSlides(slides: Slide[], { title }: { title: string }): Promise<Blob> {
   const { width, height } = VIDEO_FORMATS["4x5"];
   const pdf = await PDFDocument.create();

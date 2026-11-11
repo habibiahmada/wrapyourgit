@@ -3,6 +3,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { setPrivateNamesAction } from "@/app/recap/actions";
+import { setPublicRecapHiddenAction } from "@/app/settings/actions";
 import { LoadingCell } from "@/components/loading-cell";
 import {
   FallbackTransition,
@@ -13,6 +14,8 @@ import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 import { getPrivateNamesChoice } from "@/server/privacy";
+import { isHidden } from "@/server/public-recaps";
+import { recapPath } from "@/server/routes";
 
 export const metadata: Metadata = { title: "Settings", robots: { index: false, follow: false } };
 
@@ -45,7 +48,11 @@ async function Settings({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/");
-  const choice = await getPrivateNamesChoice(user.id);
+  const [choice, hidden] = await Promise.all([
+    getPrivateNamesChoice(user.id),
+    isHidden(user.githubId),
+  ]);
+  const publicPath = recapPath(user.login);
   const { delete: deleteFlag } = await searchParams;
   const unconfirmed = deleteFlag === "unconfirmed";
 
@@ -78,6 +85,56 @@ async function Settings({
                 </p>
               </div>
             </div>
+          </section>
+
+          <section aria-labelledby="public-title">
+            <h2 id="public-title" className="border-b border-line pb-2 text-xl font-bold">
+              Public recap
+            </h2>
+            <p className="mt-4 max-w-2xl text-muted">
+              Every GitHub username has a recap built from its public activity. Yours is at{" "}
+              <a href={publicPath} className="font-semibold text-fg underline underline-offset-4">
+                {publicPath}
+              </a>
+              . If you hide it, visitors see a note saying so, and the stored copy is deleted.
+            </p>
+            <form action={setPublicRecapHiddenAction} className="mt-5">
+              <button
+                type="submit"
+                role="switch"
+                aria-checked={hidden}
+                aria-describedby="public-status"
+                name="hide"
+                value={hidden ? "no" : "yes"}
+                className="group inline-flex min-h-11 items-center gap-3 rounded-[var(--radius-control)] px-1 font-semibold"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border motion-safe:transition-colors ${
+                    hidden
+                      ? "border-green bg-green-button group-hover:bg-[#2ea043] group-active:bg-[#1f7a30]"
+                      : "border-muted bg-overlay group-hover:bg-line group-active:bg-[#282e33]"
+                  }`}
+                >
+                  <span
+                    className={`absolute size-4 rounded-full bg-fg motion-safe:transition-transform ${
+                      hidden ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </span>
+                Hide my public recap
+                <span aria-hidden="true" className="text-muted">
+                  {hidden ? "On" : "Off"}
+                </span>
+              </button>
+            </form>
+            {/* Read with the switch: after the switch is pressed the page re-renders, and a status
+                region that arrives with it is not announced reliably on its own. */}
+            <p id="public-status" role="status" className="mt-2 max-w-2xl text-muted">
+              {hidden
+                ? `Hidden. Visitors read "@${user.login} has hidden their recap".`
+                : "Public. Your private repositories are never named there."}
+            </p>
           </section>
 
           <section aria-labelledby="private-title">

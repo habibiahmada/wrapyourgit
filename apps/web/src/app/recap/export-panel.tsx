@@ -3,6 +3,7 @@
 import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import type { ExportFormat } from "@wyg/video/world";
 import { useEffect, useId, useReducer, useRef, useState } from "react";
+import type { ShareCard } from "./end-screen";
 import { type ExportRunner, exportRunner } from "./export-runner";
 import { announcement, type ExportJob, exportReducer, IDLE, NOUN, percent } from "./export-state";
 import type { ExportSupport } from "./exports";
@@ -24,22 +25,25 @@ const KEEP_OPEN: Record<ExportJob, string> = {
 const ratio = (format: ExportFormat) => format.replace("x", ":");
 
 /**
- * The files of the story, made in this browser. `data` must already be the owner's story
- * projection (`storyData`, ADR-0017): everything here leaves the site, so private names are in it
- * only when the owner chose to show them. The renderer is imported on mount, so it never weighs
- * on the player's first load.
+ * The files of the story, made in this browser. `data` must already be a projection: the owner's
+ * story (`storyData`, ADR-0017) or a visitor's (`publicWorld`). Everything here leaves the site, so
+ * private names are in it only when the owner chose to show them. The renderer is imported on
+ * mount, so it never weighs on the player's first load.
  */
 export function ExportPanel({
   data,
   privateNames,
   card,
+  letter = true,
   onBusyChange,
 }: {
   data: RecapData;
   /** True when `data` names a private repository: a reminder line then sits above the buttons. */
   privateNames: boolean;
-  /** Whether `/api/card` can answer: it needs a signed-in user with a recap. */
-  card: boolean;
+  /** Where the share card downloads from (`shareCardFor`), or why there is none. */
+  card: ShareCard;
+  /** False leaves the letter's pages out of every file, as a visitor's story does. */
+  letter?: boolean;
   onBusyChange?: (busy: boolean) => void;
 }) {
   const [state, dispatch] = useReducer(exportReducer, IDLE);
@@ -62,7 +66,11 @@ export function ExportPanel({
     let live = true;
     import("./exports")
       .then((loaded) => {
-        if (live) runner.current = exportRunner(loaded, () => dataRef.current, dispatch);
+        if (live) {
+          runner.current = exportRunner(loaded, () => dataRef.current, dispatch, console.warn, {
+            letter,
+          });
+        }
         return loaded.exportSupport();
       })
       .then((result) => live && setSupport(result))
@@ -73,7 +81,7 @@ export function ExportPanel({
       runner.current?.dispose();
       runner.current = null;
     };
-  }, []);
+  }, [letter]);
 
   const busy = state.status === "rendering";
   useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);
@@ -180,15 +188,15 @@ export function ExportPanel({
         >
           PDF
         </button>
-        {card && !busy ? (
-          <a href="/api/card" download className={PAPER_BUTTON.secondary}>
+        {"href" in card && !busy ? (
+          <a href={card.href} download={card.filename ?? true} className={PAPER_BUTTON.secondary}>
             Share card (PNG)
           </a>
         ) : (
           <button
             type="button"
             disabled
-            aria-describedby={card ? undefined : `${ids}-card`}
+            aria-describedby={"reason" in card ? `${ids}-card` : undefined}
             className={PAPER_BUTTON.secondary}
           >
             Share card (PNG)
@@ -201,9 +209,9 @@ export function ExportPanel({
           {reason}
         </p>
       )}
-      {!card && (
+      {"reason" in card && (
         <p id={`${ids}-card`} className="text-base text-ink-soft">
-          The share card is made from your saved recap. Sign in and build it to get one.
+          {card.reason}
         </p>
       )}
 

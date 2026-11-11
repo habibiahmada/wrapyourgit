@@ -25,13 +25,16 @@ function fakeEngine() {
   const renders: { done: Deferred<Blob>; signal: AbortSignal; onProgress: (p: number) => void }[] =
     [];
   const downloads: string[] = [];
+  const letters: (boolean | undefined)[] = [];
   const engine: ExportEngineModule = {
-    renderMp4: (_data, _format, { onProgress, signal }) => {
+    renderMp4: (_data, _format, { onProgress, signal, letter }) => {
+      letters.push(letter);
       const done = deferred<Blob>();
       renders.push({ done, signal, onProgress });
       return done.promise;
     },
-    renderSlides: async (_data, { onProgress }) => {
+    renderSlides: async (_data, { onProgress, letter }) => {
+      letters.push(letter);
       onProgress(1, 2);
       onProgress(2, 2);
       return [{ name: "a.png", blob: blob("png") }];
@@ -40,10 +43,10 @@ function fakeEngine() {
     pdfSlides: async () => blob("pdf"),
     download: (_blob, name) => downloads.push(name),
   };
-  return { engine, renders, downloads };
+  return { engine, renders, downloads, letters };
 }
 
-function setup() {
+function setup(options?: { letter?: boolean }) {
   const fake = fakeEngine();
   const actions: ExportAction[] = [];
   const warnings: unknown[] = [];
@@ -54,6 +57,7 @@ function setup() {
     () => source.data,
     (a) => actions.push(a),
     (...w) => warnings.push(w),
+    options,
   );
   return { ...fake, actions, warnings, runner, source };
 }
@@ -99,6 +103,20 @@ describe("exportRunner", () => {
       { type: "progress", value: 1 },
       { type: "finish", file: expect.stringMatching(/\.zip$/) },
     ]);
+  });
+
+  test("the letter option reaches every render; left out, the renderer's default applies", async () => {
+    const bare = setup({ letter: false });
+    const mp4 = bare.runner.run("mp4", "9x16");
+    bare.renders[0]?.done.resolve(blob("mp4"));
+    await mp4;
+    await bare.runner.run("zip", "9x16");
+    await bare.runner.run("pdf", "9x16");
+    expect(bare.letters).toEqual([false, false, false]);
+
+    const full = setup();
+    await full.runner.run("zip", "9x16");
+    expect(full.letters).toEqual([undefined]);
   });
 
   test("a second run while one is going is ignored, even before any re-render", async () => {

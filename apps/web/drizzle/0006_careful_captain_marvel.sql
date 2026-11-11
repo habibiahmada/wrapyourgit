@@ -1,0 +1,1 @@
+CREATE INDEX "public_recaps_login_lower" ON "public_recaps" USING btree (lower("login"));

@@ -2,14 +2,14 @@
 
 > WrapYourGit turns a developer's GitHub activity for one year into an animated, shareable story: contributions, streaks, languages, top repositories, pull requests and reviews, a developer archetype, a comparison with last year, and a letter from Cell, the mascot. It is free, signs in with GitHub read-only, never reads source code, and every number on screen has a written definition. The current edition is 2026.
 
-Sign in at https://wrapyourgit.habibiahmada.dev with a GitHub account. The story is built from the counts GitHub keeps about your activity; before 31 December it says "so far" and can be synced again. Private repositories count toward totals but are never named in anything that can be shared.
+Any GitHub username has a recap of its public activity at https://wrapyourgit.habibiahmada.dev/<username>; signing in with GitHub adds your private contribution counts to your own. The story is built from the counts GitHub keeps about your activity; before 31 December it says "so far" and can be synced again. Private repositories count toward totals but are never named in anything that can be shared.
 
 ## Pages
 
 - [Home](https://wrapyourgit.habibiahmada.dev/): what the recap contains, the nine chapters, the archetypes, what you can download, privacy facts and the FAQ
 - [Privacy policy](https://wrapyourgit.habibiahmada.dev/privacy): what is read from GitHub, what is stored, what goes public and how to delete it
 
-Shared recaps live at /u/<github-login> and exist only while their owner has chosen to publish them, so they are not listed here.
+Recaps live at /<github-username>. Every username has one unless its owner hid it, so they are not listed here; each recap page is marked noindex.
 
 ## Details
 

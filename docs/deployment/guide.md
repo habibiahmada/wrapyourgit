@@ -27,8 +27,22 @@ The template is [`.env.example`](../../.env.example). The web app reads these; s
 | `TOKEN_ENCRYPTION_KEY`                             | yes      | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts GitHub tokens at rest. **Changing it makes every stored token unreadable:** users sign in again. |
 | `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET` | yes      | From the GitHub App for that environment.                                                                                                                     |
 | `GITHUB_APP_SLUG`                                  | no       | The app's URL slug; enables the optional install for private repositories (ADR-0008).                                                                         |
+| `GITHUB_PUBLIC_TOKEN`                              | yes      | Fine-grained PAT on the machine account, **Public repositories (read-only)**. Fetches the public recap at `/<username>`; see [Public token](#public-token).   |
 
 `GITHUB_TOKEN` in `.env.example` is for local spikes only; don't set it on a server.
+
+### Public token
+
+Public recaps (anyone's recap at `/<username>`) are fetched with one server token, `GITHUB_PUBLIC_TOKEN`. It lives on **one machine account**, the single automation account GitHub allows next to a personal one. Never add a second token or account to get more quota: spreading requests over accounts breaks GitHub's terms. The app saves quota instead (12-hour cache, one fetch per account at a time, a per-client limit, and no new fetches below 300 points left).
+
+To create it, signed in as the machine account: Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
+
+- **Resource owner:** the machine account. **Repository access:** **Public repositories (read-only)**. No permissions beyond that.
+- **Expiration:** the longest allowed. Note the expiry date.
+
+It cannot see any private repository, so a public recap can never count private contributions the token's owner could see. Store it as a Production-only Vercel _Secret_ variable, like `TOKEN_ENCRYPTION_KEY`; it never reaches the browser and is never logged.
+
+**Renewal:** set a reminder two weeks before the expiry date. Regenerate the token on the machine account (Fine-grained tokens → the token → Regenerate), replace `GITHUB_PUBLIC_TOKEN` in Vercel and redeploy. When it expires, recaps fetched in the last 12 hours keep playing (they are served without a GitHub call), every other public recap page shows an error, and signed-in users' own recaps are unaffected.
 
 On Vercel, `DATABASE_URL` and the other `DATABASE_*` variables come from the Neon integration, connected to **Production only**; `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_SLUG`, `GITHUB_APP_CLIENT_SECRET` and `TOKEN_ENCRYPTION_KEY` are Production-only too. Vercel builds production only ([ADR-0018](../architecture/decisions/0018-production-only-deploys.md)): there are no preview deployments and no Neon database branches. If previews are ever turned back on, give the Neon connection Preview **together with** "Create Database Branch For Deployment: Preview", or previews would get the production database and migrate it. The two secrets are Vercel _Secret_ variables, entered by the maintainer.
 
@@ -62,7 +76,12 @@ What is set up, and how to set it up again:
    - Every push to `main` deploys production. Other branches are skipped (Settings → Build and Deployment → Ignored Build Step: "Only build production", ADR-0018).
 2. **Neon** through Vercel → Storage → Create Database → Neon: region Singapore, free plan, Neon Auth off, connected to the project with the variable prefix `DATABASE` (so the pooled string is `DATABASE_URL`).
 3. **Environment variables** as in the table and scopes above.
-4. **Rate limit:** Vercel → Firewall → Rules → "Rate limit /api and /u/ endpoints": paths starting with `/api` or `/u/`, fixed window of 60 seconds, 60 requests per IP, then **429**, published to production. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish.
+4. **Rate limit:** Vercel → Firewall → Rules → "Rate limit /api, /u/ and recap pages": fixed window of 60 seconds, 60 requests per IP, then **429**, published to production, matching any of three Request Path conditions (OR):
+   - starts with `/api`;
+   - starts with `/u/` (these redirect to `/<username>`, but `/u/<reserved name>` serves a recap itself);
+   - matches the expression `^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$`: the recap pages `/<username>` and their preview images. Each one can start a GitHub fetch held open for up to `maxDuration` (120 s), so they need the same per-IP ceiling as the API.
+
+   The expression only matches one or two path segments with no dot, so static assets (`/_next/…`, `/art/…`, `/robots.txt`, `/icon.svg`) are never limited. It also matches site pages such as `/settings` and `/privacy`, which is harmless at 60 a minute. This edge limit sits in front of the app's own one (20 new lookups per client per hour, `server/public-policy.ts`), which only counts requests that reach GitHub; if the plan's rule editor ever lacks expression matching, keep the first two conditions and rely on that in-app limit for `/<username>`. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish.
 5. **Domain:** Vercel → Domains → add `wrapyourgit.habibiahmada.dev`; Vercel shows a project-specific CNAME target. In Cloudflare (zone `habibiahmada.dev`): `CNAME wrapyourgit → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate.
 
 Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, `/lang`; `/sprites` was removed later, #63), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
@@ -186,3 +205,4 @@ From ADR-0005:
 - [ ] Database backup restored once on a scratch database.
 - [ ] Repository public and `bun scripts/github-settings.ts` run, so `main` is protected (ADR-0014).
 - [ ] Every **Not yet verified** item above confirmed and removed from this guide.
+- [ ] `GITHUB_PUBLIC_TOKEN` set in Production, and a renewal reminder set before its expiry date.

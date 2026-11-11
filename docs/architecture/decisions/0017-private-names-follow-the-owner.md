@@ -1,6 +1,6 @@
 # 0017. Private repository names follow the owner in their own story
 
-- Status: Accepted
+- Status: Accepted, amended by [0019](0019-every-username-has-a-recap.md) (rule 1: the public page)
 - Date: 2026-11-10
 - Amends: AGENTS.md rule 6 ("Private data never goes public"), [0016](0016-exports-in-the-browser.md) decision 3 (public projection for every file)
 
@@ -21,6 +21,8 @@ Two projections in `packages/analytics/src/public.ts`, scenes that draw what the
 3. **The projection is the only gate.** Scenes draw the names they are given (`repoLabel` in `packages/video/src/present.ts` does not filter), so the data passed to the composition alone decides whether a private name shows. A filter inside the scenes would turn the owner's "show" choice into a no-op. The scenes only recognise the anonymised entry (`isAnonymised`: private and named `PRIVATE_REPO_NAME`): the projects shelf labels its stack "Private repository" with its real commit count, and the letter credits "One private project" when it is the top repository. A private repository the owner chose to show keeps its real name.
 
 ### Rule 1: every public surface uses the public projection
+
+> Amended by [ADR-0019](0019-every-username-has-a-recap.md): the public page is now `/<username>`, built from a public fetch of the account rather than from the owner's recap, and visitors can export its files. The rule that every public surface renders the public projection still holds.
 
 The public page `/u/<login>`, the story played on it (the public player, which renders `toPublicRecap(data)` without the letter: `publicWorld` in `apps/web/src/app/recap/public-world.ts`), its card (`/api/card`, the PNG also offered in the owner's files) and its OG image always render `toPublicRecap(data)`, whatever the owner chose. Visitors cannot export.
 

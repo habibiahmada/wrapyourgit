@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { appUrl, githubApp, OAUTH_COOKIE, signInWithTokens, startSession } from "@/server/auth";
 import { errorSummary } from "@/server/log";
 import { exchangeCode, statesMatch } from "@/server/oauth";
+import { recapPath } from "@/server/routes";
 
 const back = (error: string) => NextResponse.redirect(new URL(`/?signin=${error}`, appUrl()));
 
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     return back("expired");
   }
 
+  let login: string;
   try {
     const tokens = await exchangeCode({
       ...githubApp(),
@@ -26,11 +28,13 @@ export async function GET(request: NextRequest) {
       redirectUri: `${appUrl()}/api/auth/callback/github`,
       codeVerifier: verifier,
     });
-    const userId = await signInWithTokens(tokens);
-    await startSession(userId);
+    const user = await signInWithTokens(tokens);
+    await startSession(user.id);
+    login = user.login;
   } catch (error) {
     console.error("GitHub sign-in failed", errorSummary(error));
     return back("failed");
   }
-  return NextResponse.redirect(new URL("/dashboard", appUrl()));
+  // Straight to your own story: the page syncs a missing or stale recap behind its loading screen.
+  return NextResponse.redirect(new URL(recapPath(login), appUrl()));
 }

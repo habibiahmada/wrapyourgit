@@ -9,7 +9,7 @@ const SCREEN = { cx: 0.52, cy: 0.68, w: 0.6, h: 0.43, tilt: 6 };
 const GREEN = palette.heat[0];
 
 export function Hello({ data, size, enter }: SceneProps) {
-  const { login, year } = helloModel(data);
+  const { login, year, scopeLine } = helloModel(data);
   const h = sceneHeight(size);
   const safe = safeArea(size);
   const head = 0.7 * Math.min(1000, h);
@@ -21,7 +21,16 @@ export function Hello({ data, size, enter }: SceneProps) {
   const sy = cy + (SCREEN.cy - 0.5) * head - rise;
   const pw = SCREEN.w * head;
   const ph = SCREEN.h * head;
-  const textY = Math.min(h - safe.bottom, cy + head / 2 + (h - cy - head / 2) * 0.5);
+  const greetSize = Math.min(70, head * 0.11);
+  // With the scope line, lift the greeting a little so both lines sit inside the safe area.
+  const lineGap = greetSize * 0.95;
+  const lineSize = greetSize * 0.55;
+  // Room under the baseline for descenders, so the line clears the footer by more than its baseline.
+  const lineDescent = lineSize * 0.3;
+  const textY = Math.min(
+    h - safe.bottom - (scopeLine ? lineGap + lineDescent : 0),
+    cy + head / 2 + (h - cy - head / 2) * 0.5,
+  );
   return (
     <AbsoluteFill style={{ backgroundColor: palette.paper }}>
       <HeadArt x={cx} y={cy - rise} size={head} />
@@ -61,11 +70,23 @@ export function Hello({ data, size, enter }: SceneProps) {
             x={500}
             y={textY}
             text={`Ready for your ${year}?`}
-            size={Math.min(70, head * 0.11)}
+            size={greetSize}
             weight={800}
             anchor="middle"
             maxWidth={900}
           />
+          {scopeLine ? (
+            <Label
+              x={500}
+              y={textY + lineGap}
+              text={scopeLine}
+              size={lineSize}
+              weight={700}
+              anchor="middle"
+              maxWidth={800}
+              fill={palette.ink}
+            />
+          ) : null}
         </g>
       </SceneSvg>
     </AbsoluteFill>

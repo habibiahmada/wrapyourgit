@@ -27,11 +27,11 @@ export function yearRange(year: number): { from: Date; to: Date } {
 }
 
 /**
- * Publishing needs a recent sync. Privacy flags are stored as of the last sync, so a repository
- * made private since then would still be named publicly until the next sync (security review M2).
+ * Where last year's comparison span ends: the same day of the year, last year, so the two years
+ * compare like for like until the edition year is over.
  */
-export const PUBLISH_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-
-export function canPublish(syncedAt: Date | null, now: Date): boolean {
-  return syncedAt !== null && now.getTime() - syncedAt.getTime() <= PUBLISH_MAX_AGE_MS;
+export function comparisonSpanEnd(year: number, now: Date): Date {
+  const spanTo = new Date(Math.min(now.getTime(), yearRange(year).to.getTime()));
+  spanTo.setUTCFullYear(year - 1);
+  return spanTo;
 }
