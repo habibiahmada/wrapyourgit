@@ -8,6 +8,7 @@ import {
   hashClient,
   isFresh,
   isRateLimited,
+  lookupSalt,
   previousIsCurrent,
   underClientLimit,
 } from "./public-policy";
@@ -67,6 +68,19 @@ describe("client key", () => {
     expect(hashClient("203.0.113.7", "salt-a")).toBe(key);
     expect(hashClient("203.0.113.7", "salt-b")).not.toBe(key);
     expect(hashClient("203.0.113.8", "salt-a")).not.toBe(key);
+  });
+
+  test("the salt is derived from the encryption key under its own label, never the key itself", () => {
+    const key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    const salt = lookupSalt(key);
+    expect(salt).toMatch(/^[0-9a-f]{64}$/);
+    expect(salt).not.toContain(key);
+    expect(lookupSalt(key)).toBe(salt);
+    expect(lookupSalt(`${key.slice(0, -1)}0`)).not.toBe(salt);
+    // HMAC-SHA256(key, "public-lookups"): a known vector, so the label can't drift silently.
+    expect(lookupSalt("k")).toBe(
+      "7a84134dd7264363b9e744268a5f8cbda111c45bbac99059646efe06eb595564",
+    );
   });
 });
 

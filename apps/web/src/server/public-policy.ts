@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { GitHubApiError } from "@wyg/github";
 import { comparisonSpanEnd } from "./sync-policy";
 
@@ -70,6 +70,14 @@ export function isRateLimited(error: unknown): boolean {
 export function firstForwardedAddress(header: string | null): string {
   const first = header?.split(",")[0]?.trim();
   return first || "unknown";
+}
+
+/**
+ * The salt for hashClient, derived from the token encryption key under its own label, so one
+ * secret doesn't serve two purposes directly and the lookup hashes reveal nothing about the key.
+ */
+export function lookupSalt(encryptionKey: string): string {
+  return createHmac("sha256", encryptionKey).update("public-lookups").digest("hex");
 }
 
 /** A salted SHA-256, so the lookup log can count per client without storing an IP address. */

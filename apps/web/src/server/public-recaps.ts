@@ -24,6 +24,7 @@ import {
   hashClient,
   isFresh,
   isRateLimited,
+  lookupSalt,
   previousIsCurrent,
   underClientLimit,
 } from "./public-policy";
@@ -298,7 +299,7 @@ export function clientKey(headers: Headers): string {
   // Behind a self-hosted proxy, the proxy must overwrite the header, or clients pick their bucket.
   return hashClient(
     firstForwardedAddress(headers.get("x-forwarded-for")),
-    requireEnv("TOKEN_ENCRYPTION_KEY"),
+    lookupSalt(requireEnv("TOKEN_ENCRYPTION_KEY")),
   );
 }
 
