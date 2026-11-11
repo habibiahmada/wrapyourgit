@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   canPublish,
+  comparisonSpanEnd,
   nextSyncAt,
   PUBLISH_MAX_AGE_MS,
   SYNC_COOLDOWN_MS,
@@ -44,5 +45,16 @@ describe("canPublish", () => {
     expect(canPublish(null, now)).toBe(false);
     expect(canPublish(new Date(now.getTime() - PUBLISH_MAX_AGE_MS), now)).toBe(true);
     expect(canPublish(new Date(now.getTime() - PUBLISH_MAX_AGE_MS - 1), now)).toBe(false);
+  });
+});
+
+describe("comparisonSpanEnd", () => {
+  test("is the same moment last year while the year runs", () => {
+    expect(comparisonSpanEnd(2026, now).toISOString()).toBe("2025-11-04T10:00:00.000Z");
+  });
+
+  test("stops at the end of last year once the year is over", () => {
+    const later = new Date("2027-02-01T00:00:00Z");
+    expect(comparisonSpanEnd(2026, later).toISOString()).toBe("2025-12-31T23:59:59.000Z");
   });
 });

@@ -27,6 +27,16 @@ export function yearRange(year: number): { from: Date; to: Date } {
 }
 
 /**
+ * Where last year's comparison span ends: the same day of the year, last year, so the two years
+ * compare like for like until the edition year is over.
+ */
+export function comparisonSpanEnd(year: number, now: Date): Date {
+  const spanTo = new Date(Math.min(now.getTime(), yearRange(year).to.getTime()));
+  spanTo.setUTCFullYear(year - 1);
+  return spanTo;
+}
+
+/**
  * Publishing needs a recent sync. Privacy flags are stored as of the last sync, so a repository
  * made private since then would still be named publicly until the next sync (security review M2).
  */
