@@ -41,5 +41,7 @@ describe("shareCardFor", () => {
   test("an account named like a site route has no preview image to download", () => {
     const card = shareCardFor("public", withLogin("settings"));
     expect("href" in card).toBe(false);
+    // The panel shows this text under the disabled button.
+    expect(card).toEqual({ reason: "There is no share card for this name yet." });
   });
 });

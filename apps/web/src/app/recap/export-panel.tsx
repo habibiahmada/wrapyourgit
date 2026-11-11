@@ -27,8 +27,8 @@ const ratio = (format: ExportFormat) => format.replace("x", ":");
 /**
  * The files of the story, made in this browser. `data` must already be a projection: the owner's
  * story (`storyData`, ADR-0017) or a visitor's (`publicWorld`). Everything here leaves the site, so
- * private names are in it only when the owner chose to show them. The renderer is imported on mount, so it never weighs
- * on the player's first load.
+ * private names are in it only when the owner chose to show them. The renderer is imported on
+ * mount, so it never weighs on the player's first load.
  */
 export function ExportPanel({
   data,

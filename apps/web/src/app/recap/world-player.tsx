@@ -51,7 +51,7 @@ const CONTROL_BAND = "3.75rem";
  * The way on at the rested closing stop. Paper like the other controls: the closing sky is dark,
  * so a paper fill is what stands out there; the words, not an icon, say where it goes.
  */
-const CUE = `inline-flex h-11 cursor-pointer items-center rounded-md border border-ink/25 bg-paper/90 px-4 font-semibold text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
+const CUE = `inline-flex min-h-11 max-w-[calc(100%-1.5rem)] cursor-pointer items-center rounded-md border border-ink/25 bg-paper/90 px-4 py-2 text-left font-semibold text-ink [overflow-wrap:anywhere] hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 const CONTROL = `grid size-11 cursor-pointer place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 /** Close while a render runs: faded, no hover tint; the base layer's not-allowed cursor shows. */
 const CONTROL_OFF = `grid size-11 place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink opacity-50 ${CONTROL_RING}`;
@@ -386,11 +386,11 @@ export function WorldPlayer(props: WorldPlayerProps) {
                   id="keep-your-year"
                   ref={endHeading}
                   tabIndex={-1}
-                  className="text-3xl font-bold tracking-tight sm:text-4xl"
+                  className="text-3xl font-bold tracking-tight [overflow-wrap:anywhere] sm:text-4xl"
                 >
                   {keepLabel}
                 </h2>
-                <p className="text-lg text-ink-soft">
+                <p className="text-lg text-ink-soft [overflow-wrap:anywhere]">
                   {owner ? (
                     <>
                       Your story as files to keep and post, made in this browser.
