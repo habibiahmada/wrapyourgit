@@ -8,10 +8,10 @@ import { LoadingCell } from "@/components/loading-cell";
  * shell, shown only until the request's name is read.
  */
 export function LoadingScreen({ login }: { login?: string }) {
-  const whose = login ? `@${login}'s` : "this";
+  const label = login ? `Reading @${login}'s ${EDITION_YEAR} on GitHub…` : "Opening this recap…";
   return (
     <main id="main" className="flex flex-1 flex-col">
-      <LoadingCell label={`Reading ${whose} ${EDITION_YEAR} on GitHub…`} />
+      <LoadingCell label={label} />
     </main>
   );
 }

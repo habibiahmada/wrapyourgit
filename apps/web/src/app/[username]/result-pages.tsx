@@ -152,7 +152,7 @@ export function OwnerErrorPage({ login, building }: { login: string; building: b
       }
     >
       {building
-        ? "Another tab started it a moment ago. Try again in a minute."
+        ? "A sync of your account is already running. Try again in a minute."
         : "Something went wrong while asking GitHub for your activity. Nothing was saved."}
     </ResultPage>
   );
