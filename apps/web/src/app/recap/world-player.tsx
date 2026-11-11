@@ -406,6 +406,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
                   data={data}
                   privateNames={privateNames}
                   card={card}
+                  letter={letter}
                   onBusyChange={setBusy}
                 />
               )}

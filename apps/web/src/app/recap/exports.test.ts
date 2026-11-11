@@ -149,6 +149,16 @@ describe("renderSlides", () => {
     expect(progress.at(-1)).toEqual([frames.length, frames.length]);
   });
 
+  test("without the letter: no letter slides", async () => {
+    const out = await renderSlides(
+      sampleRecap,
+      { onProgress: () => {}, signal: new AbortController().signal, letter: false },
+      { renderStill: async () => png() },
+    );
+    expect(out).toHaveLength(slideFrames(sampleRecap, { letter: false }).length);
+    expect(out.some((slide) => slide.name.includes("-letter"))).toBe(false);
+  });
+
   test("stops between slides and rejects with an AbortError when the signal aborts", async () => {
     const controller = new AbortController();
     let rendered = 0;
@@ -206,6 +216,24 @@ describe("renderMp4", () => {
     expect(options?.container).toBe("mp4");
     expect(options?.signal).toBe(signal);
     expect(progress).toEqual([0.5]);
+  });
+
+  test("without the letter: the composition and props leave it out", async () => {
+    const seen: Parameters<ExportEngine["renderMedia"]>[0][] = [];
+    await renderMp4(
+      sampleRecap,
+      "9x16",
+      { onProgress: () => {}, signal: new AbortController().signal, letter: false },
+      {
+        renderMedia: async (options) => {
+          seen.push(options);
+          return png();
+        },
+      },
+    );
+    const expected = worldExportComposition(sampleRecap, "9x16", { letter: false });
+    expect(seen[0]?.composition.durationInFrames).toBe(expected.durationInFrames);
+    expect(seen[0]?.inputProps).toEqual({ data: sampleRecap, mode: "video", letter: false });
   });
 
   test("a renderer that fails after cancel rejects with an AbortError", async () => {

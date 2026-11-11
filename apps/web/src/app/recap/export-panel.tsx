@@ -34,6 +34,7 @@ export function ExportPanel({
   data,
   privateNames,
   card,
+  letter = true,
   onBusyChange,
 }: {
   data: RecapData;
@@ -41,6 +42,8 @@ export function ExportPanel({
   privateNames: boolean;
   /** Where the share card downloads from (`shareCardFor`), or why there is none. */
   card: ShareCard;
+  /** False leaves the letter's pages out of every file, as a visitor's story does. */
+  letter?: boolean;
   onBusyChange?: (busy: boolean) => void;
 }) {
   const [state, dispatch] = useReducer(exportReducer, IDLE);
@@ -63,7 +66,11 @@ export function ExportPanel({
     let live = true;
     import("./exports")
       .then((loaded) => {
-        if (live) runner.current = exportRunner(loaded, () => dataRef.current, dispatch);
+        if (live) {
+          runner.current = exportRunner(loaded, () => dataRef.current, dispatch, console.warn, {
+            letter,
+          });
+        }
         return loaded.exportSupport();
       })
       .then((result) => live && setSupport(result))
@@ -74,7 +81,7 @@ export function ExportPanel({
       runner.current?.dispose();
       runner.current = null;
     };
-  }, []);
+  }, [letter]);
 
   const busy = state.status === "rendering";
   useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);

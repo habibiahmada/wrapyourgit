@@ -1,6 +1,7 @@
 import type { RecapData } from "@wyg/schema";
 import { type ExportFormat, exportFileName } from "@wyg/video/world";
 import type { ExportAction, ExportJob } from "./export-state";
+import type { LetterOption } from "./exports";
 
 /** The parts of `./exports` a run uses; a type only, so importing this never loads the renderer. */
 export type ExportEngineModule = Pick<
@@ -35,6 +36,8 @@ export function exportRunner(
   getData: () => RecapData,
   dispatch: (action: ExportAction) => void,
   warn: (...args: unknown[]) => void = console.warn,
+  /** Fixed for the runner's life: whose files these are doesn't change while the panel is up. */
+  { letter }: LetterOption = {},
 ): ExportRunner {
   let current: AbortController | null = null;
 
@@ -57,12 +60,14 @@ export function exportRunner(
       if (job === "mp4") {
         blob = await engine.renderMp4(data, format, {
           signal,
+          letter,
           onProgress: (value) => mine() && dispatch({ type: "progress", value }),
         });
         file = exportFileName("mp4", data, { format });
       } else {
         const slides = await engine.renderSlides(data, {
           signal,
+          letter,
           onProgress: (done, total) =>
             mine() &&
             dispatch({ type: "progress", value: total > 0 ? (done / total) * SLIDES_SHARE : 0 }),
