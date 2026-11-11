@@ -238,6 +238,8 @@ export async function forgetPublicRecap(githubId: number): Promise<void> {
 
 /** The per-client key for the lookup limit: a salted hash of the address, never the address. */
 export function clientKey(headers: Headers): string {
+  // On Vercel the platform sets x-forwarded-for itself, so its first address is the client's.
+  // Behind a self-hosted proxy, the proxy must overwrite the header, or clients pick their bucket.
   return hashClient(
     firstForwardedAddress(headers.get("x-forwarded-for")),
     requireEnv("TOKEN_ENCRYPTION_KEY"),
