@@ -299,10 +299,12 @@ export async function setPublicRecapHidden(
  * more, and deleting them for all clients (not only the one looking up now) is what keeps the
  * privacy page's promise: a hashed address is kept about an hour, even if it never returns.
  */
-export function staleLookups(database: Pick<PgDatabase<PgQueryResultHKT>, "delete">, now: Date) {
-  return database
-    .delete(publicLookups)
-    .where(lt(publicLookups.at, new Date(now.getTime() - CLIENT_WINDOW_MS)));
+export function staleLookups(now: Date) {
+  const cutoff = new Date(now.getTime() - CLIENT_WINDOW_MS);
+  // Run on its own, not under a client's lock. Two purges racing over the same rows would lock
+  // them in different orders and could deadlock; SKIP LOCKED means neither ever waits, and a row
+  // one skips is deleted by the other.
+  return sql`delete from ${publicLookups} where ctid in (select ctid from ${publicLookups} where ${lt(publicLookups.at, cutoff)} for update skip locked)`;
 }
 
 /** This client's lookup rows inside the window that starts at `since`. */
@@ -372,11 +374,11 @@ const dbStore: PublicStore = {
   },
 
   async admitLookup(client, now) {
+    // Every check purges, even one that records nothing, so hashes don't outlive the window just
+    // because no one new got through.
+    await db.execute(staleLookups(now));
     return db.transaction(async (tx) => {
       await tx.execute(lookupLock(client));
-      // Every check purges, even one that records nothing, so hashes don't outlive the window
-      // just because no one new got through.
-      await staleLookups(tx, now);
       // Read committed: this count sees every row committed by the lock's previous holder.
       const [row] = await recentLookups(tx, client, new Date(now.getTime() - CLIENT_WINDOW_MS));
       if (!underClientLimit(row?.count ?? 0)) return false;

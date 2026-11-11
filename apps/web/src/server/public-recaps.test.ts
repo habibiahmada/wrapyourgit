@@ -540,11 +540,14 @@ describe("loadPublicRecapWith", () => {
 });
 
 describe("staleLookups", () => {
-  test("deletes every client's rows older than the window, not only the caller's", () => {
+  test("deletes every client's rows older than the window, skipping rows another purge holds", () => {
     const now = new Date("2026-11-11T12:00:00Z");
-    const query = staleLookups(drizzle.mock(), now).toSQL();
-    // No client condition: a visitor who never comes back loses their rows too.
-    expect(query.sql).toBe('delete from "public_lookups" where "public_lookups"."at" < $1');
+    const query = new PgDialect().sqlToQuery(staleLookups(now));
+    // No client condition: a visitor who never comes back loses their rows too. SKIP LOCKED: two
+    // purges never wait on each other's rows, so they can't deadlock; the other one deletes those.
+    expect(query.sql).toBe(
+      'delete from "public_lookups" where ctid in (select ctid from "public_lookups" where "public_lookups"."at" < $1 for update skip locked)',
+    );
     expect(query.params).toEqual([new Date(now.getTime() - HOUR).toISOString()]);
   });
 });
