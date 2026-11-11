@@ -2,10 +2,11 @@ import { expect, test } from "bun:test";
 import { emptyRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity } from "../city";
+import type { StopKind } from "../stops";
 import { rideStops } from "./stops";
 import { FIRST_PLATFORM, terminus } from "./track";
 
-const KINDS = ["hello", "city", "languages", "projects", "closing"];
+const KINDS: StopKind[] = ["hello", "city", "languages", "projects", "closing"];
 
 test("the ride keeps the story's order and only the stations it can draw", () => {
   const stops = rideStops(sampleRecap, buildCity(sampleRecap), { letter: false });

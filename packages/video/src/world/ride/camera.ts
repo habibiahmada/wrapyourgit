@@ -1,0 +1,273 @@
+/*
+ * The ride's camera. Between stations it sits behind Cell and moves into the screen; in a long
+ * move it also lifts overhead or drops beside the wheels; at a station it settles on the
+ * landing's isometric angle, across the rail from the plaza. Everything is a function of the
+ * frame, so the Player, the MP4 and the slides agree.
+ */
+import { layoutForSize } from "@wyg/schema";
+import { easeInOutCubic } from "../timeline";
+import { type Frame, projectPoint, type RideCamera, type V3 } from "./project";
+import type { RideStop } from "./stops";
+import { REST_SECONDS, type RideTimeline, trainAt } from "./timeline";
+import { at, FIRST_PLATFORM, heading, PLAZA_LATERAL } from "./track";
+
+export type Look = "ahead" | "cell" | "train" | "hero";
+/**
+ * `theta` is the camera's angle round the engine from the direction of travel: 0 in front, π
+ * straight behind, positive on the left of the rail.
+ */
+export type Shot = { theta: number; radius: number; height: number; fov: number; look: Look };
+
+export const SHOTS = {
+  /** Behind Cell, into the screen. */
+  RIDE: { theta: Math.PI, radius: 4.6, height: 2.4, fov: 56, look: "ahead" },
+  /** Overhead at the isometric angle, following the train. */
+  OVER: { theta: Math.PI * 0.75, radius: 15, height: 8.7, fov: 34, look: "train" },
+  /** Low and close beside the train, wheels at eye level. */
+  SIDE: { theta: Math.PI * 0.56, radius: 5.6, height: 1.2, fov: 50, look: "train" },
+  /** The landing's angle on a station: 45 degrees round, 30 up, far away through a long lens. */
+  ISO: { theta: Math.PI * 0.75, radius: 19.5, height: 11.3, fov: 25, look: "hero" },
+  /** hello: from the front and a little to the side, Cell and the platform board in frame. */
+  HELLO: { theta: 1.0, radius: 3.2, height: 1.9, fov: 56, look: "cell" },
+} as const satisfies Record<string, Shot>;
+
+/** How far ahead of the engine a plaza's centre is. */
+export const PLAZA_AHEAD = 4.5;
+/** Where Cell sits on the engine, from its nose. */
+const CELL_SEAT = -0.35;
+const MIDDLE_MIN_SECONDS = 2.2;
+const CITY_FOV = 34;
+const CITY_MARGIN = 0.06;
+
+/** The shot in the middle of the move into stop `i`: they alternate, and a short move has none. */
+export function middleShot(i: number, moveSeconds: number): "OVER" | "SIDE" | null {
+  if (moveSeconds < MIDDLE_MIN_SECONDS) return null;
+  return i % 2 === 1 ? "OVER" : "SIDE";
+}
+
+/** A camera described the way the shots are: round a point on the rail. */
+type Pose = {
+  /** The point the camera orbits and the heading its angle is measured from. */
+  anchor: V3;
+  heading: number;
+  theta: number;
+  radius: number;
+  height: number;
+  fov: number;
+  look: V3;
+  /** 1 for the shot behind Cell, where the camera sways with the ride. */
+  ride: number;
+};
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const lerpV = (a: V3, b: V3, t: number): V3 => [
+  lerp(a[0], b[0], t),
+  lerp(a[1], b[1], t),
+  lerp(a[2], b[2], t),
+];
+const logLerp = (a: number, b: number, t: number) => Math.exp(lerp(Math.log(a), Math.log(b), t));
+
+/** The centre of a stop's hero: its plaza, or for closing the board at the buffers. */
+function heroPoint(stop: RideStop): V3 {
+  if (stop.plaza) return at(stop.s + PLAZA_AHEAD, stop.side * PLAZA_LATERAL, 3.4);
+  return at(stop.s + 3.2, 0, 2.4);
+}
+
+function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
+  switch (look) {
+    case "ahead":
+      return at(trainS + 7, 0, 1.0);
+    case "cell":
+      return at(trainS + CELL_SEAT, 0, 1.2);
+    case "train":
+      return at(trainS - 1, 0, 0.8);
+    case "hero":
+      return lerpV(at(trainS, 0, 1.2), heroPoint(stop), 0.55);
+  }
+}
+
+/** The lens widens on the narrower layouts so the train and the hero both fit. */
+function lens(fov: number, frame: Frame): number {
+  const iso = Math.max(0, Math.min(1, (56 - fov) / 31));
+  switch (layoutForSize(frame.width, frame.height)) {
+    case "portrait":
+      return fov * (1.42 + 0.5 * iso);
+    case "compact":
+      return fov * (1.15 + 0.45 * iso);
+    case "landscape":
+      return fov;
+  }
+}
+
+/** A shot taken round the train at `trainS`. `side` mirrors it across the rail. */
+function shotPose(shot: Shot, trainS: number, stop: RideStop, side: 1 | -1): Pose {
+  return {
+    anchor: at(trainS),
+    heading: heading(trainS),
+    // A plaza on the right puts the camera on the left (positive theta), and the other way round.
+    theta: shot === SHOTS.RIDE || shot === SHOTS.HELLO ? shot.theta : shot.theta * side,
+    radius: shot.radius,
+    height: shot.height,
+    fov: shot.fov,
+    look: lookPoint(shot.look, trainS, stop),
+    ride: shot === SHOTS.RIDE ? 1 : 0,
+  };
+}
+
+function poseCamera(pose: Pose, frame: Frame): RideCamera {
+  const a = pose.heading + pose.theta;
+  return {
+    pos: [
+      pose.anchor[0] + Math.cos(a) * pose.radius,
+      pose.anchor[1] + Math.sin(a) * pose.radius,
+      pose.height,
+    ],
+    look: pose.look,
+    fov: lens(pose.fov, frame),
+  };
+}
+
+/** The overview: high above the middle of the rail, pulled out until both ends are in frame. */
+function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
+  const end = (stops.at(-1)?.s ?? FIRST_PLATFORM) + 4;
+  const middle = (FIRST_PLATFORM + end) / 2;
+  const pose: Pose = {
+    anchor: at(middle),
+    heading: 0,
+    theta: Math.PI * 0.75,
+    radius: 30,
+    height: 30 * 0.75,
+    fov: CITY_FOV,
+    look: at(middle),
+    ride: 0,
+  };
+  const inside = (p: V3) => {
+    const s = projectPoint(p, poseCamera(pose, frame), frame);
+    if (!s) return false;
+    const mx = frame.width * CITY_MARGIN;
+    const my = frame.height * CITY_MARGIN;
+    return s[0] > mx && s[0] < frame.width - mx && s[1] > my && s[1] < frame.height - my;
+  };
+  const ends = [at(FIRST_PLATFORM), at(end), at(middle, 8), at(middle, -8)];
+  while (!ends.every(inside) && pose.radius < 600) {
+    pose.radius *= 1.06;
+    pose.height = pose.radius * 0.75;
+  }
+  return pose;
+}
+
+function restPose(stop: RideStop, stops: readonly RideStop[], frame: Frame): Pose {
+  if (stop.kind === "city") return cityPose(stops, frame);
+  if (stop.kind === "hello") return shotPose(SHOTS.HELLO, stop.s, stop, 1);
+  return shotPose(SHOTS.ISO, stop.s, stop, stop.side);
+}
+
+/** The camera at a stop's rest frame, for this frame's size. */
+export function restCamera(stop: RideStop, stops: readonly RideStop[], frame: Frame): RideCamera {
+  return poseCamera(restPose(stop, stops, frame), frame);
+}
+
+/**
+ * Behind the engine is π or -π: the same place. Between two poses the angle must not swing round
+ * the front, so a pose that is straight behind takes the sign of the pose it blends with.
+ */
+function behindLike(theta: number, other: number): number {
+  return Math.abs(Math.abs(theta) - Math.PI) < 1e-9 ? Math.PI * (other < 0 ? -1 : 1) : theta;
+}
+
+function blend(a: Pose, b: Pose, t: number): Pose {
+  const thetaA = behindLike(a.theta, b.theta);
+  const thetaB = behindLike(b.theta, thetaA);
+  return {
+    anchor: lerpV(a.anchor, b.anchor, t),
+    heading: lerp(a.heading, b.heading, t),
+    theta: lerp(thetaA, thetaB, t),
+    radius: logLerp(a.radius, b.radius, t),
+    height: logLerp(a.height, b.height, t),
+    fov: logLerp(a.fov, b.fov, t),
+    look: lerpV(a.look, b.look, t),
+    ride: lerp(a.ride, b.ride, t),
+  };
+}
+
+export function rideCamera(
+  frameIndex: number,
+  stops: readonly RideStop[],
+  timeline: RideTimeline,
+  frame: Frame,
+): { cam: RideCamera; roll: number; riding: boolean; speed: number } {
+  const trainS = trainAt(frameIndex, stops, timeline);
+  const speed = Math.abs(trainAt(frameIndex + 1, stops, timeline) - trainS);
+
+  // The stop the camera is heading for: the first whose frame has not passed.
+  let to = stops.findIndex((_, i) => frameIndex < (timeline.stopFrames[i] ?? 0));
+  if (to === -1) to = stops.length;
+  const from = stops[to - 1] ?? stops[0];
+  const dest = stops[to];
+  const arrive = timeline.stopFrames[to] ?? 0;
+  const move = timeline.moveFrames[to] ?? 0;
+  const start = arrive - move;
+
+  let pose: Pose;
+  if (!from) {
+    pose = shotPose(SHOTS.RIDE, trainS, stops[0] as RideStop, 1);
+  } else if (!dest || frameIndex <= start || move === 0) {
+    pose = restPose(from, stops, frame);
+  } else {
+    const fps = timeline.restFrames / REST_SECONDS;
+    const middle = middleShot(to, move / fps);
+    const ride = (side: 1 | -1) => shotPose(SHOTS.RIDE, trainS, dest, side);
+    const keys: { at: number; pose: Pose }[] =
+      from.kind === "city" || dest.kind === "city"
+        ? // The overview is one long pull, straight up and out, and straight back down.
+          [
+            { at: 0, pose: restPoseAt(from, stops, frame, trainS) },
+            { at: 1, pose: restPoseAt(dest, stops, frame, trainS) },
+          ]
+        : [
+            { at: 0, pose: restPoseAt(from, stops, frame, trainS) },
+            { at: 0.24, pose: ride(dest.side) },
+            ...(middle
+              ? [
+                  { at: 0.42, pose: shotPose(SHOTS[middle], trainS, dest, dest.side) },
+                  { at: 0.58, pose: shotPose(SHOTS[middle], trainS, dest, dest.side) },
+                  { at: 0.76, pose: ride(dest.side) },
+                ]
+              : [{ at: 0.7, pose: ride(dest.side) }]),
+            { at: 1, pose: restPoseAt(dest, stops, frame, trainS) },
+          ];
+    const u = (frameIndex - start) / move;
+    const k = Math.max(0, keys.findIndex((key) => key.at > u) - 1);
+    const a = keys[k] as { at: number; pose: Pose };
+    const b = keys[k + 1] ?? a;
+    pose = blend(a.pose, b.pose, b.at === a.at ? 1 : easeInOutCubic((u - a.at) / (b.at - a.at)));
+  }
+
+  // The ride itself: a sway, a bump at each rail joint and a roll into the bends, all fading out
+  // as the camera leaves the seat behind Cell or the train slows, so nothing jumps.
+  const feel = pose.ride * Math.min(1, speed * 4);
+  const sway = Math.sin((frameIndex / 62) * Math.PI * 2);
+  pose = {
+    ...pose,
+    theta: pose.theta + sway * 0.2 * feel,
+    height:
+      pose.height +
+      (Math.sin((frameIndex / 86) * Math.PI * 2) * 0.25 +
+        Math.abs(Math.sin(trainS * Math.PI * 1.4)) * speed * 0.12) *
+        feel,
+  };
+  const roll = (sway * -2.2 + (heading(trainS + 5) - heading(trainS)) * -14) * feel;
+  return { cam: poseCamera(pose, frame), roll: roll === 0 ? 0 : roll, riding: feel > 0.5, speed };
+}
+
+/** A stop's rest pose while the train is still on its way: the same shot, round where the train is now. */
+function restPoseAt(
+  stop: RideStop,
+  stops: readonly RideStop[],
+  frame: Frame,
+  trainS: number,
+): Pose {
+  if (stop.kind === "city") return cityPose(stops, frame);
+  if (stop.kind === "hello") return shotPose(SHOTS.HELLO, trainS, stop, 1);
+  return shotPose(SHOTS.ISO, trainS, stop, stop.side);
+}
