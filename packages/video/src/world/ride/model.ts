@@ -46,6 +46,8 @@ export const HERO_TAGS = [
   "vault",
   "lighthouse",
   "lighthouse-base",
+  "wagon",
+  "cargo",
 ];
 
 export function buildRide(
@@ -192,7 +194,10 @@ export function rideFrame(
     // The overview's billboard stands by the middle of the rail, wherever the train is.
     if (stop.kind !== "city" && (stop.s < view.from - 12 || stop.s > view.to + 12)) return;
     const build = buildProgress(i, frameIndex, timeline, fps);
-    objects.push(...station(stationContext(data, city, stop, build, clock, overview, layout)));
+    const away = Math.abs(trainS - stop.s);
+    objects.push(
+      ...station(stationContext(data, city, stop, build, clock, overview, layout, away)),
+    );
   });
 
   const reach = Math.hypot(

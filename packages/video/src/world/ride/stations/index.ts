@@ -8,6 +8,7 @@ import type { Station } from "./kit";
 import { languages } from "./languages";
 import { privateVault } from "./private";
 import { projects } from "./projects";
+import { rhythm } from "./rhythm";
 
 /** The hero each stop builds. Phase 2 of the story ride adds the rest, one at a time. */
 export const STATIONS: Partial<Record<StopKind, Station>> = {
@@ -16,6 +17,7 @@ export const STATIONS: Partial<Record<StopKind, Station>> = {
   private: privateVault,
   city,
   busiest,
+  rhythm,
   languages,
   projects,
   closing,

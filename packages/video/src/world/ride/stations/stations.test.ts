@@ -11,6 +11,7 @@ import { closingModel } from "../../scenes/closing.model";
 import { firstDayModel } from "../../scenes/firstDay.model";
 import { gardenModel } from "../../scenes/garden.model";
 import { commitsText, projectsModel } from "../../scenes/projects.model";
+import { rhythmModel } from "../../scenes/rhythm.model";
 import type { StopKind } from "../../stops";
 import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
@@ -51,6 +52,7 @@ test("the stations built so far exist", () => {
     "languages",
     "private",
     "projects",
+    "rhythm",
   ]);
 });
 
@@ -311,6 +313,7 @@ test("a station at rest is the same 60 frames later, and still moving in between
     "private",
     "city",
     "busiest",
+    "rhythm",
     "languages",
     "projects",
     "closing",
@@ -426,4 +429,78 @@ test("busiest: the lamp's beam turns, and is back where it was after 60 frames",
   const beam = (frame: number) => boxes(build("busiest", sampleRecap, 1, frame), "beam")[0]?.yaw;
   expect(beam(10)).not.toBe(beam(25));
   expect(beam(70)).toBeCloseTo(beam(10) ?? 0);
+});
+
+test("rhythm: seven wagons, Sunday to Saturday, each with its day and its count", () => {
+  const model = rhythmModel(sampleRecap);
+  const wagons = boxes(build("rhythm", sampleRecap), "wagon");
+  expect(wagons).toHaveLength(7);
+  wagons.forEach((wagon, i) => {
+    const car = model.cars[i];
+    expect(printed([wagon])).toEqual(
+      expect.arrayContaining([car?.day ?? "", formatCount(car?.count ?? 0)]),
+    );
+  });
+  // The sign may break the title over two rows.
+  expect(printed(build("rhythm", sampleRecap)).join(" ")).toContain(model.title);
+});
+
+test("rhythm: cargo is as tall as the weekday's share of the busiest, and a day with nothing has none", () => {
+  const quiet: RecapData = {
+    ...sampleRecap,
+    contributions: { ...sampleRecap.contributions, weekday: [0, 220, 240, 230, 210, 190, 104] },
+  };
+  const model = rhythmModel(quiet);
+  const cargo = boxes(build("rhythm", quiet), "cargo");
+  // Sunday has nothing to carry.
+  expect(cargo).toHaveLength(6);
+  const tallest = Math.max(...cargo.map((box) => box.size[2]));
+  const fills = model.cars.filter((car) => car.count > 0).map((car) => car.fill);
+  cargo.forEach((box, i) => expect(box.size[2] / tallest).toBeCloseTo(fills[i] ?? 0));
+});
+
+test("rhythm: a narrow frame stands four wagons behind and three in front; a wide one keeps a row", () => {
+  const city = buildCity(sampleRecap);
+  const stop = rideStops(sampleRecap, city).find((x) => x.kind === "rhythm");
+  if (!stop) throw new Error("no stop");
+  const station = STATIONS.rhythm as NonNullable<typeof STATIONS.rhythm>;
+  const rows = (layout: "portrait" | "compact" | "landscape") =>
+    new Set(
+      boxes(station(stationContext(sampleRecap, city, stop, 1, 0, 0, layout)), "wagon").map((b) =>
+        b.at[2].toFixed(2),
+      ),
+    ).size;
+  expect(rows("landscape")).toBe(1);
+  expect(rows("portrait")).toBe(2);
+  expect(rows("compact")).toBe(2);
+});
+
+test("rhythm: counts rise as the wagons land, and a year with nothing says so", () => {
+  const model = rhythmModel(sampleRecap);
+  const top = formatCount(model.busiest?.count ?? 0);
+  expect(boxes(build("rhythm", sampleRecap, 0), "wagon")).toHaveLength(0);
+  expect(printed(build("rhythm", sampleRecap, 0.6))).not.toContain(top);
+  const none = rhythmModel(emptyRecap);
+  const empty = build("rhythm", emptyRecap);
+  expect(boxes(empty, "wagon")).toHaveLength(7);
+  expect(boxes(empty, "cargo")).toHaveLength(0);
+  expect(printed(empty).join(" ")).toContain(none.caption);
+});
+
+test("busiest: the beam draws in as the train leaves, so it does not sweep the next station's picture", () => {
+  const city = buildCity(sampleRecap);
+  const stop = rideStops(sampleRecap, city).find((x) => x.kind === "busiest");
+  if (!stop) throw new Error("no stop");
+  const station = STATIONS.busiest as NonNullable<typeof STATIONS.busiest>;
+  const reach = (away: number) =>
+    Math.max(
+      0,
+      ...boxes(
+        station(stationContext(sampleRecap, city, stop, 1, 10, 0, "landscape", away)),
+        "beam",
+      ).map((b) => b.size[0]),
+    );
+  expect(reach(3)).toBeLessThan(reach(0));
+  expect(reach(3)).toBeGreaterThan(0);
+  expect(reach(8)).toBe(0);
 });

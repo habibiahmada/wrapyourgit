@@ -22,7 +22,7 @@ const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
  * stop; without one this draws the bare plaza.
  */
 export const busiest: Station = (ctx) => {
-  const { data, c, yaw, build, frame } = ctx;
+  const { data, c, yaw, build, frame, away } = ctx;
   const model = busiestModel(data);
   const out: Solid[] = plaza(ctx);
   if (!model) return out;
@@ -83,15 +83,27 @@ export const busiest: Station = (ctx) => {
   // start outside the lamp room, not one bar through it: faces are painted in order of their
   // middles, and a bar's middle is the lamp's own, so it was painted over the roof or under it
   // at the wrong moments.
-  if (lamp >= 1) {
+  // The arms draw in as the train leaves: the next station's camera stands close by, and a
+  // beam at this height would sweep through the foot of its picture.
+  const reach = 3.2 * Math.max(0, Math.min(1, 1 - (away - 1) / 5));
+  if (lamp >= 1 && reach > 0.05) {
     const turn = (((frame % 60) + 60) % 60) / 60;
     for (const arm of [-1, 1]) {
       out.push(
-        part(c, yaw + turn * Math.PI * 2, arm * 2.1, 0, lampZ + 0.3, [3.2, 0.2, 0.14], TONE.lamp, {
-          tag: "beam",
-          lit: true,
-          edge: false,
-        }),
+        part(
+          c,
+          yaw + turn * Math.PI * 2,
+          arm * (0.5 + reach / 2),
+          0,
+          lampZ + 0.3,
+          [reach, 0.2, 0.14],
+          TONE.lamp,
+          {
+            tag: "beam",
+            lit: true,
+            edge: false,
+          },
+        ),
       );
     }
   }

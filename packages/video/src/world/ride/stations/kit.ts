@@ -35,6 +35,8 @@ export type StationContext = {
   overview: number;
   /** The frame's layout family: a narrow frame stacks a hero that a wide one lays in a row. */
   layout: LayoutFamily;
+  /** How far along the rail the train is from where it rests here: 0 while it is in the station. */
+  away: number;
 };
 export type Station = (ctx: StationContext) => Solid[];
 
@@ -46,6 +48,7 @@ export function stationContext(
   frame: number,
   overview: number,
   layout: LayoutFamily = "landscape",
+  away = 0,
 ): StationContext {
   const s = stop.plaza ? stop.s + PLAZA_AHEAD : stop.s;
   return {
@@ -58,6 +61,7 @@ export function stationContext(
     frame,
     overview,
     layout,
+    away,
   };
 }
 
@@ -211,7 +215,7 @@ export function wrap(text: string, max: number): string[] {
 }
 
 /** The station sign: how wide it is, and how tall one of its rows. */
-const SIGN = { wide: 5.5, row: 0.38 };
+const SIGN = { wide: 6.3, row: 0.4 };
 
 /**
  * A station's title and what explains its numbers, on a low sign on the ground between the rail
