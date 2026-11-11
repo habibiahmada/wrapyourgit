@@ -1,4 +1,5 @@
 import { GitHubApiError, githubGraphql, paginate } from "./client";
+import { type Subject, subjectVariables, withSubject } from "./subject";
 
 /**
  * Everything analytics needs for one user's year, flattened out of GitHub's GraphQL shapes.
@@ -104,7 +105,7 @@ const toRepoFacts = (repo: RawRepo): RepoFacts => ({
   createdAt: repo.createdAt,
 });
 
-const OVERVIEW_QUERY = /* GraphQL */ `
+export const OVERVIEW_QUERY = /* GraphQL */ `
   query Overview($from: DateTime!, $to: DateTime!) {
     viewer {
       id
@@ -171,7 +172,7 @@ interface RawCommitRepo {
  * 100 nodes. Querying each quarter separately keeps every connection under 92 nodes, so no
  * per-repo pagination is needed. The quarters are aliased into one request.
  */
-function commitReposQuery(ranges: { from: string; to: string }[]): string {
+export function commitReposQuery(ranges: { from: string; to: string }[]): string {
   const collections = ranges.map(
     (range, index) => /* GraphQL */ `
       q${index}: contributionsCollection(from: "${range.from}", to: "${range.to}") {
@@ -205,10 +206,14 @@ export function quarterRanges(from: Date, to: Date): { from: string; to: string 
   return ranges;
 }
 
-async function fetchCommitRepos(token: string, from: Date, to: Date) {
+async function fetchCommitRepos(token: string, from: Date, to: Date, subject: Subject) {
   const data = await githubGraphql<{
     viewer: Record<string, { commitContributionsByRepository: RawCommitRepo[] }>;
-  }>(token, commitReposQuery(quarterRanges(from, to)));
+  }>(
+    token,
+    withSubject(commitReposQuery(quarterRanges(from, to)), subject),
+    subjectVariables(subject),
+  );
   const byRepo = new Map<string, YearActivity["commitRepos"][number]>();
   for (const collection of Object.values(data.viewer)) {
     for (const entry of collection.commitContributionsByRepository) {
@@ -267,7 +272,7 @@ const ISSUES_QUERY = /* GraphQL */ `
   }
 `;
 
-const OWNED_REPOS_QUERY = /* GraphQL */ `
+export const OWNED_REPOS_QUERY = /* GraphQL */ `
   query OwnedRepos($after: String) {
     viewer {
       repositories(first: 100, after: $after, ownerAffiliations: OWNER, isFork: false) {
@@ -359,15 +364,19 @@ export async function fetchYearActivity(
   from: Date,
   to: Date,
   { maxStarPages = 10, commitSampleRepos = 5, maxCommitPages = 5 }: FetchOptions = {},
+  subject: Subject = { kind: "viewer" },
 ): Promise<YearActivity> {
   const range = { from: from.toISOString(), to: to.toISOString() };
   const fromIso = range.from;
 
-  const overview = await githubGraphql<RawOverview>(token, OVERVIEW_QUERY, range);
+  const overview = await githubGraphql<RawOverview>(token, withSubject(OVERVIEW_QUERY, subject), {
+    ...range,
+    ...subjectVariables(subject),
+  });
   const { viewer } = overview;
   const collection = viewer.contributionsCollection;
 
-  const commitRepos = await fetchCommitRepos(token, from, to);
+  const commitRepos = await fetchCommitRepos(token, from, to, subject);
 
   const pullRequests = await paginate(async (after) => {
     const data = await githubGraphql<{
@@ -376,7 +385,11 @@ export async function fetchYearActivity(
           pullRequestContributions: Page<{ nodes: { pullRequest: { merged: boolean } | null }[] }>;
         };
       };
-    }>(token, PULL_REQUESTS_QUERY, { ...range, after });
+    }>(token, withSubject(PULL_REQUESTS_QUERY, subject), {
+      ...range,
+      after,
+      ...subjectVariables(subject),
+    });
     const connection = data.viewer.contributionsCollection.pullRequestContributions;
     return {
       items: connection.nodes.flatMap((node) =>
@@ -393,7 +406,11 @@ export async function fetchYearActivity(
           issueContributions: Page<{ nodes: { issue: { closed: boolean } | null }[] }>;
         };
       };
-    }>(token, ISSUES_QUERY, { ...range, after });
+    }>(token, withSubject(ISSUES_QUERY, subject), {
+      ...range,
+      after,
+      ...subjectVariables(subject),
+    });
     const connection = data.viewer.contributionsCollection.issueContributions;
     return {
       items: connection.nodes.flatMap((node) =>
@@ -406,8 +423,8 @@ export async function fetchYearActivity(
   const ownedRepos = await paginate(async (after) => {
     const data = await githubGraphql<{ viewer: { repositories: Page<{ nodes: RawRepo[] }> } }>(
       token,
-      OWNED_REPOS_QUERY,
-      { after },
+      withSubject(OWNED_REPOS_QUERY, subject),
+      { after, ...subjectVariables(subject) },
     );
     return {
       items: data.viewer.repositories.nodes.map(toRepoFacts),
@@ -473,7 +490,10 @@ export async function fetchYearActivity(
         viewer: {
           starredRepositories: Page<{ edges: { starredAt: string; node: RawRepo }[] }>;
         };
-      }>(token, STARRED_QUERY, { after });
+      }>(token, withSubject(STARRED_QUERY, subject), {
+        after,
+        ...subjectVariables(subject),
+      });
       const connection = data.viewer.starredRepositories;
       return {
         items: connection.edges.map((edge) => ({
@@ -616,14 +636,20 @@ export async function fetchPreviousYear(
   token: string,
   year: number,
   spanTo: Date,
+  subject: Subject = { kind: "viewer" },
 ): Promise<PreviousYearActivity> {
   const from = new Date(Date.UTC(year, 0, 1));
   const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
-  const data = await githubGraphql<RawPreviousYear>(token, PREVIOUS_YEAR_QUERY, {
-    from: from.toISOString(),
-    to: to.toISOString(),
-    spanTo: spanTo.toISOString(),
-  });
+  const data = await githubGraphql<RawPreviousYear>(
+    token,
+    withSubject(PREVIOUS_YEAR_QUERY, subject),
+    {
+      ...subjectVariables(subject),
+      from: from.toISOString(),
+      to: to.toISOString(),
+      spanTo: spanTo.toISOString(),
+    },
+  );
   const { full, span } = data.viewer;
   return {
     year,
