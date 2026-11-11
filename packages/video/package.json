@@ -32,9 +32,10 @@
   },
   "devDependencies": {
     "@remotion/cli": "4.0.541",
-    "@wyg/analytics": "workspace:*",
     "@types/react": "^19",
+    "@types/react-dom": "^19",
     "@types/three": "^0.187.0",
+    "@wyg/analytics": "workspace:*",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "typescript": "^7"
