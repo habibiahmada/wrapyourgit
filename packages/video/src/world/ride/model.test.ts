@@ -4,11 +4,21 @@ import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-rec
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { congratsLetter } from "../../letter";
 import { paginateLetter } from "../scenes/letter.model";
-import { buildRide, HERO_TAGS, letterBeat, rideClock, rideDuration, rideFrame } from "./model";
+import {
+  buildRide,
+  closingShelf,
+  HERO_TAGS,
+  letterBeat,
+  rideClock,
+  rideDuration,
+  rideFrame,
+} from "./model";
 import { type Box, type Solid, scenePrims } from "./prims";
+import { projectPoint } from "./project";
 import { stationContext } from "./stations/kit";
 import { RIDE_KINDS } from "./stops";
 import { buildFrames, trainAt } from "./timeline";
+import { at } from "./track";
 
 const f = VIDEO_FORMATS["16x9"];
 const printed = (solids: Solid[]) =>
@@ -340,5 +350,28 @@ test("a letter page stays still through its whole rest, and the next one slides 
     expect(middle.sheet?.stop.page).toBe(k + 2);
     expect(middle.sheet?.enter ?? 0).toBeGreaterThan(0);
     expect(middle.sheet?.enter ?? 1).toBeLessThan(1);
+  }
+});
+
+test("the closing shelf is grass right of the board and above the train, in every shape", () => {
+  const shapes = [
+    { width: 1080, height: 2336 },
+    ...Object.values(VIDEO_FORMATS),
+    { width: 1728, height: 1080 },
+    { width: 2520, height: 1080 },
+  ];
+  for (const frame of shapes) {
+    const m = buildRide(sampleRecap, frame, "interactive", 30);
+    const last = m.stops.length - 1;
+    const shelf = closingShelf(m, sampleRecap, frame, 30);
+    const { cam } = rideFrame(m, sampleRecap, m.timeline.stopFrames[last] ?? 0, frame, 30);
+    const rail = projectPoint(at(m.stops[last]?.s ?? 0, 0, 0), cam, frame);
+    expect(rail).not.toBeNull();
+    // Room for a column of controls between the board and the frame's right edge.
+    expect(shelf.left).toBeGreaterThan(0.3);
+    expect(shelf.left).toBeLessThan(0.85);
+    expect(shelf.bottom).toBeGreaterThan(0.3);
+    // Beyond the rail, so above the train on screen.
+    expect(shelf.bottom).toBeLessThan((rail?.[1] ?? 0) / frame.height);
   }
 });

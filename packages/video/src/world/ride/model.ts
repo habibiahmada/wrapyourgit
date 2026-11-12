@@ -14,7 +14,7 @@ import { type Gate, gates } from "./gates.model";
 import { land } from "./land";
 import { HAZE } from "./palette";
 import type { Fog, Solid } from "./prims";
-import type { Frame, RideCamera, V3 } from "./project";
+import { type Frame, projectPoint, type RideCamera, type V3 } from "./project";
 import { STATIONS } from "./stations";
 import { stationContext } from "./stations/kit";
 import { deskShot } from "./stations/letter";
@@ -396,3 +396,33 @@ export function rideFrame(
   const near = Math.max(20, reach * 1.5);
   return { cam, roll, fog: { color: HAZE, near, far: near + 30 }, ground, objects };
 }
+
+/**
+ * Where the web player puts its "keep your year" controls at the closing stop: the grass beyond
+ * the rail, right of the board and up from the train. `left` is the board's right edge on screen,
+ * `bottom` a spot on the grass a little behind the engine, both as fractions of the frame (0 to 1,
+ * from the top left), taken from the stop's rest camera so the controls keep to the same ground
+ * in every shape. Web only: never drawn in the composition.
+ */
+export function closingShelf(
+  model: RideModel,
+  data: RecapData,
+  format: Frame,
+  fps: number,
+): { left: number; bottom: number } {
+  const last = model.stops.length - 1;
+  const stop = model.stops[last];
+  const { cam } = rideFrame(model, data, model.timeline.stopFrames[last] ?? 0, format, fps);
+  const xs = (stop?.heroEdge ?? [])
+    .map((p) => projectPoint(p, cam, format))
+    .flatMap((p) => (p ? [p[0] / format.width] : []));
+  const grass = projectPoint(at((stop?.s ?? 0) - SHELF_BEHIND, -SHELF_ACROSS, 0), cam, format);
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+  return {
+    left: clamp(xs.length > 0 ? Math.max(...xs) : 0.6),
+    bottom: clamp(grass ? grass[1] / format.height : 0.6),
+  };
+}
+/** The grass spot: world units back along the rail from the stop, and across it from the camera. */
+const SHELF_BEHIND = 4.5;
+const SHELF_ACROSS = 4.5;
