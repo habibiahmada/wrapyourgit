@@ -16,6 +16,7 @@ import { HAZE } from "./palette";
 import type { Fog, Solid } from "./prims";
 import type { Frame, RideCamera, V3 } from "./project";
 import { STATIONS } from "./stations";
+import { closingPerch } from "./stations/closing";
 import { stationContext } from "./stations/kit";
 import { deskShot } from "./stations/letter";
 import { type RideStop, rideStops } from "./stops";
@@ -35,6 +36,12 @@ export type RideModel = { city: City; stops: RideStop[]; timeline: RideTimeline;
 export type RideOptions = { letter?: boolean };
 
 /** The parts of a station that carry its chapter: the camera keeps these in frame. */
+/** Cell's hop from the train to the podium at the closing stop: its frames and how high it goes. */
+const HOP_FRAMES = 30;
+const HOP_HEIGHT = 2.2;
+/** How hard Cell cheers once it stands by the trophy. */
+const LANDED_CHEER = 0.6;
+
 export const HERO_TAGS = [
   "language",
   "gate",
@@ -345,7 +352,26 @@ export function rideFrame(
 
   objects.push(...train(trainS));
   objects.push(...smoke(frameIndex, trainS, speed));
-  objects.push(...cell(at(trainS + CELL_SEAT, 0, 0.5), yaw, clock, mood, amount));
+  // At the closing stop Cell hops off in the train's last second and lands by the trophy just as
+  // the train stops: the stop's rest (the web's rest loop) then only ever shows it standing there.
+  let seat = at(trainS + CELL_SEAT, 0, 0.5);
+  const last = stops.length - 1;
+  const terminus = stops[last];
+  const hop =
+    terminus?.kind === "closing"
+      ? clamp01(1 - ((timeline.stopFrames[last] ?? 0) - tick) / HOP_FRAMES)
+      : 0;
+  if (terminus && hop > 0) {
+    const perch = closingPerch(terminus);
+    const t = easeInOutCubic(hop);
+    seat = [
+      seat[0] + (perch[0] - seat[0]) * t,
+      seat[1] + (perch[1] - seat[1]) * t,
+      seat[2] + (perch[2] - seat[2]) * t + Math.sin(hop * Math.PI) * HOP_HEIGHT,
+    ];
+  }
+  const landedMood: Mood = hop >= 1 ? "cheer" : mood;
+  objects.push(...cell(seat, yaw, clock, landedMood, hop >= 1 ? LANDED_CHEER : amount));
 
   stops.forEach((stop, i) => {
     const station = STATIONS[stop.kind];

@@ -6,9 +6,12 @@ import { congratsLetter } from "../../letter";
 import { paginateLetter } from "../scenes/letter.model";
 import { buildRide, HERO_TAGS, letterBeat, rideClock, rideDuration, rideFrame } from "./model";
 import { type Box, type Solid, scenePrims } from "./prims";
+import { closingPerch } from "./stations/closing";
 import { stationContext } from "./stations/kit";
 import { RIDE_KINDS } from "./stops";
 import { buildFrames, trainAt } from "./timeline";
+import { at } from "./track";
+import { CELL_SEAT } from "./train";
 
 const f = VIDEO_FORMATS["16x9"];
 const printed = (solids: Solid[]) =>
@@ -340,5 +343,31 @@ test("a letter page stays still through its whole rest, and the next one slides 
     expect(middle.sheet?.stop.page).toBe(k + 2);
     expect(middle.sheet?.enter ?? 0).toBeGreaterThan(0);
     expect(middle.sheet?.enter ?? 1).toBeLessThan(1);
+  }
+});
+
+test("Cell rides into the closing stop, then hops off to stand by the trophy before the stop", () => {
+  for (const data of [sampleRecap, emptyRecap]) {
+    const m = buildRide(data, f, "interactive", 30);
+    const last = m.stops.length - 1;
+    const stop = m.stops[last];
+    if (!stop) throw new Error("no closing stop");
+    const arrive = m.timeline.stopFrames[last] ?? 0;
+    const body = (frame: number) => {
+      const solid = rideFrame(m, data, frame, f, 30).objects.find(
+        (s): s is Box => s.kind === "box" && s.tag === "cell-body",
+      );
+      if (!solid) throw new Error("no Cell");
+      return [solid.at[0] + solid.size[0] / 2, solid.at[1] + solid.size[1] / 2, solid.at[2]];
+    };
+    const perch = closingPerch(stop);
+    const near = (p: number[], q: number[]) => Math.hypot(p[0]! - q[0]!, p[1]! - q[1]!);
+    // On the train two seconds out, on the podium by the stop, and still there through its rest.
+    const seat = at(trainAt(rideClock(m, arrive - 60), m.stops, m.timeline) + CELL_SEAT);
+    expect(near(body(arrive - 60), seat)).toBeLessThan(0.6);
+    for (const frame of [arrive, arrive + 20, arrive + 59]) {
+      expect(near(body(frame), perch)).toBeLessThan(0.6);
+      expect(body(frame)[2] ?? 0).toBeGreaterThan(perch[2] - 0.2);
+    }
   }
 });
