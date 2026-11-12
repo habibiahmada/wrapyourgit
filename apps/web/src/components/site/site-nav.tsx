@@ -11,7 +11,16 @@ const link =
  * back to the landing page (`base="/"`). Small screens get a disclosure menu that closes on
  * Escape or after a link is chosen.
  */
-export function SiteNav({ base = "", action }: { base?: "" | "/"; action: ReactNode }) {
+export function SiteNav({
+  base = "",
+  action,
+  repo,
+}: {
+  base?: "" | "/";
+  action: ReactNode;
+  /** The link to the source, beside the action on every screen size. */
+  repo?: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const toggle = useRef<HTMLButtonElement>(null);
@@ -41,6 +50,7 @@ export function SiteNav({ base = "", action }: { base?: "" | "/"; action: ReactN
         </ul>
       </nav>
       <div className="flex items-center gap-2">
+        {repo}
         <div className="hidden sm:block">{action}</div>
         <button
           ref={toggle}
