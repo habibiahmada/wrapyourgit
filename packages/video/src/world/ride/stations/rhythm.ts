@@ -1,8 +1,8 @@
 import { formatCount } from "../../../theme";
 import { rhythmModel } from "../../scenes/rhythm.model";
 import { GREENS, LIT, TONE, toneOf } from "../palette";
-import type { FaceText, Solid } from "../prims";
-import { nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import type { Decal, FaceText, Solid } from "../prims";
+import { NEAR_ENOUGH, nameBoard, PLAZA_TOP, part, plaza, type Station, trackPaint } from "./kit";
 
 /** A wagon: how long it stands on the siding, and its body. */
 const PITCH = 2.15;
@@ -37,6 +37,25 @@ export const rhythm: Station = (ctx) => {
     ),
   );
 
+  const fine = ctx.overview < NEAR_ENOUGH;
+  // The siding itself: a length of track under each row of wagons.
+  for (const [count, dy, floor] of row
+    ? ([[7, 0, PLAZA_TOP]] as const)
+    : ([
+        [4, -stop.side * 1.5, PLAZA_TOP + TIER],
+        [3, stop.side * 1.3, PLAZA_TOP],
+      ] as const)) {
+    const reach = count * PITCH + 0.3;
+    out.push(
+      part(c, yaw, 0, dy, floor, [reach, 1.3, 0.05], toneOf("#3a424d"), {
+        tag: "siding",
+        under: 1,
+        edge: false,
+        decals: fine ? trackPaint(reach) : [],
+      }),
+    );
+  }
+
   model.cars.forEach((car, i) => {
     const back = row || i < 4;
     const inRow = row ? 7 : back ? 4 : 3;
@@ -68,9 +87,41 @@ export const rhythm: Station = (ctx) => {
         tag: "wagon",
         lit: true,
         texts,
-        decals: [{ on: "all", rect: [0, 0.94, 1, 1], fill: car.busiest ? LIT : "#545d68" }],
+        decals: [
+          { on: "all", rect: [0, 0.94, 1, 1], fill: car.busiest ? LIT : "#545d68" },
+          // A wagon's make: its frame along the foot, a rib at each end, a lamp at each corner.
+          ...(fine
+            ? ([
+                { on: "all", rect: [0, 0, 1, 0.05], fill: "#161b22" },
+                { on: "sides", rect: [0.01, 0.05, 0.03, 0.94], fill: "#545d68" },
+                { on: "sides", rect: [0.97, 0.05, 0.99, 0.94], fill: "#545d68" },
+                { on: "front", rect: [0.08, 0.1, 0.2, 0.22], fill: "#ffd866", round: true },
+                { on: "front", rect: [0.8, 0.1, 0.92, 0.22], fill: "#ffd866", round: true },
+                { on: "back", rect: [0.08, 0.1, 0.2, 0.22], fill: "#da3633", round: true },
+                { on: "back", rect: [0.8, 0.1, 0.92, 0.22], fill: "#da3633", round: true },
+              ] satisfies Decal[])
+            : []),
+        ],
       }),
     );
+    // The coupling to the next wagon of its row: a little short of both, so it touches neither.
+    if (landed >= 1 && k < inRow - 1) {
+      out.push(
+        part(
+          c,
+          yaw,
+          dx + PITCH / 2,
+          dy,
+          floor + 0.55,
+          [PITCH - BODY.long - 0.04, 0.16, 0.1],
+          TONE.ink,
+          {
+            tag: "coupling",
+            edge: false,
+          },
+        ),
+      );
+    }
     if (car.fill > 0) {
       out.push(
         part(
@@ -81,7 +132,22 @@ export const rhythm: Station = (ctx) => {
           floor + 0.3 + BODY.tall + drop,
           [BODY.long - 0.3, BODY.deep - 0.3, LOAD[layout] * car.fill * landed],
           toneOf(car.busiest ? LIT : (GREENS[1] ?? LIT)),
-          { tag: "cargo", lit: car.busiest },
+          {
+            tag: "cargo",
+            lit: car.busiest,
+            // Strapped down: two bands over the load, and a lighter panel on its top.
+            decals: fine
+              ? [
+                  { on: "all", rect: [0.26, 0, 0.32, 1], fill: "#0e4429" },
+                  { on: "all", rect: [0.68, 0, 0.74, 1], fill: "#0e4429" },
+                  {
+                    on: "top",
+                    rect: [0.08, 0.1, 0.92, 0.9],
+                    fill: car.busiest ? "#56e070" : "#26a641",
+                  },
+                ]
+              : [],
+          },
         ),
       );
     }

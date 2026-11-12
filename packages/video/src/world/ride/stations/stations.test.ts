@@ -402,6 +402,29 @@ test("first-day: a year with no contributions has a wall of empty days, no flag 
   expect(printed(all).join(" ")).toContain("A blank graph: no contributions this year");
 });
 
+test("the stations' fittings: a siding and couplings, a yard, a stepped fulcrum and spare weights", () => {
+  // rhythm: one length of track for the one row, and a coupling between each pair of wagons.
+  const week = build("rhythm", sampleRecap);
+  expect(boxes(week, "siding")).toHaveLength(1);
+  expect(boxes(week, "coupling")).toHaveLength(6);
+  for (const tag of ["siding", "coupling", "cargo"]) expect(printed(boxes(week, tag))).toEqual([]);
+  // A coupling stands in the gap between two wagons and touches neither.
+  const wagons = boxes(week, "wagon").sort((a, b) => a.at[0] - b.at[0]);
+  const link = boxes(week, "coupling").sort((a, b) => a.at[0] - b.at[0])[0] as Box;
+  expect(link.at[0]).toBeGreaterThan((wagons[0]?.at[0] ?? 0) + (wagons[0]?.size[0] ?? 0));
+  expect(link.at[0] + link.size[0]).toBeLessThan(wagons[1]?.at[0] ?? 0);
+  // projects: a yard under the stack, and ribs on every container's painted side.
+  const yard = build("projects", sampleRecap);
+  expect(boxes(yard, "yard")).toHaveLength(1);
+  for (const box of boxes(yard, "container")) expect((box.decals ?? []).length).toBeGreaterThan(5);
+  // versus: the fulcrum is a foot and a post, and three small weights stand by, largest first.
+  const scale = build("versus", sampleRecap);
+  expect(boxes(scale, "fulcrum")).toHaveLength(2);
+  const spare = boxes(scale, "spare-weight");
+  expect(spare.map((b) => b.size[0])).toEqual([0.7, 0.52, 0.38]);
+  expect(printed(spare)).toEqual([]);
+});
+
 const withPrivate = (privateCount: RecapData["contributions"]["privateCount"]): RecapData => ({
   ...sampleRecap,
   contributions: { ...sampleRecap.contributions, privateCount },

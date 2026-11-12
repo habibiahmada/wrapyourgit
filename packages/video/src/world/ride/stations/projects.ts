@@ -1,8 +1,8 @@
 import { commitsText, projectsModel } from "../../scenes/projects.model";
-import { TONE } from "../palette";
+import { mixHex, TONE } from "../palette";
 import type { Decal, FaceText, Solid } from "../prims";
 import { PLAZA } from "../track";
-import { clip, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { clip, NEAR_ENOUGH, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
 
 /** A container: how long and deep every one is, and how tall the first and the others are. */
 const LONG = 8;
@@ -46,6 +46,24 @@ export const projects: Station = (ctx) => {
   }
 
   const out: Solid[] = plaza(ctx);
+  const fine = ctx.overview < NEAR_ENOUGH;
+  // The yard the stack stands on: a slab with a warning stripe round its edge.
+  out.push(
+    part(c, yaw, 0, 0, PLAZA_TOP, [LONG + 0.7, DEEP + 0.9, 0.08], TONE.dark, {
+      tag: "yard",
+      under: 1,
+      decals: fine
+        ? Array.from(
+            { length: 16 },
+            (_, k): Decal => ({
+              on: "all",
+              rect: [k / 16, 0, (k + 0.5) / 16, 1],
+              fill: "#e3b341",
+            }),
+          )
+        : [],
+    }),
+  );
   const n = model.stacks.length;
   const most = Math.max(...model.stacks.map((stack) => stack.commits));
   let z = PLAZA_TOP;
@@ -87,6 +105,29 @@ export const projects: Station = (ctx) => {
     const decals: Decal[] = [
       { on: "sides", rect: [0, 0, share, 1], fill: paint },
       { on: "all", rect: [0, 0, 1, 0.07], fill: "#161b22" },
+      // What makes a painted length a container: the ribs of its side, under the words, and a
+      // casting at each of its corners.
+      ...(fine
+        ? [
+            ...Array.from({ length: Math.max(2, Math.round(share * 9)) }, (_, k): Decal => {
+              const u = ((k + 0.5) / Math.max(2, Math.round(share * 9))) * share;
+              return {
+                on: "sides",
+                rect: [u - 0.003, 0.1, u + 0.003, 0.94],
+                fill: mixHex(paint, "#000000", 0.22),
+              };
+            }),
+            ...[0.004, share - 0.022].flatMap((u) =>
+              [0.09, 0.9 - 0.06].map(
+                (v): Decal => ({
+                  on: "sides",
+                  rect: [Math.max(0, u), v, Math.max(0, u) + 0.018, v + 0.1],
+                  fill: "#c9d1d9",
+                }),
+              ),
+            ),
+          ]
+        : []),
     ];
     out.push(
       part(c, yaw, 0, 0, base + (1 - easeOut(landed)) * 5, [LONG, DEEP, rows.tall], RACK, {

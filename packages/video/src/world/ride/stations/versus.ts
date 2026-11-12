@@ -3,7 +3,7 @@ import { MAX_TILT, seesawModel } from "../../scenes/seesaw.model";
 import { GREENS, LIT, TONE, toneOf } from "../palette";
 import type { Decal, FaceText, Solid } from "../prims";
 import { PLAZA } from "../track";
-import { board, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { board, NEAR_ENOUGH, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
 
 /** How far each pan's middle is from the fulcrum, along the rail. */
 const ARM = 2.05;
@@ -39,6 +39,7 @@ const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
  */
 export const versus: Station = (ctx) => {
   const { data, c, yaw, build, frame, stop } = ctx;
+  const fine = ctx.overview < NEAR_ENOUGH;
   const model = seesawModel(data);
   const known = !("unavailable" in model);
   const out: Solid[] = plaza(ctx);
@@ -78,12 +79,72 @@ export const versus: Station = (ctx) => {
   const beamTop = (dx: number) => PLAZA_TOP + PIVOT - tilt * (dx / ARM);
 
   out.push(
-    part(c, yaw, 0, 0, PLAZA_TOP, [1.5, PAN.deep + 0.3, 0.3], TONE.dark, { tag: "base", under: 1 }),
-    part(c, yaw, 0, 0, PLAZA_TOP + 0.3, [0.7, PAN.deep - 0.5, PIVOT - 0.3 - 0.2], TONE.mid, {
+    // The scale's bed, as long as the beam, with a mark for every step of its length.
+    part(c, yaw, 0, 0, PLAZA_TOP, [2 * ARM + PAN.long + 0.4, PAN.deep + 0.5, 0.1], TONE.dark, {
+      tag: "bed",
+      under: 2,
+      decals: fine
+        ? Array.from(
+            { length: 21 },
+            (_, k): Decal => ({
+              on: "top",
+              rect: [
+                0.04 + k * 0.046 - 0.003,
+                k % 5 === 0 ? 0.04 : 0.07,
+                0.04 + k * 0.046 + 0.003,
+                k % 5 === 0 ? 0.2 : 0.14,
+              ],
+              fill: k % 5 === 0 ? "#e3b341" : "#8b949e",
+            }),
+          )
+        : [],
+    }),
+    part(c, yaw, 0, 0, PLAZA_TOP + 0.1, [1.5, PAN.deep + 0.3, 0.2], TONE.dark, {
+      tag: "base",
+      under: 1,
+    }),
+    // The fulcrum: a wide foot and a narrower post, a brass pin where the beam turns.
+    part(c, yaw, 0, 0, PLAZA_TOP + 0.3, [1.1, PAN.deep - 0.3, 0.22], TONE.mid, { tag: "fulcrum" }),
+    part(c, yaw, 0, 0, PLAZA_TOP + 0.52, [0.6, PAN.deep - 0.6, PIVOT - 0.52 - 0.2], TONE.mid, {
       tag: "fulcrum",
-      decals: [{ on: "all", rect: [0, 0.86, 1, 1], fill: "#8b949e" }],
+      decals: [
+        { on: "all", rect: [0, 0.82, 1, 1], fill: "#8b949e" },
+        ...(fine
+          ? [
+              {
+                on: "sides",
+                rect: [0.36, 0.3, 0.64, 0.72],
+                fill: "#e3b341",
+                round: true,
+              } satisfies Decal,
+            ]
+          : []),
+      ],
     }),
   );
+  // A set of small weights at the plaza's far end, largest to smallest: what a scale is kept with.
+  [0.7, 0.52, 0.38].forEach((side, k) => {
+    out.push(
+      part(
+        c,
+        yaw,
+        ARM + PAN.long / 2 + 0.75,
+        -stop.side * (0.9 - k * 0.75),
+        PLAZA_TOP,
+        [side, side, side * 0.9],
+        toneOf("#545d68"),
+        {
+          tag: "spare-weight",
+          decals: fine
+            ? [
+                { on: "top", rect: [0.3, 0.3, 0.7, 0.7], fill: "#e3b341", round: true },
+                { on: "all", rect: [0, 0, 1, 0.14], fill: "#161b22" },
+              ]
+            : [],
+        },
+      ),
+    );
+  });
   const inner = ARM - PAN.long / 2;
   for (let i = 0; i < STEPS; i++) {
     const dx = -inner + ((i + 0.5) * (2 * inner)) / STEPS;
@@ -154,6 +215,17 @@ export const versus: Station = (ctx) => {
           decals: [
             { on: "all", rect: [0, 0, 1, 0.1 / tall], fill: "#161b22" },
             { on: "top", rect: [0.2, 0.4, 0.8, 0.6], fill: "#161b22" },
+            // A bolt in each upper corner of every side, clear of the year and the figure.
+            ...(fine
+              ? [0.03, 0.94].map(
+                  (u): Decal => ({
+                    on: "all",
+                    rect: [u, 1 - 0.13 / tall, u + 0.03, 1 - 0.05 / tall],
+                    fill: "#c9d1d9",
+                    round: true,
+                  }),
+                )
+              : []),
           ],
         },
       ),

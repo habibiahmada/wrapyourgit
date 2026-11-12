@@ -5,7 +5,7 @@ import { gardenModel } from "../../scenes/garden.model";
 import { inkOn, LIT, mixHex, TONE, toneOf } from "../palette";
 import type { Decal, FaceText, Solid } from "../prims";
 import { PLAZA } from "../track";
-import { clip, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { clip, NEAR_ENOUGH, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
 
 const PLINTH = 0.22;
 const GAP = 0.3;
@@ -140,6 +140,16 @@ export const languages: Station = (ctx) => {
     const decals: Decal[] = [
       { on: "all", rect: [0, 0, 1, 0.06], fill: tone.right },
       { on: "top", rect: [0.1, 0.1, 0.9, 0.9], fill: mixHex(tree.color, "#ffffff", 0.3) },
+      // A few lines of code on its top, in the block's own ink: what the block is made of.
+      ...(ctx.overview < NEAR_ENOUGH
+        ? [0.72, 0.58, 0.44, 0.3].map(
+            (v, k): Decal => ({
+              on: "top",
+              rect: [0.18 + (k % 2) * 0.08, v, [0.7, 0.82, 0.56, 0.74][k] ?? 0.7, v + 0.06],
+              fill: mixHex(tree.color, ink, 0.55),
+            }),
+          )
+        : []),
     ];
     if (!icon) {
       // No logo for this language: a dark badge with its initials stands in for one.

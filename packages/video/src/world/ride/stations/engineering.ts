@@ -2,7 +2,7 @@ import { formatCount } from "../../../theme";
 import { planesModel } from "../../scenes/planes.model";
 import { LIT, TONE, type Tone, toneOf } from "../palette";
 import type { Box, Decal, FaceText, Solid } from "../prims";
-import { type Flowing, flow, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { type Flowing, flow, PLAZA_TOP, part, plaza, type Station, trackPaint } from "./kit";
 
 /** The board of counts: how wide it is, and its three rows in world units from its top. */
 const BOARD = { wide: 9.2, tall: 3.05, lift: 0.5 };
@@ -42,23 +42,6 @@ const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
 
 /** A wagon as something that travels on a line. */
 const ROLLING: Flowing = { long: WAGON.long, pitch: WAGON.pitch, travel: TRAVEL };
-
-/** A stretch of track's paint: sleepers across it and two rails along it. */
-function trackPaint(long: number): Decal[] {
-  const sleepers = Math.max(3, Math.round(long / 0.45));
-  return [
-    ...Array.from(
-      { length: sleepers },
-      (_, k): Decal => ({
-        on: "top",
-        rect: [(k + 0.3) / sleepers, 0.08, (k + 0.6) / sleepers, 0.92],
-        fill: "#6e5a48",
-      }),
-    ),
-    { on: "top", rect: [0, 0.2, 1, 0.28], fill: "#c9d1d9" },
-    { on: "top", rect: [0, 0.72, 1, 0.8], fill: "#c9d1d9" },
-  ];
-}
 
 /**
  * Pull requests: a junction. The main line runs along the plaza by the rail, and three branch

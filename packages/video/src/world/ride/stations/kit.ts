@@ -7,7 +7,7 @@ import type { LayoutFamily, RecapData } from "@wyg/schema";
 import type { City } from "../../city";
 import { INK, LIT, TONE } from "../palette";
 import { part } from "../place";
-import type { FaceName, FaceText, Solid } from "../prims";
+import type { Decal, FaceName, FaceText, Solid } from "../prims";
 import type { V3 } from "../project";
 import type { RideStop } from "../stops";
 import { at, heading, PLAZA, PLAZA_AHEAD, PLAZA_LATERAL } from "../track";
@@ -297,3 +297,20 @@ export function flow(
 
 /** How far into the climb to the overview the fine paint and the small moving things are still drawn. */
 export const NEAR_ENOUGH = 0.35;
+
+/** A stretch of track's paint, for the top of a flat box laid along it: sleepers across, two rails along. */
+export function trackPaint(long: number): Decal[] {
+  const sleepers = Math.max(3, Math.round(long / 0.45));
+  return [
+    ...Array.from(
+      { length: sleepers },
+      (_, k): Decal => ({
+        on: "top",
+        rect: [(k + 0.3) / sleepers, 0.08, (k + 0.6) / sleepers, 0.92],
+        fill: "#6e5a48",
+      }),
+    ),
+    { on: "top", rect: [0, 0.2, 1, 0.28], fill: "#c9d1d9" },
+    { on: "top", rect: [0, 0.72, 1, 0.8], fill: "#c9d1d9" },
+  ];
+}
