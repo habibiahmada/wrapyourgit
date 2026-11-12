@@ -2,7 +2,7 @@ import { formatCount } from "../../../theme";
 import { planesModel } from "../../scenes/planes.model";
 import { LIT, TONE, type Tone, toneOf } from "../palette";
 import type { Box, Decal, FaceText, Solid } from "../prims";
-import { PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { type Flowing, flow, PLAZA_TOP, part, plaza, type Station } from "./kit";
 
 /** The board of counts: how wide it is, and its three rows in world units from its top. */
 const BOARD = { wide: 9.2, tall: 3.05, lift: 0.5 };
@@ -40,37 +40,8 @@ const OPEN = toneOf("#e3b341");
 const BALLAST = toneOf("#3a424d");
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
 
-/**
- * Where `count` wagons are on a stretch of line from `from` to `to` at `loop` (0 to 1): spaced
- * evenly, all moving toward `to`, and each one that goes out at `to` comes in at `from`. They
- * move a whole number of spaces in a loop, so the line looks the same at its end as at its start.
- * Each wagon is the part of it that is on the stretch: one going in or coming out is shorter,
- * and may be in two parts, one at each end.
- */
-export function flow(
-  count: number,
-  from: number,
-  to: number,
-  loop: number,
-): { mid: number; long: number; whole: boolean }[][] {
-  const reach = to - from;
-  const fits = Math.min(count, Math.floor(reach / WAGON.pitch));
-  if (fits <= 0) return [];
-  const space = reach / fits;
-  const steps = Math.max(1, Math.round(TRAVEL / space));
-  return Array.from({ length: fits }, (_, i) => {
-    const mid = (((i + 0.5 + steps * loop) * space) % reach) + from;
-    const parts: { mid: number; long: number; whole: boolean }[] = [];
-    for (const shift of [0, -reach, reach]) {
-      const a = Math.max(from, mid + shift - WAGON.long / 2);
-      const b = Math.min(to, mid + shift + WAGON.long / 2);
-      if (b - a > 0.02)
-        parts.push({ mid: (a + b) / 2, long: b - a, whole: b - a > WAGON.long - 1e-6 });
-    }
-    // The larger part first: it is the one that carries the wagon's tag.
-    return parts.sort((x, y) => y.long - x.long);
-  });
-}
+/** A wagon as something that travels on a line. */
+const ROLLING: Flowing = { long: WAGON.long, pitch: WAGON.pitch, travel: TRAVEL };
 
 /** A stretch of track's paint: sleepers across it and two rails along it. */
 function trackPaint(long: number): Decal[] {
@@ -100,7 +71,7 @@ function trackPaint(long: number): Decal[] {
  * Once it is built the stop works, and its wagons go somewhere: the merged ones come out of the
  * shed at one end of the main line, run its length and go into the shed at the other; the open
  * ones come out of the shed at the far end of their branch and run down it into the cabin before
- * the main line. As many are on a line at every moment as there were at the start (flow), and
+ * the main line. As many are on a line at every moment as there were at the start (kit.ts flow), and
  * the loop ends where it began at 60 frames.
  */
 export const engineering: Station = (ctx) => {
@@ -316,7 +287,7 @@ export const engineering: Station = (ctx) => {
 
   // Merged: along the main line, out of one shed and into the other.
   const reach = MAIN.long / 2 - SHED;
-  flow(model.drawnLanded, -reach, reach, moving).forEach((parts, i) => {
+  flow(model.drawnLanded, -reach, reach, moving, ROLLING).forEach((parts, i) => {
     const on = easeOut((build - 0.3 - i * 0.03) / 0.3);
     if (on <= 0) return;
     parts.forEach((piece, n) => {
@@ -349,7 +320,7 @@ export const engineering: Station = (ctx) => {
       Math.floor(model.drawnFlying / JOINS.length) + (k < model.drawnFlying % JOINS.length ? 1 : 0);
     const from = SIDING.shed * BRANCH.long;
     const to = SIDING.cabin[0] * BRANCH.long;
-    for (const parts of flow(share, from, to, moving)) {
+    for (const parts of flow(share, from, to, moving, ROLLING)) {
       parts.forEach((piece, n) => {
         const [wx, wy] = onBranch(k, piece.mid / BRANCH.long);
         out.push(
