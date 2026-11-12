@@ -8,6 +8,7 @@ import { calendarGrid, heatLevels } from "@wyg/video/heat";
 import { and, eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { ImageResponse } from "next/og";
+import { type CardShape, cardArt, cardSize } from "./card-shape";
 import { db, recaps } from "./db";
 
 /*
@@ -60,19 +61,102 @@ export async function cardFonts() {
   ];
 }
 
-export async function renderCard(data: RecapData): Promise<ImageResponse> {
+/**
+ * The card's picture (`cardArt`) as a data URL. Read from public/art, which the build fills from
+ * the video package (scripts/sync-web-public.ts); kept per process, one per archetype.
+ */
+const artCache = new Map<string, Promise<string>>();
+function artDataUrl(id: string): Promise<string> {
+  const kept = artCache.get(id);
+  if (kept) return kept;
+  const url = readFile(join(process.cwd(), "public/art", `${id}.png`)).then(
+    (bytes) => `data:image/png;base64,${bytes.toString("base64")}`,
+  );
+  artCache.set(id, url);
+  url.catch(() => artCache.delete(id));
+  return url;
+}
+
+/** The art's own shape: every still under public/art is 1200 x 900. */
+const ART_RATIO = 3 / 4;
+
+export async function renderCard(
+  data: RecapData,
+  shape: CardShape = "card",
+): Promise<ImageResponse> {
   const { contributions, languages, identity, profile, meta } = data;
+  const { width, height } = cardSize(shape);
+  const wide = width / height > 1.3;
+  // Sizes are the link preview card's, scaled: by the frame for a wide card; for a tall or square
+  // one by its width and its height together, so a tall card's words fill it as a wide one's do.
+  const u = wide ? Math.min(width / 1200, height / 630) : Math.min(width / 700, height / 1000);
+  const pad = { x: 64 * u, y: 56 * u };
   const levels = heatLevels(contributions.calendar);
   const { cells, weeks } = calendarGrid(contributions.calendar);
-  const cell = 15;
+  const cell = wide ? 15 * u : Math.floor((width - pad.x * 2) / weeks);
   const facts = [
     { label: "active days", value: contributions.activeDays.toLocaleString("en-US") },
     { label: "longest streak", value: `${contributions.longestStreak.days} days` },
     languages.top[0] ? { label: "top language", value: languages.top[0].name } : null,
     identity.archetype ? { label: "archetype", value: ARCHETYPE_LABELS[identity.archetype] } : null,
   ].filter((fact) => fact !== null);
+  // A wide card has the picture beside the figures; a tall or square one above them, as big as
+  // the width and the height left over allow.
+  const artWide = wide
+    ? Math.min(width * 0.36, (height - pad.y * 2 - 7 * cell - 90 * u) / ART_RATIO)
+    : // What the words take: the padding, the header, the figures, the gaps, and the calendar.
+      Math.max(0, Math.min(width - pad.x * 2, (height - 560 * u - 7 * cell) / ART_RATIO));
+  const [fonts, art] = await Promise.all([cardFonts(), artDataUrl(cardArt(data))]);
 
-  const fonts = await cardFonts();
+  const figures = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 * u }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <span
+          style={{ fontSize: 130 * u, fontWeight: 800, lineHeight: 0.9, letterSpacing: -4 * u }}
+        >
+          {contributions.total.toLocaleString("en-US")}
+        </span>
+        <span style={{ fontSize: 30 * u, fontWeight: 700, marginTop: 10 * u }}>
+          {meta.isFinal ? `contributions in ${meta.year}` : `contributions so far in ${meta.year}`}
+        </span>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: `${12 * u}px ${36 * u}px`,
+          width: 520 * u,
+        }}
+      >
+        {facts.map((fact) => (
+          <div
+            key={fact.label}
+            style={{ display: "flex", flexDirection: "column", width: 240 * u }}
+          >
+            <span style={{ fontSize: 22 * u, fontWeight: 400 }}>{fact.label}</span>
+            <span
+              style={{
+                fontSize: 34 * u,
+                fontWeight: 800,
+                color: fact.label === "archetype" ? PERSIMMON : PAPER,
+              }}
+            >
+              {fact.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+  const picture = (
+    <img
+      src={art}
+      width={artWide}
+      height={artWide * ART_RATIO}
+      alt=""
+      style={{ width: artWide, height: artWide * ART_RATIO }}
+    />
+  );
 
   return new ImageResponse(
     <div
@@ -84,12 +168,17 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
         justifyContent: "space-between",
         background: INK,
         color: PAPER,
-        padding: "56px 64px",
+        padding: `${pad.y}px ${pad.x}px`,
         fontFamily: "Bricolage",
       }}
     >
       <div
-        style={{ display: "flex", justifyContent: "space-between", fontSize: 30, fontWeight: 700 }}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 30 * u,
+          fontWeight: 700,
+        }}
       >
         <span>
           @{profile.login} · {meta.year}
@@ -97,34 +186,19 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
         <span>WrapYourGit</span>
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 56 }}>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 150, fontWeight: 800, lineHeight: 0.9, letterSpacing: -4 }}>
-            {contributions.total.toLocaleString("en-US")}
-          </span>
-          <span style={{ fontSize: 32, fontWeight: 700, marginTop: 12 }}>
-            {meta.isFinal
-              ? `contributions in ${meta.year}`
-              : `contributions so far in ${meta.year}`}
-          </span>
+      {wide ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {figures}
+          {picture}
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "14px 36px", maxWidth: 520 }}>
-          {facts.map((fact) => (
-            <div key={fact.label} style={{ display: "flex", flexDirection: "column", width: 240 }}>
-              <span style={{ fontSize: 22, fontWeight: 400 }}>{fact.label}</span>
-              <span
-                style={{
-                  fontSize: 36,
-                  fontWeight: 800,
-                  color: fact.label === "archetype" ? PERSIMMON : PAPER,
-                }}
-              >
-                {fact.value}
-              </span>
-            </div>
-          ))}
+      ) : (
+        <div
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 * u }}
+        >
+          {picture}
+          <div style={{ display: "flex", width: "100%" }}>{figures}</div>
         </div>
-      </div>
+      )}
 
       <div style={{ display: "flex", position: "relative", width: weeks * cell, height: 7 * cell }}>
         {cells.map(({ week, weekday }, i) => {
@@ -136,9 +210,9 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
                 position: "absolute",
                 left: week * cell,
                 top: weekday * cell,
-                width: cell - 3,
-                height: cell - 3,
-                borderRadius: 3,
+                width: cell - 3 * u,
+                height: cell - 3 * u,
+                borderRadius: 3 * u,
                 background: level > 0 ? (HEAT[level - 1] ?? HEAT[0]) : "rgba(244,239,227,0.1)",
               }}
             />
@@ -146,10 +220,7 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
         })}
       </div>
     </div>,
-    {
-      ...CARD_SIZE,
-      fonts,
-    },
+    { width, height, fonts },
   );
 }
 
@@ -162,6 +233,7 @@ export async function cardPng(
   userId: string,
   // Unused in the body on purpose: as an argument it is part of the cache key.
   _syncedAtIso: string,
+  shape: CardShape = "card",
 ): Promise<Uint8Array<ArrayBuffer> | null> {
   "use cache";
   cacheLife("days");
@@ -170,7 +242,7 @@ export async function cardPng(
     .from(recaps)
     .where(and(eq(recaps.userId, userId), eq(recaps.year, EDITION_YEAR)));
   if (!row) return null;
-  const card = await renderCard(toPublicRecap(row.data));
+  const card = await renderCard(toPublicRecap(row.data), shape);
   return new Uint8Array(await card.arrayBuffer());
 }
 
@@ -178,10 +250,13 @@ export async function cardPng(
  * A public recap's card (loadPublicRecap's data, already public) as PNG bytes. The data is the
  * cache key: a refetch that changes nothing renders nothing, and a changed recap renders once.
  */
-export async function publicCardPng(data: RecapData): Promise<Uint8Array<ArrayBuffer>> {
+export async function publicCardPng(
+  data: RecapData,
+  shape: CardShape = "card",
+): Promise<Uint8Array<ArrayBuffer>> {
   "use cache";
   cacheLife("days");
-  const card = await renderCard(data);
+  const card = await renderCard(data, shape);
   return new Uint8Array(await card.arrayBuffer());
 }
 
