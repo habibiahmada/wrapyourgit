@@ -54,6 +54,9 @@ export const HERO_TAGS = [
   "observatory",
   "dome",
   "star",
+  "envelope",
+  "desk",
+  "post-box",
   "pr-board",
   "pr-merged",
   "pr-open",
@@ -159,6 +162,50 @@ const solidKey = (solid: Solid): string =>
       ? `ball|${solid.c.join(",")}|${solid.r}`
       : `picture|${solid.href}|${solid.c.join(",")}`;
 
+/** How long the letter takes to open over the scene, and to go as the train pulls out. */
+const LETTER_OPEN_SECONDS = 0.9;
+const LETTER_CLOSE_SECONDS = 0.5;
+
+/**
+ * The letter's sheet, which lies over the scene: the one place where text covers the picture
+ * (spec "Calls"). On the way in to its first page the sheet opens, and is whole on that stop's
+ * frame; a later page turns over the one before it without the camera moving; and after the
+ * last page it goes as the train pulls out. `enter` is what the sheet's own turn runs on, and
+ * `opacity` fades the whole of it, desk and all. Null when no page is to be seen.
+ */
+export function letterView(
+  model: RideModel,
+  frame: number,
+  fps: number,
+): { stop: RideStop; enter: number; opacity: number } | null {
+  const { stops, timeline } = model;
+  const reached = Math.max(
+    0,
+    stops.findLastIndex((_, i) => frame >= (timeline.stopFrames[i] ?? 0)),
+  );
+  const current = stops[reached];
+  const next = stops[reached + 1];
+  const nextAt = timeline.stopFrames[reached + 1];
+  const left = (timeline.stopFrames[reached] ?? 0) + timeline.holdFrames;
+  if (next?.kind === "letter" && nextAt !== undefined) {
+    // A page turns in place: no move comes between two pages, so the turn takes the end of the
+    // hold of the page before. The first page opens over the end of the way in.
+    const room = timeline.inPlace?.[reached + 1]
+      ? Math.round(timeline.holdFrames * 0.4)
+      : nextAt - left;
+    const frames = Math.max(1, Math.min(Math.round(LETTER_OPEN_SECONDS * fps), room));
+    const enter = clamp01((frame - (nextAt - frames)) / frames);
+    // The first page fades in with its desk; a later one turns over a page that is already there.
+    if (enter > 0) return { stop: next, enter, opacity: (next.page ?? 1) === 1 ? enter : 1 };
+  }
+  if (current?.kind !== "letter") return null;
+  const gone =
+    next && next.kind !== "letter"
+      ? clamp01((frame - left) / Math.max(1, Math.round(LETTER_CLOSE_SECONDS * fps)))
+      : 0;
+  return gone >= 1 ? null : { stop: current, enter: 1, opacity: 1 - gone };
+}
+
 /** `solid` at `grown` (0 to 1) of its height and of its height over the ground at `floor`. */
 function risen(solid: Solid, floor: number, grown: number): Solid {
   const lift = (z: number) => floor + (z - floor) * grown;
@@ -244,7 +291,8 @@ export function rideFrame(
 
   stops.forEach((stop, i) => {
     const station = STATIONS[stop.kind];
-    if (!station) return;
+    // The letter's pages all stop at one place: its station is drawn once, for the first.
+    if (!station || (stop.page ?? 1) > 1) return;
     // Every station is always there: its plaza and its sign from the start, its hero from the
     // moment the train pulls in, for the rest of the ride. Nothing is put up or taken down by
     // where the train is, so nothing appears or goes when a shot happens to catch it.

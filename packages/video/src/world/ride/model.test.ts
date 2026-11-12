@@ -2,7 +2,9 @@ import { expect, test } from "bun:test";
 import { VIDEO_FORMATS } from "@wyg/schema";
 import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
-import { buildRide, HERO_TAGS, rideDuration, rideFrame } from "./model";
+import { congratsLetter } from "../../letter";
+import { paginateLetter } from "../scenes/letter.model";
+import { buildRide, HERO_TAGS, letterView, rideDuration, rideFrame } from "./model";
 import { type Box, type Solid, scenePrims } from "./prims";
 import { stationContext } from "./stations/kit";
 import { RIDE_KINDS } from "./stops";
@@ -16,7 +18,12 @@ const tagged = (solids: Solid[], tag: string) =>
 
 test("the ride has the player's timeline shape and a duration to match", () => {
   const m = buildRide(sampleRecap, f, "video", 30);
-  expect(m.stops.map((s) => s.kind)).toEqual([...RIDE_KINDS]);
+  // Every kind in the story's order, the letter once for each of its pages.
+  const pages = m.stops.filter((s) => s.kind === "letter").length;
+  expect(pages).toBe(paginateLetter(congratsLetter(sampleRecap), f).length);
+  expect(m.stops.map((s) => s.kind).filter((kind, i, all) => kind !== all[i - 1])).toEqual([
+    ...RIDE_KINDS,
+  ]);
   expect(m.timeline.stopFrames).toHaveLength(m.stops.length);
   expect(rideDuration(sampleRecap, f, "video")).toBe(m.timeline.durationInFrames);
   expect(m.gates).toHaveLength(12);
@@ -174,7 +181,8 @@ test("a hero grows out of the ground as the train pulls in: it never starts in m
   const hero = (tag: string) =>
     tag !== "board" && tag !== "first-square" && tag !== "stage" && HERO_TAGS.includes(tag);
   m.stops.forEach((stop, i) => {
-    if (!stop.plaza) return;
+    // A later page of the letter stops where its first did: its station is already standing.
+    if (!stop.plaza || (stop.page ?? 1) > 1) return;
     const c = stationContext(sampleRecap, m.city, stop, 1, 0, 0).c;
     const rest = m.timeline.stopFrames[i] ?? 0;
     let seen = false;
@@ -195,3 +203,56 @@ test("a hero grows out of the ground as the train pulls in: it never starts in m
   });
   // Every frame of every station's build, whole.
 }, 30_000);
+
+test("the letter's sheet opens on the way in, is whole on each page's frame, turns in place and goes", () => {
+  const m = buildRide(sampleRecap, f, "video", 30);
+  const pages = m.stops.flatMap((stop, i) => (stop.kind === "letter" ? [i] : []));
+  const first = pages[0] ?? 0;
+  const last = pages.at(-1) ?? 0;
+  const at = (i: number) => m.timeline.stopFrames[i] ?? 0;
+  // Nothing over the scene before the train nears the letter, and at the station before it.
+  expect(letterView(m, at(first - 1), 30)).toBeNull();
+  expect(letterView(m, at(first) - 60, 30)).toBeNull();
+  // It opens over the last second of the way in, fading in with its desk...
+  const opening = letterView(m, at(first) - 10, 30);
+  expect(opening?.stop.page).toBe(1);
+  expect(opening?.opacity ?? 0).toBeGreaterThan(0);
+  expect(opening?.opacity ?? 1).toBeLessThan(1);
+  // ...and every page is whole on its own frame and through its hold: a slide of it is the page.
+  for (const i of pages) {
+    expect(letterView(m, at(i), 30)).toEqual({ stop: m.stops[i] as never, enter: 1, opacity: 1 });
+    expect(letterView(m, at(i) + 20, 30)).toEqual({
+      stop: m.stops[i] as never,
+      enter: 1,
+      opacity: 1,
+    });
+  }
+  // A later page turns over the one before it: never faded, and the camera does not move.
+  if (pages.length > 1) {
+    const second = pages[1] ?? 0;
+    const turn = letterView(m, at(second) - 5, 30);
+    expect(turn?.stop.page).toBe(2);
+    expect(turn?.opacity).toBe(1);
+    expect(turn?.enter ?? 1).toBeLessThan(1);
+    expect(rideFrame(m, sampleRecap, at(second), f, 30).cam).toEqual(
+      rideFrame(m, sampleRecap, at(first), f, 30).cam,
+    );
+  }
+  // After the last page it goes as the train pulls out, and is gone before the terminus.
+  const leaving = letterView(m, at(last) + m.timeline.holdFrames + 6, 30);
+  expect(leaving?.opacity ?? 1).toBeLessThan(1);
+  expect(letterView(m, at(last + 1), 30)).toBeNull();
+  // The public ride has no letter and never shows a sheet.
+  const open = buildRide(sampleRecap, f, "video", 30, { letter: false });
+  for (let frame = 0; frame < open.timeline.durationInFrames; frame += 15) {
+    expect(letterView(open, frame, 30)).toBeNull();
+  }
+});
+
+test("the letter's station is drawn once, however many pages stop at it", () => {
+  const m = buildRide(sampleRecap, f, "video", 30);
+  const i = m.stops.findLastIndex((stop) => stop.kind === "letter");
+  const objects = rideFrame(m, sampleRecap, m.timeline.stopFrames[i] ?? 0, f, 30).objects;
+  expect(tagged(objects, "envelope")).toHaveLength(1);
+  expect(tagged(objects, "desk")).toHaveLength(1);
+});

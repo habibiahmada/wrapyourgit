@@ -10,6 +10,7 @@ import { firstDay } from "./firstDay";
 import { hello } from "./hello";
 import type { Station } from "./kit";
 import { languages } from "./languages";
+import { letter } from "./letter";
 import { privateVault } from "./private";
 import { projects } from "./projects";
 import { rhythm } from "./rhythm";
@@ -30,6 +31,7 @@ const HEROES: Partial<Record<StopKind, Station>> = {
   engineering,
   archetype,
   versus,
+  letter,
   closing,
 };
 

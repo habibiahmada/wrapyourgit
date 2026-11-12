@@ -123,8 +123,17 @@ test("a month sign is low, and never stands in front of a station's own sign", (
 test("between two stations a month sign keeps to the side of the one behind it", () => {
   // The camera's shot in the middle of a move is on the other side: a sign there would pass
   // between the camera and the train.
-  const { all } = build(sampleRecap, { trainS: 0, from: 0, to: 160, overview: 0 });
-  const plazas = stops.filter((x) => x.plaza);
+  // Without the letter's station the stations stand far enough apart for a sign to fall between
+  // two of them; with it nearly every sign is inside a station's zone and crosses the rail.
+  const apart = rideStops(sampleRecap, city, { letter: false });
+  const l = land(city, gates(sampleRecap, city), apart, {
+    trainS: 0,
+    from: 0,
+    to: 160,
+    overview: 0,
+  });
+  const all = [...l.ground, ...l.objects];
+  const plazas = apart.filter((x) => x.plaza);
   let checked = 0;
   for (const gate of gates(sampleRecap, city)) {
     const s = weekS(gate.col) - 0.8;

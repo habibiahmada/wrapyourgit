@@ -59,6 +59,7 @@ test("the stations built so far exist", () => {
     "first-day",
     "hello",
     "languages",
+    "letter",
     "private",
     "projects",
     "rhythm",

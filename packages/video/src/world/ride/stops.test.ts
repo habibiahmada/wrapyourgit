@@ -10,8 +10,30 @@ import { FIRST_PLATFORM, PLAZA_AHEAD, terminus, turning } from "./track";
 const KINDS: StopKind[] = [...RIDE_KINDS];
 
 test("the ride keeps the story's order and only the stations it can draw", () => {
+  // Without the letter, as the public page plays it.
   const stops = rideStops(sampleRecap, buildCity(sampleRecap), { letter: false });
-  expect(stops.map((s) => s.kind)).toEqual(KINDS);
+  expect(stops.map((s) => s.kind)).toEqual(KINDS.filter((kind) => kind !== "letter"));
+  // With it: its place in the order, before the terminus.
+  const whole = rideStops(sampleRecap, buildCity(sampleRecap));
+  expect(whole.map((s) => s.kind)).toEqual(KINDS);
+});
+
+test("the letter's pages all stop at one place, with a plaza, before the terminus", () => {
+  const stops = rideStops(sampleRecap, buildCity(sampleRecap), { letterPages: 4 });
+  const pages = stops.filter((s) => s.kind === "letter");
+  expect(pages.map((s) => s.page)).toEqual([1, 2, 3, 4]);
+  for (const page of pages) {
+    expect(page.s).toBe(pages[0]?.s ?? -1);
+    expect(page.side === pages[0]?.side).toBe(true);
+    expect(page.plaza).toBe(true);
+  }
+  expect(stops.at(-1)?.kind).toBe("closing");
+  expect(stops.at(-1)?.s ?? 0).toBeGreaterThan(pages[0]?.s ?? 0);
+  // The other stations stand where they stand with one page: more pages take no more room.
+  const one = rideStops(sampleRecap, buildCity(sampleRecap), { letterPages: 1 });
+  expect(stops.filter((s) => s.kind !== "letter").map((s) => s.s)).toEqual(
+    one.filter((s) => s.kind !== "letter").map((s) => s.s),
+  );
 });
 
 test("stations run forward along the rail and never share a place", () => {
