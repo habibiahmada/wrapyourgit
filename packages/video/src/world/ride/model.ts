@@ -42,6 +42,7 @@ export const HERO_TAGS = [
   "shuttered",
   "flag",
   "first-square",
+  "graph-wall",
   "sprout",
   "vault",
   "record-base",
