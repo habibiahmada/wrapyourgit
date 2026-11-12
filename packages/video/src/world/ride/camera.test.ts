@@ -150,3 +150,20 @@ test("the city shot holds the whole rail in every format", () => {
 test("the same frame gives the same camera", () => {
   expect(rideCamera(333, stops, t, landscape)).toEqual(rideCamera(333, stops, t, landscape));
 });
+
+test("a frame narrower than its format sees as wide as the format does, and the formats are unchanged", () => {
+  const across = (fov: number, frame: { width: number; height: number }) =>
+    Math.tan((fov * Math.PI) / 360) * (frame.width / frame.height);
+  const pairs = [
+    [VIDEO_FORMATS["9x16"], { width: 1080, height: 2336 }],
+    [VIDEO_FORMATS["16x9"], { width: 1728, height: 1080 }],
+  ] as const;
+  for (const kind of ["hello", "busiest", "languages"] as const) {
+    const stop = stops[stopOf(kind)] as RideStop;
+    for (const [format, narrow] of pairs) {
+      const wide = restCamera(stop, stops, format);
+      const cam = restCamera(stop, stops, narrow);
+      expect(across(cam.fov, narrow)).toBeCloseTo(across(wide.fov, format), 6);
+    }
+  }
+});

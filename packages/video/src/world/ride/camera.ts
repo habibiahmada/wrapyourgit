@@ -4,7 +4,7 @@
  * landing's isometric angle, across the rail from the plaza. Everything is a function of the
  * frame, so the Player, the MP4 and the slides agree.
  */
-import { layoutForSize } from "@wyg/schema";
+import { layoutForSize, VIDEO_FORMATS } from "@wyg/schema";
 import { easeInOutCubic } from "../timeline";
 import { type Frame, projectPoint, type RideCamera, type V3 } from "./project";
 import type { RideStop } from "./stops";
@@ -103,13 +103,33 @@ function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
  * be"); in between the two blend.
  */
 function lens(fov: number, frame: Frame): number {
+  const family = layoutForSize(frame.width, frame.height);
+  const narrowest = NARROWEST[family];
+  const ratio = frame.width / frame.height;
+  if (ratio >= narrowest.width / narrowest.height) {
+    return formatLens(fov, frame.height, family);
+  }
+  // A frame narrower than its family's formats (a tall phone, a 4:3 screen on the web) would
+  // crop the sides the shots were framed for. It sees as wide as the narrowest format does, and
+  // more above and below.
+  const half = Math.tan((formatLens(fov, narrowest.height, family) * Math.PI) / 360);
+  return (2 * Math.atan((half * narrowest.width) / narrowest.height / ratio) * 180) / Math.PI;
+}
+
+/** The narrowest export format of each family. */
+const NARROWEST = {
+  portrait: VIDEO_FORMATS["9x16"],
+  compact: VIDEO_FORMATS["4x5"],
+  landscape: VIDEO_FORMATS["16x9"],
+} as const;
+
+function formatLens(fov: number, frameHeight: number, family: keyof typeof NARROWEST): number {
   const station = Math.max(
     0,
     Math.min(1, (SHOTS.RIDE.fov - fov) / (SHOTS.RIDE.fov - SHOTS.ISO.fov)),
   );
-  const family = layoutForSize(frame.width, frame.height);
   const ride = fov * (family === "portrait" ? 1.42 : family === "compact" ? 1.15 : 1);
-  const tall = frame.height / REFERENCE_HEIGHT;
+  const tall = frameHeight / REFERENCE_HEIGHT;
   const sameFocal = (2 * Math.atan(tall * Math.tan(((fov / 2) * Math.PI) / 180)) * 180) / Math.PI;
   return ride + (sameFocal - ride) * station;
 }
