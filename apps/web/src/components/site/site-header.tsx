@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
+import { SITE } from "@/site";
 import { LogoMark } from "./logo-mark";
 import { SiteNav } from "./site-nav";
 
@@ -43,12 +44,17 @@ export function SiteHeader(
           </span>
         </Link>
         {props.variant === "app" ? (
-          <Suspense fallback={null}>
-            <AccountNav current={props.current} />
-          </Suspense>
+          <div className="flex items-center gap-1 sm:gap-3">
+            {/* The account's own buttons need the room on a phone. */}
+            <RepoLink className="max-sm:hidden" />
+            <Suspense fallback={null}>
+              <AccountNav current={props.current} />
+            </Suspense>
+          </div>
         ) : (
           <SiteNav
             base={props.base ?? ""}
+            repo={<RepoLink />}
             action={
               <Suspense fallback={<SignInButton />}>
                 <HeaderAction />
@@ -58,6 +64,22 @@ export function SiteHeader(
         )}
       </div>
     </header>
+  );
+}
+
+/** The project is open source: GitHub's mark, linked to the repository. */
+function RepoLink({ className = "" }: { className?: string }) {
+  return (
+    <a
+      href={SITE.repository}
+      title="Source code on GitHub"
+      className={`inline-flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-fg hover:bg-overlay active:bg-line ${className}`}
+    >
+      <span className="sr-only">WrapYourGit's source code on GitHub</span>
+      <svg aria-hidden viewBox="0 0 16 16" className="size-6" fill="currentColor">
+        <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z" />
+      </svg>
+    </a>
   );
 }
 

@@ -9,7 +9,7 @@ import { button } from "@/components/ui";
 export function UsernameForm({
   id,
   label = "GitHub username",
-  submit = "Open their recap",
+  submit = "Open the recap",
   error,
 }: {
   id: string;

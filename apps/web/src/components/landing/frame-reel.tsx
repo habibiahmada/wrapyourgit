@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import { button } from "@/components/ui";
 
 export type ReelFrame = { file: string; label: string; alt: string };
 
@@ -9,7 +10,7 @@ export type ReelFrame = { file: string; label: string; alt: string };
  * The sample frames as a reel that drifts on its own: to the end, back to the start, again.
  * Drag it with a mouse, swipe it on touch, or scroll it with the keyboard; it stops while you hover,
  * focus or hold it, and picks up again a moment after you let go. Reduced motion never starts it.
- * No scrollbar and no pause button: the maintainer removed both (R-39 override, DESIGN.md).
+ * Includes a visible Pause/Play button (R-39) so anyone can stop or resume the motion at any time.
  */
 export function FrameReel({ frames }: { frames: ReelFrame[] }) {
   const track = useRef<HTMLElement>(null);
@@ -65,6 +66,19 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
 
   return (
     <div className="relative">
+      <div className="mx-auto mb-4 flex max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
+        <p className="text-sm text-muted">
+          Drag, swipe, or use Left and Right arrow keys to inspect each frame.
+        </p>
+        <button
+          type="button"
+          aria-pressed={paused}
+          onClick={() => setPaused((value) => !value)}
+          className={`${button.secondary} text-sm`}
+        >
+          {paused ? "Play sample reel" : "Pause sample reel"}
+        </button>
+      </div>
       <section
         ref={track}
         // biome-ignore lint/a11y/noNoninteractiveTabindex: the reel scrolls, so it must be reachable by keyboard
@@ -84,15 +98,15 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
           hovering.current = false;
           hold();
         }}
-        className="flex cursor-grab gap-5 overflow-x-auto px-4 py-6 select-none [scrollbar-width:none] active:cursor-grabbing sm:px-8 [&::-webkit-scrollbar]:hidden"
+        className="flex cursor-grab gap-6 overflow-x-auto px-4 py-8 select-none [scrollbar-width:none] active:cursor-grabbing sm:px-8 [&::-webkit-scrollbar]:hidden"
       >
         {frames.map((frame, i) => (
           <figure
             key={frame.file}
-            className={`w-56 shrink-0 sm:w-64 ${i % 2 ? "translate-y-6" : ""}`}
+            className={`w-56 shrink-0 rounded-2xl border border-line bg-surface p-3 sm:w-64 ${i % 2 ? "translate-y-6" : ""}`}
           >
             <Image
-              src={`/landing/world-${frame.file}.webp`}
+              src={`/landing/ride-${frame.file}.webp`}
               alt={frame.alt}
               width={540}
               height={675}
@@ -100,7 +114,9 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
               sizes="16rem"
               className="pointer-events-none h-auto w-full rounded-xl border border-line"
             />
-            <figcaption className="mt-3 text-sm font-semibold text-muted">{frame.label}</figcaption>
+            <figcaption className="mt-3 px-1 text-sm font-semibold text-fg">
+              {frame.label}
+            </figcaption>
           </figure>
         ))}
       </section>

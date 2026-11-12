@@ -73,19 +73,19 @@ Your year becomes a city, one building per day. The camera stops at 14 places an
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="apps/web/public/landing/world-hello.webp" alt="Hello: Cell's head says hi to @octo-sample and asks, ready for your 2026?" width="240"><br><b>1. Hello</b><br><sub>Cell says hi</sub></td>
-    <td align="center" width="33%"><img src="apps/web/public/landing/world-city.webp" alt="Your year as a city: 1,284 contributions, one green building per day" width="240"><br><b>4. Your year as a city</b><br><sub>One building per day</sub></td>
-    <td align="center" width="33%"><img src="apps/web/public/landing/world-busiest.webp" alt="Your busiest day: one tall building under a sign, Saturday, Jan 3, 8 contributions" width="240"><br><b>5. Your busiest day</b><br><sub>The tallest building</sub></td>
+    <td align="center" width="33%"><img src="apps/web/public/landing/ride-hello.webp" alt="Hello: Cell at the controls of a small green engine under a sign reading 2026, @octo-sample" width="240"><br><b>1. Hello</b><br><sub>Cell says hi</sub></td>
+    <td align="center" width="33%"><img src="apps/web/public/landing/ride-city.webp" alt="Your year as a city, seen from above: the rail winds past every station, 1,284 contributions" width="240"><br><b>4. Your year as a city</b><br><sub>One building per day</sub></td>
+    <td align="center" width="33%"><img src="apps/web/public/landing/ride-busiest.webp" alt="Your busiest day: a green tower with a number-one plate beside a calendar page for January 3" width="240"><br><b>5. Your busiest day</b><br><sub>The tallest building</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="apps/web/public/landing/world-rhythm.webp" alt="Your rhythm: contribution cells piled on a train, one wagon per weekday" width="240"><br><b>6. Your rhythm</b><br><sub>Your weekdays, as a train</sub></td>
-    <td align="center"><img src="apps/web/public/landing/world-languages.webp" alt="Languages: one tree per language, TypeScript 42%, JavaScript 28%, Python 18%" width="240"><br><b>7. Languages</b><br><sub>A garden, weighted by what you committed</sub></td>
-    <td align="center"><img src="apps/web/public/landing/world-projects.webp" alt="Projects: crates on shelves, one crate for about 50 commits, a private repository unnamed" width="240"><br><b>8. Projects</b><br><sub>Where your commits went</sub></td>
+    <td align="center"><img src="apps/web/public/landing/ride-rhythm.webp" alt="Your rhythm: seven wagons loaded with crates, one per weekday" width="240"><br><b>6. Your rhythm</b><br><sub>Your weekdays, as a train</sub></td>
+    <td align="center"><img src="apps/web/public/landing/ride-languages.webp" alt="Languages: three blocks sized by share, TypeScript 42%, JavaScript 28%, Python 18%" width="240"><br><b>7. Languages</b><br><sub>A garden, weighted by what you committed</sub></td>
+    <td align="center"><img src="apps/web/public/landing/ride-projects.webp" alt="Projects: containers stacked by commits, private repositories unnamed" width="240"><br><b>8. Projects</b><br><sub>Where your commits went</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="apps/web/public/landing/world-community.webp" alt="Community: a star for 128 stars earned and a signpost for 12 forks, in the night sky" width="240"><br><b>9. Community</b><br><sub>Stars and forks</sub></td>
-    <td align="center"><img src="apps/web/public/landing/world-archetype.webp" alt="Your archetype: Builder, Cell in a hard hat under a spotlight, with the reasons" width="240"><br><b>11. Your archetype</b><br><sub>And why</sub></td>
-    <td align="center"><img src="apps/web/public/landing/world-closing.webp" alt="The year in one frame: the total, active days and archetype over fireworks" width="240"><br><b>14. The year in one frame</b><br><sub>Fireworks over the city</sub></td>
+    <td align="center"><img src="apps/web/public/landing/ride-community.webp" alt="Community: an observatory under a sky of stars, 128 stars earned and 12 forks" width="240"><br><b>9. Community</b><br><sub>Stars and forks</sub></td>
+    <td align="center"><img src="apps/web/public/landing/ride-archetype.webp" alt="Your archetype: Builder, Cell in a hard hat in a city block where a building goes up" width="240"><br><b>11. Your archetype</b><br><sub>And why</sub></td>
+    <td align="center"><img src="apps/web/public/landing/ride-closing.webp" alt="The year in one frame: 2026, 1,284 contributions, 186 active days, Builder" width="240"><br><b>14. The year in one frame</b><br><sub>Fireworks over the city</sub></td>
   </tr>
 </table>
 

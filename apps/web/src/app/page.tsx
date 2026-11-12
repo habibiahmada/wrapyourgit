@@ -8,10 +8,13 @@ import {
   ClosingSection,
   FAQ,
   FaqSection,
-  KeepSection,
+  JourneySection,
   LetterSection,
+  MetricsSection,
+  PlayerSection,
+  PrintsSection,
   PrivacySection,
-  StorySection,
+  ReelSection,
 } from "@/components/landing/sections";
 import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -127,8 +130,8 @@ export default function Home({ searchParams }: PageProps<"/">) {
                     Every <span className="text-green">green square</span> has a story.
                   </h1>
                   <p className="mt-6 max-w-md text-lg text-muted">
-                    Type a GitHub username and watch their {EDITION_YEAR} play back as a short
-                    animated story. Sign in for your own, private work included.
+                    Type your GitHub username and watch your {EDITION_YEAR} play back as a short
+                    animated story. Sign in to include your private work.
                   </p>
                   <div className="mt-8">
                     <Suspense fallback={<HeroForm />}>
@@ -150,10 +153,13 @@ export default function Home({ searchParams }: PageProps<"/">) {
             </div>
           </section>
 
-          <StorySection />
+          <JourneySection />
+          <ReelSection />
+          <MetricsSection />
           <ArchetypesSection />
           <LetterSection />
-          <KeepSection />
+          <PlayerSection />
+          <PrintsSection />
           <PrivacySection />
           <FaqSection />
           <ClosingSection
@@ -179,7 +185,7 @@ async function PrimaryAction({ variant = "primary" }: { variant?: "primary" | "s
       transitionTypes={["nav-forward"]}
       className={`${button[variant]} max-w-full wrap-anywhere`}
     >
-      Open your {EDITION_YEAR} recap, @{user.login}
+      Open your recap
     </Link>
   );
 }
@@ -188,7 +194,7 @@ const INVALID_USERNAME =
   "That isn't a GitHub username. Use letters, numbers and hyphens, 39 at most, with no hyphen at either end.";
 
 function HeroForm({ error }: { error?: string }) {
-  return <UsernameForm id="hero-username" submit="Play their year" error={error} />;
+  return <UsernameForm id="hero-username" submit="Play your year" error={error} />;
 }
 
 /** /go sends a name GitHub couldn't issue back here as ?u=invalid; the field says why. */

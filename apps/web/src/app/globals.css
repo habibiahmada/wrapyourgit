@@ -101,14 +101,16 @@
     animation: light 520ms ease-out both;
   }
 
-  /* Scroll motion, CSS only: elements fade and rise in as they enter the viewport and fade out
-     as they leave, so the page breathes while scrolling. Browsers without scroll timelines,
-     and reduced motion, simply show the content. */
+  /* Scroll motion, CSS only: elements fade, rise, slide, float in isometric depth, or tilt as they
+     enter the viewport and fade out as they leave, so the page breathes while scrolling (MOTION 3).
+     Browsers without scroll timelines, and reduced motion, simply show the content. */
   @supports (animation-timeline: view()) {
     .reveal,
     .reveal-left,
     .reveal-right,
-    .reveal-zoom {
+    .reveal-zoom,
+    .reveal-float,
+    .reveal-tilt {
       animation-timing-function: linear;
       animation-fill-mode: both;
       animation-timeline: view();
@@ -126,67 +128,103 @@
     .reveal-zoom {
       animation-name: in-out-zoom;
     }
+    .reveal-float {
+      animation-name: in-out-float;
+    }
+    .reveal-tilt {
+      animation-name: in-out-tilt;
+    }
   }
 }
 
 @keyframes in-out-rise {
   0% {
     opacity: 0;
-    transform: translateY(48px);
+    transform: translateY(56px) scale(0.96);
   }
-  22%,
-  78% {
+  20%,
+  80% {
     opacity: 1;
     transform: none;
   }
   100% {
     opacity: 0;
-    transform: translateY(-32px);
+    transform: translateY(-40px) scale(0.97);
   }
 }
 @keyframes in-out-left {
   0% {
     opacity: 0;
-    transform: translateX(-64px) rotate(-3deg);
+    transform: translateX(-72px) translateY(24px) rotate(-2.5deg);
   }
-  24%,
+  22%,
   80% {
     opacity: 1;
     transform: none;
   }
   100% {
-    opacity: 0.2;
-    transform: translateX(-24px);
+    opacity: 0;
+    transform: translateX(-32px) translateY(-24px);
   }
 }
 @keyframes in-out-right {
   0% {
     opacity: 0;
-    transform: translateX(64px) rotate(3deg);
+    transform: translateX(72px) translateY(24px) rotate(2.5deg);
   }
-  24%,
+  22%,
   80% {
     opacity: 1;
     transform: none;
   }
   100% {
-    opacity: 0.2;
-    transform: translateX(24px);
+    opacity: 0;
+    transform: translateX(32px) translateY(-24px);
   }
 }
 @keyframes in-out-zoom {
   0% {
     opacity: 0;
-    transform: scale(0.82) rotate(-4deg);
+    transform: scale(0.84) translateY(36px) rotate(-2deg);
   }
-  26%,
+  24%,
   78% {
     opacity: 1;
     transform: none;
   }
   100% {
     opacity: 0;
-    transform: scale(1.06);
+    transform: scale(1.06) translateY(-24px);
+  }
+}
+@keyframes in-out-float {
+  0% {
+    opacity: 0;
+    transform: translateY(76px) scale(0.91);
+  }
+  24%,
+  76% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1.03);
+  }
+}
+@keyframes in-out-tilt {
+  0% {
+    opacity: 0;
+    transform: perspective(900px) rotateX(14deg) translateY(48px);
+  }
+  24%,
+  78% {
+    opacity: 1;
+    transform: perspective(900px) rotateX(0deg) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: perspective(900px) rotateX(-10deg) translateY(-36px);
   }
 }
 
@@ -261,11 +299,9 @@
 @keyframes vt-fade {
   from {
     opacity: 0;
-    filter: blur(3px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
   }
 }
 @keyframes vt-rise {
@@ -322,6 +358,30 @@ html {
     background: var(--color-canvas);
     color: var(--color-fg);
     font-family: var(--font-sans);
+  }
+
+  /* Glass (DESIGN.md "Web"): only for what stands in front of an isometric room or the hero's
+     city, where there is something to see through it. The base stays near-opaque
+     (#161b22 / #0d1117 at 84% and up), so text keeps its contrast whatever is behind:
+     fg #e6edf3 is over 13:1 and muted #8b949e over 5:1 on it. */
+  .glass-card,
+  .glass-pill {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+  .glass-card {
+    background: linear-gradient(145deg, rgba(22, 27, 34, 0.84) 0%, rgba(13, 17, 23, 0.92) 100%);
+    /* A lit top edge and a soft drop: the card stands off the room behind it (R-12). */
+    box-shadow:
+      0 20px 48px rgba(1, 4, 9, 0.65),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+  }
+  .glass-pill {
+    background: rgba(22, 27, 34, 0.86);
+    box-shadow:
+      0 10px 28px rgba(1, 4, 9, 0.55),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
   }
 
   /* R-39: one place that says "this can be used". */

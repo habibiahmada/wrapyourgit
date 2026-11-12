@@ -24,6 +24,8 @@ export const SITE = {
     url: "https://habibiahmada.dev",
     github: "https://github.com/habibiahmada",
   },
+  /** The source: the project is open, and the header links to it. */
+  repository: "https://github.com/habibiahmada/wrapyourgit",
   keywords: [
     "GitHub wrapped",
     `GitHub wrapped ${EDITION_YEAR}`,
