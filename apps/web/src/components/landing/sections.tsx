@@ -203,7 +203,7 @@ export function LetterSection() {
           </p>
           <Art
             id="iso-letter"
-            alt="Cell thinking at a writing desk with sheets, a sealed envelope and a post box, a bird waiting for the letter"
+            alt="Cell in glasses, thinking, in the middle of a city block round a post office: pillar boxes with a queue, mail vans, a letter as tall as a house, envelopes in the air"
             className="mt-8 h-auto w-full max-w-lg"
           />
         </div>
@@ -379,7 +379,7 @@ export function PrivacySection() {
         </div>
         <Art
           id="iso-privacy"
-          alt="Cell standing guard in a vault room with a locked door, a server rack and a sleeping cat"
+          alt="Cell standing guard in the middle of a city block round a vault with a round door: a data centre behind a fence, a guard post, cameras, and padlocks and keys in the air"
           className="reveal-right h-auto w-full"
         />
       </div>
@@ -478,7 +478,7 @@ export function ClosingSection({ action }: { action: ReactNode }) {
         <figure className="min-w-0">
           <Art
             id="iso-closing"
-            alt="A whole sample year as a city of contribution blocks, Cell crowned on a stage in front, fireworks above"
+            alt="A whole sample year as a city of contribution towers with lit windows, a small train running along its front, Cell crowned on a stage before a cheering crowd, fireworks above"
             width={1600}
             height={900}
             className="h-auto w-full"
