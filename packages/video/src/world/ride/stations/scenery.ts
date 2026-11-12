@@ -2,6 +2,7 @@ import { random } from "remotion";
 import type { StopKind } from "../../stops";
 import { TONE, toneOf } from "../palette";
 import type { Decal, FaceName, Solid } from "../prims";
+import { PLAZA_AHEAD, turning } from "../track";
 import { part, type StationContext } from "./kit";
 
 /*
@@ -33,10 +34,20 @@ const PAINTS = ["#388bfd", "#e3b341", "#c9d1d9", "#da3633", "#2dd4bf", "#a78bfa"
  */
 const NEAR = 0.35;
 
-/** How far behind the plaza's far edge each strip lies. */
-const STREET = { from: 0.5, to: 2.0 };
-const VERGE = 2.45;
-const ROW = { from: 2.95, deep: 2.5 };
+/**
+ * How far behind the plaza's far edge each strip lies. A town is laid out in blocks, like the
+ * landing's (ADR-0022): the avenue along the plaza, a row of buildings cut into three blocks by
+ * two cross streets, and, where there is room, a back street and a second, taller row. A plaza
+ * outside a turn has the open land behind it; one beside a straight run may face another run's
+ * town across the middle of the snake, so its town stops at the first row.
+ */
+const AVENUE = { from: 0.5, to: 2.0 };
+const VERGE = 2.3;
+const ROW = { from: 2.6, deep: 2.0 };
+const BACK = { from: 5.0, to: 6.2 };
+const ROW_2 = { from: 6.6, deep: 2.2 };
+/** How wide a cross street is, and how far each side of the plaza's middle the two of them run. */
+const CROSS = { wide: 1.1, at: 0.21 };
 
 type Mark = "clock" | "sign" | "shutter" | "beacon" | "awning" | "glass";
 type Theme = {
@@ -192,9 +203,12 @@ function markDecals(
   }
 }
 
-/** One building: a box with a band of glass to each storey, some panes lit, and a roof. */
-function building(
-  ctx: StationContext,
+/** One building: a box with a band of glass to each storey, some panes lit, and a roof. The land lines its avenue with them too. */
+/** Where a building stands and how high the camera is over the year: all one needs of a station. */
+export type Spot = Pick<StationContext, "c" | "yaw" | "overview">;
+
+export function building(
+  ctx: Spot,
   dx: number,
   dy: number,
   size: [number, number],
@@ -208,7 +222,7 @@ function building(
   const far = ctx.overview;
   const [wide, deep] = size;
   const tall = floors * FLOOR + 0.3;
-  const cols = Math.max(3, Math.round(wide / 0.46));
+  const cols = Math.max(3, Math.round(wide / 0.62));
   const decals: Decal[] = [];
   for (let floor = 0; floor < floors; floor++) {
     const v0 = (0.24 + floor * FLOOR) / tall;
@@ -298,6 +312,32 @@ function lamp(ctx: StationContext, dx: number, dy: number): Solid[] {
   ];
 }
 
+/** A strip of road with a dashed centre line; `along` is the axis it runs on. */
+function road(
+  ctx: StationContext,
+  dx: number,
+  dy: number,
+  size: [number, number],
+  along: "x" | "y",
+): Solid {
+  const dashes = Math.max(2, Math.round((along === "x" ? size[0] : size[1]) / 1.9));
+  return part(ctx.c, ctx.yaw, dx, dy, 0.05, [size[0], size[1], 0.02], ROAD, {
+    tag: "scenery",
+    under: 2,
+    edge: false,
+    decals:
+      ctx.overview >= NEAR
+        ? []
+        : Array.from({ length: dashes }, (_, k): Decal => {
+            const t = (k + 0.25) / dashes;
+            const w = 0.5 / dashes;
+            return along === "x"
+              ? { on: "top", rect: [t, 0.46, t + w, 0.54], fill: "#8b949e" }
+              : { on: "top", rect: [0.46, t, 0.54, t + w], fill: "#8b949e" };
+          }),
+  });
+}
+
 /**
  * The town behind and beside the plaza of `kind`, `long` by `deep`. Behind means away from the
  * rail; the plaza's far end is the one the train heads toward, which the camera looks at, not from.
@@ -311,61 +351,59 @@ export function scenery(ctx: StationContext, kind: StopKind, long: number, deep:
   /** The face a building turns to the rail, and so to the camera. */
   const toward: FaceName = stop.side === 1 ? "left" : "right";
   const span = long + 7;
+  // Outside a turn the land behind is open: room for a back street and a second row.
+  const two = turning(stop.s + PLAZA_AHEAD) !== 0;
+  const end = two ? ROW_2.from + ROW_2.deep + 0.3 : ROW.from + ROW.deep + 0.2;
   const out: Solid[] = [];
 
-  // The street: a kerb on each side, the road with its centre line, and what drives on it.
+  // The block's paving, from the plaza's edge to behind the last row, and the streets on it.
   out.push(
-    // The paving runs from the plaza's edge to the foot of the row.
-    part(c, yaw, 0, behind((0.2 + ROW.from - 0.05) / 2), 0, [span, ROW.from - 0.25, 0.05], KERB, {
+    part(c, yaw, 0, behind((0.2 + end) / 2), 0, [span, end - 0.2, 0.05], KERB, {
       tag: "scenery",
       under: 3,
     }),
-    part(
-      c,
-      yaw,
-      0,
-      behind((STREET.from + STREET.to) / 2),
-      0.05,
-      [span, STREET.to - STREET.from, 0.02],
-      ROAD,
-      {
-        tag: "scenery",
-        under: 2,
-        edge: false,
-        decals:
-          ctx.overview >= NEAR
-            ? []
-            : Array.from(
-                { length: 9 },
-                (_, k): Decal => ({
-                  on: "top",
-                  rect: [0.04 + k * 0.105, 0.47, 0.1 + k * 0.105, 0.53],
-                  fill: "#8b949e",
-                }),
-              ),
-      },
-    ),
+    road(ctx, 0, behind((AVENUE.from + AVENUE.to) / 2), [span, AVENUE.to - AVENUE.from], "x"),
   );
-  const lanes = [STREET.from + 0.42, STREET.to - 0.42];
+  const crossTo = two ? BACK.from : end;
+  for (const side of [-1, 1]) {
+    out.push(
+      road(
+        ctx,
+        side * span * CROSS.at,
+        behind((AVENUE.to + crossTo) / 2),
+        [CROSS.wide, crossTo - AVENUE.to],
+        "y",
+      ),
+    );
+  }
+  if (two)
+    out.push(road(ctx, 0, behind((BACK.from + BACK.to) / 2), [span, BACK.to - BACK.from], "x"));
+
+  const lanes = [AVENUE.from + 0.42, AVENUE.to - 0.42];
   [-0.34, 0.08, 0.4].forEach((share, k) => {
     const paint = PAINTS[Math.floor(random(`${kind}-van-${k}`) * PAINTS.length)] ?? "#c9d1d9";
-    out.push(
-      van(ctx, share * span, behind(lanes[k % 2] ?? lanes[0] ?? 1), k === 1 ? 2.3 : 1.5, paint),
-    );
+    out.push(van(ctx, share * span, behind(lanes[k % 2] ?? 1), k === 1 ? 2.3 : 1.5, paint));
   });
 
-  // The row: five buildings side by side, the middle one this stop's own.
-  const widths = [2.3, 2.7, 3.0, 2.5, 2.2].map((w, k) => w + random(`${kind}-wide-${k}`) * 0.5);
-  const gap = (span - widths.reduce((sum, w) => sum + w, 0)) / (widths.length + 1);
-  let x = -span / 2 + gap;
-  widths.forEach((wide, k) => {
-    const [low, high] = theme.floors;
+  // The first row: three blocks between the cross streets, the middle one this stop's own.
+  const inner = span * CROSS.at - CROSS.wide / 2;
+  const outer = span * CROSS.at + CROSS.wide / 2;
+  /** Each building's middle along the rail and its width: two, the landmark, two. */
+  const slots: [number, number][] = [];
+  for (const side of [-1, 1]) {
+    const room = span / 2 - outer - 0.3;
+    const first = room * (0.46 + random(`${kind}-split-${side}`) * 0.1);
+    slots.push([side * (outer + 0.15 + first / 2 - 0.1), first - 0.25]);
+    slots.push([side * (outer + 0.15 + first + (room - first) / 2), room - first - 0.25]);
+  }
+  slots.splice(2, 0, [0, inner * 2 - 0.5]);
+  const [low, high] = theme.floors;
+  slots.forEach(([dx, wide], k) => {
     const middle = k === 2;
     const floors = middle
       ? high
       : low + Math.floor(random(`${kind}-floors-${k}`) * (high - low + 1));
     const tall = floors * FLOOR + 0.3;
-    const dx = x + wide / 2;
     const dy = behind(ROW.from + ROW.deep / 2);
     out.push(
       building(
@@ -390,15 +428,40 @@ export function scenery(ctx: StationContext, kind: StopKind, long: number, deep:
         }),
       );
     }
-    x += wide + gap;
   });
 
-  // Trees and lamps on the verge before the row, and a few at the plaza's far end.
-  for (let k = 0; k < 5; k++) {
-    const dx = -span / 2 + ((k + 0.5) * span) / 5;
-    const s = 0.6 + random(`${kind}-tree-${k}`) * 0.2;
-    if (k % 2 === 0) out.push(...tree(ctx, dx, behind(VERGE), s));
-    else out.push(...lamp(ctx, dx, behind(VERGE)));
+  // The second row, behind the back street: taller, one building to a block and a half.
+  if (two) {
+    const wide = (span - 1.5) / 4 - 0.4;
+    for (let k = 0; k < 4; k++) {
+      const floors = high + 1 + Math.floor(random(`${kind}-back-${k}`) * 3);
+      out.push(
+        building(
+          ctx,
+          -span / 2 + 0.75 + (k + 0.5) * ((span - 1.5) / 4),
+          behind(ROW_2.from + ROW_2.deep / 2),
+          [wide, ROW_2.deep],
+          floors,
+          theme.walls[(k + 1) % theme.walls.length] ?? "#3b4a5c",
+          theme.lit * 0.8,
+          `${kind}-back-${k}`,
+          theme.cool ?? false,
+        ),
+      );
+    }
+  }
+
+  // Trees and lamps on the verge before the row, and trees at the plaza's far end.
+  for (const [share, what] of [
+    [-0.4, "tree"],
+    [-0.3, "lamp"],
+    [-0.1, "tree"],
+    [0.1, "tree"],
+    [0.3, "lamp"],
+    [0.4, "tree"],
+  ] as const) {
+    if (what === "tree") out.push(...tree(ctx, share * span, behind(VERGE), 0.5));
+    else out.push(...lamp(ctx, share * span, behind(VERGE)));
   }
   for (const t of [-1.3, 0.4]) out.push(...tree(ctx, long / 2 + 1.5, away * t, 0.75));
 
@@ -409,17 +472,17 @@ export function scenery(ctx: StationContext, kind: StopKind, long: number, deep:
       decals: [
         ...(ctx.overview >= NEAR
           ? []
-          : Array.from(
-              { length: 6 },
-              (_, k): Decal => ({
-                on: "all",
-                rect: [k / 6, 0.72, (k + 1) / 6, 1],
-                fill: k % 2 === 0 ? theme.accent : "#f0f6fc",
-              }),
-            )),
-        ...(ctx.overview >= NEAR
-          ? []
-          : [{ on: "all", rect: [0.14, 0.3, 0.86, 0.66], fill: "#0d1117" } satisfies Decal]),
+          : [
+              ...Array.from(
+                { length: 6 },
+                (_, k): Decal => ({
+                  on: "all",
+                  rect: [k / 6, 0.72, (k + 1) / 6, 1],
+                  fill: k % 2 === 0 ? theme.accent : "#f0f6fc",
+                }),
+              ),
+              { on: "all", rect: [0.14, 0.3, 0.86, 0.66], fill: "#0d1117" } satisfies Decal,
+            ]),
         { on: "top", rect: [0.05, 0.05, 0.95, 0.95], fill: theme.accent },
       ],
     }),

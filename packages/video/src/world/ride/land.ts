@@ -7,16 +7,41 @@ import { random } from "remotion";
 import { heatLevels } from "../../heat";
 import type { City } from "../city";
 import type { Gate } from "./gates.model";
-import { heat, LIT, mixHex, TONE } from "./palette";
+import { heat, LIT, mixHex, TONE, toneOf } from "./palette";
 import { part, railBox } from "./place";
 import type { FaceText, Solid } from "./prims";
+import { building } from "./stations/scenery";
 import type { RideStop } from "./stops";
-import { at, dayPlace, FIRST_ROW, PLAZA_AHEAD, ROW_PITCH, railEnd, SQUARE, weekS } from "./track";
+import {
+  at,
+  dayPlace,
+  FIRST_ROW,
+  heading,
+  PLAZA,
+  PLAZA_AHEAD,
+  PLAZA_LATERAL,
+  ROW_PITCH,
+  railEnd,
+  SQUARE,
+  TURN,
+  turning,
+  weekS,
+} from "./track";
 
 /** A day lights when the train is this close behind it. */
 export const LIGHT_AHEAD = 15;
 /** Gates and props keep this far from a plaza, so nothing stands between the camera and a hero. */
 const CLEAR = 8;
+/**
+ * The avenue runs this far from the rail's middle: just behind a plaza of the usual depth, where
+ * a station's own street is. It is laid in pieces this long, and a station's town takes over this
+ * far each side of its plaza's middle.
+ */
+const AVENUE_LATERAL = PLAZA_LATERAL + PLAZA.deep / 2 + 1.25;
+const AVENUE_STEP = 3;
+const TOWN_HALF = (PLAZA.long + 7) / 2;
+const AVENUE_TONE = toneOf("#262c36");
+const AVENUE_WALLS = ["#3b4a5c", "#4a535e", "#30476b", "#5a4634", "#2f5d50"];
 /** How far from the rail's middle a month sign stands: clear of the train, and of the camera that rides behind it. */
 export const SIGN_LATERAL = 3;
 /**
@@ -190,7 +215,9 @@ export function land(
           );
         }
         const kind = random(`prop-${k}-${side}`);
-        const c = at(s, side * (outer + 1.6 + random(`prop-lat-${k}-${side}`) * 5));
+        // Clear of the avenue and what stands on it: near the squares, or out beyond them.
+        const roll = random(`prop-lat-${k}-${side}`);
+        const c = at(s, side * (roll < 0.45 ? outer + 1.4 + roll * 3.6 : outer + 9.6 + roll * 5));
         const size = 0.8 + random(`prop-size-${k}-${side}`) * 0.5;
         if (kind < 0.5) {
           objects.push(
@@ -240,6 +267,58 @@ export function land(
     objects.push(
       railBox(s, lateral, 3.3, [0.34, 0.34, 0.34], TONE.lamp, { lit: true, tag: "beacon-cap" }),
     );
+  }
+
+  // The avenue: one road on each side of the rail, all the way along, so every station's town is
+  // on the same street as the next. Inside a turn there is no room for it, and beside a plaza the
+  // station lays its own stretch (scenery.ts). Between towns a building stands on it now and then.
+  const townStops = stops.filter((stop) => stop.plaza);
+  for (
+    let k = Math.max(0, Math.ceil(view.from / AVENUE_STEP));
+    k * AVENUE_STEP <= Math.min(view.to, end);
+    k++
+  ) {
+    const s = k * AVENUE_STEP;
+    const turn = turning(s);
+    // The road is longer than the rail on the outside of a turn.
+    const stretch = turn === 0 ? 1 : 1 + AVENUE_LATERAL / TURN;
+    for (const side of [-1, 1] as const) {
+      if (turn !== 0 && side !== turn) continue;
+      const inTown = townStops.some(
+        (stop) => stop.side === side && Math.abs(s - (stop.s + PLAZA_AHEAD)) * stretch < TOWN_HALF,
+      );
+      if (inTown) continue;
+      ground.push(
+        railBox(
+          s,
+          side * AVENUE_LATERAL,
+          0,
+          [AVENUE_STEP * stretch + 0.2, 1.5, 0.06],
+          AVENUE_TONE,
+          {
+            tag: "avenue",
+            under: 2,
+            edge: false,
+            decals: far ? [] : [{ on: "top", rect: [0.3, 0.46, 0.7, 0.54], fill: "#8b949e" }],
+          },
+        ),
+      );
+      if (k % 2 !== 0) continue;
+      const wide = 2.2 + random(`avenue-wide-${k}-${side}`) * 0.9;
+      objects.push(
+        building(
+          { c: at(s, side * (AVENUE_LATERAL + 2.3)), yaw: heading(s), overview: view.overview },
+          0,
+          0,
+          [wide, 2.0],
+          2 + Math.floor(random(`avenue-floors-${k}-${side}`) * 3),
+          AVENUE_WALLS[k % AVENUE_WALLS.length] ?? "#3b4a5c",
+          0.3,
+          `avenue-${k}-${side}`,
+          false,
+        ),
+      );
+    }
   }
 
   return { ground, objects };

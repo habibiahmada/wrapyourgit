@@ -6,7 +6,7 @@ import { gates } from "./gates.model";
 import { land, SIGN_LATERAL, SIGN_ZONE, type View } from "./land";
 import type { Box, Solid } from "./prims";
 import { rideStops } from "./stops";
-import { at, dayPlace, weekS } from "./track";
+import { at, dayPlace, PLAZA_AHEAD, turning, weekS } from "./track";
 
 const city = buildCity(sampleRecap);
 const stops = rideStops(sampleRecap, city);
@@ -165,4 +165,39 @@ test("the first and the busiest day carry a beacon, an empty year none", () => {
 test("an empty year lays every day flat", () => {
   const { all } = build(emptyRecap, { trainS: 200, from: 0, to: 160, overview: 0 });
   for (const b of boxes(all, "day")) expect(b.size[2]).toBeCloseTo(0.04);
+});
+
+test("an avenue runs along the rail on both sides, links the towns, and stays out of them", () => {
+  const whole: View = { trainS: 30, from: 0, to: 400, overview: 0 };
+  const c = buildCity(sampleRecap);
+  const l = land(c, gates(sampleRecap, c), stops, whole);
+  const pieces = boxes(l.ground, "avenue");
+  expect(pieces.length).toBeGreaterThan(20);
+  // Which side of the rail a piece is on, and where along it: from its pivot, the piece's middle.
+  const placed = pieces.map((piece) => {
+    const [px, py] = piece.pivot ?? [0, 0];
+    let best = { s: 0, side: 1, far: Number.POSITIVE_INFINITY };
+    for (let s = 0; s <= 160; s += 1.5) {
+      for (const side of [-1, 1]) {
+        const [x, y] = at(s, side * 12.65);
+        const far = Math.hypot(x - px, y - py);
+        if (far < best.far) best = { s, side, far };
+      }
+    }
+    return best;
+  });
+  expect(placed.some((p) => p.side === 1)).toBe(true);
+  expect(placed.some((p) => p.side === -1)).toBe(true);
+  for (const p of placed) {
+    // Never inside a turn: there is no room there.
+    const turn = turning(p.s);
+    if (turn !== 0) expect(p.side).toBe(turn);
+    // And never where a station lays its own stretch of it.
+    const own = stops.some(
+      (stop) => stop.plaza && stop.side === p.side && Math.abs(p.s - (stop.s + PLAZA_AHEAD)) < 3,
+    );
+    expect(own).toBe(false);
+  }
+  // Buildings stand on it between the towns.
+  expect(boxes(l.objects, "scenery").length).toBeGreaterThan(5);
 });
