@@ -1,7 +1,7 @@
 /*
  * The rail: one line along the year that doubles back on itself in wide turns. A distance along it is `s`; a week is a fixed
  * length; a day's square sits beside the rail in its week; stations stand at even intervals from
- * the first platform to the terminus, on alternating sides, so they never crowd each other
+ * the first platform, with extra room before the terminus, on alternating sides, so they never crowd each other
  * whatever dates the year has (spec "Stations").
  */
 import type { V3 } from "./project";
@@ -125,9 +125,16 @@ export function dayPlace(plot: { col: number; row: number }): { s: number; later
 }
 
 /**
- * Station `index` of `count` placed stations: even intervals from the first platform to the
- * terminus. On a straight run sides alternate (1 is the right of the rail), so a plaza's nearest
- * neighbour on its own side is two intervals away; on a turn every plaza is on the outside.
+ * Extra rail before the terminus: the closing party's plaza runs back along the rail, and the
+ * station before must stand clear of it.
+ */
+export const CLOSING_ROOM = 10;
+
+/**
+ * Station `index` of `count` placed stations: even intervals from the first platform, and the
+ * terminus CLOSING_ROOM further on. On a straight run sides alternate (1 is the right of the
+ * rail), so a plaza's nearest neighbour on its own side is two intervals away; on a turn every
+ * plaza is on the outside.
  */
 export function stationPlace(
   index: number,
@@ -135,7 +142,14 @@ export function stationPlace(
   weeks: number,
 ): { s: number; side: 1 | -1 } {
   const span = terminus(weeks) - FIRST_PLATFORM;
-  const s = count <= 1 ? FIRST_PLATFORM : FIRST_PLATFORM + (index * span) / (count - 1);
+  // The terminus keeps CLOSING_ROOM to itself before it; the others share the rest evenly.
+  const step = count <= 1 ? 0 : (span - CLOSING_ROOM) / (count - 1);
+  const s =
+    count <= 1
+      ? FIRST_PLATFORM
+      : index >= count - 1
+        ? terminus(weeks)
+        : FIRST_PLATFORM + index * step;
   // On a turn the plaza stands outside it: inside, the rail runs all the way round and two
   // plazas would share the little ground in the middle.
   const turn = turning(s + PLAZA_AHEAD) || turning(s);

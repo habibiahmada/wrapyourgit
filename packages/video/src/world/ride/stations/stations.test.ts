@@ -310,12 +310,76 @@ test("city's billboard is lowered in as the overview settles, not put there all 
   expect(foot(0.95)).toBeGreaterThan(foot(1));
 });
 
-test("closing prints the date line, the year and every line of the model", () => {
+test("a town lays no avenue of its own: the land's avenue runs through it", () => {
+  const roads = boxes(build("busiest", sampleRecap), "scenery").filter(
+    (b) => b.size[0] > 10 && Math.abs(b.size[1] - 1.5) < 0.01 && b.size[2] < 0.05,
+  );
+  expect(roads).toEqual([]);
+});
+
+test("closing is a party: the gate carries the date and the year, the podium the numbers", () => {
   const model = closingModel(sampleRecap);
-  const text = printed(build("closing", sampleRecap));
+  const all = build("closing", sampleRecap);
+  const text = printed(boxes(all, "gate"));
   expect(text).toContain(model.date);
   expect(text).toContain(String(model.year));
-  for (const line of model.lines) expect(text).toContain(line);
+  const podium = printed(boxes(all, "podium"));
+  const { total, activeDays } = sampleRecap.contributions;
+  expect(podium).toContain(formatCount(total));
+  expect(podium).toContain(formatCount(activeDays));
+  expect(podium).toContain("contributions");
+  expect(podium).toContain("active days");
+  if (sampleRecap.identity.archetype) expect(podium).toContain(model.lines[2] ?? "");
+  expect(boxes(all, "trophy").length).toBeGreaterThan(0);
+  // No old billboard across the rail.
+  expect(boxes(all, "board")).toEqual([]);
+});
+
+test("closing's twelve month bars stand as tall as each month's contributions", () => {
+  const bars = boxes(build("closing", sampleRecap), "month");
+  expect(bars).toHaveLength(12);
+  const monthly = sampleRecap.contributions.monthly;
+  for (let i = 0; i < 12; i++) {
+    for (let j = 0; j < 12; j++) {
+      if ((monthly[i] ?? 0) > (monthly[j] ?? 0)) {
+        expect(bars[i]?.size[2] ?? 0).toBeGreaterThan(bars[j]?.size[2] ?? 0);
+      }
+    }
+  }
+});
+
+test("closing's party is lowered in as the train arrives, never put there at once", () => {
+  const foot = (progress: number, tag: string) =>
+    Math.min(...boxes(build("closing", sampleRecap, progress), tag).map((b) => b.at[2]));
+  for (const tag of ["gate", "podium", "trophy"]) {
+    expect(foot(0.5, tag)).toBeGreaterThan(foot(1, tag) + 1);
+  }
+});
+
+test("closing's balloons float on strings, and the party has its carpet, gifts and lights", () => {
+  const all = build("closing", sampleRecap);
+  const strings = boxes(all, "balloon-string");
+  const balloons = all.filter((s) => s.kind === "ball" && s.r >= 0.25);
+  expect(strings.length).toBeGreaterThanOrEqual(10);
+  expect(balloons).toHaveLength(strings.length);
+  // Every balloon is just above the top of a string.
+  for (const balloon of balloons) {
+    if (balloon.kind !== "ball") continue;
+    const tied = strings.some((t) => {
+      const top = t.at[2] + t.size[2];
+      return Math.abs(balloon.c[2] - balloon.r - top) < 0.15;
+    });
+    expect(tied).toBe(true);
+  }
+  expect(boxes(all, "carpet").length).toBeGreaterThan(0);
+  expect(boxes(all, "gift").length).toBeGreaterThanOrEqual(3);
+  expect(boxes(all, "spotlight").length).toBeGreaterThanOrEqual(2);
+});
+
+test("closing without an archetype still has a full podium", () => {
+  const text = printed(boxes(build("closing", emptyRecap), "podium"));
+  expect(text).toContain("0");
+  expect(text.length).toBeGreaterThanOrEqual(5);
 });
 
 test("a station at rest is the same 60 frames later, and still moving in between", () => {

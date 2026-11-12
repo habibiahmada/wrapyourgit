@@ -33,8 +33,9 @@ export function request(
   timeline: StoryTimeline,
   phase = 0,
 ): { state: ControllerState; start: boolean } {
-  // While a move plays, only the newest intent is kept: rapid taps must not stack up moves.
-  if (state.moving) return { state: { ...state, queued: direction }, start: false };
+  // A tap while the train moves is dropped: however many come, it makes the one move, and the
+  // reader taps again once it has stopped.
+  if (state.moving) return { state, start: false };
 
   const to = state.stop + direction;
   const from = timeline.stopFrames[state.stop];

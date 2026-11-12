@@ -4,7 +4,7 @@
  * landing's isometric angle, across the rail from the plaza. Everything is a function of the
  * frame, so the Player, the MP4 and the slides agree.
  */
-import { layoutForSize } from "@wyg/schema";
+import { layoutForSize, VIDEO_FORMATS } from "@wyg/schema";
 import { easeInOutCubic } from "../timeline";
 import { type Frame, projectPoint, type RideCamera, type V3 } from "./project";
 import type { RideStop } from "./stops";
@@ -45,7 +45,6 @@ export const SHOTS = {
 
 /** Where Cell sits on the engine, from its nose. */
 const CELL_SEAT = -0.35;
-const MIDDLE_MIN_SECONDS = 2.2;
 const CITY_FOV = 34;
 const CITY_MARGIN = 0.06;
 /** The frame height the shots' lenses are written for (16:9). */
@@ -73,7 +72,7 @@ const lerpV = (a: V3, b: V3, t: number): V3 => [
 ];
 const logLerp = (a: number, b: number, t: number) => Math.exp(lerp(Math.log(a), Math.log(b), t));
 
-/** The centre of a stop's hero: its plaza, or for closing the board at the buffers. */
+/** The centre of a stop's hero: its plaza, or for closing the party's plaza beyond the rail. */
 /** The shot a station rests on. */
 export function stationShot(_stop: RideStop): Shot {
   return SHOTS.ISO;
@@ -81,7 +80,8 @@ export function stationShot(_stop: RideStop): Shot {
 
 function heroPoint(stop: RideStop): V3 {
   if (stop.plaza) return at(stop.s + PLAZA_AHEAD, stop.side * PLAZA_LATERAL, 3.4);
-  return at(stop.s - 5.6, 0, 4.0);
+  // Closing's plaza stands 7 back along the rail and 5.8 out on its side (stations/closing.ts).
+  return at(stop.s - 7, stop.side * 5.8, 2.6);
 }
 
 function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
@@ -104,13 +104,33 @@ function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
  * be"); in between the two blend.
  */
 function lens(fov: number, frame: Frame): number {
+  const family = layoutForSize(frame.width, frame.height);
+  const narrowest = NARROWEST[family];
+  const ratio = frame.width / frame.height;
+  if (ratio >= narrowest.width / narrowest.height) {
+    return formatLens(fov, frame.height, family);
+  }
+  // A frame narrower than its family's formats (a tall phone, a 4:3 screen on the web) would
+  // crop the sides the shots were framed for. It sees as wide as the narrowest format does, and
+  // more above and below.
+  const half = Math.tan((formatLens(fov, narrowest.height, family) * Math.PI) / 360);
+  return (2 * Math.atan((half * narrowest.width) / narrowest.height / ratio) * 180) / Math.PI;
+}
+
+/** The narrowest export format of each family. */
+const NARROWEST = {
+  portrait: VIDEO_FORMATS["9x16"],
+  compact: VIDEO_FORMATS["4x5"],
+  landscape: VIDEO_FORMATS["16x9"],
+} as const;
+
+function formatLens(fov: number, frameHeight: number, family: keyof typeof NARROWEST): number {
   const station = Math.max(
     0,
     Math.min(1, (SHOTS.RIDE.fov - fov) / (SHOTS.RIDE.fov - SHOTS.ISO.fov)),
   );
-  const family = layoutForSize(frame.width, frame.height);
   const ride = fov * (family === "portrait" ? 1.42 : family === "compact" ? 1.15 : 1);
-  const tall = frame.height / REFERENCE_HEIGHT;
+  const tall = frameHeight / REFERENCE_HEIGHT;
   const sameFocal = (2 * Math.atan(tall * Math.tan(((fov / 2) * Math.PI) / 180)) * 180) / Math.PI;
   return ride + (sameFocal - ride) * station;
 }
@@ -230,6 +250,12 @@ function fitCityPose(end: number, frame: Frame): Pose {
 /** Where the hero and Cell may sit in the frame at a stop, as shares of its height and width. */
 const HERO_TOP = 0.07;
 const CELL_LOW = 0.9;
+/**
+ * Cell's lowest place at the closing stop, by layout: below it a tall frame is left to the grass. A
+ * wider one has no height to spare, or the podium's words would be too small to read; the web
+ * player puts its files beside the train there instead.
+ */
+const CLOSING_LOW = { portrait: 0.7, landscape: CELL_LOW, compact: CELL_LOW } as const;
 const SIDE_MARGIN = 0.04;
 /** How much closer or further than the shot's own distance the fit may go. */
 const NEAREST = 0.55;
@@ -321,8 +347,12 @@ function fitStationRest(stop: RideStop, base: Pose, frame: Frame): Pose {
       right: Math.max(...xs) / frame.width,
     };
   };
-  const target = (HERO_TOP + CELL_LOW) / 2;
-  const room = CELL_LOW - HERO_TOP;
+  // The closing stop keeps the bottom of the frame as open grass: the web player stands its
+  // "keep your year" files there, and in a file it is the ground the party stands on.
+  const low =
+    stop.kind === "closing" ? CLOSING_LOW[layoutForSize(frame.width, frame.height)] : CELL_LOW;
+  const target = (HERO_TOP + low) / 2;
+  const room = low - HERO_TOP;
   let rest = base;
   for (let i = 0; i < 200; i++) {
     const m = measure(rest);

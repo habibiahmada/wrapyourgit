@@ -1,6 +1,6 @@
 import type { LayoutFamily } from "@wyg/schema";
 import { staticFile } from "remotion";
-import { languageIcon, languageInitials } from "../../../languages";
+import { languageIcon, languageInitials, logoNeedsBacking } from "../../../languages";
 import { gardenModel } from "../../scenes/garden.model";
 import { inkOn, LIT, mixHex, TONE, toneOf } from "../palette";
 import type { Decal, FaceText, Solid } from "../prims";
@@ -151,14 +151,18 @@ export const languages: Station = (ctx) => {
           )
         : []),
     ];
+    // Where the logo is printed, or the dark badge that stands in for one.
+    const badge: [number, number, number, number] = [
+      0.3,
+      1 - (0.17 + LOGO) / tall,
+      0.7,
+      1 - 0.17 / tall,
+    ];
+    // A logo in the block's own colour stands on the badge, or it would not show at all.
+    if (icon && logoNeedsBacking(tree.name))
+      decals.push({ on: "all", rect: badge, fill: "#161b22" });
     if (!icon) {
-      // No logo for this language: a dark badge with its initials stands in for one.
-      const badge: [number, number, number, number] = [
-        0.3,
-        1 - (0.17 + LOGO) / tall,
-        0.7,
-        1 - 0.17 / tall,
-      ];
+      // No logo for this language: the badge carries its initials instead.
       decals.push({ on: "all", rect: badge, fill: "#161b22" });
       texts.push({
         on: "all",

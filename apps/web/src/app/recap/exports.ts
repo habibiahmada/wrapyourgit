@@ -173,13 +173,15 @@ export async function renderSlides(
   options: {
     onProgress: (done: number, total: number) => void;
     signal: AbortSignal;
+    /** The slides' shape; the Instagram feed's 4:5 by default. */
+    format?: ExportFormat;
   } & LetterOption,
   overrides: Partial<ExportEngine> = {},
 ): Promise<Slide[]> {
   const engine = engineWith(overrides);
-  const { onProgress, signal, letter } = options;
-  const world = composition(data, "4x5", { letter });
-  const frames = slideFrames(data, { letter });
+  const { onProgress, signal, letter, format = "4x5" } = options;
+  const world = composition(data, format, { letter });
+  const frames = slideFrames(data, { letter, format });
   const slides: Slide[] = [];
   onProgress(0, frames.length);
   for (const [i, { stopId, frame }] of frames.entries()) {
@@ -211,8 +213,11 @@ export async function zipSlides(slides: Slide[]): Promise<Blob> {
 }
 
 /** The whole story as rendered (letter included unless left out): one 4:5 page per slide. */
-export async function pdfSlides(slides: Slide[], { title }: { title: string }): Promise<Blob> {
-  const { width, height } = VIDEO_FORMATS["4x5"];
+export async function pdfSlides(
+  slides: Slide[],
+  { title, format = "4x5" }: { title: string; format?: ExportFormat },
+): Promise<Blob> {
+  const { width, height } = VIDEO_FORMATS[format];
   const pdf = await PDFDocument.create();
   pdf.setTitle(title);
   pdf.setCreator("WrapYourGit");

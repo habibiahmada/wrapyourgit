@@ -8,6 +8,7 @@ import { calendarGrid, heatLevels } from "@wyg/video/heat";
 import { and, eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { ImageResponse } from "next/og";
+import { cardArt } from "./card-art";
 import { db, recaps } from "./db";
 
 /*
@@ -60,6 +61,25 @@ export async function cardFonts() {
   ];
 }
 
+/**
+ * The card's picture (`cardArt`) as a data URL. Read from public/art, which the build fills from
+ * the video package (scripts/sync-web-public.ts); kept per process, one per archetype.
+ */
+const artCache = new Map<string, Promise<string>>();
+function artDataUrl(id: string): Promise<string> {
+  const kept = artCache.get(id);
+  if (kept) return kept;
+  const url = readFile(join(process.cwd(), "public/art", `${id}.png`)).then(
+    (bytes) => `data:image/png;base64,${bytes.toString("base64")}`,
+  );
+  artCache.set(id, url);
+  url.catch(() => artCache.delete(id));
+  return url;
+}
+
+/** The picture's width and height on the card: every still under public/art is 1200 x 900. */
+const ART = { width: 420, height: 315 } as const;
+
 export async function renderCard(data: RecapData): Promise<ImageResponse> {
   const { contributions, languages, identity, profile, meta } = data;
   const levels = heatLevels(contributions.calendar);
@@ -72,7 +92,7 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
     identity.archetype ? { label: "archetype", value: ARCHETYPE_LABELS[identity.archetype] } : null,
   ].filter((fact) => fact !== null);
 
-  const fonts = await cardFonts();
+  const [fonts, art] = await Promise.all([cardFonts(), artDataUrl(cardArt(data))]);
 
   return new ImageResponse(
     <div
@@ -97,33 +117,40 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
         <span>WrapYourGit</span>
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 56 }}>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 150, fontWeight: 800, lineHeight: 0.9, letterSpacing: -4 }}>
-            {contributions.total.toLocaleString("en-US")}
-          </span>
-          <span style={{ fontSize: 32, fontWeight: 700, marginTop: 12 }}>
-            {meta.isFinal
-              ? `contributions in ${meta.year}`
-              : `contributions so far in ${meta.year}`}
-          </span>
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "14px 36px", maxWidth: 520 }}>
-          {facts.map((fact) => (
-            <div key={fact.label} style={{ display: "flex", flexDirection: "column", width: 240 }}>
-              <span style={{ fontSize: 22, fontWeight: 400 }}>{fact.label}</span>
-              <span
-                style={{
-                  fontSize: 36,
-                  fontWeight: 800,
-                  color: fact.label === "archetype" ? PERSIMMON : PAPER,
-                }}
+      {/* The figures on the left, the archetype's picture (or Cell) on the right. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: 120, fontWeight: 800, lineHeight: 0.9, letterSpacing: -4 }}>
+              {contributions.total.toLocaleString("en-US")}
+            </span>
+            <span style={{ fontSize: 30, fontWeight: 700, marginTop: 10 }}>
+              {meta.isFinal
+                ? `contributions in ${meta.year}`
+                : `contributions so far in ${meta.year}`}
+            </span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 36px", width: 520 }}>
+            {facts.map((fact) => (
+              <div
+                key={fact.label}
+                style={{ display: "flex", flexDirection: "column", width: 240 }}
               >
-                {fact.value}
-              </span>
-            </div>
-          ))}
+                <span style={{ fontSize: 22, fontWeight: 400 }}>{fact.label}</span>
+                <span
+                  style={{
+                    fontSize: 32,
+                    fontWeight: 800,
+                    color: fact.label === "archetype" ? PERSIMMON : PAPER,
+                  }}
+                >
+                  {fact.value}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
+        <img src={art} width={ART.width} height={ART.height} alt="" />
       </div>
 
       <div style={{ display: "flex", position: "relative", width: weeks * cell, height: 7 * cell }}>

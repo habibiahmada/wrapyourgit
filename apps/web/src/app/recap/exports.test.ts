@@ -55,6 +55,14 @@ describe("pdfSlides", () => {
       expect(page.getSize()).toEqual({ width: 1080, height: 1350 });
     expect(pdf.getTitle()).toBe("WrapYourGit 2026");
   });
+
+  test("pages take the chosen shape", async () => {
+    const pdf = await PDFDocument.load(
+      await (await pdfSlides(slides, { title: "WrapYourGit 2026", format: "16x9" })).arrayBuffer(),
+    );
+    for (const page of pdf.getPages())
+      expect(page.getSize()).toEqual({ width: 1920, height: 1080 });
+  });
 });
 
 describe("exportSupport", () => {
@@ -147,6 +155,22 @@ describe("renderSlides", () => {
     expect(out).toHaveLength(frames.length);
     expect(out[0]?.name).toEndWith(`-01-${frames[0]?.stopId}.png`);
     expect(progress.at(-1)).toEqual([frames.length, frames.length]);
+  });
+
+  test("renders the chosen shape's composition, one slide per stop of that shape", async () => {
+    const seen: { width: number; height: number }[] = [];
+    const out = await renderSlides(
+      sampleRecap,
+      { onProgress: () => {}, signal: new AbortController().signal, format: "9x16" },
+      {
+        renderStill: async ({ composition }) => {
+          seen.push({ width: composition.width, height: composition.height });
+          return png();
+        },
+      },
+    );
+    expect(out).toHaveLength(slideFrames(sampleRecap, { format: "9x16" }).length);
+    expect(seen[0]).toEqual({ width: 1080, height: 1920 });
   });
 
   test("without the letter: no letter slides", async () => {

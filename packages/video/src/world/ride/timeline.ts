@@ -35,6 +35,12 @@ const MOVE_SATURATION = 24;
  * the station before the train leaves, which takes the second.
  */
 export const LETTER_INTRO_SECONDS = 4.4;
+/**
+ * Moving from one page of the letter to the next: nothing travels, the sheets slide sideways. It
+ * is a move of its own, after the page's hold, so a page rests still and a tap back plays it in
+ * reverse.
+ */
+export const PAGE_SECONDS = 0.7;
 export const LETTER_OUTRO_SECONDS = 2.2;
 
 export type RideTimeline = Timeline & {
@@ -70,8 +76,15 @@ export function buildRideTimeline(
       ? MOVE_MAX_SECONDS
       : MOVE_MIN_SECONDS +
         (MOVE_MAX_SECONDS - MOVE_MIN_SECONDS) * Math.min(1, distance / MOVE_SATURATION);
-    // A letter's pages share a place: nothing travels, so the move is the page turn alone.
-    const travel = !prev || distance === 0 ? 0 : Math.round(seconds * fps);
+    // A letter's pages share a place: nothing travels, so the move is the page sliding in alone.
+    const page = Boolean(prev) && distance === 0 && stop.kind === "letter";
+    const travel = !prev
+      ? 0
+      : page
+        ? Math.round(PAGE_SECONDS * fps)
+        : distance === 0
+          ? 0
+          : Math.round(seconds * fps);
     // The time at the desk is part of the move it belongs to (see LETTER_INTRO_SECONDS).
     const opens = stop.kind === "letter" && (stop.page ?? 1) === 1 && Boolean(prev);
     const closes = prev?.kind === "letter" && stop.kind !== "letter";

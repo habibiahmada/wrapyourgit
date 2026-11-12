@@ -2,20 +2,14 @@
 
 import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import type { ExportFormat } from "@wyg/video/export";
-import { useEffect, useId, useReducer, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ShareCard } from "./end-screen";
-import { type ExportRunner, exportRunner } from "./export-runner";
-import { announcement, type ExportJob, exportReducer, IDLE, NOUN, percent } from "./export-state";
-import type { ExportSupport } from "./exports";
+import { announcement, type ExportJob, NOUN, percent } from "./export-state";
 import { PAPER_BUTTON } from "./paper-button";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
+import { useExport } from "./use-export";
 
 const FORMATS = ["9x16", "4x5", "1x1", "16x9"] as const satisfies readonly ExportFormat[];
-const NOTHING: ExportSupport = {
-  mp4: false,
-  stills: false,
-  reason: "This browser can't make your files. Try a recent Chrome or Edge.",
-};
 const KEEP_OPEN: Record<ExportJob, string> = {
   mp4: "Keep this tab open while your video renders.",
   zip: "Keep this tab open while your slides render.",
@@ -27,8 +21,8 @@ const ratio = (format: ExportFormat) => format.replace("x", ":");
 /**
  * The files of the story, made in this browser. `data` must already be a projection: the owner's
  * story (`storyData`, ADR-0017) or a visitor's (`publicWorld`). Everything here leaves the site, so
- * private names are in it only when the owner chose to show them. The renderer is imported on
- * mount, so it never weighs on the player's first load.
+ * private names are in it only when the owner chose to show them. The dashboard's panel; the
+ * story's own is the icon shelf at the closing stop (`ExportShelf`).
  */
 export function ExportPanel({
   data,
@@ -46,60 +40,11 @@ export function ExportPanel({
   letter?: boolean;
   onBusyChange?: (busy: boolean) => void;
 }) {
-  const [state, dispatch] = useReducer(exportReducer, IDLE);
-  const [support, setSupport] = useState<ExportSupport | null>(null);
+  const { state, support, busy, run: start, cancel } = useExport(data, { letter, onBusyChange });
   const [format, setFormat] = useState<ExportFormat>("9x16");
-  const runner = useRef<ExportRunner | null>(null);
   const buttons = useRef<Partial<Record<ExportJob, HTMLButtonElement | null>>>({});
   const ids = useId();
   const reasonId = `${ids}-reason`;
-
-  // The dashboard's refresh() re-sends `data` as a new object. Keyed on it, the runner would be
-  // disposed mid-render and the panel left in "rendering" with a dead Cancel; so the runner lives
-  // as long as the panel and reads the newest data when a run starts.
-  const dataRef = useRef(data);
-  useEffect(() => {
-    dataRef.current = data;
-  }, [data]);
-
-  useEffect(() => {
-    let live = true;
-    import("./exports")
-      .then((loaded) => {
-        if (live) {
-          runner.current = exportRunner(loaded, () => dataRef.current, dispatch, console.warn, {
-            letter,
-          });
-        }
-        return loaded.exportSupport();
-      })
-      .then((result) => live && setSupport(result))
-      .catch(() => live && setSupport(NOTHING));
-    return () => {
-      live = false;
-      // Leaving the screen ends the render; nothing should keep encoding in the background.
-      runner.current?.dispose();
-      runner.current = null;
-    };
-  }, [letter]);
-
-  const busy = state.status === "rendering";
-  useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);
-
-  // Reload, tab close or a typed address would end the render without a word; the browser's own
-  // "Leave site?" asks first. Not window.confirm: that blocks the thread the encoder runs on.
-  // Client navigations never fire it: the story world turns its own exits off while busy (via
-  // onBusyChange); the dashboard's site links are not covered yet.
-  useEffect(() => {
-    if (!busy) return;
-    const hold = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      // Older Chrome and Safari still read returnValue instead of preventDefault().
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", hold);
-    return () => window.removeEventListener("beforeunload", hold);
-  }, [busy]);
 
   // A disabled button drops focus to the page; when the job ends, give it back to its button.
   const lastJob = state.status === "idle" ? null : state.job;
@@ -109,8 +54,7 @@ export function ExportPanel({
     if (!active || active === document.body) buttons.current[lastJob]?.focus();
   }, [busy, lastJob]);
 
-  const run = (job: ExportJob) => runner.current?.run(job, format);
-  const cancel = () => runner.current?.cancel();
+  const run = (job: ExportJob) => start(job, format);
 
   const checking = support === null;
   const mp4Off = checking || !support.mp4 || busy;
@@ -120,15 +64,16 @@ export function ExportPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      <fieldset disabled={mp4Off} className="flex flex-col gap-3">
-        <legend className="mb-3 text-base font-semibold">Video format</legend>
+      {/* One size for the video, the slides and the PDF; the card keeps the link preview's. */}
+      <fieldset disabled={mp4Off && stillsOff} className="flex flex-col gap-3">
+        <legend className="mb-3 text-base font-semibold">Size</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {FORMATS.map((key) => (
             <label
               key={key}
               className={`flex min-h-11 flex-col justify-center gap-0.5 rounded-[var(--radius-control)] border px-3 py-2 ${
                 format === key ? "border-ink bg-ink/[0.07]" : "border-ink/60"
-              } ${mp4Off ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-ink/[0.05]"}`}
+              } ${mp4Off && stillsOff ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-ink/[0.05]"}`}
             >
               <span className="flex items-center gap-2 font-semibold">
                 <input

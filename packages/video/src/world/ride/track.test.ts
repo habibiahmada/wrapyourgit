@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import {
   at,
+  CLOSING_ROOM,
   dayPlace,
   FIRST_PLATFORM,
   FIRST_ROW,
@@ -49,12 +50,14 @@ test("the rail runs past the last week to its buffers", () => {
   expect(terminus(53)).toBeCloseTo(railEnd(53) - 4);
 });
 
-test("stations sit at even intervals from the first platform to the terminus", () => {
+test("stations sit at even intervals, and the terminus has room of its own before it", () => {
   const places = Array.from({ length: 12 }, (_, i) => stationPlace(i, 12, 53));
   expect(places[0]?.s).toBe(FIRST_PLATFORM);
   expect(places[11]?.s).toBeCloseTo(terminus(53));
   const gaps = places.slice(1).map((p, i) => p.s - (places[i]?.s ?? 0));
-  for (const gap of gaps) expect(gap).toBeCloseTo(gaps[0] ?? 0);
+  for (const gap of gaps.slice(0, -1)) expect(gap).toBeCloseTo(gaps[0] ?? 0);
+  // The closing party's plaza is long: the stop before stands further off.
+  expect(gaps.at(-1) ?? 0).toBeCloseTo((gaps[0] ?? 0) + CLOSING_ROOM);
 });
 
 test("on a turn a plaza stands outside it, and no two plazas share ground", () => {

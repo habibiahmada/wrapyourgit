@@ -1,6 +1,6 @@
 # 0003. Four aspect ratios, three layout families
 
-- Status: Accepted
+- Status: Accepted, web sizing amended by [0024](0024-the-web-story-fills-the-window.md)
 - Date: 2026-11-04
 
 ## Context

@@ -426,7 +426,8 @@ export function scenePrims(
             matrix[5],
           ],
           href: solid.logo,
-          depth: depth - 0.01,
+          // Over the face's decals (a badge can sit behind it), under its printed text.
+          depth: depth - 0.025,
         });
       }
     }

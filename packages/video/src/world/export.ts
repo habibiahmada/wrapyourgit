@@ -3,8 +3,8 @@ import { buildRide, type RideOptions, rideDuration } from "./ride/model";
 
 export type ExportFormat = keyof typeof VIDEO_FORMATS;
 
-/** Slides are the Instagram feed size (4:5), one per stop, letter pages included unless left out. */
-const SLIDE_FORMAT = VIDEO_FORMATS["4x5"];
+/** Slides are one per stop, letter pages included unless left out; by default the Instagram feed size (4:5). */
+const SLIDE_FORMAT: ExportFormat = "4x5";
 
 type ExportProps = { data: RecapData; mode: "video"; letter?: boolean };
 
@@ -37,9 +37,10 @@ export function worldExportComposition(
  */
 export function slideFrames(
   data: RecapData,
-  options: RideOptions = {},
+  { format = SLIDE_FORMAT, ...options }: RideOptions & { format?: ExportFormat } = {},
 ): { stopId: string; frame: number }[] {
-  const { stops, timeline } = buildRide(data, SLIDE_FORMAT, "video", VIDEO_FPS, options);
+  // Each shape has its own ride: the letter's page count and the timeline follow the frame.
+  const { stops, timeline } = buildRide(data, VIDEO_FORMATS[format], "video", VIDEO_FPS, options);
   return stops.flatMap((stop, i) => {
     const rest = timeline.stopFrames[i];
     return rest === undefined ? [] : [{ stopId: stop.id, frame: rest }];
@@ -60,8 +61,8 @@ export function exportFileName(
     case "png":
       return `${base}-${String(extra.index ?? 1).padStart(2, "0")}-${extra.stopId ?? "slide"}.png`;
     case "zip":
-      return `${base}-slides.zip`;
+      return extra.format ? `${base}-slides-${extra.format}.zip` : `${base}-slides.zip`;
     case "pdf":
-      return `${base}.pdf`;
+      return extra.format ? `${base}-${extra.format}.pdf` : `${base}.pdf`;
   }
 }

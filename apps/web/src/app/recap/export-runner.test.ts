@@ -26,6 +26,7 @@ function fakeEngine() {
     [];
   const downloads: string[] = [];
   const letters: (boolean | undefined)[] = [];
+  const shapes: (string | undefined)[] = [];
   const engine: ExportEngineModule = {
     renderMp4: (_data, _format, { onProgress, signal, letter }) => {
       letters.push(letter);
@@ -33,17 +34,21 @@ function fakeEngine() {
       renders.push({ done, signal, onProgress });
       return done.promise;
     },
-    renderSlides: async (_data, { onProgress, letter }) => {
+    renderSlides: async (_data, { onProgress, letter, format }) => {
       letters.push(letter);
+      shapes.push(format);
       onProgress(1, 2);
       onProgress(2, 2);
       return [{ name: "a.png", blob: blob("png") }];
     },
     zipSlides: async () => blob("zip"),
-    pdfSlides: async () => blob("pdf"),
+    pdfSlides: async (_slides, { format }) => {
+      shapes.push(format);
+      return blob("pdf");
+    },
     download: (_blob, name) => downloads.push(name),
   };
-  return { engine, renders, downloads, letters };
+  return { engine, renders, downloads, letters, shapes };
 }
 
 function setup(options?: { letter?: boolean }) {
@@ -65,6 +70,15 @@ function setup(options?: { letter?: boolean }) {
 const abortError = () => new DOMException("cancelled", "AbortError");
 
 describe("exportRunner", () => {
+  test("slides and the PDF are made in the chosen shape, and named for it", async () => {
+    const { runner, downloads, shapes } = setup();
+    await runner.run("zip", "1x1");
+    await runner.run("pdf", "16x9");
+    expect(shapes).toEqual(["1x1", "16x9", "16x9"]);
+    expect(downloads[0]).toEndWith("-slides-1x1.zip");
+    expect(downloads[1]).toEndWith("-16x9.pdf");
+  });
+
   test("an MP4 reports progress, downloads under its export name and finishes", async () => {
     const { runner, renders, downloads, actions } = setup();
     const running = runner.run("mp4", "4x5");
