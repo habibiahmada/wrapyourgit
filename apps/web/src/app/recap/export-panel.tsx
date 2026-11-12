@@ -3,7 +3,7 @@
 import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import type { ExportFormat } from "@wyg/video/export";
 import { useEffect, useId, useRef, useState } from "react";
-import { cardLink, type ShareCard } from "./end-screen";
+import type { ShareCard } from "./end-screen";
 import { announcement, type ExportJob, NOUN, percent } from "./export-state";
 import { PAPER_BUTTON } from "./paper-button";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
@@ -55,8 +55,6 @@ export function ExportPanel({
   }, [busy, lastJob]);
 
   const run = (job: ExportJob) => start(job, format);
-  // The card in the same size as the other files.
-  const cardHref = cardLink(card, format);
 
   const checking = support === null;
   const mp4Off = checking || !support.mp4 || busy;
@@ -66,7 +64,7 @@ export function ExportPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* One size for every file: the video, the slides, the PDF and the card. */}
+      {/* One size for the video, the slides and the PDF; the card keeps the link preview's. */}
       <fieldset disabled={mp4Off && stillsOff} className="flex flex-col gap-3">
         <legend className="mb-3 text-base font-semibold">Size</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -135,12 +133,8 @@ export function ExportPanel({
         >
           PDF
         </button>
-        {cardHref && !busy ? (
-          <a
-            href={cardHref.href}
-            download={cardHref.filename ?? true}
-            className={PAPER_BUTTON.secondary}
-          >
+        {"href" in card && !busy ? (
+          <a href={card.href} download={card.filename ?? true} className={PAPER_BUTTON.secondary}>
             Share card (PNG)
           </a>
         ) : (

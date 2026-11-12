@@ -5,7 +5,7 @@ import type { ExportFormat } from "@wyg/video/export";
 import Link from "next/link";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Art } from "@/components/art";
-import { cardLink, type EndLink, type ShareCard } from "./end-screen";
+import type { EndLink, ShareCard } from "./end-screen";
 import { announcement, type ExportJob, NOUN, percent } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { useExport } from "./use-export";
@@ -26,16 +26,14 @@ const TICKET = `flex min-h-11 w-full cursor-pointer items-center gap-2.5 rounded
 const TILE = "grid size-8 shrink-0 place-items-center rounded bg-ink text-paper";
 
 const ratio = (format: ExportFormat) => format.replace("x", ":");
-/** The files on the shelf: the three made here, and the card the server draws. */
-type Kind = ExportJob | "card";
-const KINDS: readonly Kind[] = ["mp4", "zip", "pdf", "card"];
-const NAME: Record<Kind, string> = { mp4: "Video", zip: "Slides", pdf: "PDF", card: "Share card" };
-const TYPE: Record<Kind, string> = { mp4: "MP4", zip: "ZIP", pdf: "", card: "PNG" };
-const MARK: Record<Kind, ReactNode> = {
+/** The files made here, each in the shape chosen from its ticket. */
+const JOBS: readonly ExportJob[] = ["mp4", "zip", "pdf"];
+const NAME: Record<ExportJob, string> = { mp4: "Video", zip: "Slides", pdf: "PDF" };
+const TYPE: Record<ExportJob, string> = { mp4: "MP4", zip: "ZIP", pdf: "" };
+const MARK: Record<ExportJob, ReactNode> = {
   mp4: <VideoMark />,
   zip: <SlidesMark />,
   pdf: <PdfMark />,
-  card: <CardMark />,
 };
 /** Each shape's short use, so the choice reads without the full label. */
 const USE: Record<ExportFormat, string> = {
@@ -47,8 +45,8 @@ const USE: Record<ExportFormat, string> = {
 
 /**
  * "Keep your year" at the closing stop: the story's files as two columns of paper tickets on the
- * grass at the bottom right, each an ink tile with a pixel mark and the file's name. Each file
- * opens its four shapes first. While a file is made, and only then, a small dialog shows Cell, a bar and one
+ * grass at the bottom right, each an ink tile with a pixel mark and the file's name. The video,
+ * slides and PDF open their four shapes first; the share card is the link preview's own size. While a file is made, and only then, a small dialog shows Cell, a bar and one
  * sentence. Never part of the composition, so never in a file.
  */
 export function ExportShelf({
@@ -74,8 +72,8 @@ export function ExportShelf({
 }) {
   const { state, support, busy, run, cancel } = useExport(data, { letter, onBusyChange });
   // Which file's shapes are open, if any; and each file's ticket, to take focus back.
-  const [open, setOpen] = useState<Kind | null>(null);
-  const tickets = useRef<Partial<Record<Kind, HTMLButtonElement | null>>>({});
+  const [open, setOpen] = useState<ExportJob | null>(null);
+  const tickets = useRef<Partial<Record<ExportJob, HTMLButtonElement | null>>>({});
   const shapesList = useRef<HTMLFieldSetElement>(null);
   const started = useRef<HTMLElement | null>(null);
   const ids = useId();
@@ -165,21 +163,6 @@ export function ExportShelf({
                 </span>
               </>
             );
-            if (open === "card") {
-              const link = cardLink(card, key);
-              return link ? (
-                <a
-                  key={key}
-                  href={link.href}
-                  download={link.filename ?? true}
-                  aria-label={label}
-                  onClick={() => setOpen(null)}
-                  className={TICKET}
-                >
-                  {inner}
-                </a>
-              ) : null;
-            }
             const job = open;
             return (
               <button
@@ -196,9 +179,8 @@ export function ExportShelf({
         </fieldset>
       )}
       <ul className="grid grid-cols-2 gap-1.5">
-        {KINDS.map((kind) => {
-          const off = kind === "mp4" ? mp4Off : kind === "card" ? !("href" in card) : stillsOff;
-          const why = kind === "card" ? ("reason" in card ? cardId : undefined) : describe(off);
+        {JOBS.map((kind) => {
+          const off = kind === "mp4" ? mp4Off : stillsOff;
           return (
             <li key={kind}>
               <button
@@ -208,7 +190,7 @@ export function ExportShelf({
                 type="button"
                 aria-expanded={open === kind}
                 disabled={off}
-                aria-describedby={why}
+                aria-describedby={describe(off)}
                 onClick={() => setOpen((now) => (now === kind ? null : kind))}
                 className={TICKET}
               >
@@ -222,6 +204,25 @@ export function ExportShelf({
             </li>
           );
         })}
+        <li>
+          {"href" in card ? (
+            <a href={card.href} download={card.filename ?? true} className={TICKET}>
+              <span aria-hidden="true" className={TILE}>
+                <CardMark />
+              </span>
+              <span>
+                Share card <span className="font-medium text-ink-soft">PNG</span>
+              </span>
+            </a>
+          ) : (
+            <button type="button" disabled aria-describedby={cardId} className={TICKET}>
+              <span aria-hidden="true" className={TILE}>
+                <CardMark />
+              </span>
+              Share card
+            </button>
+          )}
+        </li>
         {links.map((link) => {
           const inner = (
             <>
