@@ -19,6 +19,7 @@ import { countText, skyModel } from "../../scenes/sky.model";
 import type { StopKind } from "../../stops";
 import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
+import { archetypeFigure } from "./archetype";
 import { STATIONS } from "./index";
 import { clip, stationContext } from "./kit";
 import { blockHeight, blockName } from "./languages";
@@ -586,35 +587,60 @@ test("engineering: the planes in flight drift, and the figures rise as the board
   expect(printed(build("engineering", sampleRecap, 0.5))).not.toContain("0");
 });
 
-test("archetype: the marquee carries the intro, the title and every reason", () => {
+test("archetype: the picture is the station: Cell in the archetype's costume, large on the stage", () => {
   const model = archetypeModel(sampleRecap);
   if (!model) throw new Error("the sample has an archetype");
-  const lines = printed(boxes(build("archetype", sampleRecap), "marquee"));
-  expect(lines).toContain(model.intro);
-  expect(lines).toContain(model.title);
-  // A long reason takes two rows.
-  for (const reason of model.reasons) expect(lines.join(" ")).toContain(reason);
-  // The same diorama the landing page shows for this archetype.
-  const rooms = build("archetype", sampleRecap).filter((solid) => solid.kind === "picture");
-  expect(rooms).toHaveLength(1);
-  expect(rooms[0]?.kind === "picture" ? rooms[0].href : "").toContain(`art/skin-${model.id}.png`);
+  // Frame 0 of the rest loop: the figure is at the foot of its bounce.
+  const all = build("archetype", sampleRecap, 1, 0);
+  // The same cut-out the landing page shows for this archetype.
+  const figures = all.filter((solid) => solid.kind === "picture");
+  expect(figures).toHaveLength(1);
+  const figure = figures[0];
+  if (figure?.kind !== "picture") throw new Error("no figure");
+  expect(figure.href).toContain(`art/cutout-${model.id}.png`);
+  // It stands on the stage, and nothing is hung over it: the tallest thing here is the figure.
+  const stage = boxes(all, "stage")[0];
+  expect(figure.c[2]).toBeCloseTo((stage?.at[2] ?? 0) + (stage?.size[2] ?? 0), 1);
+  const boxTops = all.flatMap((solid) =>
+    solid.kind === "box" ? [solid.at[2] + solid.size[2]] : [],
+  );
+  // The figure tells the camera how high it stands, and it is over five units: twice any box here.
+  expect(figure.reach).toBeGreaterThan(5);
+  expect(Math.max(...boxTops)).toBeLessThan((figure.reach ?? 0) / 2);
+  // The canvas loads the very file the station draws.
+  expect(figure.href).toContain(archetypeFigure(sampleRecap));
+  expect(archetypeFigure(emptyRecap)).toBe("art/cutout-cell-think.png");
 });
 
-test("archetype: with no style to name the marquee says so, and no room is shown", () => {
+test("archetype: the board carries the intro and the title, and nothing else", () => {
+  const model = archetypeModel(sampleRecap);
+  if (!model) throw new Error("the sample has an archetype");
+  const lines = [...new Set(printed(boxes(build("archetype", sampleRecap), "board")))];
+  expect(lines).toEqual([model.intro, model.title]);
+  // The reasons are not printed at this stop: the picture carries it.
+  for (const reason of model.reasons)
+    expect(printed(build("archetype", sampleRecap))).not.toContain(reason);
+});
+
+test("archetype: with no style to name the board says so, and Cell stands there thinking", () => {
   const all = build("archetype", emptyRecap);
   expect(archetypeModel(emptyRecap)).toBeNull();
-  expect(printed(boxes(all, "marquee")).join(" ")).toContain(ARCHETYPE_NONE);
-  expect(all.filter((solid) => solid.kind === "picture")).toHaveLength(0);
+  expect([...new Set(printed(boxes(all, "board")))].join(" ")).toContain(ARCHETYPE_NONE);
+  const figures = all.filter((solid) => solid.kind === "picture");
+  expect(figures).toHaveLength(1);
+  expect(figures[0]?.kind === "picture" ? figures[0].href : "").toContain(
+    "art/cutout-cell-think.png",
+  );
 });
 
-test("archetype: the marquee's bulbs chase, and the marquee is lowered in", () => {
+test("archetype: the board's bulbs chase, the board is always there, and the figure steps on as the train pulls in", () => {
   const bulbs = (frame: number) =>
-    (boxes(build("archetype", sampleRecap, 1, frame), "marquee")[0]?.decals ?? []).map(
-      (d) => d.fill,
-    );
+    (boxes(build("archetype", sampleRecap, 1, frame), "board")[0]?.decals ?? []).map((d) => d.fill);
   expect(bulbs(10)).not.toEqual(bulbs(25));
   expect(bulbs(70)).toEqual(bulbs(10));
-  expect(boxes(build("archetype", sampleRecap, 0), "marquee")).toHaveLength(0);
+  const before = build("archetype", sampleRecap, 0);
+  expect(boxes(before, "board")).toHaveLength(1);
+  expect(before.filter((solid) => solid.kind === "picture")).toHaveLength(0);
 });
 
 const withLastYear = (contributions: number): RecapData => {

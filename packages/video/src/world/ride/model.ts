@@ -54,7 +54,6 @@ export const HERO_TAGS = [
   "departures",
   "plane-flying",
   "plane-parked",
-  "marquee",
   "weight",
   "stage",
 ];
@@ -82,6 +81,11 @@ export function buildRide(
     const heroEdge: [number, number, number][] = [];
     for (const solid of station(ctx)) {
       // The plaza itself may run out of frame; what must stay in is what carries the chapter.
+      if (solid.kind === "picture" && solid.reach !== undefined) {
+        // A figure on a sheet: the camera frames how high it stands, not the sheet.
+        heroTop = Math.max(heroTop, solid.c[2] + solid.reach);
+        continue;
+      }
       if (solid.kind !== "box" || !HERO_TAGS.includes(solid.tag ?? "")) continue;
       heroTop = Math.max(heroTop, solid.at[2] + solid.size[2]);
       const [px, py] = solid.pivot ?? [ctx.c[0], ctx.c[1]];

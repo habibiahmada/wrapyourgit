@@ -1,26 +1,44 @@
+import type { RecapData } from "@wyg/schema";
 import { staticFile } from "remotion";
-import { ARCHETYPE_NONE, archetypeModel } from "../../scenes/archetype.model";
+import { ARCHETYPE_INTRO, ARCHETYPE_NONE, archetypeModel } from "../../scenes/archetype.model";
 import { LIT, TONE, toneOf } from "../palette";
 import type { Decal, FaceText, Solid } from "../prims";
 import { PLAZA_TOP, part, plaza, type Station, wrap } from "./kit";
 
-/** The diorama: the landing page's picture of this archetype, 4 by 3, standing on the stage. */
-const ROOM = { wide: 8.8, tall: 6.6, anchor: [0.5, 0.62] as [number, number] };
-/** The stage under it: a pale deck, so the room's dark walls stand out from the dark plaza. */
-const STAGE = { long: 9.4, deep: 6, tall: 0.4 };
-const SPACE = { long: 11.4, deep: 7.4 };
-/** The marquee: how wide it is, how tall its intro, its title and each row of a reason are, and how high it hangs over the room. */
-const MARQUEE = { wide: 10.6, intro: 0.84, title: 1.9, row: 0.86, pad: 0.3, lift: 4.9 };
+/**
+ * The cut-out: Cell in the archetype's costume, the landing page's picture (4 by 3, Cell in its
+ * middle). `tall` is the whole picture's height; Cell itself stands a little over half of it, so
+ * it is about five and a half units tall, the largest figure on the ride. `anchor` is its feet.
+ */
+const FIGURE = { wide: 13.2, tall: 9.9, anchor: [0.5, 0.79] as [number, number] };
+/** How tall Cell stands in that picture, for the camera to frame it. */
+const FIGURE_HEIGHT = 5.6;
+/** The stage: a pale deck, so the figure stands out from the dark plaza. */
+const STAGE = { long: 7.6, deep: 5.6, tall: 0.45 };
+const SPACE = { long: 10.4, deep: 7.2 };
+/** The title board at the foot of the stage: its width, and how tall the intro and the title are. */
+const TITLE = { wide: 7.6, intro: 0.56, name: 1.3, pad: 0.24, gap: 0.08 };
 const GOLD = "#ffd866";
+/**
+ * The picture this station shows for `data`, as a file under the public folder: the archetype's
+ * cut-out, or Cell thinking when no style could be named. The canvas loads its pictures before
+ * it draws (RideStory), and asks here, so the two can't name different files.
+ */
+export function archetypeFigure(data: RecapData): string {
+  const model = archetypeModel(data);
+  return model ? `art/cutout-${model.id}.png` : "art/cutout-cell-think.png";
+}
+
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
 
 /**
- * The style of the year: the same diorama the landing page shows for the archetype (Cell in a
- * hard hat in a workshop, Cell running laps, and so on), standing like a cut-out on a pale,
- * spotlit stage under a marquee. The room is dark and so is the plaza: the stage is what makes
- * it stand out, and the title is the largest thing on the marquee, in gold. The marquee carries the model's intro, the archetype's title, and the reasons
- * under it, a long one on two rows; its bulbs chase on a 60-frame loop. When no style's minimum
- * was met the marquee says so in the model's words and no room is shown: no label is forced.
+ * The style of the year. The picture is the station: Cell in the archetype's costume (a hard hat
+ * and a hammer, a headset, a sweatband, and so on), the same cut-out the landing page shows,
+ * standing large on a pale, spotlit stage. Nothing stands over it. Its name is on a low board at
+ * the foot of the stage, the model's intro above the title in gold, with bulbs that chase on a
+ * 60-frame loop. The reasons behind the archetype are not printed here: the maintainer wanted the
+ * picture alone to carry this stop. When no style's minimum was met the board says so in the
+ * model's words and Cell stands there thinking: no label is forced.
  */
 export const archetype: Station = (ctx) => {
   const { data, c, yaw, build, frame, stop } = ctx;
@@ -35,29 +53,26 @@ export const archetype: Station = (ctx) => {
         { on: "all", rect: [0, 0.72, 1, 1], fill: LIT },
         {
           on: "top",
-          rect: [0.12, 0.1, 0.88, 0.9],
-          fill: model ? "#ffe9a3" : "#8b949e",
+          rect: [0.14, 0.12, 0.86, 0.88],
+          fill: model ? "#ffe9a3" : "#c9d1d9",
           round: true,
         },
       ],
     }),
   );
-  const far = -stop.side * (STAGE.deep / 2 - 0.3);
-  const landed = easeOut(build / 0.45);
-  if (landed <= 0) return out;
-  const drop = (1 - landed) * 6;
 
-  const max = Math.floor((MARQUEE.wide * 0.92) / (0.6 * MARQUEE.row * 0.92));
-  const reasons = model ? model.reasons.flatMap((reason) => wrap(reason, max)) : [];
+  // The title board, always there like a station's sign, toward the rail from the stage.
   const lines = model
     ? [
-        { text: model.intro, tall: MARQUEE.intro, fill: "#c9d1d9", weight: 700 },
-        { text: model.title, tall: MARQUEE.title, fill: GOLD, weight: 800 },
-        ...reasons.map((text) => ({ text, tall: MARQUEE.row, fill: "#7ee08f", weight: 700 })),
+        { text: ARCHETYPE_INTRO, tall: TITLE.intro, fill: "#c9d1d9", weight: 700 },
+        { text: model.title, tall: TITLE.name, fill: GOLD, weight: 800 },
       ]
-    : wrap(ARCHETYPE_NONE, 22).map((text) => ({ text, tall: 0.8, fill: "#ffffff", weight: 800 }));
-  const tall = MARQUEE.pad * 2 + lines.reduce((sum, line) => sum + line.tall, 0);
-  let y = MARQUEE.pad;
+    : wrap(ARCHETYPE_NONE, 24).map((text) => ({ text, tall: 0.8, fill: "#ffffff", weight: 800 }));
+  const tall =
+    TITLE.pad * 2 +
+    lines.reduce((sum, line) => sum + line.tall, 0) +
+    TITLE.gap * (lines.length - 1);
+  let y = TITLE.pad;
   const texts: FaceText[] = lines.map((line) => {
     const rect: [number, number, number, number] = [
       0.04,
@@ -65,51 +80,53 @@ export const archetype: Station = (ctx) => {
       0.96,
       1 - y / tall,
     ];
-    y += line.tall;
+    y += line.tall + TITLE.gap;
     return { on: "sides", rect, text: line.text, fill: line.fill, weight: line.weight };
   });
   // Bulbs along the top and the foot; every other one is lit, and they swap four times a loop.
   const phase = Math.floor((((frame % 60) + 60) % 60) / 15) % 2;
-  const edge = MARQUEE.pad / tall;
+  const edge = TITLE.pad / tall;
   const bulbs: Decal[] = Array.from({ length: 16 }, (_, k) => k).flatMap((k) =>
     [1 - edge * 0.5, edge * 0.5].map(
       (v): Decal => ({
         on: "sides",
-        rect: [(k + 0.5) / 16 - 0.012, v - edge * 0.22, (k + 0.5) / 16 + 0.012, v + edge * 0.22],
-        fill: model && k % 2 === phase ? "#ffd866" : "#545d68",
+        rect: [(k + 0.5) / 16 - 0.012, v - edge * 0.26, (k + 0.5) / 16 + 0.012, v + edge * 0.26],
+        fill: model && k % 2 === phase ? GOLD : "#545d68",
         round: true,
       }),
     ),
   );
-  const foot = PLAZA_TOP;
-  for (const post of [-4.2, 4.2]) {
+  const near = stop.side * (SPACE.deep / 2 + 2.6);
+  for (const post of [-TITLE.wide * 0.36, TITLE.wide * 0.36]) {
     out.push(
-      part(c, yaw, post, far, foot + drop, [0.18, 0.18, MARQUEE.lift], TONE.dark, {
-        tag: "board-post",
-        edge: false,
-      }),
+      part(c, yaw, post, near, 0, [0.16, 0.16, 0.2], TONE.dark, { tag: "board-post", edge: false }),
     );
   }
   out.push(
-    part(c, yaw, 0, far, foot + MARQUEE.lift + drop, [MARQUEE.wide, 0.18, tall], TONE.ink, {
-      tag: "marquee",
+    part(c, yaw, 0, near, 0.2, [TITLE.wide, 0.18, tall], TONE.ink, {
+      // A sign like any station's: there from the first frame, and kept in the camera's frame.
+      tag: "board",
       lit: true,
       texts,
       decals: bulbs,
     }),
   );
-  if (!model) return out;
 
-  // The room is lowered onto the plaza once the marquee is up.
-  const down = easeOut((build - 0.4) / 0.5);
-  if (down <= 0) return out;
+  // The figure steps onto the stage as the train pulls in, and keeps a small bounce at rest.
+  const up = easeOut(build / 0.7);
+  if (up <= 0) return out;
+  const floor = PLAZA_TOP + STAGE.tall;
+  // Folded to the loop first, so a rest loop repeats to the last bit.
+  const beat = (((frame % 60) + 60) % 60) / 30;
+  const hop = build >= 1 ? Math.abs(Math.sin(beat * Math.PI)) * 0.12 : 0;
   out.push({
     kind: "picture",
-    c: [c[0], c[1], PLAZA_TOP + STAGE.tall + (1 - down) * 6],
-    href: staticFile(`art/skin-${model.id}.png`),
-    wide: ROOM.wide,
-    tall: ROOM.tall,
-    anchor: ROOM.anchor,
+    c: [c[0], c[1], floor + hop],
+    href: staticFile(archetypeFigure(data)),
+    wide: FIGURE.wide * up,
+    tall: FIGURE.tall * up,
+    anchor: FIGURE.anchor,
+    reach: FIGURE_HEIGHT * up,
   });
   return out;
 };

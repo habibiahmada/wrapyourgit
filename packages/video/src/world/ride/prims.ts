@@ -72,6 +72,11 @@ export type Picture = {
   wide: number;
   tall: number;
   anchor: [number, number];
+  /**
+   * How high over `c` what the picture shows stands, when that is less than the picture itself
+   * (a figure in the middle of a wider sheet). The camera frames this, as it frames a hero's top.
+   */
+  reach?: number;
 };
 export type Solid = Box | Ball | Picture;
 export type Fog = { color: string; near: number; far: number };

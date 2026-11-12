@@ -4,7 +4,6 @@ import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-rec
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildRide, HERO_TAGS, rideDuration, rideFrame } from "./model";
 import { type Box, type Solid, scenePrims } from "./prims";
-import { projectPoint } from "./project";
 import { stationContext } from "./stations/kit";
 import { RIDE_KINDS } from "./stops";
 
@@ -150,7 +149,15 @@ test("a hero stays standing for the rest of the ride, and every plaza is there f
     expect(mine(0, stop, (tag) => tag === "plaza")).toHaveLength(1);
     const rest = m.timeline.stopFrames[i] ?? 0;
     const here = mine(rest, stop, hero);
-    expect(here.length).toBeGreaterThan(0);
+    // A station whose hero is a picture (the archetype's figure) has no hero boxes: its figure is
+    // what must stay.
+    const figures = (frame: number) =>
+      rideFrame(m, sampleRecap, frame, f, 30).objects.filter((s) => s.kind === "picture").length;
+    if (here.length === 0) {
+      expect({ kind: stop.kind, figure: figures(rest) }).toEqual({ kind: stop.kind, figure: 1 });
+      for (const later of [rest + m.timeline.holdFrames + 20, last]) expect(figures(later)).toBe(1);
+      return;
+    }
     // Nor taken down: it is the same hero when the train leaves and at the very end.
     for (const later of [rest + m.timeline.holdFrames + 20, last]) {
       const after = mine(later, stop, hero);

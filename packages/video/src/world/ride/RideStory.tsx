@@ -5,7 +5,6 @@ import { languageIcon } from "../../languages";
 import { fontFamily } from "../../theme";
 import { Chrome } from "../Chrome";
 import { reachedStop } from "../fade";
-import { archetypeModel } from "../scenes/archetype.model";
 import { gardenModel } from "../scenes/garden.model";
 import type { WorldMode } from "../timeline";
 import { backdrop } from "./backdrop";
@@ -13,6 +12,7 @@ import { buildRide, rideFrame } from "./model";
 import { SKY } from "./palette";
 import { scenePrims } from "./prims";
 import { RideCanvas } from "./RideCanvas";
+import { archetypeFigure } from "./stations/archetype";
 
 export type RideStoryProps = {
   data: RecapData;
@@ -38,14 +38,13 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
     [data, size, mode, fps, letter],
   );
   const { cam, roll, fog, ground, objects } = rideFrame(model, data, frame, size, fps);
-  // Every picture the scene draws: the languages' logos and the archetype's diorama.
+  // Every picture the scene draws: the languages' logos and the archetype's figure.
   const logos = useMemo(() => {
-    const style = archetypeModel(data);
     return [
       ...gardenModel(data)
         .trees.map((tree) => languageIcon(tree.name))
         .filter((icon): icon is string => icon !== null),
-      ...(style ? [`art/skin-${style.id}.png`] : []),
+      archetypeFigure(data),
     ].map((file) => staticFile(file));
   }, [data]);
   const layers = [
