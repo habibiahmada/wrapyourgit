@@ -17,7 +17,7 @@ import {
   OVERVIEW_THETA,
   PLAZA_AHEAD,
   PLAZA_LATERAL,
-  WAVE,
+  railBounds,
 } from "./track";
 
 export type Look = "ahead" | "cell" | "train" | "hero";
@@ -143,18 +143,32 @@ function poseCamera(pose: Pose, frame: Frame): RideCamera {
   };
 }
 
-/** The overview: high above the middle of the rail, pulled out until both ends are in frame. */
+/** The overview: high above the middle of the year's ground, pulled out until all of it is in frame. */
 function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
   const end = (stops.at(-1)?.s ?? FIRST_PLATFORM) + 4;
-  const middle = (FIRST_PLATFORM + end) / 2;
+  // The fit depends only on the rail's length and the frame, and every frame of the climb and
+  // the descent asks for it: worked out once, then kept.
+  const key = `${end}:${frame.width}x${frame.height}`;
+  const kept = cityPoses.get(key);
+  if (kept) return kept;
+  const pose = fitCityPose(end, frame);
+  cityPoses.set(key, pose);
+  return pose;
+}
+const cityPoses = new Map<string, Pose>();
+
+function fitCityPose(end: number, frame: Frame): Pose {
+  const layout = layoutForSize(frame.width, frame.height);
+  const { min, max } = railBounds(end);
+  const middle: V3 = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, 0];
   const pose: Pose = {
-    anchor: at(middle),
+    anchor: middle,
     heading: 0,
-    theta: OVERVIEW_THETA[layoutForSize(frame.width, frame.height)],
+    theta: OVERVIEW_THETA[layout],
     radius: 30,
     height: 30 * 0.75,
     fov: CITY_FOV,
-    look: at(middle),
+    look: middle,
     ride: 0,
   };
   const inside = (p: V3) => {
@@ -164,15 +178,51 @@ function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
     const my = frame.height * CITY_MARGIN;
     return s[0] > mx && s[0] < frame.width - mx && s[1] > my && s[1] < frame.height - my;
   };
-  // Both ends of the rail, the squares beside it, and the billboard from foot to top.
-  const layout = layoutForSize(frame.width, frame.height);
-  // The rail swings from side to side, so its bends are sampled along its whole length.
-  const bends: V3[] = [];
-  for (let s = FIRST_PLATFORM; s <= end; s += WAVE / 8) bends.push(at(s, 9), at(s, -9));
-  const ends = [at(FIRST_PLATFORM), at(end), ...bends, ...billboardAt(end, layout).corners];
-  while (!ends.every(inside) && pose.radius < 600) {
-    pose.radius *= 1.06;
+  // The rail folds back on itself, so it is sampled along its whole length with the squares and
+  // plazas beside it, plus the billboard from foot to top.
+  const points: V3[] = [...billboardAt(end, layout).corners];
+  for (let s = 0; s <= end; s += 4) points.push(at(s, 11), at(s, -11));
+  while (!points.every(inside) && pose.radius < 600) {
+    pose.radius *= 1.04;
     pose.height = pose.radius * 0.75;
+  }
+  // The billboard stands tall behind the ground, so a camera aimed at the ground's middle has
+  // the picture high in the frame with nothing under it. Aim at the middle of what is on screen
+  // instead, and come in until something touches the margin.
+  const forward: [number, number] = [-Math.cos(pose.theta), -Math.sin(pose.theta)];
+  const right: [number, number] = [-forward[1], forward[0]];
+  const move = (along: number, across: number) => {
+    const d: V3 = [
+      forward[0] * along + right[0] * across,
+      forward[1] * along + right[1] * across,
+      0,
+    ];
+    pose.anchor = [pose.anchor[0] + d[0], pose.anchor[1] + d[1], 0];
+    pose.look = [pose.look[0] + d[0], pose.look[1] + d[1], 0];
+  };
+  for (let i = 0; i < 400; i++) {
+    const cam = poseCamera(pose, frame);
+    const seen = points.map((p) => projectPoint(p, cam, frame));
+    if (seen.some((p) => !p)) break;
+    const xs = seen.map((p) => p?.[0] ?? 0);
+    const ys = seen.map((p) => p?.[1] ?? 0);
+    const offX = (Math.min(...xs) + Math.max(...xs)) / 2 / frame.width - 0.5;
+    const offY = (Math.min(...ys) + Math.max(...ys)) / 2 / frame.height - 0.5;
+    const step = pose.radius * 0.01;
+    if (Math.abs(offY) > 0.006) {
+      // Aiming further away moves the picture down the frame.
+      move(offY < 0 ? step : -step, 0);
+    } else if (Math.abs(offX) > 0.006) {
+      move(0, offX < 0 ? step : -step);
+    } else {
+      const closer = { radius: pose.radius / 1.015, height: (pose.radius / 1.015) * 0.75 };
+      const kept = { radius: pose.radius, height: pose.height };
+      Object.assign(pose, closer);
+      if (!points.every(inside)) {
+        Object.assign(pose, kept);
+        break;
+      }
+    }
   }
   return pose;
 }

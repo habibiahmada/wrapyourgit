@@ -4,7 +4,7 @@ import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity } from "../city";
 import type { StopKind } from "../stops";
 import { RIDE_KINDS, rideStops } from "./stops";
-import { FIRST_PLATFORM, terminus } from "./track";
+import { FIRST_PLATFORM, PLAZA_AHEAD, terminus, turning } from "./track";
 
 // The ride draws its stops in the story's order; a letter page past the first is left out here.
 const KINDS: StopKind[] = [...RIDE_KINDS];
@@ -41,9 +41,14 @@ test("only chapters with a hero get a plaza", () => {
   );
 });
 
-test("neighbouring plazas are on opposite sides of the rail", () => {
+test("a plaza on a turn stands outside it, and on a straight run neighbours take opposite sides", () => {
   const plazas = rideStops(sampleRecap, buildCity(sampleRecap)).filter((s) => s.plaza);
-  expect(plazas[0]?.side).toBe(-(plazas[1]?.side ?? 0) as 1 | -1);
+  for (const [i, plaza] of plazas.entries()) {
+    const turn = turning(plaza.s + PLAZA_AHEAD) || turning(plaza.s);
+    // Round to the left the outside is the rail's right (1), and the other way round.
+    if (turn !== 0) expect({ i, side: plaza.side }).toEqual({ i, side: turn });
+  }
+  expect(plazas.some((plaza) => turning(plaza.s) !== 0)).toBe(true);
 });
 
 test("an empty year still gets every station it has something to say at", () => {

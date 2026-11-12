@@ -4,7 +4,7 @@ import { BILLBOARD, billboardAt, railEnd } from "../track";
 import { board, type Station, wrap } from "./kit";
 
 /** How tall a row of the billboard's words is. */
-const ROW = 7.2;
+const ROW = 5.4;
 
 /**
  * The overview has no plaza: one very large billboard behind the year (track.ts billboardAt)
@@ -32,11 +32,11 @@ export const city: Station = ({ data, city: year, overview, layout }) => {
     BILLBOARD.wide * k,
     [
       ...small(model.headline, "#c9d1d9"),
-      { text: formatCount(model.total), tall: 14 * k },
+      { text: formatCount(model.total), tall: 11 * k },
       ...small("contributions", "#c9d1d9"),
       ...small(model.legend ?? "", "#7ee08f"),
     ],
     "along",
-    4.5 * k,
+    3.5 * k,
   );
 };

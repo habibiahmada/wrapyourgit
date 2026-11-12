@@ -140,12 +140,15 @@ test("between two stations a month sign keeps to the side of the one behind it",
 
 test("nothing is built outside the view", () => {
   const { all } = build();
+  // The rail doubles back, so "in view" is a stretch of rail, not a range of x: every box stands
+  // near some point of the rail between the view's ends.
+  const line: [number, number][] = [];
+  for (let s = ride.from - 8; s <= ride.to + 8; s += 1) line.push([at(s)[0], at(s)[1]]);
   for (const b of all.filter((s): s is Box => s.kind === "box")) {
-    // x is not the distance along the rail: on a bend, something beside the rail sits a few
-    // units ahead of or behind its place on the line.
     const x = b.pivot?.[0] ?? b.at[0];
-    expect(x).toBeGreaterThan(ride.from - 8);
-    expect(x).toBeLessThan(ride.to + 8);
+    const y = b.pivot?.[1] ?? b.at[1];
+    const nearest = Math.min(...line.map(([lx, ly]) => Math.hypot(x - lx, y - ly)));
+    expect(nearest).toBeLessThan(18);
   }
 });
 
