@@ -15,8 +15,35 @@ const SIZE = 1.15;
 /** Frames in which every one of Cell's cycles repeats. */
 const LOOP = 60;
 const TAU = Math.PI * 2;
-/** The crest's three cells, darkest to brightest. */
-const CREST = [toneOf(GREENS[1]), toneOf(GREENS[2]), toneOf("#7ee787")];
+/** The crest's three cells, darkest to brightest, from Cell's right to its left. */
+const CREST = [toneOf(GREENS[1]), toneOf(GREENS[2]), toneOf("#7ee787")] as const;
+/** The gap between two cells, as a share of the crest's length. */
+const SEAM = 0.03;
+const SEAM_FILL = "#0e4429";
+/**
+ * The three cells as paint on the crest's faces. The top and the two long faces are cut in
+ * thirds; a long face runs the other way round on the back, so its thirds are mirrored there. The
+ * two end faces belong to the first and the last cell. Each face keeps the shade it would have as
+ * a box of its own (prims.ts FACES).
+ */
+const CREST_PAINT: Decal[] = [
+  ...CREST.flatMap((tone, i): Decal[] => {
+    const from = i / 3;
+    const to = (i + 1) / 3;
+    return [
+      { on: "top", rect: [0, from, 1, to], fill: tone.top },
+      { on: "front", rect: [from, 0, to, 1], fill: tone.right },
+      { on: "back", rect: [1 - to, 0, 1 - from, 1], fill: tone.left },
+    ];
+  }),
+  ...[1 / 3, 2 / 3].flatMap((at): Decal[] => [
+    { on: "top", rect: [0, at - SEAM / 2, 1, at + SEAM / 2], fill: SEAM_FILL },
+    { on: "front", rect: [at - SEAM / 2, 0, at + SEAM / 2, 1], fill: SEAM_FILL },
+    { on: "back", rect: [at - SEAM / 2, 0, at + SEAM / 2, 1], fill: SEAM_FILL },
+  ]),
+  { on: "right", rect: [0, 0, 1, 1], fill: CREST[0].right },
+  { on: "left", rect: [0, 0, 1, 1], fill: CREST[2].left },
+];
 
 /**
  * Cell standing on `c`, facing `yaw`. `amount` (0 to 1) is how much of the mood shows: at 0 a
@@ -90,16 +117,15 @@ export function cell(c: V3, yaw: number, at: number, mood: Mood, amount = 1): So
     );
   }
   // The crest: three chunky cells of one height in a tight row across the top of the head,
-  // darkest to brightest, like a run of contribution cells. One height and one gap keep it level
-  // and balanced from every side; tall thin cells read as two chimneys from the riding camera.
-  // They bounce together, so the row stays level.
+  // darkest to brightest, like a run of contribution cells. It is one box with the three cells
+  // painted on it. As three boxes side by side they were sorted against each other face by
+  // face, and when Cell turned to the camera one was painted over its neighbour.
   const bounce = Math.max(0, Math.sin((frame / 30) * TAU)) * 0.04 * k;
-  CREST.forEach((color, i) => {
-    out.push(
-      p(0, (i - 1) * 0.17 * k, leg + 0.62 * k + bounce, [0.16 * k, 0.16 * k, 0.11 * k], color, {
-        tag: "cell-crest",
-      }),
-    );
-  });
+  out.push(
+    p(0, 0, leg + 0.62 * k + bounce, [0.16 * k, 0.5 * k, 0.11 * k], CREST[1], {
+      tag: "cell-crest",
+      decals: CREST_PAINT,
+    }),
+  );
   return out;
 }

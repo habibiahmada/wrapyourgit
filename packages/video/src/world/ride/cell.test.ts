@@ -59,23 +59,28 @@ test("Cell's eyes are open on the frames slides are taken from", () => {
   }
 });
 
-test("Cell wears its crest: three cells of one size in an even row, darkest to brightest", () => {
+test("Cell wears its crest: one box painted as three even cells, darkest to brightest", () => {
   const crest = tagged(cell([0, 0, 0], 0, 0, "idle"), "cell-crest");
-  expect(crest).toHaveLength(3);
-  // One size and one height, so the row is level and balanced from every side.
-  for (const one of crest) expect(one.size).toEqual(crest[0]?.size as Box["size"]);
-  for (const one of crest) expect(one.at[2]).toBe(crest[0]?.at[2] as number);
-  // Chunky, not a pillar: no taller than it is wide.
-  expect(crest[0]?.size[2]).toBeLessThanOrEqual(crest[0]?.size[0] ?? 0);
-  // Evenly spaced across the head, centred on it.
-  const ys = crest.map((one) => one.at[1] + one.size[1] / 2);
-  expect((ys[1] ?? 0) - (ys[0] ?? 0)).toBeCloseTo((ys[2] ?? 0) - (ys[1] ?? 0));
-  expect(ys[1]).toBeCloseTo(0);
-  // Each brighter than the last.
-  const light = (hex: string) => Number.parseInt(hex.slice(3, 5), 16);
-  const greens = crest.map((one) => light(one.tone.left));
-  expect(greens[0]).toBeLessThan(greens[1] ?? 0);
-  expect(greens[1]).toBeLessThan(greens[2] ?? 0);
+  // One box, so no cell can be painted over its neighbour whichever way Cell turns.
+  expect(crest).toHaveLength(1);
+  const box = crest[0] as Box;
+  // Centred across the head, and chunky: each cell is no taller than it is wide.
+  expect(box.at[1] + box.size[1] / 2).toBeCloseTo(0);
+  expect(box.size[2]).toBeLessThanOrEqual(box.size[1] / 3);
+  const green = (hex: string) => Number.parseInt(hex.slice(3, 5), 16);
+  const cells = (on: string) =>
+    (box.decals ?? []).filter((d) => d.on === on && d.fill !== "#0e4429").map((d) => d);
+  // The top is cut in three equal parts along the row, each brighter than the last.
+  const top = cells("top").sort((a, b) => a.rect[1] - b.rect[1]);
+  expect(top).toHaveLength(3);
+  for (const part of top) expect(part.rect[3] - part.rect[1]).toBeCloseTo(1 / 3);
+  expect(green(top[0]?.fill ?? "")).toBeLessThan(green(top[1]?.fill ?? ""));
+  expect(green(top[1]?.fill ?? "")).toBeLessThan(green(top[2]?.fill ?? ""));
+  // The back face runs the other way round, so the dark cell is at the same end on both sides.
+  const front = cells("front").sort((a, b) => a.rect[0] - b.rect[0]);
+  const back = cells("back").sort((a, b) => a.rect[0] - b.rect[0]);
+  expect(green(front[0]?.fill ?? "")).toBeLessThan(green(front[2]?.fill ?? ""));
+  expect(green(back[0]?.fill ?? "")).toBeGreaterThan(green(back[2]?.fill ?? ""));
 });
 
 test("Cell stands where it is put and turns as a whole", () => {
