@@ -35,8 +35,8 @@ const USE: Record<ExportFormat, string> = {
 };
 
 /**
- * "Keep your year" at the closing stop: the story's files as a short column of paper tickets on
- * the grass beside the train, each an ink tile with a pixel mark and the file's name. Video opens
+ * "Keep your year" at the closing stop: the story's files as two columns of paper tickets on the
+ * grass at the bottom right, each an ink tile with a pixel mark and the file's name. Video opens
  * its four shapes. While a file is made, and only then, a small dialog shows Cell, a bar and one
  * sentence. Never part of the composition, so never in a file.
  */
@@ -126,18 +126,18 @@ export function ExportShelf({
   }, [ended]);
 
   return (
-    <section aria-labelledby={headingId} className="relative w-44">
+    <section aria-labelledby={headingId} className="relative w-[min(22rem,calc(100cqw-1.5rem))]">
       <h2
         id={headingId}
-        className="mb-1.5 w-fit rounded bg-ink/80 px-2 py-0.5 text-sm font-bold text-paper [overflow-wrap:anywhere]"
+        className="mb-1.5 ml-auto w-fit rounded bg-ink/80 px-2 py-0.5 text-sm font-bold text-paper [overflow-wrap:anywhere]"
       >
         {title}
       </h2>
       {shapes && (
-        // Opens to the left of the column, so the tickets under Video stay where they were.
+        // Opens above the tickets, so they stay where they were.
         <fieldset
           ref={shapesList}
-          className="absolute top-8 right-full m-0 mr-2 flex w-44 flex-col gap-1.5 border-0 p-0"
+          className="absolute right-0 bottom-full m-0 mb-1.5 grid w-full grid-cols-2 gap-1.5 border-0 p-0"
         >
           <legend className="sr-only">Video shape</legend>
           {FORMATS.map((key) => (
@@ -159,7 +159,7 @@ export function ExportShelf({
           ))}
         </fieldset>
       )}
-      <ul className="flex flex-col gap-1.5">
+      <ul className="grid grid-cols-2 gap-1.5">
         <li>
           <button
             ref={videoButton}
