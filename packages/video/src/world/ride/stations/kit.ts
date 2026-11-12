@@ -5,9 +5,9 @@
  */
 import type { LayoutFamily, RecapData } from "@wyg/schema";
 import type { City } from "../../city";
-import { INK, LIT, TONE, type Tone } from "../palette";
+import { INK, LIT, TONE } from "../palette";
 import { part } from "../place";
-import type { Decal, FaceName, FaceText, Solid } from "../prims";
+import type { FaceName, FaceText, Solid } from "../prims";
 import type { V3 } from "../project";
 import type { RideStop } from "../stops";
 import { at, heading, PLAZA, PLAZA_AHEAD, PLAZA_LATERAL } from "../track";
@@ -297,81 +297,3 @@ export function flow(
 
 /** How far into the climb to the overview the fine paint and the small moving things are still drawn. */
 export const NEAR_ENOUGH = 0.35;
-const LOAD: Flowing = { long: 0.36, pitch: 0.62, travel: 1.9 };
-
-/**
- * A conveyor along the plaza's edge by the rail: `count` small loads of `tone` ride it from the
- * shed at one end to the shed at the other, so a stop is seen to be at work. They are set down
- * as the stop builds and travel once it is whole, on a 60-frame loop that ends where it began.
- * It stands lower than a wagon and in front of nothing that carries a number.
- */
-export function belt(
-  ctx: StationContext,
-  count: number,
-  tone: Tone,
-  top?: string,
-  /** The plaza's own length and depth, for a station whose plaza is not the usual size. */
-  plazaSize: [number, number] = [PLAZA.long, PLAZA.deep],
-): Solid[] {
-  const { c, yaw, stop, build, frame } = ctx;
-  const long = plazaSize[0] - 1.4;
-  const dy = stop.side * (plazaSize[1] / 2 - 0.5);
-  const fine = ctx.overview < NEAR_ENOUGH;
-  const door: Decal[] = fine
-    ? [
-        { on: "front", rect: [0.2, 0, 0.8, 0.7], fill: INK },
-        { on: "back", rect: [0.2, 0, 0.8, 0.7], fill: INK },
-        { on: "top", rect: [0.15, 0.15, 0.85, 0.85], fill: LIT },
-      ]
-    : [];
-  const out: Solid[] = [
-    part(c, yaw, 0, dy, PLAZA_TOP, [long, 0.5, 0.1], TONE.dark, {
-      tag: "belt",
-      edge: false,
-      decals: fine
-        ? Array.from(
-            { length: 14 },
-            (_, k): Decal => ({
-              on: "top",
-              rect: [(k + 0.4) / 14, 0.1, (k + 0.6) / 14, 0.9],
-              fill: "#545d68",
-            }),
-          )
-        : [],
-    }),
-  ];
-  for (const end of [-1, 1]) {
-    out.push(
-      part(c, yaw, end * (long / 2 - 0.3), dy, PLAZA_TOP + 0.1, [0.6, 0.62, 0.6], TONE.ink, {
-        tag: "belt-shed",
-        decals: door,
-      }),
-    );
-  }
-  const on = Math.max(0, Math.min(1, (build - 0.6) / 0.4));
-  if (!fine || on <= 0) return out;
-  const loop = build >= 1 ? (((frame % 60) + 60) % 60) / 60 : 0;
-  const reach = long / 2 - 0.6;
-  for (const parts of flow(count, -reach, reach, loop, LOAD)) {
-    parts.forEach((piece, n) => {
-      out.push(
-        part(
-          c,
-          yaw,
-          piece.mid,
-          dy,
-          PLAZA_TOP + 0.1 + (1 - on) * 3,
-          [piece.long, 0.36, 0.36],
-          tone,
-          {
-            tag: n === 0 ? "belt-load" : "belt-load-part",
-            lit: true,
-            decals:
-              top && piece.whole ? [{ on: "top", rect: [0.18, 0.18, 0.82, 0.82], fill: top }] : [],
-          },
-        ),
-      );
-    });
-  }
-  return out;
-}

@@ -1,9 +1,9 @@
 import type { RecapData } from "@wyg/schema";
 import { firstDayModel } from "../../scenes/firstDay.model";
-import { GREENS, heat, LIT, TONE, toneOf } from "../palette";
+import { heat, LIT, TONE } from "../palette";
 import type { Decal, FaceText, Solid } from "../prims";
 import { PLAZA } from "../track";
-import { belt, NEAR_ENOUGH, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { NEAR_ENOUGH, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
 
 /** Whether the cells are laid right to left on the face toward the rail, so weeks read left to right on screen. */
 const FLIP_NEAR = false;
@@ -55,7 +55,7 @@ export function firstWeeks(
  * The first square of the year. Behind the plaza stands the start of the contribution graph as a
  * wall: the days before the first contribution empty, that day lit green as the train comes to
  * rest, the rest still dim. The same square lies large on a plinth in front of it, a flag beside
- * it carries its date and weekday, and squares still to come ride a conveyor past the wall. A
+ * it carries its date and weekday. A
  * year with no contributions has a wall of empty days, an outline where the square would lie, no
  * flag, and a sign that says the graph is blank: there is no date to print.
  */
@@ -146,8 +146,6 @@ export const firstDay: Station = (ctx) => {
       decals: [{ on: "top", rect: [0.12, 0.12, 0.88, 0.88], fill: "#56e070" }],
     }),
   );
-  // Squares still to come ride past on the conveyor: the year goes on from here.
-  out.push(...belt(ctx, 6, toneOf(GREENS[1]), GREENS[2]));
 
   // The flag goes up its pole over the last half of the build; its words are the model's own.
   const raised = easeOut((build - 0.5) / 0.5);

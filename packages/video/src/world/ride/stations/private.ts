@@ -3,7 +3,7 @@ import { privateModel } from "../../scenes/private.model";
 import { TONE, toneOf } from "../palette";
 import type { Decal, FaceText, Solid } from "../prims";
 import { PLAZA } from "../track";
-import { belt, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
 
 const IRON = toneOf("#3b424c");
 const BRASS = "#c9a24b";
@@ -65,9 +65,6 @@ export const privateVault: Station = (ctx) => {
     ),
     { on: "top", rect: [0.06, 0.1, 0.94, 0.9], fill: "#4a535e" },
   ];
-  // Private work rides into the vault on the conveyor: closed boxes, each with its lock. Only when
-  // there is a count to stand for; a vault with nothing in it, or one nobody could read, gets none.
-  if (model.kind === "count") out.push(...belt(ctx, 7, IRON, "#e3b341"));
   const texts: FaceText[] = [];
   if (model.kind === "count") {
     // Before the vault has landed the figure rises (never below 1); at rest it is the exact count.
