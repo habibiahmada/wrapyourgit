@@ -1,5 +1,5 @@
 import { Edges } from "@react-three/drei";
-import type { ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 
 /*
  * Crisp isometric 3D, the look of the landing's references and its SVG hero: every box face is
@@ -11,6 +11,37 @@ import type { ReactNode } from "react";
 
 export type V3 = [number, number, number];
 export type Tone = { top: string; left: string; right: string; edge?: string };
+
+/**
+ * Which layer of a picture is being drawn (ADR-0022, "two layers"): "all" for the whole picture,
+ * "base" for everything but its movers, "movers" for those alone. In the movers' layer the rest
+ * is still drawn into the depth buffer, but not into the colour: it leaves no pixel and yet hides
+ * a mover that is behind it, so the two layers stack into the whole picture. Only what is wrapped
+ * in Mover moves on a page; the rest of a picture is drawn once, as it is at the loop's start.
+ */
+export type ArtPass = "all" | "base" | "movers";
+const PassContext = createContext<{ pass: ArtPass; mover: boolean }>({ pass: "all", mover: false });
+
+/** Sets the layer for everything inside. It has to sit inside the canvas: context stops at its edge. */
+export function Pass({ pass, children }: { pass: ArtPass; children: ReactNode }) {
+  return <PassContext.Provider value={{ pass, mover: false }}>{children}</PassContext.Provider>;
+}
+
+/** What moves on a page, in a picture of two layers: left out of the base, drawn in the movers'. */
+export function Mover({ children }: { children: ReactNode }) {
+  const { pass } = useContext(PassContext);
+  return (
+    <group visible={pass !== "base"}>
+      <PassContext.Provider value={{ pass, mover: true }}>{children}</PassContext.Provider>
+    </group>
+  );
+}
+
+/** True for what stands still while the movers' layer is drawn: depth only, no colour. */
+function useGhost(): boolean {
+  const { pass, mover } = useContext(PassContext);
+  return pass === "movers" && !mover;
+}
 
 export const T = {
   floor: { top: "#21262d", left: "#161b22", right: "#11161d", edge: "#30363d" },
@@ -32,7 +63,8 @@ export const GREENS = ["#0e4429", "#006d32", "#26a641", "#39d353"] as const;
 
 /** Unlit flat colour. */
 export function Flat({ color }: { color: string }) {
-  return <meshBasicMaterial color={color} toneMapped={false} />;
+  const ghost = useGhost();
+  return <meshBasicMaterial color={color} toneMapped={false} colorWrite={!ghost} />;
 }
 
 /**
@@ -56,14 +88,21 @@ export function IsoBox({
 }) {
   // BoxGeometry face order: +x, -x, +y, -y, +z, -z.
   const faces = [tone.right, tone.right, tone.top, tone.right, tone.left, tone.left];
+  const ghost = useGhost();
   return (
     <mesh position={position} rotation={rotation}>
       <boxGeometry args={size} />
       {faces.map((c, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: one material per box face, in face order
-        <meshBasicMaterial key={i} attach={`material-${i}`} color={c} toneMapped={false} />
+        <meshBasicMaterial
+          // biome-ignore lint/suspicious/noArrayIndexKey: one material per box face, in face order
+          key={i}
+          attach={`material-${i}`}
+          color={c}
+          toneMapped={false}
+          colorWrite={!ghost}
+        />
       ))}
-      {edges && <Edges color={tone.edge ?? "#30363d"} threshold={20} />}
+      {edges && !ghost && <Edges color={tone.edge ?? "#30363d"} threshold={20} />}
       {children}
     </mesh>
   );
