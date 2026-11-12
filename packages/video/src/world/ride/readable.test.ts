@@ -10,6 +10,7 @@ import { gardenModel } from "../scenes/garden.model";
 import { planesModel } from "../scenes/planes.model";
 import { privateModel } from "../scenes/private.model";
 import { commitsText, projectsModel } from "../scenes/projects.model";
+import { seesawModel } from "../scenes/seesaw.model";
 import { countText, skyModel } from "../scenes/sky.model";
 import { buildRide, HERO_TAGS, rideFrame } from "./model";
 import { type Box, type Prim, scenePrims } from "./prims";
@@ -52,6 +53,7 @@ function restFrames(data: RecapData) {
           "community",
           "engineering",
           "archetype",
+          "versus",
         ].includes(stop.kind)
       )
         return [];
@@ -117,6 +119,17 @@ function check(data: RecapData) {
             value: true,
           },
         );
+    } else if (rest.kind === "versus") {
+      const scale = seesawModel(data);
+      expect({
+        where,
+        value: biggest(rest.texts, formatCount(scale.current.value)) / rest.short >= HEADLINE,
+      }).toEqual({ where, value: true });
+      if (!("unavailable" in scale))
+        expect({
+          where,
+          last: biggest(rest.texts, formatCount(scale.last.value)) / rest.short >= HEADLINE,
+        }).toEqual({ where, last: true });
     } else if (rest.kind === "private") {
       const vault = privateModel(data);
       if (vault.kind === "count") {

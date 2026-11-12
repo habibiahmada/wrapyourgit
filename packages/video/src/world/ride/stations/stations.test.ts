@@ -14,6 +14,7 @@ import { gardenModel } from "../../scenes/garden.model";
 import { planesModel } from "../../scenes/planes.model";
 import { commitsText, projectsModel } from "../../scenes/projects.model";
 import { rhythmModel } from "../../scenes/rhythm.model";
+import { seesawModel } from "../../scenes/seesaw.model";
 import { countText, skyModel } from "../../scenes/sky.model";
 import type { StopKind } from "../../stops";
 import type { Box, Solid } from "../prims";
@@ -59,6 +60,7 @@ test("the stations built so far exist", () => {
     "private",
     "projects",
     "rhythm",
+    "versus",
   ]);
 });
 
@@ -325,6 +327,7 @@ test("a station at rest is the same 60 frames later, and still moving in between
     "community",
     "engineering",
     "archetype",
+    "versus",
     "closing",
   ] as const) {
     expect(build(kind, sampleRecap, 1, 10)).toEqual(build(kind, sampleRecap, 1, 70));
@@ -611,4 +614,91 @@ test("archetype: the marquee's bulbs chase, and the marquee is lowered in", () =
   expect(bulbs(10)).not.toEqual(bulbs(25));
   expect(bulbs(70)).toEqual(bulbs(10));
   expect(boxes(build("archetype", sampleRecap, 0), "marquee")).toHaveLength(0);
+});
+
+const withLastYear = (contributions: number): RecapData => {
+  const prev = sampleRecap.previousYear;
+  if (prev.status !== "ok") throw new Error("the sample has a last year");
+  return {
+    ...sampleRecap,
+    previousYear: {
+      ...prev,
+      value: { ...prev.value, sameSpan: { ...prev.value.sameSpan, contributions } },
+    },
+  };
+};
+const noLastYear: RecapData = {
+  ...sampleRecap,
+  previousYear: { status: "unavailable", reason: "not fetched" },
+};
+
+test("versus: each weight carries its year and its exact value, the sign the change and the span", () => {
+  const model = seesawModel(sampleRecap);
+  if ("unavailable" in model) throw new Error("the sample has a last year");
+  const all = build("versus", sampleRecap);
+  const weights = boxes(all, "weight");
+  expect(weights).toHaveLength(2);
+  expect(printed(weights)).toEqual(
+    expect.arrayContaining([
+      String(model.last.year),
+      formatCount(model.last.value),
+      String(model.current.year),
+      formatCount(model.current.value),
+    ]),
+  );
+  const sign = printed(all).join(" ");
+  expect(printed(all)).toEqual(expect.arrayContaining(["Contributions,", "year over year"]));
+  expect(sign).toContain(model.change);
+  for (const piece of model.span.split(" ")) expect(sign).toContain(piece);
+});
+
+test("versus: the heavier year's pan hangs lower and its weight is taller", () => {
+  const pans = (data: RecapData) => {
+    const all = build("versus", data);
+    const model = seesawModel(data);
+    if ("unavailable" in model) throw new Error("has a last year");
+    const of = (year: number) => {
+      const weight = boxes(all, "weight").find((b) =>
+        b.texts?.some((t) => t.text === String(year)),
+      );
+      if (!weight) throw new Error("no weight");
+      return { foot: weight.at[2], tall: weight.size[2] };
+    };
+    return { last: of(model.last.year), current: of(model.current.year) };
+  };
+  const up = pans(withLastYear(400));
+  expect(up.current.foot).toBeLessThan(up.last.foot);
+  expect(up.current.tall).toBeGreaterThan(up.last.tall);
+  const down = pans(withLastYear(5000));
+  expect(down.current.foot).toBeGreaterThan(down.last.foot);
+  expect(down.current.tall).toBeLessThan(down.last.tall);
+  const level = pans(withLastYear(sampleRecap.contributions.total));
+  expect(level.current.foot).toBeCloseTo(level.last.foot);
+});
+
+test("versus: last year unread is a covered weight with no figure, never a zero", () => {
+  const all = build("versus", noLastYear);
+  const model = seesawModel(noLastYear);
+  expect(boxes(all, "weight")).toHaveLength(1);
+  expect(boxes(all, "covered")).toHaveLength(1);
+  expect(printed(boxes(all, "covered"))).toEqual([]);
+  expect(printed(boxes(all, "weight"))).toEqual(
+    expect.arrayContaining([String(model.current.year), formatCount(model.current.value)]),
+  );
+  // The sign prints it on two rows.
+  expect(printed(all)).toEqual(
+    expect.arrayContaining(["Last year couldn't", "be read from GitHub"]),
+  );
+  expect(printed(all)).not.toContain("0");
+  // Nothing to weigh against: the beam stays level.
+  const beam = boxes(all, "beam").map((b) => b.at[2]);
+  expect(Math.max(...beam) - Math.min(...beam)).toBeCloseTo(0);
+});
+
+test("versus: the weights are lowered on as the train comes in, and the figures are exact at rest", () => {
+  expect(boxes(build("versus", sampleRecap, 0), "weight")).toHaveLength(0);
+  const model = seesawModel(sampleRecap);
+  const midway = printed(boxes(build("versus", sampleRecap, 0.5), "weight"));
+  expect(midway).not.toContain(formatCount(model.current.value));
+  expect(midway).not.toContain("0");
 });

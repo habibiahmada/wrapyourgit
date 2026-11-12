@@ -12,6 +12,7 @@ import { languages } from "./languages";
 import { privateVault } from "./private";
 import { projects } from "./projects";
 import { rhythm } from "./rhythm";
+import { versus } from "./versus";
 
 /** The hero each stop builds. Phase 2 of the story ride adds the rest, one at a time. */
 export const STATIONS: Partial<Record<StopKind, Station>> = {
@@ -26,5 +27,6 @@ export const STATIONS: Partial<Record<StopKind, Station>> = {
   community,
   engineering,
   archetype,
+  versus,
   closing,
 };

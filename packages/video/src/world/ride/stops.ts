@@ -16,6 +16,7 @@ export const RIDE_KINDS: readonly StopKind[] = [
   "community",
   "engineering",
   "archetype",
+  "versus",
   "closing",
 ];
 
