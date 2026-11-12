@@ -84,6 +84,17 @@ export function buildRide(
       if (solid.kind === "picture" && solid.reach !== undefined) {
         // A figure on a sheet: the camera frames how high it stands, not the sheet.
         heroTop = Math.max(heroTop, solid.c[2] + solid.reach);
+        // A picture always faces the camera, so its width on screen is the same from every
+        // side: a ring of that radius on the ground is as wide as it, whichever way the shot looks.
+        const spread = solid.spread ?? 0;
+        for (let k = 0; k < 8 && spread > 0; k++) {
+          const a = (k / 8) * Math.PI * 2;
+          heroEdge.push([
+            solid.c[0] + Math.cos(a) * spread,
+            solid.c[1] + Math.sin(a) * spread,
+            solid.c[2],
+          ]);
+        }
         continue;
       }
       if (solid.kind !== "box" || !HERO_TAGS.includes(solid.tag ?? "")) continue;

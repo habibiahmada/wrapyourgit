@@ -12,7 +12,7 @@ import { buildRide, rideFrame } from "./model";
 import { SKY } from "./palette";
 import { scenePrims } from "./prims";
 import { RideCanvas } from "./RideCanvas";
-import { archetypeFigure } from "./stations/archetype";
+import { archetypeFigures } from "./stations/archetype";
 
 export type RideStoryProps = {
   data: RecapData;
@@ -44,7 +44,7 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
       ...gardenModel(data)
         .trees.map((tree) => languageIcon(tree.name))
         .filter((icon): icon is string => icon !== null),
-      archetypeFigure(data),
+      ...archetypeFigures(data),
     ].map((file) => staticFile(file));
   }, [data]);
   const layers = [

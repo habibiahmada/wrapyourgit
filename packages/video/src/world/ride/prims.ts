@@ -77,6 +77,11 @@ export type Picture = {
    * (a figure in the middle of a wider sheet). The camera frames this, as it frames a hero's top.
    */
   reach?: number;
+  /**
+   * How far to each side of `c` what the picture shows reaches on screen, when it is wider than
+   * the boxes round it (a whole city block on one sheet). The camera keeps this in frame too.
+   */
+  spread?: number;
 };
 export type Solid = Box | Ball | Picture;
 export type Fog = { color: string; near: number; far: number };

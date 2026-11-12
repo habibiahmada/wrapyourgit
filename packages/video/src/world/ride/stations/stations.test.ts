@@ -19,7 +19,7 @@ import { countText, skyModel } from "../../scenes/sky.model";
 import type { StopKind } from "../../stops";
 import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
-import { archetypeFigure } from "./archetype";
+import { archetype, archetypeFigures } from "./archetype";
 import { STATIONS } from "./index";
 import { clip, stationContext } from "./kit";
 import { blockHeight, blockName } from "./languages";
@@ -587,29 +587,66 @@ test("engineering: the planes in flight drift, and the figures rise as the board
   expect(printed(build("engineering", sampleRecap, 0.5))).not.toContain("0");
 });
 
-test("archetype: the picture is the station: Cell in the archetype's costume, large on the stage", () => {
+test("archetype: the picture is the station: Cell in costume with what floats round it, large on the stage", () => {
   const model = archetypeModel(sampleRecap);
   if (!model) throw new Error("the sample has an archetype");
-  // Frame 0 of the rest loop: the figure is at the foot of its bounce.
   const all = build("archetype", sampleRecap, 1, 0);
-  // The same cut-out the landing page shows for this archetype.
   const figures = all.filter((solid) => solid.kind === "picture");
   expect(figures).toHaveLength(1);
   const figure = figures[0];
   if (figure?.kind !== "picture") throw new Error("no figure");
-  expect(figure.href).toContain(`art/cutout-${model.id}.png`);
-  // It stands on the stage, and nothing is hung over it: the tallest thing here is the figure.
+  // The first frame of the landing page's loop for this archetype.
+  expect(figure.href).toContain(`art/skin-${model.id}/00.webp`);
+  // It stands on the stage. Apart from its title board, which the next test places, nothing
+  // rises anywhere near it: it reaches twice as high as any other box.
   const stage = boxes(all, "stage")[0];
-  expect(figure.c[2]).toBeCloseTo((stage?.at[2] ?? 0) + (stage?.size[2] ?? 0), 1);
+  expect(figure.c[2]).toBeCloseTo((stage?.at[2] ?? 0) + (stage?.size[2] ?? 0));
   const boxTops = all.flatMap((solid) =>
-    solid.kind === "box" ? [solid.at[2] + solid.size[2]] : [],
+    solid.kind === "box" && !["board", "board-post"].includes(solid.tag ?? "")
+      ? [solid.at[2] + solid.size[2]]
+      : [],
   );
-  // The figure tells the camera how high it stands, and it is over five units: twice any box here.
   expect(figure.reach).toBeGreaterThan(5);
   expect(Math.max(...boxTops)).toBeLessThan((figure.reach ?? 0) / 2);
-  // The canvas loads the very file the station draws.
-  expect(figure.href).toContain(archetypeFigure(sampleRecap));
-  expect(archetypeFigure(emptyRecap)).toBe("art/cutout-cell-think.png");
+  // The block is wider than its stage: the picture itself tells the camera how far it reaches.
+  expect(figure.spread).toBeGreaterThan((stage?.size[0] ?? 0) / 2);
+});
+
+test("archetype: the figure moves: its loop plays through every frame and repeats every 60", () => {
+  const href = (frame: number) => {
+    const figure = build("archetype", sampleRecap, 1, frame).find((s) => s.kind === "picture");
+    return figure?.kind === "picture" ? figure.href : "";
+  };
+  const seen = new Set(Array.from({ length: 60 }, (_, frame) => href(frame)));
+  expect(seen.size).toBe(30);
+  expect(href(60)).toBe(href(0));
+  expect(href(1)).toBe(href(0));
+  expect(href(2)).not.toBe(href(0));
+  // The canvas loads exactly the files the station can draw.
+  const listed = archetypeFigures(sampleRecap);
+  expect(listed).toHaveLength(30);
+  for (const one of seen) expect(listed.some((file) => one.endsWith(file))).toBe(true);
+  expect(archetypeFigures(emptyRecap)).toEqual(["art/cutout-cell-think.png"]);
+});
+
+test("archetype: the title board stands behind the picture, never between it and the rail", () => {
+  const city = buildCity(sampleRecap);
+  const stop = rideStops(sampleRecap, city).find((s) => s.kind === "archetype");
+  if (!stop) throw new Error("no archetype stop");
+  for (const layout of ["portrait", "compact", "landscape"] as const) {
+    const ctx = stationContext(sampleRecap, city, stop, 1, 0, 0, layout);
+    const all = archetype(ctx);
+    const board = boxes(all, "board")[0];
+    const figure = all.find((solid) => solid.kind === "picture");
+    if (!board || figure?.kind !== "picture") throw new Error("no board or no figure");
+    // A part is placed across the rail from the plaza's middle, and the rail is on `stop.side`.
+    const across = board.at[1] + board.size[1] / 2 - (board.pivot?.[1] ?? 0);
+    expect({ layout, behind: across * stop.side < 0 }).toEqual({ layout, behind: true });
+    // Its foot is at the roofs where the frame is narrow; lower, beside the towers, where it is wide.
+    const under = figure.c[2] + (figure.reach ?? 0) - board.at[2];
+    const atRoofs = under < 1;
+    expect({ layout, atRoofs }).toEqual({ layout, atRoofs: layout !== "landscape" });
+  }
 });
 
 test("archetype: the board carries the intro and the title, and nothing else", () => {
