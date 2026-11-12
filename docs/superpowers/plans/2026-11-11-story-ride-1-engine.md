@@ -16,7 +16,7 @@ This plan is phase 1 of 3. Users keep today's story until phase 3 switches over.
 
 1. **Engine and proof** (this plan).
 2. **All stations:** the remaining nine stops with their edge fixtures. Planned after the gate passes.
-3. **Switch over:** the player's resting clock, sound, exports on `RideStory`, removal of the old scenes and the spike, ADR-0022, `DESIGN.md` and `docs/video/scene-system.md`.
+3. **Switch over:** the player's resting clock, sound, exports on `RideStory`, removal of the old scenes and the spike, ADR-0023, `DESIGN.md` and `docs/video/scene-system.md`.
 
 ## Global Constraints
 
@@ -1143,5 +1143,5 @@ Read `apps/web/AGENTS.md` and the Next.js 16 docs under `node_modules/next/dist/
 
 ## Self-review notes
 
-- **Spec coverage.** Track, squares, gates with totals, ground and sky, train and Cell, the four shots and hello's and the city's own shots, printed text with minimum sizes, even stations on alternating sides, rest loops and "everything builds on the way in", the provisional year, the gate: each has a task. Left for later phases on purpose: the other nine stations, beacons' use at first-day and busiest stations (the beacons themselves are in Task 8), the letter's sheet, sound, the player's resting clock, exports, removals, ADR-0022.
+- **Spec coverage.** Track, squares, gates with totals, ground and sky, train and Cell, the four shots and hello's and the city's own shots, printed text with minimum sizes, even stations on alternating sides, rest loops and "everything builds on the way in", the provisional year, the gate: each has a task. Left for later phases on purpose: the other nine stations, beacons' use at first-day and busiest stations (the beacons themselves are in Task 8), the letter's sheet, sound, the player's resting clock, exports, removals, ADR-0023.
 - **Not in this phase's tests:** leaving a rest loop on a tap (phase 3, with the player), and reduced motion (unchanged until phase 3).
