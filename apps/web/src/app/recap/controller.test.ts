@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { VIDEO_FORMATS } from "@wyg/schema";
 import { sampleRecap } from "@wyg/video";
-import { buildWorld, type Timeline } from "@wyg/video/world";
+import { buildRide } from "@wyg/video/ride";
+import type { Timeline } from "@wyg/video/world";
 import {
   type ControllerState,
   carryStop,
@@ -153,7 +154,7 @@ test("a move started part way through the rest loop carries that phase, and lets
 
 describe("carryStop: the stop to rest on after a format change", () => {
   const ids = (format: keyof typeof VIDEO_FORMATS) =>
-    buildWorld(sampleRecap, VIDEO_FORMATS[format], "interactive", 30).stops.map((s) => s.id);
+    buildRide(sampleRecap, VIDEO_FORMATS[format], "interactive", 30).stops.map((s) => s.id);
   const tall = ids("9x16");
   const wide = ids("16x9");
 

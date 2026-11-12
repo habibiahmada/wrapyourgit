@@ -5,11 +5,8 @@ import { sampleRecap } from "./fixtures/sample-recap";
 import { type ArtId, ArtStill } from "./three/ArtStill";
 import { DioramaStill } from "./three/diorama/DioramaStill";
 import { DIORAMA_IDS, type LandingDioramaId } from "./three/diorama/scenes";
-import { worldDuration } from "./world/model";
 import { rideDuration } from "./world/ride/model";
 import { RideStory, type RideStoryProps } from "./world/ride/RideStory";
-import { RIDE_FRAMES, RideSpike } from "./world/spike/RideSpike";
-import { WorldStory, type WorldStoryProps } from "./world/WorldStory";
 
 /** Every baked loop: web art and the letterhead head (art.ts). */
 export const ART_IDS: ArtId[] = [...WEB_ART_IDS, HEAD_ART_ID];
@@ -25,28 +22,11 @@ export function artSize(art: ArtId): { width: number; height: number } {
   return { width: 1200, height: 900 };
 }
 
-/** One story world composition per export format (`world-<format>`, e.g. `world-9x16`), plus the art bake. */
+/** One story composition per export format (`ride-<format>`, e.g. `ride-9x16`), plus the art bake. */
 export function Root() {
   return (
     <>
-      {/* THROWAWAY SPIKE: the ride into the screen. */}
-      <Composition
-        id="ride-spike-16x9"
-        component={RideSpike}
-        durationInFrames={RIDE_FRAMES}
-        fps={30}
-        width={1920}
-        height={1080}
-      />
-      <Composition
-        id="ride-spike-9x16"
-        component={RideSpike}
-        durationInFrames={RIDE_FRAMES}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      {/* The story ride (phase 1): the same props and formats as the story world, beside it. */}
+      {/* The story, video mode: duration depends on the data, so it comes from the props. */}
       {(Object.keys(VIDEO_FORMATS) as VideoFormatId[]).map((formatId) => {
         const format = VIDEO_FORMATS[formatId];
         const defaultProps: RideStoryProps = { data: sampleRecap, mode: "video" };
@@ -60,26 +40,6 @@ export function Root() {
               durationInFrames: rideDuration(props.data, format, props.mode, {
                 letter: props.letter,
               }),
-            })}
-            fps={VIDEO_FPS}
-            width={format.width}
-            height={format.height}
-            defaultProps={defaultProps}
-          />
-        );
-      })}
-      {/* The story world, video mode: duration depends on the data, so it comes from the props. */}
-      {(Object.keys(VIDEO_FORMATS) as VideoFormatId[]).map((formatId) => {
-        const format = VIDEO_FORMATS[formatId];
-        const defaultProps: WorldStoryProps = { data: sampleRecap, mode: "video" };
-        return (
-          <Composition
-            key={`world-${formatId}`}
-            id={`world-${formatId}`}
-            component={WorldStory}
-            durationInFrames={worldDuration(sampleRecap, format, "video")}
-            calculateMetadata={({ props }) => ({
-              durationInFrames: worldDuration(props.data, format, props.mode),
             })}
             fps={VIDEO_FPS}
             width={format.width}

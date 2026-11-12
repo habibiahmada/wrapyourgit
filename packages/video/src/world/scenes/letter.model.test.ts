@@ -3,7 +3,7 @@ import { VIDEO_FORMATS } from "@wyg/schema";
 import { busyRecap, emptyRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { congratsLetter, type Letter } from "../../letter";
-import { buildWorld } from "../model";
+import { buildRide } from "../ride/model";
 import { labelWidth } from "./fit";
 import { letterGeometry, paginateLetter, paginateLetterLines } from "./letter.model";
 
@@ -89,10 +89,10 @@ test("letterGeometry: body is 4.2% of the short side (3.6% when square), in scen
   expect(letterGeometry(VIDEO_FORMATS["1x1"]).body).toBeCloseTo(36, 6);
 });
 
-test("buildWorld: one letter stop per page, numbered 1..N", () => {
+test("the ride: one letter stop per page, numbered 1..N", () => {
   for (const format of Object.values(VIDEO_FORMATS)) {
     const pages = paginateLetter(sample, format).length;
-    const letterStops = buildWorld(sampleRecap, format, "video", 30).stops.filter(
+    const letterStops = buildRide(sampleRecap, format, "video", 30).stops.filter(
       (s) => s.kind === "letter",
     );
     expect(letterStops.map((s) => s.id)).toEqual(

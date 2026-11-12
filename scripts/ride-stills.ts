@@ -9,8 +9,7 @@
  *   bun scripts/ride-stills.ts languages --offset -20     # 20 frames before the rest: mid-build
  *   bun scripts/ride-stills.ts closing --format 1x1       # one format instead of the default three
  *
- * <kind> is one of the ride's stops (RIDE_KINDS). Fixtures and defaults are those of
- * scripts/world-stills.ts. Writes `<outDir>/ride-<kind>[-<fixture>]-<format>.png` for 9x16, 4x5
+ * <kind> is one of the ride's stops (RIDE_KINDS). Fixtures are the ones listed below. Writes `<outDir>/ride-<kind>[-<fixture>]-<format>.png` for 9x16, 4x5
  * and 16x9 (outDir defaults to /tmp/claude-1000/ride-stills/). If Chrome cannot be downloaded,
  * set REMOTION_BROWSER_EXECUTABLE to an installed headless shell.
  */
