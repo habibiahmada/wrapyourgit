@@ -4,6 +4,7 @@ import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-rec
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildRide, HERO_TAGS, rideDuration, rideFrame } from "./model";
 import { type Box, type Solid, scenePrims } from "./prims";
+import { projectPoint } from "./project";
 import { stationContext } from "./stations/kit";
 import { RIDE_KINDS } from "./stops";
 
@@ -128,27 +129,48 @@ test("a frame stays inside the polygon budget", () => {
   }
 });
 
-test("a hero is lifted away as the train pulls out, and is gone by the next station", () => {
-  const m = buildRide(sampleRecap, f, "video", 30);
-  const heroesAt = (frame: number, stop: (typeof m.stops)[number]) => {
-    const c = stationContext(sampleRecap, m.city, stop, 1, 0, 0).c;
-    return rideFrame(m, sampleRecap, frame, f, 30).objects.filter(
-      (s) =>
-        s.kind === "box" &&
-        // The sign and the first square are part of the plaza and stay.
-        s.tag !== "board" &&
-        s.tag !== "first-square" &&
-        HERO_TAGS.includes(s.tag ?? "") &&
-        Math.hypot((s.pivot?.[0] ?? 1e9) - c[0], (s.pivot?.[1] ?? 1e9) - c[1]) < 0.01,
-    ).length;
-  };
-  const plazas = m.stops.map((stop, i) => ({ stop, i })).filter(({ stop }) => stop.plaza);
-  plazas.forEach(({ stop, i }, k) => {
-    const rest = m.timeline.stopFrames[i] ?? 0;
-    expect(heroesAt(rest, stop)).toBeGreaterThan(0);
-    // Still there as the train pulls away, on its way up: it is lifted out, not switched off.
-    expect(heroesAt(rest + m.timeline.holdFrames + 12, stop)).toBeGreaterThan(0);
-    const next = plazas[k + 1];
-    if (next) expect(heroesAt(m.timeline.stopFrames[next.i] ?? 0, stop)).toBe(0);
-  });
+test("a hero stays put as the train rides on, and is taken down unseen once the train is in the next station", () => {
+  for (const [id, format] of Object.entries(VIDEO_FORMATS)) {
+    const m = buildRide(sampleRecap, format, "video", 30);
+    const mine = (frame: number, stop: (typeof m.stops)[number]) => {
+      const c = stationContext(sampleRecap, m.city, stop, 1, 0, 0).c;
+      const scene = rideFrame(m, sampleRecap, frame, format, 30);
+      const boxes = scene.objects.filter(
+        (s): s is Box =>
+          s.kind === "box" &&
+          // The sign and the first square are part of the plaza and stay.
+          s.tag !== "board" &&
+          s.tag !== "first-square" &&
+          HERO_TAGS.includes(s.tag ?? "") &&
+          Math.hypot((s.pivot?.[0] ?? 1e9) - c[0], (s.pivot?.[1] ?? 1e9) - c[1]) < 0.01,
+      );
+      return { boxes, cam: scene.cam };
+    };
+    const plazas = m.stops.map((stop, i) => ({ stop, i })).filter(({ stop }) => stop.plaza);
+    plazas.forEach(({ stop, i }, k) => {
+      const rest = m.timeline.stopFrames[i] ?? 0;
+      const here = mine(rest, stop).boxes;
+      expect(here.length).toBeGreaterThan(0);
+      // It does not leave when the train pulls out: nothing flies off while the camera is on it.
+      const top = (boxes: Box[]) => Math.max(...boxes.map((b) => b.at[2] + b.size[2]));
+      const after = mine(rest + m.timeline.holdFrames + 20, stop).boxes;
+      expect(after).toHaveLength(here.length);
+      expect(Math.abs(top(after) - top(here))).toBeLessThan(0.5);
+      const next = plazas[k + 1];
+      if (!next) return;
+      const arrive = m.timeline.stopFrames[next.i] ?? 0;
+      expect(mine(arrive, stop).boxes).toHaveLength(0);
+      // The frame before it goes it is already out of the picture, so its going is not seen.
+      const { boxes, cam } = mine(arrive - 1, stop);
+      const seen = boxes.some((box) => {
+        const p = projectPoint(
+          [box.pivot?.[0] ?? 0, box.pivot?.[1] ?? 0, box.at[2] + box.size[2] / 2],
+          cam,
+          format,
+        );
+        return p !== null && p[0] > 0 && p[0] < format.width && p[1] > 0 && p[1] < format.height;
+      });
+      expect({ id, kind: stop.kind, seen }).toEqual({ id, kind: stop.kind, seen: false });
+    });
+  }
 });

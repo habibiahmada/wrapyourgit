@@ -121,20 +121,6 @@ export function rideDuration(
 /** How far the track stays built behind and ahead of the train on the ride. */
 const BEHIND = 26;
 const AHEAD = 56;
-/** A hero is lifted away once the train is `from` past its stop, over the next `over`, up to `high`. */
-const LIFT = { from: 1.5, over: 4, high: 45 };
-/** What a station keeps when its hero is lifted away: the plaza, its sign, and what is laid into the plaza. */
-const STAYS = [
-  "plaza",
-  "step",
-  "bollard",
-  "board",
-  "board-post",
-  "sign",
-  "first-square",
-  "bed",
-  "pole",
-];
 /** Frames over which Cell turns to the camera as the train pulls in, and back as it leaves. */
 const TURN_FRAMES = 20;
 
@@ -219,25 +205,14 @@ export function rideFrame(
     if (!station) return;
     // The overview's billboard stands by the middle of the rail, wherever the train is.
     if (stop.kind !== "city" && (stop.s < view.from - 12 || stop.s > view.to + 12)) return;
-    const away = Math.abs(trainS - stop.s);
-    const build = buildProgress(i, frameIndex, timeline, fps);
-    const solids = station(stationContext(data, city, stop, build, clock, overview, layout, away));
-    // The station camera looks back down the rail, so a hero the train has left would stand in
-    // the next station's picture. It is lifted away as the train pulls out, the way it was
-    // lowered in, and is gone before the next station. The plaza and its sign stay.
-    const lift = trainS > stop.s ? clamp01((away - LIFT.from) / LIFT.over) : 0;
-    for (const solid of solids) {
-      const stays = solid.kind === "box" && STAYS.includes(solid.tag ?? "");
-      if (lift <= 0 || stays) objects.push(solid);
-      else if (lift < 1) {
-        const up = lift * lift * LIFT.high;
-        objects.push(
-          solid.kind === "box"
-            ? { ...solid, at: [solid.at[0], solid.at[1], solid.at[2] + up] }
-            : { ...solid, c: [solid.c[0], solid.c[1], solid.c[2] + up] },
-        );
-      }
-    }
+    // A hero stays where it was built while the train rides on: it is part of the world, and
+    // the overview after it shows it standing. From the next station's shot it is out of the
+    // frame, off to the side, so it is taken down once the train is in there: nobody sees it go,
+    // and it is not in the background of the station after that one.
+    const next = stops.slice(i + 1).find((later) => later.kind !== "city");
+    const gone = next !== undefined && trainS >= next.s;
+    const build = gone ? 0 : buildProgress(i, frameIndex, timeline, fps);
+    objects.push(...station(stationContext(data, city, stop, build, clock, overview, layout)));
   });
 
   const reach = Math.hypot(

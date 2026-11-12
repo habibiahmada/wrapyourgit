@@ -492,24 +492,6 @@ test("rhythm: counts rise as the wagons land, and a year with nothing says so", 
   expect(printed(empty).join(" ")).toContain(none.caption);
 });
 
-test("busiest: the beam draws in as the train leaves, so it does not sweep the next station's picture", () => {
-  const city = buildCity(sampleRecap);
-  const stop = rideStops(sampleRecap, city).find((x) => x.kind === "busiest");
-  if (!stop) throw new Error("no stop");
-  const station = STATIONS.busiest as NonNullable<typeof STATIONS.busiest>;
-  const reach = (away: number) =>
-    Math.max(
-      0,
-      ...boxes(
-        station(stationContext(sampleRecap, city, stop, 1, 10, 0, "landscape", away)),
-        "beam",
-      ).map((b) => b.size[0]),
-    );
-  expect(reach(3)).toBeLessThan(reach(0));
-  expect(reach(3)).toBeGreaterThan(0);
-  expect(reach(8)).toBe(0);
-});
-
 const withCommunity = (community: Partial<RecapData["community"]>): RecapData => ({
   ...sampleRecap,
   community: { ...sampleRecap.community, ...community },
@@ -545,16 +527,4 @@ test("community: a total is never passed off as this year's gain, and an estimat
   expect(printed(boxes(build("community", rough), "observatory"))).toContain(
     countText(12_900, true),
   );
-});
-
-test("community: the stars come down as the train leaves", () => {
-  const city = buildCity(sampleRecap);
-  const stop = rideStops(sampleRecap, city).find((x) => x.kind === "community");
-  if (!stop) throw new Error("no stop");
-  const station = STATIONS.community as NonNullable<typeof STATIONS.community>;
-  const stars = (away: number) =>
-    boxes(station(stationContext(sampleRecap, city, stop, 1, 10, 0, "landscape", away)), "star");
-  const top = (away: number) => Math.max(0, ...stars(away).map((b) => b.at[2]));
-  expect(top(3)).toBeLessThan(top(0));
-  expect(stars(8)).toHaveLength(0);
 });

@@ -23,11 +23,10 @@ const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
  * The community: an observatory. Its hall carries the stars, in the model's count; the sign says
  * what they are (this year's gain, or a running total when GitHub gave no gain) and the forks.
  * One small star rises from the dome for each star, up to a sky that still reads; they drift on a
- * 60-frame loop and come down again as the train leaves, because the next station's camera
- * stands close by. No stars is said in words: no figure on the hall and no small stars.
+ * 60-frame loop. No stars is said in words: no figure on the hall and no small stars.
  */
 export const community: Station = (ctx) => {
-  const { data, c, yaw, build, frame, away } = ctx;
+  const { data, c, yaw, build, frame } = ctx;
   const model = skyModel(data);
   const out: Solid[] = plaza(ctx);
   out.push(
@@ -86,8 +85,8 @@ export const community: Station = (ctx) => {
   // The hatch the telescope looks through.
   out.push(part(c, yaw, 0, 0, z + drop, [0.36, 1.5, 0.12], TONE.ink, { tag: "dome", edge: false }));
 
-  // The small stars: out of the dome over the second half of the build, down again as the train leaves.
-  const up = easeOut((build - 0.5) / 0.5) * Math.max(0, Math.min(1, 1 - (away - 1) / 5));
+  // The small stars: out of the dome over the second half of the build.
+  const up = easeOut((build - 0.5) / 0.5);
   if (up <= 0) return out;
   const count = Math.min(model.drawn, SKY);
   const loop = (((frame % 60) + 60) % 60) / 60;
