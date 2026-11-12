@@ -2,8 +2,9 @@
 
 import { Player, type PlayerRef } from "@remotion/player";
 import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
-import { WorldStory } from "@wyg/video";
-import { buildWorld, edgeSounds, safeArea, TAP_SOUND } from "@wyg/video/world";
+import { RideStory } from "@wyg/video";
+import { buildRide } from "@wyg/video/ride";
+import { edgeSounds, safeArea, TAP_SOUND } from "@wyg/video/world";
 import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,8 +13,10 @@ import {
   type ControllerState,
   carryStop,
   frameAt,
+  idleOffset,
   initialState,
   request,
+  restFrameAt,
   settle,
 } from "./controller";
 import { endScreenFor, shareCardFor } from "./end-screen";
@@ -113,8 +116,9 @@ export type WorldPlayerProps =
     };
 
 /**
- * The story world as a full-screen tap story. The composition never plays: every frame comes from
+ * The story ride as a full-screen tap story. The composition never plays: every frame comes from
  * `seekTo`, driven by the controller, so moving forward and back share one path and one cadence.
+ * At rest the controller's rest loop is played the same way.
  */
 export function WorldPlayer(props: WorldPlayerProps) {
   const owner = props.variant === "owner";
@@ -142,7 +146,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
   }, []);
   const { width, height } = VIDEO_FORMATS[format];
   const { stops, timeline } = useMemo(
-    () => buildWorld(data, { width, height }, "interactive", VIDEO_FPS, { letter }),
+    () => buildRide(data, { width, height }, "interactive", VIDEO_FPS, { letter }),
     [data, width, height, letter],
   );
 
@@ -155,6 +159,11 @@ export function WorldPlayer(props: WorldPlayerProps) {
   const [faded, setFaded] = useState(false);
   const raf = useRef(0);
   const fade = useRef(0);
+  // At rest the ride loops its station's rest frames; this is that loop, and the phase it shows.
+  const restRaf = useRef(0);
+  const restPhase = useRef(0);
+  // Idle motion carried into a move from where the rest loop was (see controller `idleOffset`).
+  const [idle, setIdle] = useState(0);
   // "Keep your year": a web-only screen over the paused closing stop, never part of the story.
   const [ended, setEnded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -180,6 +189,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
 
   const stopLoop = useCallback(() => {
     cancelAnimationFrame(raf.current);
+    cancelAnimationFrame(restRaf.current);
     window.clearTimeout(fade.current);
   }, []);
 
@@ -188,6 +198,8 @@ export function WorldPlayer(props: WorldPlayerProps) {
       const begin = () => {
         const move = state.current.moving;
         if (!move) return;
+        // The rest loop stops here, not on the next render: two loops must never seek in turn.
+        cancelAnimationFrame(restRaf.current);
         sfx.play(TAP_SOUND);
         const sounds = edgeSounds(timeline, stops, move.from, move.to);
         if (sounds.travel) sfx.play(sounds.travel);
@@ -196,6 +208,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
         const finish = () => {
           if (sounds.arrival) sfx.play(sounds.arrival);
           const { state: rested, next } = settle(state.current);
+          setIdle(0);
           commit(rested);
           if (next !== null) step(next);
         };
@@ -203,7 +216,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
         if (reduced) {
           setFaded(true);
           fade.current = window.setTimeout(() => {
-            player.current?.seekTo(move.endFrame);
+            player.current?.seekTo(timeline.stopFrames[move.to] ?? move.endFrame);
             setFaded(false);
             finish();
           }, FADE_MS);
@@ -214,6 +227,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
         const tick = (now: number) => {
           const frame = frameAt(state.current, now - start, VIDEO_FPS);
           if (frame === null) return;
+          setIdle(idleOffset(state.current, frame));
           player.current?.seekTo(frame);
           if (frame === move.endFrame) finish();
           else raf.current = requestAnimationFrame(tick);
@@ -221,8 +235,8 @@ export function WorldPlayer(props: WorldPlayerProps) {
         raf.current = requestAnimationFrame(tick);
       };
 
-      const step = (dir: 1 | -1) => {
-        const result = request(state.current, dir, timeline);
+      const step = (dir: 1 | -1, phase = 0) => {
+        const result = request(state.current, dir, timeline, reduced ? 0 : phase);
         commit(result.state);
         if (result.start) begin();
       };
@@ -234,7 +248,8 @@ export function WorldPlayer(props: WorldPlayerProps) {
         setEnded(true);
         return;
       }
-      step(direction);
+      // A tap at rest sets off from where the rest loop is; one during a move only queues.
+      step(direction, rest.moving ? 0 : restPhase.current);
     },
     [commit, last, music, reduced, sfx, stops, timeline],
   );
@@ -248,11 +263,30 @@ export function WorldPlayer(props: WorldPlayerProps) {
     const ids = stops.map((s) => s.id);
     const stop = carryStop(restedIds.current, heading(state.current), ids);
     restedIds.current = ids;
+    setIdle(0);
     commit({ stop, moving: null, queued: null });
     player.current?.seekTo(timeline.stopFrames[stop] ?? 0);
   }, [stops, timeline, commit, stopLoop]);
 
   useEffect(() => stopLoop, [stopLoop]);
+
+  // While the camera rests, the station keeps moving: smoke, Cell blinking, its own small loop.
+  // Not under reduced motion, and not behind the end screen.
+  useEffect(() => {
+    restPhase.current = 0;
+    if (!resting || ended || reduced) return;
+    const begun = performance.now();
+    const loop = (now: number) => {
+      const rested = state.current;
+      if (rested.moving) return;
+      const frame = restFrameAt(rested, now - begun, VIDEO_FPS, timeline);
+      restPhase.current = frame - (timeline.stopFrames[rested.stop] ?? frame);
+      player.current?.seekTo(frame);
+      restRaf.current = requestAnimationFrame(loop);
+    };
+    restRaf.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(restRaf.current);
+  }, [resting, ended, reduced, timeline]);
 
   const closeEnd = useCallback(() => {
     setEnded(false);
@@ -337,8 +371,8 @@ export function WorldPlayer(props: WorldPlayerProps) {
       >
         <Player
           ref={player}
-          component={WorldStory}
-          inputProps={{ data, mode: "interactive", music: false, letter }}
+          component={RideStory}
+          inputProps={{ data, mode: "interactive", music: false, letter, idle }}
           durationInFrames={timeline.durationInFrames}
           fps={VIDEO_FPS}
           compositionWidth={width}

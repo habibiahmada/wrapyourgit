@@ -22,6 +22,11 @@ export type RideStoryProps = {
   music?: boolean;
   /** Include the letter's pages. Defaults to true; the public page leaves them out. */
   letter?: boolean;
+  /**
+   * Frames the idle motion runs ahead of the player's frame (see `rideFrame`). The web player sets
+   * it while a move carries on from part way through a rest loop; exports never do.
+   */
+  idle?: number;
 };
 
 /**
@@ -31,7 +36,7 @@ export type RideStoryProps = {
  * the scene: every number is printed on a solid inside it. The one exception is the letter,
  * whose sheet of paper comes up over the scene at its stops (model.ts `letterBeat`).
  */
-export function RideStory({ data, mode, letter = true }: RideStoryProps) {
+export function RideStory({ data, mode, letter = true, idle = 0 }: RideStoryProps) {
   const { width, height, fps } = useVideoConfig();
   const frame = useCurrentFrame();
   const size = useMemo(() => ({ width, height }), [width, height]);
@@ -39,7 +44,7 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
     () => buildRide(data, size, mode, fps, { letter }),
     [data, size, mode, fps, letter],
   );
-  const { cam, roll, fog, ground, objects } = rideFrame(model, data, frame, size, fps);
+  const { cam, roll, fog, ground, objects } = rideFrame(model, data, frame, size, fps, idle);
   // Every picture the scene draws: the languages' logos and the archetype's figure.
   const logos = useMemo(() => {
     return [
@@ -51,7 +56,7 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
   }, [data]);
   const { sheet } = letterBeat(model, frame);
   const layers = [
-    backdrop(cam, size, model.city, frame),
+    backdrop(cam, size, model.city, frame + idle),
     scenePrims(ground, cam, size, fog),
     scenePrims(objects, cam, size, fog),
   ];

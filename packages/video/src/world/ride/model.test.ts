@@ -300,3 +300,19 @@ test("the letter's station is drawn once, however many pages stop at it", () => 
   expect(tagged(objects, "envelope")).toHaveLength(1);
   expect(tagged(objects, "desk")).toHaveLength(1);
 });
+
+test("an idle offset runs the idle motion ahead without moving anything else", () => {
+  const m = buildRide(sampleRecap, f, "video", 30);
+  const i = m.stops.findIndex((s) => s.kind === "languages");
+  const at = m.timeline.stopFrames[i] ?? 0;
+  const cellOf = (frame: number, idle = 0) =>
+    rideFrame(m, sampleRecap, frame, f, 30, idle).objects.filter(
+      (s): s is Box => s.kind === "box" && (s.tag ?? "").startsWith("cell-"),
+    );
+  // At rest only idle motion plays, so 20 frames of offset look like 20 frames later.
+  expect(cellOf(at, 20)).toEqual(cellOf(at + 20));
+  expect(cellOf(at, 20)).not.toEqual(cellOf(at));
+  expect(rideFrame(m, sampleRecap, at, f, 30, 20).cam).toEqual(
+    rideFrame(m, sampleRecap, at, f, 30).cam,
+  );
+});
