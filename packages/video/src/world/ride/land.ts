@@ -19,8 +19,11 @@ export const LIGHT_AHEAD = 15;
 const CLEAR = 8;
 /** How far from the rail's middle a month sign stands: clear of the train, and of the camera that rides behind it. */
 export const SIGN_LATERAL = 3;
-/** How far behind and ahead of where the train rests a station's own sign reaches. */
-const SIGN_ZONE = [2, 5] as const;
+/**
+ * How far behind and ahead of where the train rests a station's own sign reaches: its widest is
+ * about nine long and ends just behind the engine. A month sign there crosses the rail.
+ */
+export const SIGN_ZONE = [10, 1] as const;
 const SLEEPER = 0.7;
 
 export type View = {
@@ -30,6 +33,11 @@ export type View = {
   to: number;
   /** 0 on the ride; 1 at the overview, where every day with data is lit and small things are left out. */
   overview: number;
+  /**
+   * The stretch of rail drawn with its sleepers. Outside it the rail is long plain strips, as at
+   * the overview. Left out, the whole view has sleepers.
+   */
+  detail?: [number, number];
 };
 export type Land = { ground: Solid[]; objects: Solid[] };
 
@@ -82,15 +90,15 @@ export function land(
     );
   }
 
-  // The rail on its ballast. From far away the sleepers go and the rails are long strips.
-  const piece = far ? 4 : SLEEPER;
-  const first = Math.max(0, Math.floor(view.from / piece) * piece);
-  for (let s = first; s <= Math.min(view.to, end); s += piece) {
+  // The rail on its ballast. Near the train it has sleepers; further off, and from far away, it
+  // is long strips. The rail doubles back, so a run the train is not on can be in the picture:
+  // it is always drawn, only plainer.
+  const strip = (s: number, piece: number, sleepers: boolean) => {
     const mid = s + piece / 2;
     ground.push(
       railBox(mid, 0, 0, [piece + 0.02, 2.3, 0.02], TONE.gravel, { edge: false, tag: "ballast" }),
     );
-    if (!far)
+    if (sleepers)
       ground.push(
         railBox(s, 0, 0.02, [0.22, 1.5, 0.05], TONE.soil, { edge: false, tag: "sleeper" }),
       );
@@ -102,7 +110,21 @@ export function land(
         }),
       );
     }
+  };
+  const railFrom = Math.max(0, view.from);
+  const railTo = Math.min(view.to, end);
+  const [nearFrom, nearTo] = far
+    ? [railTo, railTo]
+    : [
+        Math.max(railFrom, Math.floor((view.detail?.[0] ?? railFrom) / SLEEPER) * SLEEPER),
+        Math.min(railTo, view.detail?.[1] ?? railTo),
+      ];
+  const COARSE = 4;
+  for (let s = Math.floor(railFrom / COARSE) * COARSE; s + COARSE <= nearFrom; s += COARSE) {
+    strip(Math.max(0, s), COARSE, false);
   }
+  if (!far) for (let s = nearFrom; s <= nearTo; s += SLEEPER) strip(s, SLEEPER, true);
+  for (let s = nearTo + (far ? 0 : SLEEPER); s <= railTo; s += COARSE) strip(s, COARSE, false);
 
   // A sign per month beside the rail, with its name and the contributions made before it. It is
   // low, so it never stands in front of a station's hero. A gate over the rail had to fold away

@@ -129,48 +129,59 @@ test("a frame stays inside the polygon budget", () => {
   }
 });
 
-test("a hero stays put as the train rides on, and is taken down unseen once the train is in the next station", () => {
-  for (const [id, format] of Object.entries(VIDEO_FORMATS)) {
-    const m = buildRide(sampleRecap, format, "video", 30);
-    const mine = (frame: number, stop: (typeof m.stops)[number]) => {
-      const c = stationContext(sampleRecap, m.city, stop, 1, 0, 0).c;
-      const scene = rideFrame(m, sampleRecap, frame, format, 30);
-      const boxes = scene.objects.filter(
-        (s): s is Box =>
-          s.kind === "box" &&
-          // The sign and the first square are part of the plaza and stay.
-          s.tag !== "board" &&
-          s.tag !== "first-square" &&
-          HERO_TAGS.includes(s.tag ?? "") &&
-          Math.hypot((s.pivot?.[0] ?? 1e9) - c[0], (s.pivot?.[1] ?? 1e9) - c[1]) < 0.01,
-      );
-      return { boxes, cam: scene.cam };
-    };
-    const plazas = m.stops.map((stop, i) => ({ stop, i })).filter(({ stop }) => stop.plaza);
-    plazas.forEach(({ stop, i }, k) => {
-      const rest = m.timeline.stopFrames[i] ?? 0;
-      const here = mine(rest, stop).boxes;
-      expect(here.length).toBeGreaterThan(0);
-      // It does not leave when the train pulls out: nothing flies off while the camera is on it.
-      const top = (boxes: Box[]) => Math.max(...boxes.map((b) => b.at[2] + b.size[2]));
-      const after = mine(rest + m.timeline.holdFrames + 20, stop).boxes;
+test("a hero stays standing for the rest of the ride, and every plaza is there from the first frame", () => {
+  const m = buildRide(sampleRecap, f, "video", 30);
+  const mine = (frame: number, stop: (typeof m.stops)[number], tags: (tag: string) => boolean) => {
+    const c = stationContext(sampleRecap, m.city, stop, 1, 0, 0).c;
+    return rideFrame(m, sampleRecap, frame, f, 30).objects.filter(
+      (s): s is Box =>
+        s.kind === "box" &&
+        tags(s.tag ?? "") &&
+        Math.hypot((s.pivot?.[0] ?? 1e9) - c[0], (s.pivot?.[1] ?? 1e9) - c[1]) < 0.01,
+    );
+  };
+  const hero = (tag: string) =>
+    tag !== "board" && tag !== "first-square" && tag !== "stage" && HERO_TAGS.includes(tag);
+  const top = (boxes: Box[]) => Math.max(...boxes.map((b) => b.at[2] + b.size[2]));
+  const last = m.timeline.durationInFrames - 1;
+  m.stops.forEach((stop, i) => {
+    if (!stop.plaza) return;
+    // Nothing is put up when a shot catches it: the plaza is on the ground before the train moves.
+    expect(mine(0, stop, (tag) => tag === "plaza")).toHaveLength(1);
+    const rest = m.timeline.stopFrames[i] ?? 0;
+    const here = mine(rest, stop, hero);
+    expect(here.length).toBeGreaterThan(0);
+    // Nor taken down: it is the same hero when the train leaves and at the very end.
+    for (const later of [rest + m.timeline.holdFrames + 20, last]) {
+      const after = mine(later, stop, hero);
       expect(after).toHaveLength(here.length);
       expect(Math.abs(top(after) - top(here))).toBeLessThan(0.5);
-      const next = plazas[k + 1];
-      if (!next) return;
-      const arrive = m.timeline.stopFrames[next.i] ?? 0;
-      expect(mine(arrive, stop).boxes).toHaveLength(0);
-      // The frame before it goes it is already out of the picture, so its going is not seen.
-      const { boxes, cam } = mine(arrive - 1, stop);
-      const seen = boxes.some((box) => {
-        const p = projectPoint(
-          [box.pivot?.[0] ?? 0, box.pivot?.[1] ?? 0, box.at[2] + box.size[2] / 2],
-          cam,
-          format,
-        );
-        return p !== null && p[0] > 0 && p[0] < format.width && p[1] > 0 && p[1] < format.height;
-      });
-      expect({ id, kind: stop.kind, seen }).toEqual({ id, kind: stop.kind, seen: false });
-    });
-  }
+    }
+  });
 });
+
+test("a hero grows out of the ground as the train pulls in: it never starts in mid-air", () => {
+  const m = buildRide(sampleRecap, f, "video", 30);
+  const hero = (tag: string) =>
+    tag !== "board" && tag !== "first-square" && tag !== "stage" && HERO_TAGS.includes(tag);
+  m.stops.forEach((stop, i) => {
+    if (!stop.plaza) return;
+    const c = stationContext(sampleRecap, m.city, stop, 1, 0, 0).c;
+    const rest = m.timeline.stopFrames[i] ?? 0;
+    let seen = false;
+    for (let frame = rest - 40; frame <= rest; frame++) {
+      const boxes = rideFrame(m, sampleRecap, frame, f, 30).objects.filter(
+        (s): s is Box =>
+          s.kind === "box" &&
+          hero(s.tag ?? "") &&
+          Math.hypot((s.pivot?.[0] ?? 1e9) - c[0], (s.pivot?.[1] ?? 1e9) - c[1]) < 0.01,
+      );
+      if (boxes.length === 0 || seen) continue;
+      seen = true;
+      // The first frame it is there, all of it is still low and thin.
+      const highest = Math.max(...boxes.map((b) => b.at[2] + b.size[2]));
+      expect({ kind: stop.kind, low: highest < 2.5 }).toEqual({ kind: stop.kind, low: true });
+    }
+  });
+  // Forty whole frames for each of eleven stations.
+}, 30_000);

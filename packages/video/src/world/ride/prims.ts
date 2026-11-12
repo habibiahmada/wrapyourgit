@@ -248,6 +248,20 @@ export function scenePrims(
             p[2],
           ];
 
+    // A box wholly outside the frame draws nothing. The whole year is always on the ground (the
+    // rail doubles back, so any of it can be in a shot), and most of it is off screen in any one
+    // frame: leaving it out here costs one projection instead of up to three faces.
+    const middle = lens.toCamera(turn([x + w / 2, y + d / 2, z + h / 2]));
+    const reach = Math.hypot(w, d, h) / 2;
+    if (middle[2] < -reach) continue;
+    if (middle[2] > reach) {
+      const [mx, my] = lens.toScreen(middle);
+      const spread = (reach * lens.focal) / (middle[2] - reach);
+      if (mx < -spread || mx > frame.width + spread || my < -spread || my > frame.height + spread) {
+        continue;
+      }
+    }
+
     for (const face of FACES) {
       const n = face.normal;
       const normal: V3 = yaw === 0 ? n : [n[0] * cos - n[1] * sin, n[0] * sin + n[1] * cos, n[2]];

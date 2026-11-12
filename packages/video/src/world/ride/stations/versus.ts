@@ -22,8 +22,8 @@ const FIGURE = { top: 0.8, bottom: 1.9 };
 const STEPS = 5;
 const LAST = toneOf("#545d68");
 const THIS = toneOf(GREENS[1]);
-/** The sign: long enough for its longest line, "Last year couldn't be read from GitHub", on one row. */
-const SIGN_WIDE = 9.6;
+/** The sign: long enough for "Contributions, year over year" on one row, and short enough to end before the month sign behind it. */
+const SIGN_WIDE = 7.4;
 /** How high the readout hangs: over the taller weight on the higher end of the beam. */
 const READOUT = PLAZA_TOP + PIVOT + DROP + LOWEST + RISE + 0.35;
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
@@ -50,7 +50,7 @@ export const versus: Station = (ctx) => {
         : ["Year over year", { text: "Last year couldn't be read from GitHub", tall: 0.4 }],
       // Wide enough for each line on one row: two rows stand lower than the beam, so the seesaw
       // shows over the sign.
-      { deep: PLAZA.deep, fit: true, wide: SIGN_WIDE },
+      { deep: PLAZA.deep, fit: true, wide: SIGN_WIDE, scale: 1.25 },
     ),
   );
   // What the weighing says, on a board held over the seesaw like a scale's readout. It is the

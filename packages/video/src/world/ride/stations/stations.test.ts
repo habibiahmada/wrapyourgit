@@ -688,7 +688,8 @@ test("versus: last year unread is a covered weight with no figure, never a zero"
   expect(printed(boxes(all, "weight"))).toEqual(
     expect.arrayContaining([String(model.current.year), formatCount(model.current.value)]),
   );
-  expect(printed(all)).toContain("Last year couldn't be read from GitHub");
+  // The sign may break the line over two rows, and prints each row on both of its faces.
+  expect([...new Set(printed(all))].join(" ")).toContain("Last year couldn't be read from GitHub");
   expect(printed(all)).not.toContain("0");
   // Nothing to weigh against: the beam stays level.
   const beam = boxes(all, "beam").map((b) => b.at[2]);

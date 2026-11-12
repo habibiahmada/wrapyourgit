@@ -210,6 +210,10 @@ export function wrap(text: string, max: number): string[] {
 
 /** The station sign: how wide it is, and how tall one of its rows. */
 const SIGN_SCALE = 1.12;
+/** Where a station sign's end toward the engine is, from the plaza's middle along the rail. */
+/** How far out from the plaza's edge a station sign stands, toward the rail. */
+const SIGN_OUT = 3.2;
+export const SIGN_END = -PLAZA_AHEAD - 0.6;
 const SIGN = { wide: 6.3, row: 0.4 };
 
 /**
@@ -243,9 +247,14 @@ export function nameBoard(
         : { fill: line.fill ?? "#c9d1d9", weight: line.weight ?? 700 };
     return wrap(text, max).map((piece) => ({ text: piece, tall: SIGN.row * scale, ...look }));
   });
-  const dy = stop.side * (place.deep / 2 + 1.4);
+  // Well out from the plaza toward the rail: a sign nearer the camera sits lower in the picture,
+  // under the hero instead of across its foot.
+  const dy = stop.side * (place.deep / 2 + SIGN_OUT);
   // With `fit` the camera keeps the sign in frame as it does the hero; without, the hero alone sets the shot.
-  // A wider sign keeps its far end where the usual one's is, and grows toward the plaza's middle.
-  const dx = 6 - (wide - SIGN.wide) / 2;
+  // The sign ends just short of where the engine rests (the plaza's middle is PLAZA_AHEAD behind
+  // the train), whatever its width: further along it stood behind the chimney, and the smoke
+  // rose in front of its words. Further back it sticks out past the plaza, and a narrow frame
+  // has to pull away to hold it.
+  const dx = SIGN_END - (wide * scale) / 2;
   return board(c, yaw, dx, dy, wide * scale, rows, "along", 0.15, place.fit ? "board" : "sign");
 }

@@ -3,7 +3,7 @@ import { emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity, type City } from "../city";
 import { gates } from "./gates.model";
-import { land, SIGN_LATERAL, type View } from "./land";
+import { land, SIGN_LATERAL, SIGN_ZONE, type View } from "./land";
 import type { Box, Solid } from "./prims";
 import { rideStops } from "./stops";
 import { at, dayPlace, weekS } from "./track";
@@ -112,7 +112,7 @@ test("a month sign is low, and never stands in front of a station's own sign", (
     // Lower than the train, so it never stands in front of a station's hero.
     expect(sign.at[2] + sign.size[2]).toBeLessThan(2);
     const s = weekS(gate.col) - 0.8;
-    for (const plaza of plazas.filter((x) => s > x.s - 2 && s < x.s + 5)) {
+    for (const plaza of plazas.filter((x) => s > x.s - SIGN_ZONE[0] && s < x.s + SIGN_ZONE[1])) {
       const [x, y] = at(s, -plaza.side * SIGN_LATERAL);
       expect(sign.pivot?.[0]).toBeCloseTo(x);
       expect(sign.pivot?.[1]).toBeCloseTo(y);
@@ -129,7 +129,7 @@ test("between two stations a month sign keeps to the side of the one behind it",
   for (const gate of gates(sampleRecap, city)) {
     const s = weekS(gate.col) - 0.8;
     const behind = plazas.findLast((x) => x.s <= s);
-    if (!behind || plazas.some((x) => s > x.s - 2 && s < x.s + 5)) continue;
+    if (!behind || plazas.some((x) => s > x.s - SIGN_ZONE[0] && s < x.s + SIGN_ZONE[1])) continue;
     const [x, y] = at(s, behind.side * SIGN_LATERAL);
     expect(signAt(all, gate.col)?.pivot?.[0]).toBeCloseTo(x);
     expect(signAt(all, gate.col)?.pivot?.[1]).toBeCloseTo(y);

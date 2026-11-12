@@ -56,6 +56,7 @@ export const HERO_TAGS = [
   "plane-parked",
   "marquee",
   "weight",
+  "stage",
 ];
 
 export function buildRide(
@@ -114,7 +115,6 @@ const AHEAD = 56;
 /** Frames over which Cell turns to the camera as the train pulls in, and back as it leaves. */
 const TURN_FRAMES = 20;
 
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
 /** 0 on the ride, 1 while the camera rests high above the whole rail, eased in and out with its moves. */
@@ -131,6 +131,37 @@ function overviewAt(frame: number, model: RideModel): number {
   return easeInOutCubic(clamp01(1 - (frame - leave) / Math.max(1, next - leave)));
 }
 
+/** The share of a hero's build over which it grows out of the ground. */
+const RISE_UNTIL = 0.5;
+
+const solidKey = (solid: Solid): string =>
+  solid.kind === "box"
+    ? `box|${solid.tag}|${solid.at.join(",")}|${solid.size.join(",")}`
+    : solid.kind === "ball"
+      ? `ball|${solid.c.join(",")}|${solid.r}`
+      : `picture|${solid.href}|${solid.c.join(",")}`;
+
+/** `solid` at `grown` (0 to 1) of its height and of its height over the ground at `floor`. */
+function risen(solid: Solid, floor: number, grown: number): Solid {
+  const lift = (z: number) => floor + (z - floor) * grown;
+  if (solid.kind === "box") {
+    return {
+      ...solid,
+      at: [solid.at[0], solid.at[1], lift(solid.at[2])],
+      size: [solid.size[0], solid.size[1], solid.size[2] * grown],
+    };
+  }
+  if (solid.kind === "ball") {
+    return { ...solid, c: [solid.c[0], solid.c[1], lift(solid.c[2])], r: solid.r * grown };
+  }
+  return {
+    ...solid,
+    c: [solid.c[0], solid.c[1], lift(solid.c[2])],
+    wide: solid.wide * grown,
+    tall: solid.tall * grown,
+  };
+}
+
 /** Everything on screen at a frame: what RideStory draws and what the tests read. */
 export function rideFrame(
   model: RideModel,
@@ -145,11 +176,15 @@ export function rideFrame(
   const overview = overviewAt(frameIndex, model);
   const layout = layoutForSize(format.width, format.height);
   const weeks = Math.max(...city.plots.map((plot) => plot.col)) + 1;
+  // The whole year is always on the ground: the rail doubles back, so a run the train is not on
+  // can be in the picture, and squares or signs that came and went with the train's place popped
+  // in and out there. Only the sleepers keep to the stretch round the train.
   const view = {
     trainS,
-    from: lerp(trainS - BEHIND, 0, overview),
-    to: lerp(trainS + AHEAD, railEnd(weeks), overview),
+    from: 0,
+    to: railEnd(weeks),
     overview,
+    detail: [trainS - BEHIND, trainS + AHEAD] as [number, number],
   };
   const { ground, objects } = land(city, model.gates, stops, view);
 
@@ -193,16 +228,25 @@ export function rideFrame(
   stops.forEach((stop, i) => {
     const station = STATIONS[stop.kind];
     if (!station) return;
-    // The overview's billboard stands by the middle of the rail, wherever the train is.
-    if (stop.kind !== "city" && (stop.s < view.from - 12 || stop.s > view.to + 12)) return;
-    // A hero stays where it was built while the train rides on: it is part of the world, and
-    // the overview after it shows it standing. From the next station's shot it is out of the
-    // frame, off to the side, so it is taken down once the train is in there: nobody sees it go,
-    // and it is not in the background of the station after that one.
-    const next = stops.slice(i + 1).find((later) => later.kind !== "city");
-    const gone = next !== undefined && trainS >= next.s;
-    const build = gone ? 0 : buildProgress(i, frameIndex, timeline, fps);
-    objects.push(...station(stationContext(data, city, stop, build, clock, overview, layout)));
+    // Every station is always there: its plaza and its sign from the start, its hero from the
+    // moment the train pulls in, for the rest of the ride. Nothing is put up or taken down by
+    // where the train is, so nothing appears or goes when a shot happens to catch it.
+    const build = buildProgress(i, frameIndex, timeline, fps);
+    const ctx = stationContext(data, city, stop, build, clock, overview, layout);
+    const solids = station(ctx);
+    if (build <= 0 || build >= RISE_UNTIL || stop.kind === "city") {
+      objects.push(...solids);
+      return;
+    }
+    // While it builds, what was not there before grows out of the ground instead of starting in
+    // mid-air: a hero that began its drop five units up was simply there, all at once.
+    const before = new Set(station({ ...ctx, build: 0 }).map(solidKey));
+    const grown = easeInOutCubic(build / RISE_UNTIL);
+    objects.push(
+      ...solids.map((solid) =>
+        before.has(solidKey(solid)) ? solid : risen(solid, ctx.c[2], grown),
+      ),
+    );
   });
 
   const reach = Math.hypot(
