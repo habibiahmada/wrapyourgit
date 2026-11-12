@@ -3,7 +3,7 @@ import { busiestModel } from "../../scenes/busiest.model";
 import { LIT, TONE, toneOf } from "../palette";
 import type { Decal, Solid } from "../prims";
 import { PLAZA } from "../track";
-import { nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { belt, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
 
 const BASE = { long: 5.2, deep: 2.6, tall: 2.1 };
 /** Where the tower and the calendar stand on the base, along the rail from its middle. */
@@ -92,6 +92,8 @@ export const busiest: Station = (ctx) => {
       ],
     }),
   );
+  // That day's contributions ride past on the conveyor: one load for each, up to ten.
+  out.push(...belt(ctx, Math.min(10, model.count), toneOf("#2ea043"), LIT));
   const top = PLAZA_TOP + BASE.tall;
   /** How far piece `k` has come down: each is lowered on after the one before it. */
   const landed = (k: number) => easeOut((build - 0.25 - k * 0.12) / 0.2);

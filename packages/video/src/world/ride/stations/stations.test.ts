@@ -20,9 +20,9 @@ import type { StopKind } from "../../stops";
 import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
 import { archetype, archetypeFigures } from "./archetype";
-import { flow } from "./engineering";
+import { firstWeeks } from "./firstDay";
 import { STATIONS } from "./index";
-import { clip, stationContext } from "./kit";
+import { clip, flow, stationContext } from "./kit";
 import { blockHeight, blockName } from "./languages";
 
 const oneLanguage: RecapData = {
@@ -347,23 +347,83 @@ test("first-day: the flag carries the date and the weekday, the sign the title",
   expect(boxes(all, "first-square")).toHaveLength(1);
 });
 
-test("first-day: the sprout grows on the way in and the flag is raised with it", () => {
-  const tall = (progress: number) =>
-    Math.max(
-      0,
-      ...boxes(build("first-day", sampleRecap, progress), "sprout").map((b) => b.at[2] + b.size[2]),
-    );
-  expect(tall(0.3)).toBeLessThan(tall(1));
+test("first-day: the wall shows the year's first weeks: empty before the first day, that day lit, the rest dim", () => {
+  const cells = firstWeeks(sampleRecap);
+  const first = cells.filter((cell) => cell.state === "first");
+  expect(first).toHaveLength(1);
+  // The sample's first contribution is on its first calendar day with a count: every day before
+  // it is empty and none after it is claimed.
+  const days = sampleRecap.contributions.calendar;
+  const index = days.findIndex((day) => day.count > 0);
+  const offset = new Date(`${days[0]?.date}T00:00:00Z`).getUTCDay();
+  expect(first[0]).toMatchObject({
+    col: Math.floor((index + offset) / 7),
+    row: (index + offset) % 7,
+  });
+  expect(cells.filter((cell) => cell.state === "empty")).toHaveLength(index);
+  expect(
+    cells.every((cell) => cell.col >= 0 && cell.col < 12 && cell.row >= 0 && cell.row < 7),
+  ).toBe(true);
+  // On the wall the lit cell is the only green one, and it lights as the train comes to rest.
+  const green = (progress: number) =>
+    (boxes(build("first-day", sampleRecap, progress), "graph-wall")[0]?.decals ?? []).filter(
+      (d) => d.fill === "#39d353" && d.rect[3] - d.rect[1] > 0.05,
+    ).length;
+  expect(green(0.5)).toBe(0);
+  expect(green(1)).toBe(2);
+  // The flag is raised with the build.
   expect(boxes(build("first-day", sampleRecap, 0), "flag")).toHaveLength(0);
   expect(boxes(build("first-day", sampleRecap, 1), "flag")).toHaveLength(1);
 });
 
-test("first-day: a year with no contributions has no flag and no date, and says so", () => {
+test("first-day: a first contribution late in the year is shown from four weeks before it", () => {
+  const late: RecapData = {
+    ...sampleRecap,
+    contributions: {
+      ...sampleRecap.contributions,
+      calendar: sampleRecap.contributions.calendar.map((day, i) => ({
+        ...day,
+        count: i < 200 ? 0 : day.count || 1,
+      })),
+    },
+  };
+  const cells = firstWeeks(late);
+  const first = cells.find((cell) => cell.state === "first");
+  expect(first?.col).toBe(4);
+  expect(cells.filter((cell) => cell.col < 4).every((cell) => cell.state === "empty")).toBe(true);
+});
+
+test("first-day: a year with no contributions has a wall of empty days, no flag and no date, and says so", () => {
   const all = build("first-day", emptyRecap);
   expect(firstDayModel(emptyRecap)).toBeNull();
   expect(boxes(all, "flag")).toHaveLength(0);
-  expect(boxes(all, "sprout")).toHaveLength(0);
+  expect(boxes(all, "belt-load")).toHaveLength(0);
+  expect(firstWeeks(emptyRecap).every((cell) => cell.state === "empty")).toBe(true);
   expect(printed(all).join(" ")).toContain("A blank graph: no contributions this year");
+});
+
+test("belt: loads ride from one shed to the other once the stop is whole, and the loop closes", () => {
+  const loads = (progress: number, frame: number) =>
+    boxes(build("first-day", sampleRecap, progress, frame), "belt-load").map(
+      (b) => b.at[0] + b.size[0] / 2,
+    );
+  expect(loads(1, 0)).toHaveLength(6);
+  // They travel one way, a good way, and are back in place after 60 frames.
+  loads(1, 5).forEach((x, i) => {
+    expect(x).toBeGreaterThan(loads(1, 0)[i] ?? 0);
+  });
+  const sorted = (frame: number) => loads(1, frame).sort((x, y) => x - y);
+  sorted(60).forEach((x, i) => {
+    expect(x).toBeCloseTo(sorted(0)[i] ?? 0);
+  });
+  // None before the stop has begun to build, and none travelling until it is whole.
+  expect(loads(0.3, 20)).toHaveLength(0);
+  expect(loads(0.9, 20)).toEqual(loads(0.9, 0));
+  // The busiest day's belt carries a load for each contribution of that day, up to ten.
+  const day = busiestModel(sampleRecap);
+  expect(boxes(build("busiest", sampleRecap), "belt-load")).toHaveLength(
+    Math.min(10, day?.count ?? 0),
+  );
 });
 
 const withPrivate = (privateCount: RecapData["contributions"]["privateCount"]): RecapData => ({
@@ -658,19 +718,26 @@ test("engineering: the wagons travel: out of one shed, along the line, into the 
   ).toEqual(boxes(build("engineering", sampleRecap, 0.95, 0), "pr-merged").map((b) => b.at[0]));
 });
 
+const WAGON = { long: 0.6, pitch: 0.68, travel: 2.1 };
+
 test("flow: wagons are spaced evenly, wrap from one end to the other, and never crowd a short line", () => {
   // Twelve asked for on a line with room for five: five, never overlapping.
-  expect(flow(12, 0, 3.5, 0)).toHaveLength(5);
-  expect(flow(0, 0, 3.5, 0)).toHaveLength(0);
+  expect(flow(12, 0, 3.5, 0, WAGON)).toHaveLength(5);
+  expect(flow(0, 0, 3.5, 0, WAGON)).toHaveLength(0);
   // At the loop's start every wagon is whole; mid-loop one is in two parts, at the two ends.
-  expect(flow(5, 0, 3.5, 0).every((parts) => parts.length === 1 && parts[0]?.whole)).toBe(true);
+  expect(flow(5, 0, 3.5, 0, WAGON).every((parts) => parts.length === 1 && parts[0]?.whole)).toBe(
+    true,
+  );
   const total = (loop: number) =>
-    flow(5, 0, 3.5, loop).reduce((sum, parts) => sum + parts.reduce((n, p) => n + p.long, 0), 0);
+    flow(5, 0, 3.5, loop, WAGON).reduce(
+      (sum, parts) => sum + parts.reduce((n, p) => n + p.long, 0),
+      0,
+    );
   // Whatever the moment, the wagons on the line add up to five whole ones.
   for (const loop of [0, 0.13, 0.37, 0.5, 0.81]) expect(total(loop)).toBeCloseTo(5 * 0.6);
   // After a whole loop each wagon stands where another stood: the same line, wagon for wagon.
   const places = (loop: number) =>
-    flow(5, 0, 3.5, loop)
+    flow(5, 0, 3.5, loop, WAGON)
       .map((parts) => parts[0]?.mid ?? 0)
       .sort((x, y) => x - y);
   places(1).forEach((x, i) => {
