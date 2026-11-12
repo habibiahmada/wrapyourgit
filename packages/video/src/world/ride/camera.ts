@@ -72,7 +72,7 @@ const lerpV = (a: V3, b: V3, t: number): V3 => [
 ];
 const logLerp = (a: number, b: number, t: number) => Math.exp(lerp(Math.log(a), Math.log(b), t));
 
-/** The centre of a stop's hero: its plaza, or for closing the board at the buffers. */
+/** The centre of a stop's hero: its plaza, or for closing the party's plaza beyond the rail. */
 /** The shot a station rests on. */
 export function stationShot(_stop: RideStop): Shot {
   return SHOTS.ISO;
@@ -80,7 +80,8 @@ export function stationShot(_stop: RideStop): Shot {
 
 function heroPoint(stop: RideStop): V3 {
   if (stop.plaza) return at(stop.s + PLAZA_AHEAD, stop.side * PLAZA_LATERAL, 3.4);
-  return at(stop.s - 5.6, 0, 4.0);
+  // Closing's plaza stands 9 back along the rail and 5.8 out on its side (stations/closing.ts).
+  return at(stop.s - 9, stop.side * 5.8, 2.6);
 }
 
 function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
@@ -249,6 +250,12 @@ function fitCityPose(end: number, frame: Frame): Pose {
 /** Where the hero and Cell may sit in the frame at a stop, as shares of its height and width. */
 const HERO_TOP = 0.07;
 const CELL_LOW = 0.9;
+/**
+ * Cell's lowest place at the closing stop, by layout: below it a tall frame is left to the grass. A
+ * wider one has no height to spare, or the podium's words would be too small to read; the web
+ * player puts its files beside the train there instead.
+ */
+const CLOSING_LOW = { portrait: 0.7, landscape: CELL_LOW, compact: CELL_LOW } as const;
 const SIDE_MARGIN = 0.04;
 /** How much closer or further than the shot's own distance the fit may go. */
 const NEAREST = 0.55;
@@ -340,8 +347,12 @@ function fitStationRest(stop: RideStop, base: Pose, frame: Frame): Pose {
       right: Math.max(...xs) / frame.width,
     };
   };
-  const target = (HERO_TOP + CELL_LOW) / 2;
-  const room = CELL_LOW - HERO_TOP;
+  // The closing stop keeps the bottom of the frame as open grass: the web player stands its
+  // "keep your year" files there, and in a file it is the ground the party stands on.
+  const low =
+    stop.kind === "closing" ? CLOSING_LOW[layoutForSize(frame.width, frame.height)] : CELL_LOW;
+  const target = (HERO_TOP + low) / 2;
+  const room = low - HERO_TOP;
   let rest = base;
   for (let i = 0; i < 200; i++) {
     const m = measure(rest);

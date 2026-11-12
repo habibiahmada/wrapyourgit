@@ -3,7 +3,7 @@
 import { Player, type PlayerRef } from "@remotion/player";
 import { type RecapData, VIDEO_FPS } from "@wyg/schema";
 import { RideStory } from "@wyg/video";
-import { buildRide, closingShelf } from "@wyg/video/ride";
+import { buildRide } from "@wyg/video/ride";
 import { edgeSounds, safeArea, TAP_SOUND } from "@wyg/video/world";
 import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
 import { useRouter } from "next/navigation";
@@ -139,15 +139,9 @@ export function WorldPlayer(props: WorldPlayerProps) {
     };
   }, []);
   const { width, height } = size;
-  const model = useMemo(
+  const { stops, timeline } = useMemo(
     () => buildRide(data, { width, height }, "interactive", VIDEO_FPS, { letter }),
     [data, width, height, letter],
-  );
-  const { stops, timeline } = model;
-  // The grass the "keep your year" icons stand on at the closing stop, as fractions of the frame.
-  const shelf = useMemo(
-    () => closingShelf(model, data, { width, height }, VIDEO_FPS),
-    [model, data, width, height],
   );
 
   // The controller lives in a ref (the frame loop reads it every tick); `at` mirrors it for render.
@@ -321,8 +315,8 @@ export function WorldPlayer(props: WorldPlayerProps) {
     width: `max(100dvw, calc(100dvh * ${width} / ${height}))`,
     aspectRatio: `${width} / ${height}`,
   };
-  // Scene units kept clear of the progress bar: the Sound control sits just under it.
-  const topClear = safeArea({ width, height }).top;
+  // Scene units kept clear of the progress bar (Sound sits under it) and of the copyright line.
+  const { top: topClear, bottom: footerClear } = safeArea({ width, height });
 
   return (
     <div className="fixed inset-0 grid place-items-center overflow-hidden bg-ink text-ink">
@@ -369,10 +363,10 @@ export function WorldPlayer(props: WorldPlayerProps) {
         className={`${zone(at >= last)} right-0 left-1/3`}
       />
 
-      {/* A size container: the Sound control sits in scene units (1 unit = 0.1cqw), the shelf in
-          fractions of the frame (cqw, cqh). */}
+      {/* An inline-size container: the Sound control and the shelf sit in scene units
+          (1 unit = 0.1cqw). */}
       <div
-        className="pointer-events-none relative [container-type:size] [grid-area:1/1]"
+        className="pointer-events-none relative [container-type:inline-size] [grid-area:1/1]"
         style={stage}
       >
         {/* Web-only, like the cue: drawn over the story, never part of a file. Top right, just
@@ -387,12 +381,13 @@ export function WorldPlayer(props: WorldPlayerProps) {
         >
           <SpeakerIcon muted={muted} />
         </button>
-        {/* Web-only, never part of the composition or a file: on the grass at the right, its foot
-            on the spot `closingShelf` finds above the train. */}
+        {/* Web-only, never part of the composition or a file: bottom right, just above the
+            copyright line. The closing camera leaves that corner to grass: below the train in a
+            tall frame, beside it in a wide one. */}
         {resting && at === last && (
           <div
             className="pointer-events-auto absolute right-3"
-            style={{ bottom: `max(0.75rem, ${((1 - shelf.bottom) * 100).toFixed(2)}cqh)` }}
+            style={{ bottom: `${(footerClear / 10).toFixed(3)}cqw` }}
           >
             <ExportShelf
               data={data}
