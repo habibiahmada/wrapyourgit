@@ -10,6 +10,7 @@ import { cityModel } from "../../scenes/city.model";
 import { closingModel } from "../../scenes/closing.model";
 import { firstDayModel } from "../../scenes/firstDay.model";
 import { gardenModel } from "../../scenes/garden.model";
+import { planesModel } from "../../scenes/planes.model";
 import { commitsText, projectsModel } from "../../scenes/projects.model";
 import { rhythmModel } from "../../scenes/rhythm.model";
 import { countText, skyModel } from "../../scenes/sky.model";
@@ -49,6 +50,7 @@ test("the stations built so far exist", () => {
     "city",
     "closing",
     "community",
+    "engineering",
     "first-day",
     "hello",
     "languages",
@@ -319,6 +321,7 @@ test("a station at rest is the same 60 frames later, and still moving in between
     "languages",
     "projects",
     "community",
+    "engineering",
     "closing",
   ] as const) {
     expect(build(kind, sampleRecap, 1, 10)).toEqual(build(kind, sampleRecap, 1, 70));
@@ -527,4 +530,51 @@ test("community: a total is never passed off as this year's gain, and an estimat
   expect(printed(boxes(build("community", rough), "observatory"))).toContain(
     countText(12_900, true),
   );
+});
+
+test("engineering: the departures board carries the model's three rows", () => {
+  const model = planesModel(sampleRecap);
+  const text = printed(boxes(build("engineering", sampleRecap), "departures"));
+  for (const row of model.rows) {
+    expect(text).toContain(row.label);
+    if (row.value) expect(text).toContain(row.value);
+  }
+});
+
+test("engineering: one plane in the air for each pull request in flight, one parked for each merged", () => {
+  const model = planesModel(sampleRecap);
+  const all = build("engineering", sampleRecap);
+  expect(boxes(all, "plane-flying")).toHaveLength(model.drawnFlying);
+  expect(boxes(all, "plane-parked")).toHaveLength(model.drawnLanded);
+  // Parked planes stand on the runway; the ones in flight are above the board.
+  const board = boxes(all, "departures")[0] as Box;
+  for (const plane of boxes(all, "plane-flying"))
+    expect(plane.at[2]).toBeGreaterThan(board.at[2] + board.size[2]);
+});
+
+test("engineering: merged unknown parks no plane and says so in words, with no figure", () => {
+  const unknown: RecapData = {
+    ...sampleRecap,
+    engineering: {
+      ...sampleRecap.engineering,
+      prsMerged: { status: "unavailable", reason: "not counted" },
+    },
+  };
+  const all = build("engineering", unknown);
+  expect(boxes(all, "plane-parked")).toHaveLength(0);
+  const text = printed(boxes(all, "departures"));
+  expect(text).toContain("merged: couldn't be read");
+  // Two rows have figures; the third is a sentence.
+  expect(text.filter((line) => /^[\d,.k]+$/.test(line))).toHaveLength(2);
+});
+
+test("engineering: the planes in flight drift, and the figures rise as the board lands", () => {
+  const z = (frame: number) =>
+    boxes(build("engineering", sampleRecap, 1, frame), "plane-flying").map((b) => b.at[2]);
+  expect(z(10)).not.toEqual(z(25));
+  expect(z(70)).toEqual(z(10));
+  const sent = planesModel(sampleRecap).rows[0].value ?? "";
+  expect(boxes(build("engineering", sampleRecap, 0), "departures")).toHaveLength(0);
+  expect(printed(build("engineering", sampleRecap, 0.5))).not.toContain(sent);
+  expect(printed(build("engineering", sampleRecap, 0.5))).not.toContain("0");
 });

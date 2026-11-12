@@ -3,6 +3,7 @@ import { busiest } from "./busiest";
 import { city } from "./city";
 import { closing } from "./closing";
 import { community } from "./community";
+import { engineering } from "./engineering";
 import { firstDay } from "./firstDay";
 import { hello } from "./hello";
 import type { Station } from "./kit";
@@ -22,5 +23,6 @@ export const STATIONS: Partial<Record<StopKind, Station>> = {
   languages,
   projects,
   community,
+  engineering,
   closing,
 };

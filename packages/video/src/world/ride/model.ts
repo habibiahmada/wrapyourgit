@@ -51,6 +51,9 @@ export const HERO_TAGS = [
   "observatory",
   "dome",
   "star",
+  "departures",
+  "plane-flying",
+  "plane-parked",
 ];
 
 export function buildRide(

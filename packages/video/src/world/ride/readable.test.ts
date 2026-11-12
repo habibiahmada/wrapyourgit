@@ -6,6 +6,7 @@ import { formatCount } from "../../theme";
 import { busiestModel } from "../scenes/busiest.model";
 import { firstDayModel } from "../scenes/firstDay.model";
 import { gardenModel } from "../scenes/garden.model";
+import { planesModel } from "../scenes/planes.model";
 import { privateModel } from "../scenes/private.model";
 import { commitsText, projectsModel } from "../scenes/projects.model";
 import { countText, skyModel } from "../scenes/sky.model";
@@ -41,9 +42,15 @@ function restFrames(data: RecapData) {
     const m = buildRide(data, format, "video", 30);
     return m.stops.flatMap((stop, i) => {
       if (
-        !["languages", "projects", "first-day", "private", "busiest", "community"].includes(
-          stop.kind,
-        )
+        ![
+          "languages",
+          "projects",
+          "first-day",
+          "private",
+          "busiest",
+          "community",
+          "engineering",
+        ].includes(stop.kind)
       )
         return [];
       const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
@@ -93,6 +100,12 @@ function check(data: RecapData) {
             biggest(rest.texts, countText(sky.stars.value, sky.stars.estimated)) / rest.short >=
             HEADLINE,
         }).toEqual({ where, value: true });
+    } else if (rest.kind === "engineering") {
+      const sent = planesModel(data).rows[0].value ?? "";
+      expect({ where, value: biggest(rest.texts, sent) / rest.short >= HEADLINE }).toEqual({
+        where,
+        value: true,
+      });
     } else if (rest.kind === "private") {
       const vault = privateModel(data);
       if (vault.kind === "count") {

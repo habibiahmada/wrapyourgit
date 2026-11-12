@@ -75,11 +75,11 @@ export const projects: Station = (ctx) => {
           { ...count, rect: [0.03, f0, 0.97, f1] },
         ];
       }
-      // One row: the name on the half toward the stack's start, the commits on the other.
-      const flip = on === "left";
+      // One row: the name on the left half, the commits on the right. A face's own left is the
+      // left of whoever looks at it from outside, whichever side of the rail the plaza is on.
       return [
-        { ...name, rect: flip ? [0.52, 0.12, 0.98, 0.88] : [0.02, 0.12, 0.48, 0.88] },
-        { ...count, rect: flip ? [0.02, 0.12, 0.48, 0.88] : [0.52, 0.12, 0.98, 0.88] },
+        { ...name, rect: [0.02, 0.12, 0.48, 0.88] },
+        { ...count, rect: [0.52, 0.12, 0.98, 0.88] },
       ];
     });
     const decals: Decal[] = [
