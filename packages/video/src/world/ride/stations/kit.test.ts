@@ -3,7 +3,7 @@ import { sampleRecap } from "../../../fixtures/sample-recap";
 import { buildCity } from "../../city";
 import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
-import { at, PLAZA_AHEAD } from "../track";
+import { at, PLAZA_AHEAD, PLAZA_LATERAL } from "../track";
 import { board, clip, plaza, stationContext } from "./kit";
 
 const texts = (solids: Solid[], on: string) =>
@@ -54,7 +54,7 @@ test("a plaza stop's context is centred on its plaza, across the rail from the c
   const stop = stops.find((s) => s.kind === "languages");
   if (!stop) throw new Error("no stop");
   const ctx = stationContext(sampleRecap, city, stop, 1, 0, 0);
-  expect(ctx.c).toEqual(at(stop.s + PLAZA_AHEAD, stop.side * 8));
+  expect(ctx.c).toEqual(at(stop.s + PLAZA_AHEAD, stop.side * PLAZA_LATERAL));
   const slab = plaza(ctx).find((s): s is Box => s.kind === "box" && s.tag === "plaza");
   expect(slab?.size).toEqual([9.6, 4.8, 0.25]);
 });

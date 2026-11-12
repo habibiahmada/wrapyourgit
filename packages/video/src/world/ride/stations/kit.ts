@@ -209,6 +209,7 @@ export function wrap(text: string, max: number): string[] {
 }
 
 /** The station sign: how wide it is, and how tall one of its rows. */
+const SIGN_SCALE = 1.12;
 const SIGN = { wide: 6.3, row: 0.4 };
 
 /**
@@ -222,12 +223,18 @@ const SIGN = { wide: 6.3, row: 0.4 };
 export function nameBoard(
   ctx: StationContext,
   lines: readonly BoardLine[],
-  place: { deep: number; fit?: boolean; scale?: number },
+  place: { deep: number; fit?: boolean; scale?: number; wide?: number },
 ): Solid[] {
   const { c, yaw, stop } = ctx;
   // A tall hero sets the camera further back; its sign is made larger by `scale` to read the same.
-  const scale = place.scale ?? 1;
-  const max = Math.floor((SIGN.wide * 0.9) / (0.6 * SIGN.row * 0.92));
+  // The usual scale leaves room over the smallest size that reads: where a station stands on the
+  // rail's bends moves its sign a little nearer or further, and a sign set exactly at the limit
+  // fell under it whenever a station was added or the rail changed.
+  const scale = place.scale ?? SIGN_SCALE;
+  // A wider sign holds a long line on one row: fewer rows make a lower sign, which stands in
+  // front of less of the hero.
+  const wide = place.wide ?? SIGN.wide;
+  const max = Math.floor((wide * 0.9) / (0.6 * SIGN.row * 0.92));
   const rows: BoardLine[] = lines.flatMap((line) => {
     const text = typeof line === "string" ? line : line.text;
     const look =
@@ -238,5 +245,7 @@ export function nameBoard(
   });
   const dy = stop.side * (place.deep / 2 + 1.4);
   // With `fit` the camera keeps the sign in frame as it does the hero; without, the hero alone sets the shot.
-  return board(c, yaw, 6, dy, SIGN.wide * scale, rows, "along", 0.15, place.fit ? "board" : "sign");
+  // A wider sign keeps its far end where the usual one's is, and grows toward the plaza's middle.
+  const dx = 6 - (wide - SIGN.wide) / 2;
+  return board(c, yaw, dx, dy, wide * scale, rows, "along", 0.15, place.fit ? "board" : "sign");
 }

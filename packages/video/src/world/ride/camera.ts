@@ -17,6 +17,7 @@ import {
   OVERVIEW_THETA,
   PLAZA_AHEAD,
   PLAZA_LATERAL,
+  WAVE,
 } from "./track";
 
 export type Look = "ahead" | "cell" | "train" | "hero";
@@ -165,13 +166,10 @@ function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
   };
   // Both ends of the rail, the squares beside it, and the billboard from foot to top.
   const layout = layoutForSize(frame.width, frame.height);
-  const ends = [
-    at(FIRST_PLATFORM),
-    at(end),
-    at(middle, 8),
-    at(middle, -8),
-    ...billboardAt(middle, layout).corners,
-  ];
+  // The rail swings from side to side, so its bends are sampled along its whole length.
+  const bends: V3[] = [];
+  for (let s = FIRST_PLATFORM; s <= end; s += WAVE / 8) bends.push(at(s, 9), at(s, -9));
+  const ends = [at(FIRST_PLATFORM), at(end), ...bends, ...billboardAt(end, layout).corners];
   while (!ends.every(inside) && pose.radius < 600) {
     pose.radius *= 1.06;
     pose.height = pose.radius * 0.75;

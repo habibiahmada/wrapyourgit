@@ -12,7 +12,7 @@ const REST = { tall: 0.95 } as const;
 /** Shipping-container paint, dark enough for white letters. */
 const PAINT = ["#a8452f", "#2b6a99", "#2f7d6d", "#9a6a14", "#5d4a94"];
 /** The stack is tall, so the camera stands back: the sign is larger to read the same. */
-const SIGN_SCALE = 1.15;
+const SIGN_SCALE = 1.2;
 const RACK = { top: "#2d333b", left: "#22272e", right: "#1c2128" };
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
 

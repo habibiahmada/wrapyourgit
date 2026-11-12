@@ -10,11 +10,11 @@ const ARM = 2.05;
 const PAN = { long: 3.0, deep: 2.3, thick: 0.22 };
 const WEIGHT = { long: 2.8, deep: 1.9 };
 /** How high the beam's middle rests, and how far an end drops at full tilt. */
-const PIVOT = 1.2;
-const DROP = 0.8;
+const PIVOT = 1.0;
+const DROP = 0.6;
 /** A weight's height: room for its year and its figure, plus its share of the larger year. */
 const LOWEST = 2.1;
-const RISE = 1.3;
+const RISE = 1.0;
 /** Down a weight's side, in world units from its top: the year, then the figure. */
 const YEAR = { top: 0.16, bottom: 0.7 };
 const FIGURE = { top: 0.8, bottom: 1.9 };
@@ -22,11 +22,10 @@ const FIGURE = { top: 0.8, bottom: 1.9 };
 const STEPS = 5;
 const LAST = toneOf("#545d68");
 const THIS = toneOf(GREENS[1]);
-/** The span on two rows, broken after its comma: "Jan 1 – Dec 31," and "both years". */
-const balanced = (span: string): string[] => {
-  const cut = span.lastIndexOf(", ");
-  return cut < 0 ? [span] : [span.slice(0, cut + 1), span.slice(cut + 2)];
-};
+/** The sign: long enough for its longest line, "Last year couldn't be read from GitHub", on one row. */
+const SIGN_WIDE = 9.6;
+/** How high the readout hangs: over the taller weight on the higher end of the beam. */
+const READOUT = PLAZA_TOP + PIVOT + DROP + LOWEST + RISE + 0.35;
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
 
 /**
@@ -34,8 +33,8 @@ const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
  * its contributions on every side and is as tall as its share of the larger year; the heavier
  * one's end of the beam hangs lower, by the model's angle. The weights are lowered on one after
  * the other as the train comes in, the figures rise with them and are exact when it stops, and
- * the beam then tips and keeps a slow sway. The change is printed large on a dial board in front
- * of the fulcrum; the sign carries the title and the span both years cover. When last year could not be read its weight stays
+ * the beam then tips and keeps a slow sway. The change is printed large on a board held
+ * over the seesaw; the sign carries the title and the span both years cover. When last year could not be read its weight stays
  * under a cover with no figure, the beam stays level, and the sign says so: that is not a zero.
  */
 export const versus: Station = (ctx) => {
@@ -47,33 +46,26 @@ export const versus: Station = (ctx) => {
     ...nameBoard(
       ctx,
       known
-        ? [
-            // Broken where the sense breaks, so no row is left with one word.
-            "Contributions,",
-            "year over year",
-            ...balanced(model.span).map((text) => ({ text, tall: 0.4 })),
-          ]
-        : [
-            "Year over year",
-            { text: "Last year couldn't", tall: 0.4 },
-            { text: "be read from GitHub", tall: 0.4 },
-          ],
-      { deep: PLAZA.deep, fit: true, scale: 1.1 },
+        ? ["Contributions, year over year", { text: model.span, tall: 0.4 }]
+        : ["Year over year", { text: "Last year couldn't be read from GitHub", tall: 0.4 }],
+      // Wide enough for each line on one row: two rows stand lower than the beam, so the seesaw
+      // shows over the sign.
+      { deep: PLAZA.deep, fit: true, wide: SIGN_WIDE },
     ),
   );
-  // What the weighing says, on a low board in front of the fulcrum like a scale's dial. It is the
-  // station's finding, so it gets headline size instead of a row on the sign.
+  // What the weighing says, on a board held over the seesaw like a scale's readout. It is the
+  // station's finding, so it gets headline size, and up there nothing stands in front of it.
   if (known) {
     out.push(
       ...board(
         c,
         yaw,
         0,
-        stop.side * (PAN.deep / 2 + 0.7),
-        Math.max(2.4, model.change.length * 0.42),
-        [{ text: model.change, tall: 0.7, fill: LIT }],
+        -stop.side * (WEIGHT.deep / 2 + 0.25),
+        Math.max(2.6, model.change.length * 0.46),
+        [{ text: model.change, tall: 0.8, fill: LIT }],
         "along",
-        0.2,
+        READOUT,
       ),
     );
   }

@@ -282,14 +282,15 @@ test("hello breaks a long login over rows instead of printing it small", () => {
 test("city prints the model's headline, the exact total and the legend of a year still running", () => {
   const model = cityModel(sampleRecap);
   const text = printed(build("city", sampleRecap));
-  // The billboard may break a long line over two rows.
-  expect(text.join(" ")).toContain(model.headline);
+  // The billboard may break a long line over rows, and prints each row on both of its faces.
+  const rows = (lines: string[]) => [...new Set(lines)].join(" ");
+  expect(rows(text)).toContain(model.headline);
   expect(text).toContain(formatCount(model.total));
   const running: RecapData = {
     ...sampleRecap,
     meta: { ...sampleRecap.meta, isFinal: false, periodEnd: "2026-11-09" },
   };
-  expect(printed(build("city", running)).join(" ")).toContain(cityModel(running).legend ?? "");
+  expect(rows(printed(build("city", running)))).toContain(cityModel(running).legend ?? "");
 });
 
 test("city's billboard is only there for the overview", () => {
@@ -647,7 +648,9 @@ test("versus: each weight carries its year and its exact value, the sign the cha
     ]),
   );
   const sign = printed(all).join(" ");
-  expect(printed(all)).toEqual(expect.arrayContaining(["Contributions,", "year over year"]));
+  expect(printed(all)).toContain("Contributions, year over year");
+  // One row each, so the sign stays lower than the beam.
+  expect(printed(all)).toContain(model.span);
   expect(sign).toContain(model.change);
   for (const piece of model.span.split(" ")) expect(sign).toContain(piece);
 });
@@ -685,10 +688,7 @@ test("versus: last year unread is a covered weight with no figure, never a zero"
   expect(printed(boxes(all, "weight"))).toEqual(
     expect.arrayContaining([String(model.current.year), formatCount(model.current.value)]),
   );
-  // The sign prints it on two rows.
-  expect(printed(all)).toEqual(
-    expect.arrayContaining(["Last year couldn't", "be read from GitHub"]),
-  );
+  expect(printed(all)).toContain("Last year couldn't be read from GitHub");
   expect(printed(all)).not.toContain("0");
   // Nothing to weigh against: the beam stays level.
   const beam = boxes(all, "beam").map((b) => b.at[2]);

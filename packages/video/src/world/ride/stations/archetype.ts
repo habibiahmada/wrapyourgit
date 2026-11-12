@@ -7,7 +7,7 @@ import { PLAZA_TOP, part, plaza, type Station, wrap } from "./kit";
 /** The diorama: the landing page's picture of this archetype, 4 by 3, standing on the plaza. */
 const ROOM = { wide: 7.2, tall: 5.4, anchor: [0.5, 0.62] as [number, number] };
 /** The marquee: how wide it is, how tall its intro, its title and each row of a reason are, and how high it hangs over the room. */
-const MARQUEE = { wide: 8.6, intro: 0.56, title: 1.35, row: 0.62, pad: 0.3, lift: 3.6 };
+const MARQUEE = { wide: 9.4, intro: 0.66, title: 1.35, row: 0.7, pad: 0.3, lift: 3.6 };
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
 
 /**

@@ -43,10 +43,10 @@ const signTexts = (solids: Solid[], col: number) => {
 };
 
 test("a day that has not happened is an outline, a zero day is flat and dim", () => {
-  const view: View = { trainS: 80, from: 60, to: 100, overview: 0 };
+  const view: View = { trainS: 124, from: 93, to: 150, overview: 0 };
   const { city: c, all } = build(provisionalRecap, view);
   const notYet = c.plots.find((p) => p.state === "not-yet");
-  const zero = c.plots.find((p) => p.state === "zero" && weekS(p.col) > 62 && weekS(p.col) < 98);
+  const zero = c.plots.find((p) => p.state === "zero" && weekS(p.col) > 96 && weekS(p.col) < 147);
   expect(dayBox(all, c, notYet?.date ?? "")?.outline).toBe(true);
   const flat = dayBox(all, c, zero?.date ?? "");
   expect(flat?.outline).toBeUndefined();
@@ -64,7 +64,7 @@ test("days light only as the train nears", () => {
 });
 
 test("a busier day stands taller once lit", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 200, from: 0, to: 110, overview: 0 });
+  const { city: c, all } = build(sampleRecap, { trainS: 200, from: 0, to: 160, overview: 0 });
   const heights = c.plots
     .filter((p) => p.state === "active")
     .map((p) => ({ count: p.count, h: dayBox(all, c, p.date)?.size[2] ?? 0 }));
@@ -74,7 +74,7 @@ test("a busier day stands taller once lit", () => {
 });
 
 test("the overview lights every day with data and drops the sleepers", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 4, from: 0, to: 110, overview: 1 });
+  const { city: c, all } = build(sampleRecap, { trainS: 4, from: 0, to: 160, overview: 1 });
   for (const p of c.plots.filter((x) => x.state === "active")) {
     expect(dayBox(all, c, p.date)?.decals?.length).toBe(1);
   }
@@ -84,7 +84,7 @@ test("the overview lights every day with data and drops the sleepers", () => {
 });
 
 test("January's sign carries one line, a later month's two", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
+  const { city: c, all } = build(sampleRecap, { trainS: 0, from: 0, to: 160, overview: 0 });
   const g = gates(sampleRecap, c);
   expect(signTexts(all, g[0]?.col ?? 0)).toEqual(["JAN"]);
   expect(g[2]?.line).not.toBeNull();
@@ -92,7 +92,7 @@ test("January's sign carries one line, a later month's two", () => {
 });
 
 test("every month has its sign beside the rail, and it stays put wherever the train is", () => {
-  const view = (trainS: number): View => ({ trainS, from: 0, to: 110, overview: 0 });
+  const view = (trainS: number): View => ({ trainS, from: 0, to: 160, overview: 0 });
   const g = gates(sampleRecap, city);
   const far = build(sampleRecap, view(0)).all;
   for (const gate of g) expect(signAt(far, gate.col)).toBeDefined();
@@ -104,7 +104,7 @@ test("every month has its sign beside the rail, and it stays put wherever the tr
 });
 
 test("a month sign is low, and never stands in front of a station's own sign", () => {
-  const { all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
+  const { all } = build(sampleRecap, { trainS: 0, from: 0, to: 160, overview: 0 });
   const plazas = stops.filter((x) => x.plaza);
   for (const gate of gates(sampleRecap, city)) {
     const sign = signAt(all, gate.col);
@@ -123,7 +123,7 @@ test("a month sign is low, and never stands in front of a station's own sign", (
 test("between two stations a month sign keeps to the side of the one behind it", () => {
   // The camera's shot in the middle of a move is on the other side: a sign there would pass
   // between the camera and the train.
-  const { all } = build(sampleRecap, { trainS: 0, from: 0, to: 110, overview: 0 });
+  const { all } = build(sampleRecap, { trainS: 0, from: 0, to: 160, overview: 0 });
   const plazas = stops.filter((x) => x.plaza);
   let checked = 0;
   for (const gate of gates(sampleRecap, city)) {
@@ -154,12 +154,12 @@ test("the land is the same for the same view", () => {
 });
 
 test("the first and the busiest day carry a beacon, an empty year none", () => {
-  const whole: View = { trainS: 20, from: 0, to: 110, overview: 0 };
+  const whole: View = { trainS: 20, from: 0, to: 160, overview: 0 };
   expect(boxes(build(sampleRecap, whole).all, "beacon").length).toBeGreaterThanOrEqual(2);
   expect(boxes(build(emptyRecap, whole).all, "beacon")).toHaveLength(0);
 });
 
 test("an empty year lays every day flat", () => {
-  const { all } = build(emptyRecap, { trainS: 200, from: 0, to: 110, overview: 0 });
+  const { all } = build(emptyRecap, { trainS: 200, from: 0, to: 160, overview: 0 });
   for (const b of boxes(all, "day")) expect(b.size[2]).toBeCloseTo(0.04);
 });
