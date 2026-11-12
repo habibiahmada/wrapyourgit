@@ -1,5 +1,5 @@
 import { type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
-import { buildWorld, type WorldOptions, worldDuration } from "./model";
+import { buildRide, type RideOptions, rideDuration } from "./ride/model";
 
 export type ExportFormat = keyof typeof VIDEO_FORMATS;
 
@@ -16,30 +16,33 @@ type ExportProps = { data: RecapData; mode: "video"; letter?: boolean };
 export function worldExportComposition(
   data: RecapData,
   format: ExportFormat,
-  options: WorldOptions = {},
+  options: RideOptions = {},
 ) {
   const { width, height } = VIDEO_FORMATS[format];
   const defaultProps: ExportProps =
     options.letter === false ? { data, mode: "video", letter: false } : { data, mode: "video" };
   return {
-    id: `world-${format}`,
+    id: `ride-${format}`,
     width,
     height,
     fps: VIDEO_FPS,
-    durationInFrames: worldDuration(data, VIDEO_FORMATS[format], "video", options),
+    durationInFrames: rideDuration(data, VIDEO_FORMATS[format], "video", options),
     defaultProps,
   };
 }
 
-/** One frame per stop, one frame after arrival: still inside the hold, the stop at rest. */
+/**
+ * One frame per stop, the stop's own frame: the first frame of its rest, where the camera has
+ * settled and every printed figure has finished counting up to its exact value.
+ */
 export function slideFrames(
   data: RecapData,
-  options: WorldOptions = {},
+  options: RideOptions = {},
 ): { stopId: string; frame: number }[] {
-  const { stops, timeline } = buildWorld(data, SLIDE_FORMAT, "video", VIDEO_FPS, options);
+  const { stops, timeline } = buildRide(data, SLIDE_FORMAT, "video", VIDEO_FPS, options);
   return stops.flatMap((stop, i) => {
-    const arrival = timeline.stopFrames[i];
-    return arrival === undefined ? [] : [{ stopId: stop.id, frame: arrival + 1 }];
+    const rest = timeline.stopFrames[i];
+    return rest === undefined ? [] : [{ stopId: stop.id, frame: rest }];
   });
 }
 

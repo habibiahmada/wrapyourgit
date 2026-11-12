@@ -5,6 +5,8 @@ import { dirname, resolve } from "node:path";
 // Modules apps/web imports from Server Components. Remotion needs React.createContext, which does
 // not exist there, so none of them may reach remotion, @remotion/* or a .tsx file.
 // "./world" (world/model.ts) is only used by the client world-player, but is kept Remotion-free too.
+// "./export" and "./ride" are client only: the ride's stations name files with Remotion's
+// `staticFile`, so they are not on this list.
 const ROOT = resolve(import.meta.dir, "..");
 const pkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")) as {
   exports: Record<string, string>;

@@ -5,9 +5,12 @@ import { languageIcon } from "../../languages";
 import { fontFamily } from "../../theme";
 import { Chrome } from "../Chrome";
 import { reachedStop } from "../fade";
+import { StoryMusic } from "../StoryMusic";
 import { gardenModel } from "../scenes/garden.model";
 import { Letter } from "../scenes/Letter";
+import { videoSounds } from "../sound";
 import type { WorldMode } from "../timeline";
+import { WorldSfx } from "../WorldSfx";
 import { backdrop } from "./backdrop";
 import { buildRide, letterBeat, rideFrame } from "./model";
 import { SKY } from "./palette";
@@ -18,7 +21,7 @@ import { archetypeFigures } from "./stations/archetype";
 export type RideStoryProps = {
   data: RecapData;
   mode: WorldMode;
-  /** Accepted for parity with WorldStory. The ride has no sound until phase 3 of the story ride. */
+  /** Mix the soundtrack in (video mode only; the web player plays music itself). */
   music?: boolean;
   /** Include the letter's pages. Defaults to true; the public page leaves them out. */
   letter?: boolean;
@@ -36,7 +39,7 @@ export type RideStoryProps = {
  * the scene: every number is printed on a solid inside it. The one exception is the letter,
  * whose sheet of paper comes up over the scene at its stops (model.ts `letterBeat`).
  */
-export function RideStory({ data, mode, letter = true, idle = 0 }: RideStoryProps) {
+export function RideStory({ data, mode, music = true, letter = true, idle = 0 }: RideStoryProps) {
   const { width, height, fps } = useVideoConfig();
   const frame = useCurrentFrame();
   const size = useMemo(() => ({ width, height }), [width, height]);
@@ -93,6 +96,17 @@ export function RideStory({ data, mode, letter = true, idle = 0 }: RideStoryProp
         frame={size}
         darkness={{ top: 1, bottom: 1 }}
       />
+      {/* A video carries its own sound; the web player plays the same sounds itself, on the tap. */}
+      {mode === "video" && (
+        <>
+          {videoSounds(model).map(({ frame: at, sound }, k) => (
+            // Index keys: the list is fixed for a given ride, and one frame can hold two sounds.
+            // biome-ignore lint/suspicious/noArrayIndexKey: see above
+            <WorldSfx key={`${k}-${sound}`} at={at} sound={sound} />
+          ))}
+          {music && <StoryMusic end={model.timeline.durationInFrames} fps={fps} />}
+        </>
+      )}
     </AbsoluteFill>
   );
 }

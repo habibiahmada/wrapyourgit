@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { sampleRecap, WorldStory } from "@wyg/video";
-import { slideFrames, worldExportComposition } from "@wyg/video/world";
+import { RideStory, sampleRecap } from "@wyg/video";
+import { slideFrames, worldExportComposition } from "@wyg/video/export";
 import { unzipSync } from "fflate";
 import { PDFDocument } from "pdf-lib";
 import {
@@ -211,7 +211,7 @@ describe("renderMp4", () => {
       fps: expected.fps,
       durationInFrames: expected.durationInFrames,
     });
-    expect(options?.composition.component).toBe(WorldStory);
+    expect(options?.composition.component).toBe(RideStory);
     expect(options?.inputProps).toEqual({ data: sampleRecap, mode: "video" });
     expect(options?.container).toBe("mp4");
     expect(options?.signal).toBe(signal);
