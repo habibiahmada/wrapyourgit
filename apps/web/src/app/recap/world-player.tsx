@@ -41,8 +41,12 @@ const ZONE_RING =
 const CONTROL_RING =
   "focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2 focus-visible:shadow-[0_0_0_6px_var(--color-paper)]";
 /** A zone at the end of the story stays focusable (focus must not vanish under the reader). */
+/**
+ * No tint on hover or press: the zones are the whole story, and any shade over it reads as the
+ * picture flickering. A keyboard focus ring stays, so keyboard users see where they are.
+ */
 const zone = (disabled: boolean) =>
-  `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-ink/[0.03] active:bg-ink/[0.07]"} ${ZONE_RING}`;
+  `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer"} ${ZONE_RING}`;
 /**
  * A strip above the stage that holds the web-only controls (Sound, Close). They
  * are not part of the composition, so the scenes' safe area can't keep text clear of them; the

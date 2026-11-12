@@ -62,23 +62,19 @@ test("nothing happens before the first stop or after the last", () => {
   expect(request(last, 1, timeline)).toEqual({ state: last, start: false });
 });
 
-test("taps during a move queue one direction, the last one wins", () => {
+test("taps during a move are dropped: however many come, the train makes the one move", () => {
   const started = request(initialState(), 1, timeline).state;
   const a = request(started, 1, timeline);
   const b = request(a.state, -1, timeline);
-  expect(a.start).toBe(false);
-  expect(b.start).toBe(false);
-  expect(b.state.queued).toBe(-1);
-  expect(b.state.moving).toEqual(started.moving);
+  const c = request(b.state, -1, timeline);
+  for (const r of [a, b, c]) expect(r.start).toBe(false);
+  expect(c.state).toEqual(started);
+  expect(settle(c.state)).toEqual({ state: atStop(1), next: null });
 });
 
-test("settle rests on the target and returns the queued move", () => {
+test("settle rests on the target", () => {
   const moving = request(initialState(), 1, timeline).state;
-  const queued = request(moving, 1, timeline).state;
-  const done = settle(queued);
-  expect(done.next).toBe(1);
-  expect(done.state).toEqual({ stop: 1, moving: null, queued: null });
-  expect(settle(moving).next).toBeNull();
+  expect(settle(moving)).toEqual({ state: atStop(1), next: null });
 });
 
 test("frameAt never passes the end frame", () => {
