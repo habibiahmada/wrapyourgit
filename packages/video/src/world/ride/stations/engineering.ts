@@ -16,20 +16,61 @@ const ROWS: readonly [number, number][] = [
 /** Where things lie across the plaza, from its middle: the board at the back, the main line by the rail. */
 const BACK = 1.95;
 const MAIN = { at: 1.45, long: 10.2, wide: 0.9 };
-/** The branch lines: where each joins the main line, how long it is, and the angle it comes in at. */
-const JOINS = [-2.5, 0.6, 3.7];
-const BRANCH = { long: 3.0, angle: 0.56 };
-/** A wagon, and how far apart wagons stand on a line. */
-const WAGON = { long: 0.6, wide: 0.5, tall: 0.42, pitch: 0.72 };
-/** How far the merged train runs each way along the main line, and how far back from the middle it stands to leave room for its engine. */
-const TRAIN_RUN = 0.3;
-const TRAIN_BACK = -0.5;
-/** How far a branch's wagons shunt each way, as a share of the branch's length. */
-const SHUNT = 0.07;
+/**
+ * The branch lines: where each joins the main line, how long it is, and the angle it comes in at.
+ * They are long and lie close to the main line's own direction, three sidings side by side, so
+ * a wagon has a real way to travel on one.
+ */
+const JOINS = [1.1, 3.0, 4.9];
+const BRANCH = { long: 7.0, angle: 0.42 };
+/** A wagon, and the least room one needs on a line. */
+const WAGON = { long: 0.6, wide: 0.5, tall: 0.42, pitch: 0.68 };
+/** The shed at each end of the main line, which wagons come out of and go into. */
+const SHED = 0.9;
+/**
+ * On a branch, as shares of its length from its far end: where its shed ends, and where the
+ * cabin a wagon goes into before the main line begins and ends. The cabin stops short of the
+ * main line, clear of the wagons passing on it.
+ */
+const SIDING = { shed: 0.1, cabin: [0.66, 0.78] as const };
+/** About how far a wagon travels in one 60-frame loop, in world units. */
+const TRAVEL = 2.1;
 const MERGED = toneOf("#2ea043");
 const OPEN = toneOf("#e3b341");
 const BALLAST = toneOf("#3a424d");
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
+
+/**
+ * Where `count` wagons are on a stretch of line from `from` to `to` at `loop` (0 to 1): spaced
+ * evenly, all moving toward `to`, and each one that goes out at `to` comes in at `from`. They
+ * move a whole number of spaces in a loop, so the line looks the same at its end as at its start.
+ * Each wagon is the part of it that is on the stretch: one going in or coming out is shorter,
+ * and may be in two parts, one at each end.
+ */
+export function flow(
+  count: number,
+  from: number,
+  to: number,
+  loop: number,
+): { mid: number; long: number; whole: boolean }[][] {
+  const reach = to - from;
+  const fits = Math.min(count, Math.floor(reach / WAGON.pitch));
+  if (fits <= 0) return [];
+  const space = reach / fits;
+  const steps = Math.max(1, Math.round(TRAVEL / space));
+  return Array.from({ length: fits }, (_, i) => {
+    const mid = (((i + 0.5 + steps * loop) * space) % reach) + from;
+    const parts: { mid: number; long: number; whole: boolean }[] = [];
+    for (const shift of [0, -reach, reach]) {
+      const a = Math.max(from, mid + shift - WAGON.long / 2);
+      const b = Math.min(to, mid + shift + WAGON.long / 2);
+      if (b - a > 0.02)
+        parts.push({ mid: (a + b) / 2, long: b - a, whole: b - a > WAGON.long - 1e-6 });
+    }
+    // The larger part first: it is the one that carries the wagon's tag.
+    return parts.sort((x, y) => y.long - x.long);
+  });
+}
 
 /** A stretch of track's paint: sleepers across it and two rails along it. */
 function trackPaint(long: number): Decal[] {
@@ -50,14 +91,17 @@ function trackPaint(long: number): Decal[] {
 
 /**
  * Pull requests: a junction. The main line runs along the plaza by the rail, and three branch
- * lines come in to it from behind, as a branch is merged into main. One wagon stands on the main
- * line, coupled in a row, for each pull request merged, and one waits on a branch for each still
- * open, up to the model's cap; the board behind carries the model's three rows (sent, merged,
- * reviews), each figure beside its words, between two signals whose lights change. When GitHub
- * could not say how many were merged, no wagon is on the main line and the row says so in words:
- * not knowing is not zero. Once it is built the stop works: the merged train runs a little way
- * along the main line and back behind its puffing engine, and the wagons on each branch shunt
- * toward the main line and back, all on a 60-frame loop that ends where it began.
+ * lines come in to it from behind, as a branch is merged into main. One wagon is on the main
+ * line for each pull request merged, and one on a branch for each still open, up to the model's
+ * cap; the board behind carries the model's three rows (sent, merged, reviews), each figure
+ * beside its words, between two signals whose lights change. When GitHub could not say how many
+ * were merged, no wagon is on the main line and the row says so in words: not knowing is not zero.
+ *
+ * Once it is built the stop works, and its wagons go somewhere: the merged ones come out of the
+ * shed at one end of the main line, run its length and go into the shed at the other; the open
+ * ones come out of the shed at the far end of their branch and run down it into the cabin before
+ * the main line. As many are on a line at every moment as there were at the start (flow), and
+ * the loop ends where it began at 60 frames.
  */
 export const engineering: Station = (ctx) => {
   const { data, c, yaw, build, frame, stop } = ctx;
@@ -66,6 +110,9 @@ export const engineering: Station = (ctx) => {
   const side = stop.side;
   const far = -side * BACK;
   const loop = (((frame % 60) + 60) % 60) / 60;
+  // From high over the year the sleepers, wheels and shed doors are too small to see, and every
+  // station is in the picture at once: the paint is left off, the boxes stay (scenery.ts).
+  const fine = ctx.overview < 0.35;
   const cos = Math.cos(yaw);
   const sin = Math.sin(yaw);
   /**
@@ -101,16 +148,33 @@ export const engineering: Station = (ctx) => {
       side * (MAIN.at - Math.sin(BRANCH.angle) * back),
     ];
   };
-  const wagonPaint = (load: string): Decal[] => [
-    { on: "top", rect: [0.1, 0.12, 0.9, 0.88], fill: load },
-    { on: "all", rect: [0, 0, 1, 0.3], fill: "#161b22" },
-    ...[0.14, 0.62].map(
-      (u): Decal => ({ on: "sides", rect: [u, 0, u + 0.24, 0.34], fill: "#c9d1d9", round: true }),
-    ),
-  ];
+  const wagonPaint = (load: string): Decal[] =>
+    !fine
+      ? []
+      : [
+          { on: "top", rect: [0.1, 0.12, 0.9, 0.88], fill: load },
+          { on: "all", rect: [0, 0, 1, 0.3], fill: "#161b22" },
+          ...[0.14, 0.62].map(
+            (u): Decal => ({
+              on: "sides",
+              rect: [u, 0, u + 0.24, 0.34],
+              fill: "#c9d1d9",
+              round: true,
+            }),
+          ),
+        ];
 
-  // The lines are there from the start: the main line, the three branches under it, and a
-  // buffer at each branch's far end.
+  // The lines are there from the start: the main line with a shed at each end, and the three
+  // branches under it, each with a shed at its far end and a cabin before the main line.
+  const shedPaint = (lamp: string): Decal[] =>
+    !fine
+      ? []
+      : [
+          { on: "front", rect: [0.18, 0, 0.82, 0.72], fill: "#0d1117" },
+          { on: "back", rect: [0.18, 0, 0.82, 0.72], fill: "#0d1117" },
+          { on: "top", rect: [0.08, 0.08, 0.92, 0.92], fill: "#21262d" },
+          { on: "sides", rect: [0.3, 0.5, 0.7, 0.78], fill: lamp },
+        ];
   JOINS.forEach((_, k) => {
     const [mx, my] = onBranch(k, 0.5);
     out.push(
@@ -118,15 +182,25 @@ export const engineering: Station = (ctx) => {
         tag: "branch",
         under: 2,
         edge: false,
-        decals: trackPaint(BRANCH.long),
+        decals: fine ? trackPaint(BRANCH.long) : [],
       }),
     );
-    const [bx, by] = onBranch(k, -0.04);
+    const [sx, sy] = onBranch(k, SIDING.shed / 2);
+    const [cx, cy] = onBranch(k, (SIDING.cabin[0] + SIDING.cabin[1]) / 2);
     out.push(
-      askew(bx, by, PLAZA_TOP + 0.05, [0.16, 0.86, 0.34], toneOf("#da3633"), turn, {
-        tag: "buffer",
-        decals: [{ on: "all", rect: [0, 0.35, 1, 0.65], fill: "#f0f6fc" }],
+      askew(sx, sy, PLAZA_TOP + 0.05, [SIDING.shed * BRANCH.long, 0.72, 0.72], TONE.dark, turn, {
+        tag: "shed",
+        decals: shedPaint("#e3b341"),
       }),
+      askew(
+        cx,
+        cy,
+        PLAZA_TOP + 0.05,
+        [(SIDING.cabin[1] - SIDING.cabin[0]) * BRANCH.long, 0.72, 0.78],
+        toneOf("#8b949e"),
+        turn,
+        { tag: "cabin", decals: shedPaint("#ffd866") },
+      ),
     );
   });
   out.push(
@@ -134,9 +208,26 @@ export const engineering: Station = (ctx) => {
       tag: "main-line",
       under: 1,
       edge: false,
-      decals: trackPaint(MAIN.long),
+      decals: fine ? trackPaint(MAIN.long) : [],
     }),
   );
+  for (const end of [-1, 1]) {
+    out.push(
+      part(
+        c,
+        yaw,
+        end * (MAIN.long / 2 - SHED / 2),
+        side * MAIN.at,
+        PLAZA_TOP + 0.06,
+        [SHED, 0.8, 0.8],
+        TONE.dark,
+        {
+          tag: "shed",
+          decals: shedPaint(LIT),
+        },
+      ),
+    );
+  }
   const landed = easeOut(build / 0.4);
   if (landed <= 0) return out;
   const drop = (1 - landed) * 5;
@@ -218,113 +309,66 @@ export const engineering: Station = (ctx) => {
     );
   });
 
-  // Merged: wagons coupled in a row on the main line behind a small engine, set down one after
-  // another. Once they are all down the train runs a little way along the line and back, once a
-  // loop, and the engine puffs: the stop is seen to be working, and it is where it began at 60.
-  const run = build >= 1 ? Math.sin(loop * Math.PI * 2) * TRAIN_RUN : 0;
-  const head = ((model.drawnLanded - 1) / 2) * WAGON.pitch + TRAIN_BACK;
-  for (let i = 0; i < model.drawnLanded; i++) {
+  // Nothing travels until the stop is whole: while it builds, a wagon is set down where it will
+  // be at the loop's start.
+  const moving = build >= 1 ? loop : 0;
+  const plain: Decal[] = fine ? [{ on: "all", rect: [0, 0, 1, 0.3], fill: "#161b22" }] : [];
+
+  // Merged: along the main line, out of one shed and into the other.
+  const reach = MAIN.long / 2 - SHED;
+  flow(model.drawnLanded, -reach, reach, moving).forEach((parts, i) => {
     const on = easeOut((build - 0.3 - i * 0.03) / 0.3);
-    if (on <= 0) continue;
-    const dx = (i - (model.drawnLanded - 1) / 2) * WAGON.pitch + TRAIN_BACK + run;
-    out.push(
-      part(
-        c,
-        yaw,
-        dx,
-        side * MAIN.at,
-        PLAZA_TOP + 0.06 + (1 - on) * 4,
-        [WAGON.long, WAGON.wide, WAGON.tall],
-        MERGED,
-        { tag: "pr-merged", lit: true, decals: wagonPaint(LIT) },
-      ),
-    );
-    // The coupling to the wagon before it.
-    if (i > 0 && on >= 1) {
+    if (on <= 0) return;
+    parts.forEach((piece, n) => {
       out.push(
         part(
           c,
           yaw,
-          dx - WAGON.pitch / 2,
+          piece.mid,
           side * MAIN.at,
-          PLAZA_TOP + 0.16,
-          [0.14, 0.08, 0.06],
-          TONE.dark,
+          PLAZA_TOP + 0.06 + (1 - on) * 4,
+          [piece.long, WAGON.wide, WAGON.tall],
+          MERGED,
           {
-            tag: "coupling",
-            edge: false,
+            tag: n === 0 ? "pr-merged" : "pr-merged-part",
+            lit: true,
+            decals: piece.whole ? wagonPaint(LIT) : plain,
           },
         ),
       );
-    }
-  }
-  const engine = easeOut((build - 0.3 - model.drawnLanded * 0.03) / 0.3);
-  if (model.drawnLanded > 0 && engine > 0) {
-    const dx = head + WAGON.pitch + 0.14 + run;
-    const z = PLAZA_TOP + 0.06 + (1 - engine) * 4;
-    out.push(
-      // One box: its cab's window, its lamp and its wheels are painted on.
-      part(c, yaw, dx, side * MAIN.at, z, [0.9, 0.52, 0.56], toneOf("#1f8a3a"), {
-        tag: "shunter",
-        lit: true,
-        decals: [
-          { on: "all", rect: [0, 0, 1, 0.24], fill: "#161b22" },
-          { on: "sides", rect: [0.08, 0.5, 0.38, 0.86], fill: "#0d1117" },
-          { on: "front", rect: [0.36, 0.34, 0.64, 0.62], fill: "#ffd866", round: true },
-          ...[0.1, 0.42, 0.7].map(
-            (u): Decal => ({
-              on: "sides",
-              rect: [u, 0, u + 0.2, 0.3],
-              fill: "#c9d1d9",
-              round: true,
-            }),
-          ),
-        ],
-      }),
-      part(c, yaw, dx + 0.22, side * MAIN.at, z + 0.56, [0.16, 0.16, 0.22], TONE.ink, {
-        tag: "shunter",
-        edge: false,
-      }),
-    );
-    // Its smoke: four puffs, each rising and thinning over the loop, one after another.
-    if (build >= 1) {
-      for (let k = 0; k < 4; k++) {
-        const age = (loop + k / 4) % 1;
-        out.push({
-          kind: "ball",
-          c: [
-            c[0] + (dx + 0.22 - age * 0.3) * cos - side * MAIN.at * sin,
-            c[1] + (dx + 0.22 - age * 0.3) * sin + side * MAIN.at * cos,
-            c[2] + z + 0.85 + age * 0.9,
-          ],
-          r: 0.08 + age * 0.14,
-          color: "#b1bac4",
-          opacity: (1 - age) * 0.5,
-        });
-      }
-    }
-  }
-  // Open: wagons waiting on the branches, the first nearest the main line. They come down over
-  // the second half of the build, and shunt a little back and forth.
+    });
+  });
+
+  // Open: down each branch, out of its shed and into its cabin. They come down over the second
+  // half of the build.
   const up = easeOut((build - 0.5) / 0.5);
   if (up <= 0) return out;
-  for (let i = 0; i < model.drawnFlying; i++) {
-    const k = i % JOINS.length;
-    const place = Math.floor(i / JOINS.length);
-    // Each branch's wagons move together, toward the main line and back, a branch after a branch.
-    const shunt = build >= 1 ? Math.sin((loop + k / JOINS.length) * Math.PI * 2) * SHUNT : 0;
-    const [wx, wy] = onBranch(k, 0.74 - place * (WAGON.pitch / BRANCH.long) + shunt);
-    out.push(
-      askew(
-        wx,
-        wy,
-        PLAZA_TOP + 0.05 + (1 - up) * 6,
-        [WAGON.long, WAGON.wide, WAGON.tall],
-        OPEN,
-        turn,
-        { tag: "pr-open", lit: true, decals: wagonPaint("#f5d36b") },
-      ),
-    );
-  }
+  JOINS.forEach((_, k) => {
+    // Branch k's share of the open ones: the first branch gets the first of any left over.
+    const share =
+      Math.floor(model.drawnFlying / JOINS.length) + (k < model.drawnFlying % JOINS.length ? 1 : 0);
+    const from = SIDING.shed * BRANCH.long;
+    const to = SIDING.cabin[0] * BRANCH.long;
+    for (const parts of flow(share, from, to, moving)) {
+      parts.forEach((piece, n) => {
+        const [wx, wy] = onBranch(k, piece.mid / BRANCH.long);
+        out.push(
+          askew(
+            wx,
+            wy,
+            PLAZA_TOP + 0.05 + (1 - up) * 6,
+            [piece.long, WAGON.wide, WAGON.tall],
+            OPEN,
+            turn,
+            {
+              tag: n === 0 ? "pr-open" : "pr-open-part",
+              lit: true,
+              decals: piece.whole ? wagonPaint("#f5d36b") : plain,
+            },
+          ),
+        );
+      });
+    }
+  });
   return out;
 };

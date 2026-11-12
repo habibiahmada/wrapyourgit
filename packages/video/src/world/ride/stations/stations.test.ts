@@ -20,6 +20,7 @@ import type { StopKind } from "../../stops";
 import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
 import { archetype, archetypeFigures } from "./archetype";
+import { flow } from "./engineering";
 import { STATIONS } from "./index";
 import { clip, stationContext } from "./kit";
 import { blockHeight, blockName } from "./languages";
@@ -576,9 +577,11 @@ test("engineering: a wagon on the main line for each pull request merged, one on
     expect(wagon.yaw).toBe(main.yaw);
   }
   for (const wagon of open) expect(wagon.yaw).not.toBe(main.yaw);
-  // Three branches come in to the main line, each with a buffer at its far end.
+  // Three branches come in to the main line. A wagon comes out of a shed and goes into one:
+  // two on the main line, and on each branch a shed at its far end and a cabin before the main line.
   expect(boxes(all, "branch")).toHaveLength(3);
-  expect(boxes(all, "buffer")).toHaveLength(3);
+  expect(boxes(all, "shed")).toHaveLength(5);
+  expect(boxes(all, "cabin")).toHaveLength(3);
   // The lines are there before anything is built: a junction from the first frame.
   const bare = build("engineering", sampleRecap, 0);
   expect(boxes(bare, "main-line")).toHaveLength(1);
@@ -620,40 +623,62 @@ test("engineering: merged unknown puts no wagon on the main line and says so in 
   expect(text.filter((line) => /^[\d,.k]+$/.test(line))).toHaveLength(2);
 });
 
-test("engineering: the merged train runs along the main line behind its engine, and is back after 60 frames", () => {
-  const at = (frame: number, tag: string) =>
-    boxes(build("engineering", sampleRecap, 1, frame), tag).map((b) => b.at[0]);
-  // At a stop's own frame everything is where it stands; then the train moves, as one.
-  const rest = at(0, "pr-merged");
-  const later = at(15, "pr-merged");
-  expect(later).not.toEqual(rest);
-  const shift = (later[0] ?? 0) - (rest[0] ?? 0);
-  later.forEach((x, i) => {
-    expect(x - (rest[i] ?? 0)).toBeCloseTo(shift);
-  });
-  expect(at(60, "pr-merged")).toEqual(rest);
-  // The engine goes with it, and puffs.
-  expect((at(15, "shunter")[0] ?? 0) - (at(0, "shunter")[0] ?? 0)).toBeCloseTo(shift);
-  const puffs = (frame: number) =>
-    build("engineering", sampleRecap, 1, frame).filter((solid) => solid.kind === "ball");
-  expect(puffs(15)).toHaveLength(4);
-  expect(puffs(75)).toEqual(puffs(15));
-  // The whole train stays on the main line at both ends of its run.
+test("engineering: the wagons travel: out of one shed, along the line, into the other, and the loop closes", () => {
+  const model = planesModel(sampleRecap);
   const main = boxes(build("engineering", sampleRecap), "main-line")[0] as Box;
-  for (const frame of [15, 45]) {
+  const mids = (frame: number, tag: string) =>
+    boxes(build("engineering", sampleRecap, 1, frame), tag).map((b) => b.at[0] + b.size[0] / 2);
+  // Every merged wagon moves the same way along the main line, and a good way: not a nudge.
+  const start = mids(0, "pr-merged");
+  const soon = mids(4, "pr-merged");
+  start.forEach((x, i) => {
+    expect((soon[i] ?? 0) - x).toBeGreaterThan(0.05);
+  });
+  // By half a loop one has gone into the far shed and come out of the near one.
+  const half = mids(30, "pr-merged");
+  expect(half.some((x, i) => x < (start[i] ?? 0))).toBe(true);
+  // As many wagons on the line at every moment as there are pull requests merged, each inside
+  // the stretch between the sheds; and after 60 frames the line is as it was.
+  for (const frame of [0, 7, 15, 22, 31, 45, 59]) {
     const all = build("engineering", sampleRecap, 1, frame);
-    for (const box of [...boxes(all, "pr-merged"), ...boxes(all, "shunter")]) {
-      expect(box.at[0]).toBeGreaterThanOrEqual(main.at[0]);
-      expect(box.at[0] + box.size[0]).toBeLessThanOrEqual(main.at[0] + main.size[0]);
+    expect(boxes(all, "pr-merged")).toHaveLength(model.drawnLanded);
+    expect(boxes(all, "pr-open")).toHaveLength(model.drawnFlying);
+    for (const box of [...boxes(all, "pr-merged"), ...boxes(all, "pr-merged-part")]) {
+      expect(box.at[0]).toBeGreaterThanOrEqual(main.at[0] + 0.9 - 1e-6);
+      expect(box.at[0] + box.size[0]).toBeLessThanOrEqual(main.at[0] + main.size[0] - 0.9 + 1e-6);
     }
   }
-  // While it is still being built nothing runs: a wagon is set down where it will stand.
-  expect(build("engineering", sampleRecap, 0.9, 15).filter((s) => s.kind === "ball")).toHaveLength(
-    0,
-  );
+  const sorted = (frame: number, tag: string) => mids(frame, tag).sort((x, y) => x - y);
+  sorted(60, "pr-merged").forEach((x, i) => {
+    expect(x).toBeCloseTo(sorted(0, "pr-merged")[i] ?? 0);
+  });
+  // While it is still being built nothing travels: a wagon is set down where it will stand.
+  expect(
+    boxes(build("engineering", sampleRecap, 0.95, 20), "pr-merged").map((b) => b.at[0]),
+  ).toEqual(boxes(build("engineering", sampleRecap, 0.95, 0), "pr-merged").map((b) => b.at[0]));
 });
 
-test("engineering: the wagons on the branches shunt, and the figures rise as the board lands", () => {
+test("flow: wagons are spaced evenly, wrap from one end to the other, and never crowd a short line", () => {
+  // Twelve asked for on a line with room for five: five, never overlapping.
+  expect(flow(12, 0, 3.5, 0)).toHaveLength(5);
+  expect(flow(0, 0, 3.5, 0)).toHaveLength(0);
+  // At the loop's start every wagon is whole; mid-loop one is in two parts, at the two ends.
+  expect(flow(5, 0, 3.5, 0).every((parts) => parts.length === 1 && parts[0]?.whole)).toBe(true);
+  const total = (loop: number) =>
+    flow(5, 0, 3.5, loop).reduce((sum, parts) => sum + parts.reduce((n, p) => n + p.long, 0), 0);
+  // Whatever the moment, the wagons on the line add up to five whole ones.
+  for (const loop of [0, 0.13, 0.37, 0.5, 0.81]) expect(total(loop)).toBeCloseTo(5 * 0.6);
+  // After a whole loop each wagon stands where another stood: the same line, wagon for wagon.
+  const places = (loop: number) =>
+    flow(5, 0, 3.5, loop)
+      .map((parts) => parts[0]?.mid ?? 0)
+      .sort((x, y) => x - y);
+  places(1).forEach((x, i) => {
+    expect(x).toBeCloseTo(places(0)[i] ?? 0);
+  });
+});
+
+test("engineering: the wagons on the branches travel too, and the figures rise as the board lands", () => {
   const where = (frame: number) =>
     boxes(build("engineering", sampleRecap, 1, frame), "pr-open").map((b) => b.pivot?.[0]);
   expect(where(10)).not.toEqual(where(25));
