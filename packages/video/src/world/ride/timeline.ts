@@ -10,8 +10,20 @@ export const HOLD_SECONDS = 3;
 export const REST_SECONDS = 2;
 export const MOVE_MIN_SECONDS = 1.6;
 export const MOVE_MAX_SECONDS = 4.2;
-/** A hero builds over the last part of the move in, so it is finished on its stop's frame. */
-export const BUILD_SECONDS = 1.2;
+/**
+ * A hero builds over the last part of the move in, so it is finished on its stop's frame. It
+ * takes this long where the move allows it: at 1.2 seconds a station was simply there, too fast
+ * to watch it go up. It never takes more than BUILD_SHARE of the move, so it starts after the
+ * train has left the stop before, whose camera stands right over this one.
+ */
+export const BUILD_SECONDS = 2.6;
+const BUILD_SHARE = 0.8;
+
+/** How many frames stop `i`'s hero takes to build. */
+export function buildFrames(i: number, timeline: RideTimeline, fps: number): number {
+  const move = timeline.moveFrames[i] ?? 0;
+  return Math.max(1, Math.min(Math.round(BUILD_SECONDS * fps), Math.round(move * BUILD_SHARE)));
+}
 
 /** Past this distance along the rail a move takes the longest time. */
 const MOVE_SATURATION = 24;
@@ -92,7 +104,7 @@ export function trainAt(frame: number, stops: readonly RideStop[], timeline: Rid
   return stops[0]?.s ?? 0;
 }
 
-/** 0 until BUILD_SECONDS before stop i's frame, eased to 1 at that frame, 1 from then on. */
+/** 0 until the build starts (buildFrames before stop i's frame), eased to 1 at that frame, 1 from then on. */
 export function buildProgress(
   i: number,
   frame: number,
@@ -100,7 +112,7 @@ export function buildProgress(
   fps: number,
 ): number {
   if (i === 0) return 1;
-  const frames = Math.round(BUILD_SECONDS * fps);
+  const frames = buildFrames(i, timeline, fps);
   const t = (frame - ((timeline.stopFrames[i] ?? 0) - frames)) / frames;
   return easeInOutCubic(Math.max(0, Math.min(1, t)));
 }

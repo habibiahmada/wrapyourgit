@@ -19,7 +19,7 @@ import { STATIONS } from "./stations";
 import { stationContext } from "./stations/kit";
 import { type RideStop, rideStops } from "./stops";
 import {
-  BUILD_SECONDS,
+  buildFrames,
   buildProgress,
   buildRideTimeline,
   idleClock,
@@ -229,8 +229,7 @@ export function rideFrame(
   }
   // Cell cheers while a hero builds and waves while the train moves. Both ease in and out (the
   // cheer over the build, the wave with the speed), so its pose never snaps at a stop.
-  const buildFrames = Math.round(BUILD_SECONDS * fps);
-  const built = clamp01(1 - (arrive - frameIndex) / buildFrames);
+  const built = clamp01(1 - (arrive - frameIndex) / buildFrames(to, timeline, fps));
   const building = Boolean(dest?.plaza) && moving && built > 0;
   const mood: Mood = building ? "cheer" : moving ? "ride" : "idle";
   const amount = building ? Math.sin(built * Math.PI) ** 2 : Math.min(1, speed * 4);

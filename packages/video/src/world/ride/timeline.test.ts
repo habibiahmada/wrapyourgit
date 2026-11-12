@@ -2,7 +2,14 @@ import { expect, test } from "bun:test";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity } from "../city";
 import { rideStops } from "./stops";
-import { buildProgress, buildRideTimeline, idleClock, trainAt } from "./timeline";
+import {
+  BUILD_SECONDS,
+  buildFrames,
+  buildProgress,
+  buildRideTimeline,
+  idleClock,
+  trainAt,
+} from "./timeline";
 
 const stops = rideStops(sampleRecap, buildCity(sampleRecap));
 const video = buildRideTimeline(stops, "video", 30);
@@ -61,10 +68,27 @@ test("a hero has finished building on its stop's frame", () => {
   const f = video.stopFrames[2] ?? 0;
   expect(buildProgress(2, f, video, 30)).toBe(1);
   expect(buildProgress(2, f + 20, video, 30)).toBe(1);
-  expect(buildProgress(2, f - 36, video, 30)).toBe(0);
-  expect(buildProgress(2, f - 18, video, 30)).toBeGreaterThan(0);
-  expect(buildProgress(2, f - 18, video, 30)).toBeLessThan(1);
+  const frames = buildFrames(2, video, 30);
+  expect(buildProgress(2, f - frames, video, 30)).toBe(0);
+  expect(buildProgress(2, f - Math.round(frames / 2), video, 30)).toBeGreaterThan(0);
+  expect(buildProgress(2, f - Math.round(frames / 2), video, 30)).toBeLessThan(1);
   expect(buildProgress(0, 0, video, 30)).toBe(1);
+});
+
+test("a hero takes long enough to watch, and never starts before the train has left", () => {
+  video.stopFrames.forEach((stop, i) => {
+    if (i === 0) return;
+    const frames = buildFrames(i, video, 30);
+    const move = video.moveFrames[i] ?? 0;
+    // Well over a second where the move is long enough, and inside the move always.
+    expect(frames).toBeLessThanOrEqual(Math.round(BUILD_SECONDS * 30));
+    expect(frames).toBeLessThan(move);
+    if (move >= 90) expect(frames).toBeGreaterThanOrEqual(60);
+    // Still nothing built while the train rests at the stop before.
+    const left = (video.stopFrames[i - 1] ?? 0) + video.holdFrames;
+    expect(buildProgress(i, left, video, 30)).toBe(0);
+    expect(buildProgress(i, stop, video, 30)).toBe(1);
+  });
 });
 
 test("the duration ends one frame after the last hold", () => {

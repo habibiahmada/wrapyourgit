@@ -6,6 +6,7 @@ import { buildRide, HERO_TAGS, rideDuration, rideFrame } from "./model";
 import { type Box, type Solid, scenePrims } from "./prims";
 import { stationContext } from "./stations/kit";
 import { RIDE_KINDS } from "./stops";
+import { buildFrames } from "./timeline";
 
 const f = VIDEO_FORMATS["16x9"];
 const printed = (solids: Solid[]) =>
@@ -177,7 +178,8 @@ test("a hero grows out of the ground as the train pulls in: it never starts in m
     const c = stationContext(sampleRecap, m.city, stop, 1, 0, 0).c;
     const rest = m.timeline.stopFrames[i] ?? 0;
     let seen = false;
-    for (let frame = rest - 40; frame <= rest; frame++) {
+    // From just before its build starts to its stop's frame.
+    for (let frame = rest - buildFrames(i, m.timeline, 30) - 2; frame <= rest; frame++) {
       const boxes = rideFrame(m, sampleRecap, frame, f, 30).objects.filter(
         (s): s is Box =>
           s.kind === "box" &&
@@ -191,5 +193,5 @@ test("a hero grows out of the ground as the train pulls in: it never starts in m
       expect({ kind: stop.kind, low: highest < 2.5 }).toEqual({ kind: stop.kind, low: true });
     }
   });
-  // Forty whole frames for each of eleven stations.
+  // Every frame of every station's build, whole.
 }, 30_000);
