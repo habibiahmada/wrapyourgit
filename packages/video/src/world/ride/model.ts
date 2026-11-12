@@ -55,7 +55,6 @@ export const HERO_TAGS = [
   "plane-flying",
   "plane-parked",
   "marquee",
-  "trophy",
 ];
 
 export function buildRide(

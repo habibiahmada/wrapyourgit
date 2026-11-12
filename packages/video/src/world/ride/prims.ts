@@ -60,7 +60,20 @@ export type Box = {
   under?: number;
 };
 export type Ball = { kind: "ball"; c: V3; r: number; color: string; opacity?: number };
-export type Solid = Box | Ball;
+/**
+ * A flat picture standing in the world, always square to the screen, like a cut-out. `c` is
+ * where it stands; `anchor` is the point of the picture (0 to 1 across and down) that stands
+ * there; `wide` and `tall` are its size in world units at that distance.
+ */
+export type Picture = {
+  kind: "picture";
+  c: V3;
+  href: string;
+  wide: number;
+  tall: number;
+  anchor: [number, number];
+};
+export type Solid = Box | Ball | Picture;
 export type Fog = { color: string; near: number; far: number };
 
 type Matrix = [number, number, number, number, number, number];
@@ -200,6 +213,21 @@ export function scenePrims(
         r: (solid.r * lens.focal) / c[2],
         fill: fogged(solid.color, c[2], false),
         opacity: solid.opacity ?? 1,
+        depth: c[2],
+      });
+      continue;
+    }
+
+    if (solid.kind === "picture") {
+      const c = lens.toCamera(solid.c);
+      if (c[2] < BALL_NEAR) continue;
+      const [px, py] = lens.toScreen(c);
+      const w = (solid.wide * lens.focal) / c[2];
+      const h = (solid.tall * lens.focal) / c[2];
+      prims.push({
+        kind: "image",
+        matrix: [w, 0, 0, h, px - solid.anchor[0] * w, py - solid.anchor[1] * h],
+        href: solid.href,
         depth: c[2],
       });
       continue;

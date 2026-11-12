@@ -1,46 +1,27 @@
+import { staticFile } from "remotion";
 import { ARCHETYPE_NONE, archetypeModel } from "../../scenes/archetype.model";
-import { LIT, TONE, toneOf } from "../palette";
+import { TONE } from "../palette";
 import type { Decal, FaceText, Solid } from "../prims";
 import { PLAZA_TOP, part, plaza, type Station, wrap } from "./kit";
 
-const STAGE = { long: 8.8, deep: 3, tall: 0.6 };
-/** The marquee: how wide it is, and how tall its intro, its title and each row of a reason are. */
-const MARQUEE = { wide: 8.6, intro: 0.55, title: 1.5, row: 0.5, pad: 0.34, lift: 1.0 };
-const GOLD = toneOf("#e3b341");
+/** The diorama: the landing page's picture of this archetype, 4 by 3, standing on the plaza. */
+const ROOM = { wide: 7.2, tall: 5.4, anchor: [0.5, 0.62] as [number, number] };
+/** The marquee: how wide it is, how tall its intro, its title and each row of a reason are, and how high it hangs over the room. */
+const MARQUEE = { wide: 8.6, intro: 0.56, title: 1.35, row: 0.62, pad: 0.3, lift: 3.6 };
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
 
 /**
- * The style of the year: a stage with a marquee over it. The marquee carries the model's intro,
- * the archetype's title, and the reasons under it, a long one on two rows; its bulbs chase on a
- * 60-frame loop. A trophy stands in the spotlight. When no style's minimum was met the marquee
- * says so in the model's words and the stage stands empty: no label is forced.
+ * The style of the year: the same diorama the landing page shows for the archetype (Cell in a
+ * hard hat in a workshop, Cell running laps, and so on), standing on the plaza like a cut-out,
+ * under a marquee. The marquee carries the model's intro, the archetype's title, and the reasons
+ * under it, a long one on two rows; its bulbs chase on a 60-frame loop. When no style's minimum
+ * was met the marquee says so in the model's words and no room is shown: no label is forced.
  */
 export const archetype: Station = (ctx) => {
   const { data, c, yaw, build, frame, stop } = ctx;
   const model = archetypeModel(data);
   const out: Solid[] = plaza(ctx);
-  const far = -stop.side * 0.9;
-  const near = stop.side * 0.5;
-  // The stage, with the spotlight's pool on its boards.
-  out.push(
-    part(c, yaw, 0, 0, PLAZA_TOP, [STAGE.long, STAGE.deep, STAGE.tall], TONE.wood, {
-      tag: "stage",
-      under: 1,
-      decals: [
-        { on: "all", rect: [0, 0.8, 1, 1], fill: LIT },
-        ...(model
-          ? [
-              {
-                on: "top",
-                rect: [0.36, 0.14, 0.64, 0.86],
-                fill: "#d8b98a",
-                round: true,
-              } satisfies Decal,
-            ]
-          : []),
-      ],
-    }),
-  );
+  const far = -stop.side * 1.2;
   const landed = easeOut(build / 0.45);
   if (landed <= 0) return out;
   const drop = (1 - landed) * 6;
@@ -79,7 +60,7 @@ export const archetype: Station = (ctx) => {
       }),
     ),
   );
-  const foot = PLAZA_TOP + STAGE.tall;
+  const foot = PLAZA_TOP;
   for (const post of [-3.6, 3.6]) {
     out.push(
       part(c, yaw, post, far, foot + drop, [0.18, 0.18, MARQUEE.lift], TONE.dark, {
@@ -98,23 +79,16 @@ export const archetype: Station = (ctx) => {
   );
   if (!model) return out;
 
-  // The trophy, lowered into the spotlight once the marquee is up.
-  const cup = easeOut((build - 0.45) / 0.45);
-  if (cup <= 0) return out;
-  const z = foot + (1 - cup) * 5;
-  out.push(part(c, yaw, 0, near, z, [0.9, 0.9, 0.22], TONE.dark, { tag: "trophy" }));
-  out.push(part(c, yaw, 0, near, z + 0.22, [0.26, 0.26, 0.4], GOLD, { tag: "trophy", lit: true }));
-  out.push(
-    part(c, yaw, 0, near, z + 0.62, [0.95, 0.62, 0.62], GOLD, {
-      tag: "trophy",
-      lit: true,
-      decals: [{ on: "all", rect: [0, 0.8, 1, 1], fill: "#f5d47a" }],
-    }),
-  );
-  for (const handle of [-0.6, 0.6]) {
-    out.push(
-      part(c, yaw, handle, near, z + 0.86, [0.16, 0.2, 0.26], GOLD, { tag: "trophy", lit: true }),
-    );
-  }
+  // The room is lowered onto the plaza once the marquee is up.
+  const down = easeOut((build - 0.4) / 0.5);
+  if (down <= 0) return out;
+  out.push({
+    kind: "picture",
+    c: [c[0], c[1], PLAZA_TOP + (1 - down) * 6],
+    href: staticFile(`art/skin-${model.id}.png`),
+    wide: ROOM.wide,
+    tall: ROOM.tall,
+    anchor: ROOM.anchor,
+  });
   return out;
 };

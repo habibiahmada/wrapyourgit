@@ -590,14 +590,17 @@ test("archetype: the marquee carries the intro, the title and every reason", () 
   expect(lines).toContain(model.title);
   // A long reason takes two rows.
   for (const reason of model.reasons) expect(lines.join(" ")).toContain(reason);
-  expect(boxes(build("archetype", sampleRecap), "trophy").length).toBeGreaterThan(0);
+  // The same diorama the landing page shows for this archetype.
+  const rooms = build("archetype", sampleRecap).filter((solid) => solid.kind === "picture");
+  expect(rooms).toHaveLength(1);
+  expect(rooms[0]?.kind === "picture" ? rooms[0].href : "").toContain(`art/skin-${model.id}.png`);
 });
 
-test("archetype: with no style to name the marquee says so, and the stage stands empty", () => {
+test("archetype: with no style to name the marquee says so, and no room is shown", () => {
   const all = build("archetype", emptyRecap);
   expect(archetypeModel(emptyRecap)).toBeNull();
   expect(printed(boxes(all, "marquee")).join(" ")).toContain(ARCHETYPE_NONE);
-  expect(boxes(all, "trophy")).toHaveLength(0);
+  expect(all.filter((solid) => solid.kind === "picture")).toHaveLength(0);
 });
 
 test("archetype: the marquee's bulbs chase, and the marquee is lowered in", () => {
