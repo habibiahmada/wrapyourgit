@@ -6,7 +6,8 @@
  *
  * Web art and the letterhead head go to packages/video/public/art as `<id>.webp` (looping
  * animated WebP for the pages) and `<id>.png` (one frame at the motion's peak, for reduced motion,
- * Open Graph, the story world and its letter). The web app gets a copy of the folder before dev
+ * Open Graph, the story world and its letter). An archetype's `skin-*` also gets every frame of
+ * its loop as `<id>/NN.webp`, which the story ride plays on its canvas. The web app gets a copy of the folder before dev
  * and build (scripts/sync-web-public.ts).
  *
  * Renders with the still renderer (scripts/lib/still.ts: one bundle, one browser,
@@ -40,6 +41,8 @@ const wanted = process.argv.slice(2);
 const ALL_IDS: string[] = [...ART_IDS, ...DIORAMA_IDS];
 const ids = wanted.length > 0 ? ALL_IDS.filter((id) => wanted.includes(id)) : ALL_IDS;
 const frames = Array.from({ length: LOOP_FRAMES }, (_, i) => i);
+/** Width of a single frame of an archetype's loop: the ride shows it up to about 800 px wide. */
+const FRAME_WIDTH = 900;
 
 /** The motion an art id shows, to pick its still frame. */
 function motionOf(id: string): ChibiMotion {
@@ -69,6 +72,23 @@ for (const id of ids) {
       .sort((a, b) => a - b)
       .map((frame) => join(work, `${String(frame).padStart(2, "0")}.png`));
     await $`convert -delay 1x${BAKE_FPS} -loop 0 ${pngs} -resize ${width}x -quality 72 -define webp:method=4 ${out}`.quiet();
+  }
+  // The story ride plays an archetype's loop frame by frame on its canvas, which draws single
+  // images: every frame of a `skin-*` also goes to `art/<id>/NN.webp`.
+  if (id.startsWith("skin-")) {
+    const framesDir = join(artDir, id);
+    await rm(framesDir, { recursive: true, force: true });
+    await mkdir(framesDir, { recursive: true });
+    for (const frame of [...rendered.keys()].sort((a, b) => a - b)) {
+      const name = String(frame).padStart(2, "0");
+      const from = join(work, `${name}.png`);
+      const to = join(framesDir, `${name}.webp`);
+      if (Bun.which("ffmpeg")) {
+        await $`ffmpeg -y -loglevel error -i ${from} -vf scale=${FRAME_WIDTH}:-1:flags=lanczos -c:v libwebp -quality 84 -pix_fmt yuva420p ${to}`.quiet();
+      } else {
+        await $`convert ${from} -resize ${FRAME_WIDTH}x -quality 84 -define webp:method=4 ${to}`.quiet();
+      }
+    }
   }
   const still = rendered.get(peakFrame(motionOf(id)));
   if (still) await writeFile(join(artDir, `${id}.png`), still);
