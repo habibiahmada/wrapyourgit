@@ -68,6 +68,7 @@ export function exportRunner(
         const slides = await engine.renderSlides(data, {
           signal,
           letter,
+          format,
           onProgress: (done, total) =>
             mine() &&
             dispatch({ type: "progress", value: total > 0 ? (done / total) * SLIDES_SHARE : 0 }),
@@ -77,9 +78,10 @@ export function exportRunner(
             ? await engine.zipSlides(slides)
             : await engine.pdfSlides(slides, {
                 title: `WrapYourGit ${data.meta.year}: @${data.profile.login}`,
+                format,
               });
         if (mine()) dispatch({ type: "progress", value: 1 });
-        file = exportFileName(job, data);
+        file = exportFileName(job, data, { format });
       }
       if (!mine() || signal.aborted) return;
       engine.download(blob, file);

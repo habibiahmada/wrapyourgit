@@ -64,15 +64,16 @@ export function ExportPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      <fieldset disabled={mp4Off} className="flex flex-col gap-3">
-        <legend className="mb-3 text-base font-semibold">Video format</legend>
+      {/* One size for every file: the video, the slides and the PDF. */}
+      <fieldset disabled={mp4Off && stillsOff} className="flex flex-col gap-3">
+        <legend className="mb-3 text-base font-semibold">Size</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {FORMATS.map((key) => (
             <label
               key={key}
               className={`flex min-h-11 flex-col justify-center gap-0.5 rounded-[var(--radius-control)] border px-3 py-2 ${
                 format === key ? "border-ink bg-ink/[0.07]" : "border-ink/60"
-              } ${mp4Off ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-ink/[0.05]"}`}
+              } ${mp4Off && stillsOff ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-ink/[0.05]"}`}
             >
               <span className="flex items-center gap-2 font-semibold">
                 <input

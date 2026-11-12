@@ -88,3 +88,18 @@ test("file names for each kind, zero-padded index, login sanitised", () => {
   expect(exportFileName("zip", data)).toBe(`${base}-slides.zip`);
   expect(exportFileName("pdf", data)).toBe(`${base}.pdf`);
 });
+
+test("slides follow the chosen shape: one per stop of that shape's ride, on its rest frame", () => {
+  for (const format of ["9x16", "1x1", "16x9"] as const) {
+    const ride = buildRide(sampleRecap, VIDEO_FORMATS[format], "video", 30);
+    const slides = slideFrames(sampleRecap, { format });
+    expect(slides.map((slide) => slide.stopId)).toEqual(ride.stops.map((stop) => stop.id));
+    expect(slides.map((slide) => slide.frame)).toEqual(ride.timeline.stopFrames);
+  }
+});
+
+test("a ZIP or PDF in a chosen shape says so in its name", () => {
+  const base = `wrapyourgit-${sampleRecap.meta.year}-${sampleRecap.profile.login.toLowerCase()}`;
+  expect(exportFileName("zip", sampleRecap, { format: "9x16" })).toBe(`${base}-slides-9x16.zip`);
+  expect(exportFileName("pdf", sampleRecap, { format: "16x9" })).toBe(`${base}-16x9.pdf`);
+});
