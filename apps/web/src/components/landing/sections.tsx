@@ -4,6 +4,7 @@ import { OPENINGS } from "@wyg/video/letter";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { Art } from "@/components/art";
+import { SITE } from "@/site";
 import { FrameReel } from "./frame-reel";
 import { GlowOrb, IsoBackdrop, MiniIsoCluster } from "./iso-backdrop";
 
@@ -265,7 +266,7 @@ export function MetricsSection() {
           ))}
         </ul>
         <a
-          href="https://github.com/habibiahmada/wrapyourgit/blob/main/docs/analytics/metrics.md"
+          href={`${SITE.repository}/blob/main/docs/analytics/metrics.md`}
           className="mt-6 inline-flex min-h-11 items-center font-semibold text-blue hover:underline"
         >
           Read every definition
