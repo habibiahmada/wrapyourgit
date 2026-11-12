@@ -287,11 +287,19 @@ function van(ctx: StationContext, dx: number, dy: number, long: number, paint: s
 /** A street tree: a trunk and two tiers of leaves, like the land's own (land.ts). */
 function tree(ctx: StationContext, dx: number, dy: number, s: number): Solid[] {
   const { c, yaw } = ctx;
+  // From high over the year a trunk is under its crown and cannot be seen: it is left out, which
+  // leaves room in the frame's budget for what can.
+  const trunk: Solid[] =
+    ctx.overview >= NEAR
+      ? []
+      : [
+          part(c, yaw, dx, dy, 0, [0.18 * s, 0.18 * s, 0.7 * s], TONE.soil, {
+            edge: false,
+            tag: "scenery",
+          }),
+        ];
   return [
-    part(c, yaw, dx, dy, 0, [0.18 * s, 0.18 * s, 0.7 * s], TONE.soil, {
-      edge: false,
-      tag: "scenery",
-    }),
+    ...trunk,
     part(c, yaw, dx, dy, 0.7 * s, [1.1 * s, 1.1 * s, 0.8 * s], TONE.leaf, {
       tag: "scenery",
       decals:

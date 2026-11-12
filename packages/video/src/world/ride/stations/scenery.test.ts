@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { sampleRecap } from "../../../fixtures/sample-recap";
 import { buildCity } from "../../city";
 import { HERO_TAGS } from "../model";
+import { TONE } from "../palette";
 import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
 import { STATIONS } from "./index";
@@ -78,13 +79,16 @@ test("scenery prints nothing and is nothing the camera frames", () => {
   }
 });
 
-test("from high over the year a town keeps every box and sheds its fine paint", () => {
+test("from high over the year a town keeps what can be seen and sheds its fine paint", () => {
   const count = (boxes: Box[]) => boxes.reduce((sum, b) => sum + (b.decals?.length ?? 0), 0);
   for (const kind of TOWNS) {
     const near = drawn(kind, 0).town;
     const far = drawn(kind, 1).town;
-    // Nothing appears or goes as the camera climbs: only paint thins out.
-    expect(far).toHaveLength(near.length);
+    // Nothing that can be seen appears or goes as the camera climbs: only paint thins out, and
+    // the trunks, which are under their crowns from up there.
+    const trunk = (b: Box) => b.tone.left === TONE.soil.left && b.size[0] < 0.3;
+    expect(far).toHaveLength(near.filter((b) => !trunk(b)).length);
+    expect(far.some(trunk)).toBe(false);
     expect(count(far)).toBeLessThan(count(near) / 3);
     // Halfway up, some windows are still lit: they go out a few at a time.
     expect(panes(drawn(kind, 0.5).town)).toBeGreaterThan(0);

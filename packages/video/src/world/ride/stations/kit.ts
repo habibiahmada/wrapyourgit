@@ -305,10 +305,17 @@ const LOAD: Flowing = { long: 0.36, pitch: 0.62, travel: 1.9 };
  * as the stop builds and travel once it is whole, on a 60-frame loop that ends where it began.
  * It stands lower than a wagon and in front of nothing that carries a number.
  */
-export function belt(ctx: StationContext, count: number, tone: Tone, top?: string): Solid[] {
+export function belt(
+  ctx: StationContext,
+  count: number,
+  tone: Tone,
+  top?: string,
+  /** The plaza's own length and depth, for a station whose plaza is not the usual size. */
+  plazaSize: [number, number] = [PLAZA.long, PLAZA.deep],
+): Solid[] {
   const { c, yaw, stop, build, frame } = ctx;
-  const long = PLAZA.long - 1.4;
-  const dy = stop.side * (PLAZA.deep / 2 - 0.5);
+  const long = plazaSize[0] - 1.4;
+  const dy = stop.side * (plazaSize[1] / 2 - 0.5);
   const fine = ctx.overview < NEAR_ENOUGH;
   const door: Decal[] = fine
     ? [

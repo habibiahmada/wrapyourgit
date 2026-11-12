@@ -426,6 +426,31 @@ test("belt: loads ride from one shed to the other once the stop is whole, and th
   );
 });
 
+test("every stop with a plaza but the archetype's has something that travels, and an empty year has none", () => {
+  for (const kind of ["rhythm", "languages", "projects", "community", "versus"] as const) {
+    const loads = (frame: number) =>
+      boxes(build(kind, sampleRecap, 1, frame), "belt-load").map((b) => b.at[0] + b.size[0] / 2);
+    expect({ kind, loads: loads(0).length > 3 }).toEqual({ kind, loads: true });
+    // They go somewhere, and the loop closes.
+    expect({ kind, moved: (loads(6)[0] ?? 0) > (loads(0)[0] ?? 0) }).toEqual({ kind, moved: true });
+    const sorted = (frame: number) => loads(frame).sort((x, y) => x - y);
+    sorted(60).forEach((x, i) => {
+      expect(x).toBeCloseTo(sorted(0)[i] ?? 0);
+    });
+    // The conveyor lies along the plaza's edge by the rail, inside the plaza.
+    const all = build(kind, sampleRecap);
+    const slab = boxes(all, "plaza")[0] as Box;
+    const strip = boxes(all, "belt")[0] as Box;
+    expect(strip.at[0]).toBeGreaterThanOrEqual(slab.at[0]);
+    expect(strip.at[0] + strip.size[0]).toBeLessThanOrEqual(slab.at[0] + slab.size[0]);
+    expect(strip.at[1]).toBeGreaterThanOrEqual(slab.at[1]);
+    expect(strip.at[1] + strip.size[1]).toBeLessThanOrEqual(slab.at[1] + slab.size[1]);
+    // A year with nothing in it has nothing to carry: no conveyor at all.
+    expect({ kind, idle: boxes(build(kind, emptyRecap), "belt") }).toEqual({ kind, idle: [] });
+  }
+  expect(boxes(build("archetype", sampleRecap), "belt")).toHaveLength(0);
+});
+
 const withPrivate = (privateCount: RecapData["contributions"]["privateCount"]): RecapData => ({
   ...sampleRecap,
   contributions: { ...sampleRecap.contributions, privateCount },
