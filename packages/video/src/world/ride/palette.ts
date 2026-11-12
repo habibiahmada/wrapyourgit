@@ -24,8 +24,17 @@ export const toneOf = (hex: string): Tone => ({
 });
 
 export const SKY = "#0b1220";
-export const HAZE = "#16241d";
-export const GROUND = "#111a16";
+/** What the far land fades into: the night sky's own blue, so distance reads as sky. */
+export const HAZE = "#141e33";
+/**
+ * What lies under the horizon where there is no land: the year's ground is an island (backdrop.ts)
+ * and this is the night under and round it, a little darker than the sky above.
+ */
+export const GROUND = "#070c16";
+/** The land's two tones: its plots are laid in a checker, so the ground reads as ground. */
+export const LAND = ["#17251e", "#1c2d24"] as const;
+/** The island's side, and the lit line along its top edge. */
+export const CLIFF = "#0c1510";
 export const LIT = "#39d353";
 export const INK = "#0d1117";
 export const GREENS = ["#0e4429", "#006d32", "#26a641", "#39d353"] as const;

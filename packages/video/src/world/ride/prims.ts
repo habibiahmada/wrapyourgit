@@ -37,7 +37,7 @@ export type Box = {
   /** Turn about the vertical through `pivot` (the box's centre when left out), radians. */
   yaw?: number;
   pivot?: [number, number];
-  /** A hairline edge in a darker shade of the face. Default true. */
+  /** A hairline edge in a lighter shade of the face. Default true. */
   edge?: boolean;
   /** Skip the fog: lit things stay bright far away. */
   lit?: boolean;
@@ -123,6 +123,11 @@ export type Prim =
 
 /** Further than anything in the scene: what `under` adds to a slab's place in the painting order. */
 const UNDER = 10_000;
+/**
+ * How far toward white a face's hairline is from the face: a light line round every face, as on
+ * the landing's isometric kit (isokit.tsx Tone.edge), so a box reads as a drawn block.
+ */
+const EDGE_LIGHT = 0.2;
 /** A puff nearer than this would cover the view. */
 const BALL_NEAR = 3;
 const CAP_HEIGHT = 0.7;
@@ -305,7 +310,7 @@ export function scenePrims(
           ? fogged(solid.tone.top, seen, solid.lit)
           : solid.edge === false
             ? colour
-            : mixHex(colour, "#000000", 0.35),
+            : mixHex(colour, "#ffffff", EDGE_LIGHT),
         depth,
       });
       /** A point on the face from its own units. */
