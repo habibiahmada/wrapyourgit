@@ -404,16 +404,21 @@ test("private: the count rises as the vault lands and never reads zero", () => {
   expect(boxes(build("private", sampleRecap, 0), "vault")).toHaveLength(0);
 });
 
-test("busiest: the lighthouse's base carries the count, the sign the day", () => {
+test("busiest: the base carries the count, the sign the day, the calendar its month and number", () => {
   const model = busiestModel(sampleRecap);
   if (!model) throw new Error("the sample has a busiest day");
   const all = build("busiest", sampleRecap);
-  const base = printed(boxes(all, "lighthouse-base"));
+  const base = printed(boxes(all, "record-base"));
   expect(base).toContain(formatCount(model.count));
   expect(base).toContain("contributions");
   const text = printed(all);
   expect(text).toContain(model.headline);
   expect(text).toContain(`${model.weekday}, ${model.date}`);
+  // The page says the same day as the sign: its month in capitals, its number large.
+  const [month = "", day = ""] = model.date.split(" ");
+  const page = printed(boxes(all, "calendar"));
+  expect(page).toContain(month.toUpperCase());
+  expect(page).toContain(day);
 });
 
 test("busiest: one contribution is said in the singular", () => {
@@ -424,25 +429,32 @@ test("busiest: one contribution is said in the singular", () => {
       busiestDay: { date: "2026-03-04", count: 1 },
     },
   };
-  expect(printed(boxes(build("busiest", one), "lighthouse-base"))).toContain("contribution");
+  expect(printed(boxes(build("busiest", one), "record-base"))).toContain("contribution");
 });
 
 test("busiest: the tower goes up on the way in, the count rises with it and never reads zero", () => {
   const model = busiestModel(sampleRecap);
-  expect(boxes(build("busiest", sampleRecap, 0), "lighthouse")).toHaveLength(0);
-  const half = boxes(build("busiest", sampleRecap, 0.5), "lighthouse").length;
-  expect(half).toBeLessThan(boxes(build("busiest", sampleRecap, 1), "lighthouse").length);
+  expect(boxes(build("busiest", sampleRecap, 0), "record-tower")).toHaveLength(0);
+  const half = boxes(build("busiest", sampleRecap, 0.5), "record-tower").length;
+  expect(half).toBeLessThan(boxes(build("busiest", sampleRecap, 1), "record-tower").length);
   for (const progress of [0.1, 0.5, 0.9]) {
-    const base = printed(boxes(build("busiest", sampleRecap, progress), "lighthouse-base"));
+    const base = printed(boxes(build("busiest", sampleRecap, progress), "record-base"));
     expect(base).not.toContain("0");
     expect(base).not.toContain(formatCount(model?.count ?? 0));
   }
 });
 
-test("busiest: the lamp's beam turns, and is back where it was after 60 frames", () => {
-  const beam = (frame: number) => boxes(build("busiest", sampleRecap, 1, frame), "beam")[0]?.yaw;
-  expect(beam(10)).not.toBe(beam(25));
-  expect(beam(70)).toBeCloseTo(beam(10) ?? 0);
+test("busiest: the plate on the tower turns about the tower, and is back after 60 frames", () => {
+  const plate = (frame: number) => boxes(build("busiest", sampleRecap, 1, frame), "medal")[0];
+  expect(plate(10)?.yaw).not.toBe(plate(25)?.yaw);
+  expect(plate(70)?.yaw).toBeCloseTo(plate(10)?.yaw ?? 0);
+  // It stands over the tower's top tier: same middle on the ground, and above it.
+  const tiers = boxes(build("busiest", sampleRecap, 1, 10), "record-tower");
+  const highest = tiers.reduce((a, b) => (b.size[0] > 0.5 && b.at[2] > a.at[2] ? b : a));
+  const medal = plate(10);
+  if (!medal) throw new Error("no plate");
+  expect(medal.at[2]).toBeGreaterThan(highest.at[2] + highest.size[2]);
+  expect(printed([medal])).toContain("#1");
 });
 
 test("rhythm: seven wagons, Sunday to Saturday, each with its day and its count", () => {
