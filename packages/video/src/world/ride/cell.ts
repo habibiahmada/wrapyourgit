@@ -87,13 +87,14 @@ export function cell(c: V3, yaw: number, at: number, mood: Mood, amount = 1): So
       }),
     );
   }
-  // The crest: three cells in a row across the head, with a gap between them so each reads as
-  // its own cell from any side. The middle one leads the bounce and the outer two follow
-  // together, so the crest stays level left to right.
-  [-0.21, 0, 0.21].forEach((dy, i) => {
-    const bounce = Math.max(0, Math.sin((frame / 30) * TAU - Math.abs(i - 1) * 0.8)) * 0.06 * k;
+  // The crest, as on the landing page's Cell: three cells in a row across the back of the head,
+  // each a step taller and a step brighter than the one before, so it reads as a rising run of
+  // contribution cells from any side. They bounce together, so the steps keep their order.
+  const bounce = Math.max(0, Math.sin((frame / 30) * TAU)) * 0.05 * k;
+  [-0.14, 0, 0.14].forEach((dy, i) => {
+    const tall = (0.12 + i * 0.045) * k;
     out.push(
-      p(0, dy * k, leg + 0.62 * k + bounce, [0.13 * k, 0.13 * k, 0.13 * k], heat(i + 1), {
+      p(-0.07 * k, dy * k, leg + 0.62 * k + bounce, [0.12 * k, 0.12 * k, tall], heat(i + 1), {
         tag: "cell-crest",
       }),
     );
