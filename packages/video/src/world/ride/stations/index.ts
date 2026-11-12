@@ -1,4 +1,5 @@
 import type { StopKind } from "../../stops";
+import { archetype } from "./archetype";
 import { busiest } from "./busiest";
 import { city } from "./city";
 import { closing } from "./closing";
@@ -24,5 +25,6 @@ export const STATIONS: Partial<Record<StopKind, Station>> = {
   projects,
   community,
   engineering,
+  archetype,
   closing,
 };

@@ -54,6 +54,8 @@ export const HERO_TAGS = [
   "departures",
   "plane-flying",
   "plane-parked",
+  "marquee",
+  "trophy",
 ];
 
 export function buildRide(
@@ -73,15 +75,14 @@ export function buildRide(
     if (!station) return stop;
     const ctx = stationContext(data, city, stop, 1, 0, 0, layout);
     let heroTop = 0;
-    let heroFoot = Number.POSITIVE_INFINITY;
-    // The corner that reaches furthest in each of sixteen directions from the plaza's centre.
-    const edge: ([number, number, number] | null)[] = Array.from({ length: 16 }, () => null);
-    const reach: number[] = Array.from({ length: 16 }, () => -1);
+    // Every corner of every part of the hero: all of them have to be in the picture. (Only the
+    // outermost corners used to be kept, and one that was not outermost on the ground could
+    // still be the highest on screen.)
+    const heroEdge: [number, number, number][] = [];
     for (const solid of station(ctx)) {
       // The plaza itself may run out of frame; what must stay in is what carries the chapter.
       if (solid.kind !== "box" || !HERO_TAGS.includes(solid.tag ?? "")) continue;
       heroTop = Math.max(heroTop, solid.at[2] + solid.size[2]);
-      heroFoot = Math.min(heroFoot, solid.at[2]);
       const [px, py] = solid.pivot ?? [ctx.c[0], ctx.c[1]];
       const cos = Math.cos(solid.yaw ?? 0);
       const sin = Math.sin(solid.yaw ?? 0);
@@ -89,24 +90,10 @@ export function buildRide(
         for (const y of [solid.at[1], solid.at[1] + solid.size[1]]) {
           const wx = px + (x - px) * cos - (y - py) * sin;
           const wy = py + (x - px) * sin + (y - py) * cos;
-          for (let k = 0; k < 16; k++) {
-            const a = (k / 16) * Math.PI * 2;
-            const along = (wx - ctx.c[0]) * Math.cos(a) + (wy - ctx.c[1]) * Math.sin(a);
-            if (along > (reach[k] ?? -1)) {
-              reach[k] = along;
-              edge[k] = [wx, wy, solid.at[2] + solid.size[2]];
-            }
-          }
+          heroEdge.push([wx, wy, solid.at[2]], [wx, wy, solid.at[2] + solid.size[2]]);
         }
       }
     }
-    const tops = edge.filter((point): point is [number, number, number] => point !== null);
-    // Each outermost corner at the hero's top and again at its foot: what stands nearest the
-    // camera reaches lowest in the picture, and must stay in it too.
-    const heroEdge = [
-      ...tops,
-      ...tops.map((p): [number, number, number] => [p[0], p[1], heroFoot]),
-    ];
     return { ...stop, heroTop, heroEdge };
   });
   return { city, stops, timeline: buildRideTimeline(stops, mode, fps), gates: gates(data, city) };

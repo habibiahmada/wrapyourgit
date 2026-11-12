@@ -3,6 +3,7 @@ import { layoutForSize, type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { formatCount } from "../../theme";
+import { archetypeModel } from "../scenes/archetype.model";
 import { busiestModel } from "../scenes/busiest.model";
 import { firstDayModel } from "../scenes/firstDay.model";
 import { gardenModel } from "../scenes/garden.model";
@@ -50,6 +51,7 @@ function restFrames(data: RecapData) {
           "busiest",
           "community",
           "engineering",
+          "archetype",
         ].includes(stop.kind)
       )
         return [];
@@ -106,6 +108,15 @@ function check(data: RecapData) {
         where,
         value: true,
       });
+    } else if (rest.kind === "archetype") {
+      const style = archetypeModel(data);
+      if (style)
+        expect({ where, value: biggest(rest.texts, style.title) / rest.short >= HEADLINE }).toEqual(
+          {
+            where,
+            value: true,
+          },
+        );
     } else if (rest.kind === "private") {
       const vault = privateModel(data);
       if (vault.kind === "count") {

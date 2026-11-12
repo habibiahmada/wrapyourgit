@@ -5,6 +5,7 @@ import { busyRecap, emptyRecap } from "../../../fixtures/edge-recaps";
 import { sampleRecap } from "../../../fixtures/sample-recap";
 import { formatCount } from "../../../theme";
 import { buildCity } from "../../city";
+import { ARCHETYPE_NONE, archetypeModel } from "../../scenes/archetype.model";
 import { busiestModel } from "../../scenes/busiest.model";
 import { cityModel } from "../../scenes/city.model";
 import { closingModel } from "../../scenes/closing.model";
@@ -46,6 +47,7 @@ const printed = (solids: Solid[]) =>
 
 test("the stations built so far exist", () => {
   expect(Object.keys(STATIONS).sort()).toEqual([
+    "archetype",
     "busiest",
     "city",
     "closing",
@@ -322,6 +324,7 @@ test("a station at rest is the same 60 frames later, and still moving in between
     "projects",
     "community",
     "engineering",
+    "archetype",
     "closing",
   ] as const) {
     expect(build(kind, sampleRecap, 1, 10)).toEqual(build(kind, sampleRecap, 1, 70));
@@ -577,4 +580,32 @@ test("engineering: the planes in flight drift, and the figures rise as the board
   expect(boxes(build("engineering", sampleRecap, 0), "departures")).toHaveLength(0);
   expect(printed(build("engineering", sampleRecap, 0.5))).not.toContain(sent);
   expect(printed(build("engineering", sampleRecap, 0.5))).not.toContain("0");
+});
+
+test("archetype: the marquee carries the intro, the title and every reason", () => {
+  const model = archetypeModel(sampleRecap);
+  if (!model) throw new Error("the sample has an archetype");
+  const lines = printed(boxes(build("archetype", sampleRecap), "marquee"));
+  expect(lines).toContain(model.intro);
+  expect(lines).toContain(model.title);
+  // A long reason takes two rows.
+  for (const reason of model.reasons) expect(lines.join(" ")).toContain(reason);
+  expect(boxes(build("archetype", sampleRecap), "trophy").length).toBeGreaterThan(0);
+});
+
+test("archetype: with no style to name the marquee says so, and the stage stands empty", () => {
+  const all = build("archetype", emptyRecap);
+  expect(archetypeModel(emptyRecap)).toBeNull();
+  expect(printed(boxes(all, "marquee")).join(" ")).toContain(ARCHETYPE_NONE);
+  expect(boxes(all, "trophy")).toHaveLength(0);
+});
+
+test("archetype: the marquee's bulbs chase, and the marquee is lowered in", () => {
+  const bulbs = (frame: number) =>
+    (boxes(build("archetype", sampleRecap, 1, frame), "marquee")[0]?.decals ?? []).map(
+      (d) => d.fill,
+    );
+  expect(bulbs(10)).not.toEqual(bulbs(25));
+  expect(bulbs(70)).toEqual(bulbs(10));
+  expect(boxes(build("archetype", sampleRecap, 0), "marquee")).toHaveLength(0);
 });
