@@ -1,16 +1,18 @@
 import { countText, skyModel } from "../../scenes/sky.model";
 import { TONE, toneOf } from "../palette";
-import type { Solid } from "../prims";
+import type { Decal, Solid } from "../prims";
 import { PLAZA } from "../track";
-import { nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
+import { NEAR_ENOUGH, nameBoard, PLAZA_TOP, part, plaza, type Station } from "./kit";
 
 /** Long enough for "about 12.9k" at a size that reads. */
 const HALL = { long: 6.4, deep: 2.8, tall: 2.2 };
 /** The dome's steps from the hall up: how wide each is and how tall. */
 const DOME = [
-  { wide: 2.6, tall: 0.55 },
-  { wide: 2.0, tall: 0.5 },
-  { wide: 1.3, tall: 0.4 },
+  { wide: 2.7, tall: 0.42 },
+  { wide: 2.45, tall: 0.4 },
+  { wide: 2.05, tall: 0.36 },
+  { wide: 1.5, tall: 0.3 },
+  { wide: 0.85, tall: 0.22 },
 ];
 /** More small stars than this and the sky above the dome stops reading as stars. */
 const SKY = 28;
@@ -27,6 +29,7 @@ const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
  */
 export const community: Station = (ctx) => {
   const { data, c, yaw, build, frame } = ctx;
+  const fine = ctx.overview < NEAR_ENOUGH;
   const model = skyModel(data);
   const out: Solid[] = plaza(ctx);
   out.push(
@@ -58,6 +61,19 @@ export const community: Station = (ctx) => {
       decals: [
         { on: "all", rect: [0, 0, 1, 0.07], fill: "#2a3038" },
         { on: "all", rect: [0, 0.92, 1, 1], fill: "#ffd866" },
+        // On its two ends, where no figure is: a door under a round window, and a lit pane each side.
+        ...(fine
+          ? ([
+              { on: "front", rect: [0.38, 0.07, 0.62, 0.52], fill: "#0d1117" },
+              { on: "front", rect: [0.4, 0.6, 0.6, 0.84], fill: "#79c0ff", round: true },
+              { on: "front", rect: [0.1, 0.3, 0.26, 0.62], fill: "#ffd866" },
+              { on: "front", rect: [0.74, 0.3, 0.9, 0.62], fill: "#ffd866" },
+              { on: "back", rect: [0.38, 0.07, 0.62, 0.52], fill: "#0d1117" },
+              { on: "back", rect: [0.4, 0.6, 0.6, 0.84], fill: "#79c0ff", round: true },
+              { on: "back", rect: [0.1, 0.3, 0.26, 0.62], fill: "#ffd866" },
+              { on: "back", rect: [0.74, 0.3, 0.9, 0.62], fill: "#ffd866" },
+            ] satisfies Decal[])
+          : []),
       ],
       texts:
         model.stars.value > 0
@@ -78,12 +94,43 @@ export const community: Station = (ctx) => {
       part(c, yaw, 0, 0, z + drop, [step.wide, step.wide, step.tall], SHELL, {
         tag: "dome",
         lit: true,
+        // The slit the telescope looks through runs up every step, and over the top.
+        decals: fine
+          ? [
+              { on: "sides", rect: [0.42, 0, 0.58, 1], fill: "#0d1117" },
+              { on: "top", rect: [0, 0.42, 1, 0.58], fill: "#0d1117" },
+            ]
+          : [],
       }),
     );
     z += step.tall;
   }
-  // The hatch the telescope looks through.
-  out.push(part(c, yaw, 0, 0, z + drop, [0.36, 1.5, 0.12], TONE.ink, { tag: "dome", edge: false }));
+  // A telescope on its stand beside the hall, turned to the sky over the dome.
+  out.push(
+    part(c, yaw, HALL.long / 2 + 1.0, 0, PLAZA_TOP + drop, [0.12, 0.12, 0.9], TONE.mid, {
+      tag: "telescope",
+      edge: false,
+    }),
+    part(
+      c,
+      yaw + 0.5,
+      HALL.long / 2 + 1.0,
+      0,
+      PLAZA_TOP + 0.9 + drop,
+      [1.1, 0.3, 0.3],
+      toneOf("#e6edf3"),
+      {
+        tag: "telescope",
+        lit: true,
+        decals: fine
+          ? [
+              { on: "front", rect: [0.15, 0.15, 0.85, 0.85], fill: "#79c0ff", round: true },
+              { on: "sides", rect: [0.7, 0, 0.78, 1], fill: "#ffd866" },
+            ]
+          : [],
+      },
+    ),
+  );
 
   // The small stars: out of the dome over the second half of the build.
   const up = easeOut((build - 0.5) / 0.5);
@@ -103,7 +150,15 @@ export const community: Station = (ctx) => {
         z + (0.5 + ((i * 7) % count) * (1.8 / count) + drift) * up,
         [0.22, 0.22, 0.22],
         i % 4 === 0 ? toneOf("#ffffff") : GOLD,
-        { tag: "star", lit: true, edge: false },
+        {
+          tag: "star",
+          lit: true,
+          edge: false,
+          // A bright heart on every face: a star that glints, not a cube.
+          decals: fine
+            ? [{ on: "all", rect: [0.28, 0.28, 0.72, 0.72], fill: "#ffffff", round: true }]
+            : [],
+        },
       ),
     );
   }

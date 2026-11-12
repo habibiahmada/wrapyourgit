@@ -417,6 +417,29 @@ test("private: the vault carries the count, the sign the model's phrase, and not
   }
 });
 
+test("private: the vault has its fittings, a cabinet of deposit boxes, a keypad and two lamps lit in turn", () => {
+  const all = build("private", sampleRecap, 1, 10);
+  const vault = boxes(all, "vault")[0] as Box;
+  // Rivets, hinges and the bolts round the door: far more paint than the bare block had.
+  expect((vault.decals ?? []).length).toBeGreaterThan(30);
+  expect(boxes(all, "lockers")).toHaveLength(1);
+  expect(boxes(all, "keypad")).toHaveLength(2);
+  // None of it prints a word or a number: the count is on the vault alone.
+  for (const tag of ["lockers", "keypad", "warning-lamp", "base"]) {
+    expect(printed(boxes(all, tag))).toEqual([]);
+  }
+  const lit = (frame: number) =>
+    boxes(build("private", sampleRecap, 1, frame), "warning-lamp").map((b) => b.tone.left);
+  expect(lit(10)).not.toEqual(lit(40));
+  expect(lit(70)).toEqual(lit(10));
+  // An open, empty vault has no bolts shot: fewer fittings than a shut one.
+  const empty = boxes(
+    build("private", withPrivate({ status: "ok", value: 0, estimated: false })),
+    "vault",
+  )[0];
+  expect((empty?.decals ?? []).length).toBeLessThan((vault.decals ?? []).length);
+});
+
 test("private: an estimated count says about", () => {
   const all = build("private", withPrivate({ status: "ok", value: 1500, estimated: true }));
   expect(printed(boxes(all, "vault"))).toContain("about 1,500");
@@ -564,6 +587,19 @@ test("community: the observatory carries the stars, the sign says what they are 
   const text = printed(all).join(" ");
   expect(text).toContain(model.stars.label);
   expect(text).toContain(`${countText(model.forks.value, false)} ${model.forks.label}`);
+});
+
+test("community: the dome is stepped and slit, and a telescope stands beside the hall", () => {
+  const all = build("community", sampleRecap);
+  const dome = boxes(all, "dome");
+  expect(dome).toHaveLength(5);
+  // Each step is narrower than the one under it, and carries the slit.
+  dome.forEach((step, i) => {
+    if (i > 0) expect(step.size[0]).toBeLessThan(dome[i - 1]?.size[0] ?? 0);
+    expect((step.decals ?? []).some((d) => d.fill === "#0d1117")).toBe(true);
+  });
+  expect(boxes(all, "telescope")).toHaveLength(2);
+  expect(printed(boxes(all, "telescope"))).toEqual([]);
 });
 
 test("community: one small star per star earned, up to a sky that still reads", () => {
