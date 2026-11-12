@@ -5,9 +5,12 @@ import { languageIcon } from "../../languages";
 import { fontFamily } from "../../theme";
 import { Chrome } from "../Chrome";
 import { reachedStop } from "../fade";
+import { StoryMusic } from "../StoryMusic";
 import { gardenModel } from "../scenes/garden.model";
 import { Letter } from "../scenes/Letter";
+import { videoSounds } from "../sound";
 import type { WorldMode } from "../timeline";
+import { WorldSfx } from "../WorldSfx";
 import { backdrop } from "./backdrop";
 import { buildRide, letterBeat, rideFrame } from "./model";
 import { SKY } from "./palette";
@@ -18,10 +21,15 @@ import { archetypeFigures } from "./stations/archetype";
 export type RideStoryProps = {
   data: RecapData;
   mode: WorldMode;
-  /** Accepted for parity with WorldStory. The ride has no sound until phase 3 of the story ride. */
+  /** Mix the soundtrack in (video mode only; the web player plays music itself). */
   music?: boolean;
   /** Include the letter's pages. Defaults to true; the public page leaves them out. */
   letter?: boolean;
+  /**
+   * Frames the idle motion runs ahead of the player's frame (see `rideFrame`). The web player sets
+   * it while a move carries on from part way through a rest loop; exports never do.
+   */
+  idle?: number;
 };
 
 /**
@@ -31,7 +39,7 @@ export type RideStoryProps = {
  * the scene: every number is printed on a solid inside it. The one exception is the letter,
  * whose sheet of paper comes up over the scene at its stops (model.ts `letterBeat`).
  */
-export function RideStory({ data, mode, letter = true }: RideStoryProps) {
+export function RideStory({ data, mode, music = true, letter = true, idle = 0 }: RideStoryProps) {
   const { width, height, fps } = useVideoConfig();
   const frame = useCurrentFrame();
   const size = useMemo(() => ({ width, height }), [width, height]);
@@ -39,7 +47,7 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
     () => buildRide(data, size, mode, fps, { letter }),
     [data, size, mode, fps, letter],
   );
-  const { cam, roll, fog, ground, objects } = rideFrame(model, data, frame, size, fps);
+  const { cam, roll, fog, ground, objects } = rideFrame(model, data, frame, size, fps, idle);
   // Every picture the scene draws: the languages' logos and the archetype's figure.
   const logos = useMemo(() => {
     return [
@@ -51,7 +59,7 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
   }, [data]);
   const { sheet } = letterBeat(model, frame);
   const layers = [
-    backdrop(cam, size, model.city, frame),
+    backdrop(cam, size, model.city, frame + idle),
     scenePrims(ground, cam, size, fog),
     scenePrims(objects, cam, size, fog),
   ];
@@ -88,6 +96,17 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
         frame={size}
         darkness={{ top: 1, bottom: 1 }}
       />
+      {/* A video carries its own sound; the web player plays the same sounds itself, on the tap. */}
+      {mode === "video" && (
+        <>
+          {videoSounds(model).map(({ frame: at, sound, frames }, k) => (
+            // Index keys: the list is fixed for a given ride, and one frame can hold two sounds.
+            // biome-ignore lint/suspicious/noArrayIndexKey: see above
+            <WorldSfx key={`${k}-${sound}`} at={at} sound={sound} frames={frames} />
+          ))}
+          {music && <StoryMusic end={model.timeline.durationInFrames} fps={fps} />}
+        </>
+      )}
     </AbsoluteFill>
   );
 }

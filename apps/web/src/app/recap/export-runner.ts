@@ -1,5 +1,5 @@
 import type { RecapData } from "@wyg/schema";
-import { type ExportFormat, exportFileName } from "@wyg/video/world";
+import { type ExportFormat, exportFileName } from "@wyg/video/export";
 import type { ExportAction, ExportJob } from "./export-state";
 import type { LetterOption } from "./exports";
 

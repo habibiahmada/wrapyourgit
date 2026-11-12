@@ -20,7 +20,7 @@ scripts/          One-off spikes and maintenance scripts (bun); lib/still.ts ren
 docs/             Product, architecture (ADRs), metric definitions, video system, dev setup.
 ```
 
-Data flow: `github` (fetch) → `analytics` (compute) → `RecapData` (validated by `schema`) → `video` (the story world plays on the web, and its MP4, slides, ZIP and PDF render in the viewer's browser, ADR-0016; no server renders the story).
+Data flow: `github` (fetch) → `analytics` (compute) → `RecapData` (validated by `schema`) → `video` (the story ride plays on the web, and its MP4, slides, ZIP and PDF render in the viewer's browser, ADR-0016 and ADR-0023; no server renders the story).
 
 ## Commands (run from repo root, package manager is **bun**)
 

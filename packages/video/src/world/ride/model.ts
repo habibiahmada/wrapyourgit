@@ -280,6 +280,11 @@ export function rideFrame(
   frameIndex: number,
   format: Frame,
   fps: number,
+  /**
+   * Frames the idle motion runs ahead of `frameIndex`: the web player carries the rest loop's
+   * phase into a move with it, so a tap part way through the loop sets off without a jump.
+   */
+  idle = 0,
 ): { cam: RideCamera; roll: number; fog: Fog; ground: Solid[]; objects: Solid[] } {
   const { city, stops, timeline } = model;
   // Round the letter the train and the riding camera keep their own time (rideClock).
@@ -332,7 +337,7 @@ export function rideFrame(
   const building = Boolean(dest?.plaza) && moving && built > 0;
   const mood: Mood = building ? "cheer" : moving ? "ride" : "idle";
   const amount = building ? Math.sin(built * Math.PI) ** 2 : Math.min(1, speed * 4);
-  const clock = idleClock(tick, timeline);
+  const clock = idleClock(tick, timeline) + idle;
   const yaw =
     heading(trainS) + (turnTo ? stationShot(turnTo).theta * turnTo.side * 0.85 * turn : 0);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
-import type { ExportFormat } from "@wyg/video/world";
+import type { ExportFormat } from "@wyg/video/export";
 import { useEffect, useId, useReducer, useRef, useState } from "react";
 import type { ShareCard } from "./end-screen";
 import { type ExportRunner, exportRunner } from "./export-runner";

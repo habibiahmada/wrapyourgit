@@ -6,13 +6,13 @@ import {
   renderStillOnWeb,
 } from "@remotion/web-renderer";
 import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
-import { WorldStory } from "@wyg/video";
+import { RideStory } from "@wyg/video";
 import {
   type ExportFormat,
   exportFileName,
   slideFrames,
   worldExportComposition,
-} from "@wyg/video/world";
+} from "@wyg/video/export";
 import { zipSync } from "fflate";
 import { PDFDocument } from "pdf-lib";
 
@@ -20,7 +20,7 @@ export type Slide = { name: string; blob: Blob };
 export type ExportSupport = { mp4: boolean; stills: boolean; reason: string | null };
 
 type WorldComposition = ReturnType<typeof worldExportComposition> & {
-  component: typeof WorldStory;
+  component: typeof RideStory;
 };
 type WorldProps = WorldComposition["defaultProps"];
 
@@ -75,7 +75,7 @@ const composition = (
   { letter }: LetterOption,
 ): WorldComposition => ({
   ...worldExportComposition(data, format, { letter }),
-  component: WorldStory,
+  component: RideStory,
 });
 
 const engineWith = (overrides: Partial<ExportEngine>): ExportEngine => ({

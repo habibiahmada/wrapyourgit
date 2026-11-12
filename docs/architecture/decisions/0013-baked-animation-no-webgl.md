@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Note (phase 4): the old story's `Sprite` and `SpriteAccent` were removed with it ([0016](0016-exports-in-the-browser.md)), and the sprite sheets and their bake were removed after it (#63). The bake, the pages' art and `head-cell` still work as described; decision 4 below is history.
+- Note (story ride): the story no longer draws Cell from baked pictures but builds it from boxes in the scene; the archetype station still shows a baked city block ([0023](0023-the-story-is-a-train-ride.md)).
 - Date: 2026-11-05
 - Supersedes: points 4 and 5 of [0010](0010-live-3d-cast.md) (live rendering on the web Player and on Lambda)
 

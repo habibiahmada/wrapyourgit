@@ -1,6 +1,6 @@
 # Story as a ride: design
 
-Date: 2026-11-11, updated the same day with the answers to the builder check. Status: draft, waiting for the maintainer's approval.
+Date: 2026-11-11, updated the same day with the answers to the builder check. Status: approved and built in three phases (#86, #88, #92); recorded in [ADR-0023](../../architecture/decisions/0023-the-story-is-a-train-ride.md). Later changes on the maintainer's word are noted where they apply (see "Camera").
 
 Supersedes the picture and camera of [the story world](2026-11-06-story-world-design.md) (its player, exports, sound model, stops and privacy rules stay). Follows the landing's isometric style ([ADR-0021](../../architecture/decisions/0021-isometric-cell-and-dioramas.md)).
 

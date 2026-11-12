@@ -2,6 +2,13 @@ import type { Timeline } from "@wyg/video/world";
 
 type Direction = 1 | -1;
 
+/**
+ * The ride's timeline also says how long each stop holds before the train leaves (one rest loop
+ * on the web) and how long that loop is. Today's story has neither: it moves from the stop's own
+ * frame and rests on it.
+ */
+type StoryTimeline = Timeline & { holdFrames?: number; restFrames?: number };
+
 export type ControllerState = {
   stop: number;
   moving: null | {
@@ -10,6 +17,8 @@ export type ControllerState = {
     startFrame: number;
     endFrame: number;
     direction: Direction;
+    /** Where the rest loop was when the move began: idle motion carries on from there. */
+    phase: number;
   };
   queued: Direction | null;
 };
@@ -21,20 +30,59 @@ export function initialState(): ControllerState {
 export function request(
   state: ControllerState,
   direction: Direction,
-  timeline: Timeline,
+  timeline: StoryTimeline,
+  phase = 0,
 ): { state: ControllerState; start: boolean } {
   // While a move plays, only the newest intent is kept: rapid taps must not stack up moves.
   if (state.moving) return { state: { ...state, queued: direction }, start: false };
 
   const to = state.stop + direction;
-  const startFrame = timeline.stopFrames[state.stop];
-  const endFrame = timeline.stopFrames[to];
-  if (startFrame === undefined || endFrame === undefined) return { state, start: false };
+  const from = timeline.stopFrames[state.stop];
+  const target = timeline.stopFrames[to];
+  if (from === undefined || target === undefined) return { state, start: false };
+  // The move between two stops starts after the earlier one's hold. Forward it is played from
+  // there; backward it is played to there, and that frame is the earlier stop's rest frame again.
+  const hold = timeline.holdFrames ?? 0;
+  const startFrame = direction === 1 ? from + hold : from;
+  const endFrame = direction === 1 ? target : target + hold;
 
   return {
-    state: { ...state, moving: { from: state.stop, to, startFrame, endFrame, direction } },
+    state: {
+      ...state,
+      moving: { from: state.stop, to, startFrame, endFrame, direction, phase },
+    },
     start: true,
   };
+}
+
+/**
+ * The frame to show while resting on a stop, `elapsedMs` after the rest began: the ride loops its
+ * rest frames, so a station keeps moving while it waits; today's story stays on the stop's frame.
+ */
+export function restFrameAt(
+  state: ControllerState,
+  elapsedMs: number,
+  fps: number,
+  timeline: StoryTimeline,
+): number {
+  const frame = timeline.stopFrames[state.stop] ?? 0;
+  const loop = timeline.restFrames ?? 0;
+  if (loop <= 0) return frame;
+  const played = Math.max(0, Math.floor((elapsedMs * fps) / 1000));
+  return frame + (played % loop);
+}
+
+/**
+ * How far ahead of its own frame the idle motion (smoke, Cell, a station's loop) should run at
+ * `frame`. A tap can come anywhere in the rest loop, and the move's frames begin at the loop's
+ * start: carrying the loop's phase into the move, and letting it go by the end, means nothing
+ * jumps when the train sets off.
+ */
+export function idleOffset(state: ControllerState, frame: number): number {
+  const move = state.moving;
+  if (!move || move.phase === 0 || move.endFrame === move.startFrame) return 0;
+  const done = (frame - move.startFrame) / (move.endFrame - move.startFrame);
+  return move.phase * (1 - Math.max(0, Math.min(1, done)));
 }
 
 /**

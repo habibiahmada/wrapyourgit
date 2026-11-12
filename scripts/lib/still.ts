@@ -1,6 +1,6 @@
 /**
  * Renders frames of the packages/video compositions to PNG on this machine, for the dev scripts:
- * the art bake (render-art.ts) and the story world stills (world-stills.ts). Never imported by the
+ * the art bake (render-art.ts) and the ride's stills (ride-stills.ts). Never imported by the
  * web app: the story's own exports render in the browser (ADR-0016).
  *
  * The composition is bundled once per process and one headless browser is shared. Frames render
