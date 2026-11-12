@@ -566,10 +566,33 @@ test("engineering: one plane in the air for each pull request in flight, one par
   const all = build("engineering", sampleRecap);
   expect(boxes(all, "plane-flying")).toHaveLength(model.drawnFlying);
   expect(boxes(all, "plane-parked")).toHaveLength(model.drawnLanded);
-  // Parked planes stand on the runway; the ones in flight are above the board.
+  // Parked planes stand on the apron; the ones in flight are above the board.
   const board = boxes(all, "departures")[0] as Box;
   for (const plane of boxes(all, "plane-flying"))
     expect(plane.at[2]).toBeGreaterThan(board.at[2] + board.size[2]);
+});
+
+test("engineering: the board hangs between a control tower and a mast, and what is on them turns", () => {
+  const all = build("engineering", sampleRecap, 1, 10);
+  const board = boxes(all, "departures")[0] as Box;
+  const mid = board.at[0] + board.size[0] / 2;
+  // One stands at each end of the board, clear of its text.
+  const tower = boxes(all, "tower")[0] as Box;
+  const mast = boxes(all, "mast")[0] as Box;
+  expect(tower.at[0] + tower.size[0]).toBeLessThanOrEqual(board.at[0] + 1e-6);
+  expect(mast.at[0]).toBeGreaterThanOrEqual(board.at[0] + board.size[0] - 1e-6);
+  expect(tower.at[0] + tower.size[0] / 2).toBeLessThan(mid);
+  // The tower's light and the mast's dish go round once every 60 frames.
+  for (const tag of ["tower-light", "dish"]) {
+    const yaw = (frame: number) => boxes(build("engineering", sampleRecap, 1, frame), tag)[0]?.yaw;
+    expect(yaw(10)).not.toBe(yaw(25));
+    expect(yaw(70)).toBeCloseTo(yaw(10) ?? 0);
+  }
+  // The runway and the apron are there before anything else: an airfield from the first frame.
+  const bare = build("engineering", sampleRecap, 0);
+  expect(boxes(bare, "runway")).toHaveLength(1);
+  expect(boxes(bare, "apron")).toHaveLength(1);
+  expect(boxes(bare, "tower")).toHaveLength(0);
 });
 
 test("engineering: merged unknown parks no plane and says so in words, with no figure", () => {
