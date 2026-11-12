@@ -1,7 +1,7 @@
 "use client";
 
 import { Player, type PlayerRef } from "@remotion/player";
-import { layoutForSize, type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
+import { type RecapData, VIDEO_FPS } from "@wyg/schema";
 import { RideStory } from "@wyg/video";
 import { buildRide } from "@wyg/video/ride";
 import { edgeSounds, safeArea, TAP_SOUND } from "@wyg/video/world";
@@ -23,10 +23,10 @@ import { endScreenFor, shareCardFor } from "./end-screen";
 import { ExportPanel } from "./export-panel";
 import { PAPER_BUTTON } from "./paper-button";
 import { publicWorld } from "./public-world";
+import { stageSize } from "./stage-size";
 import { useMusic } from "./use-music";
 import { useSfx } from "./use-sfx";
 
-const FORMAT_FOR_LAYOUT = { portrait: "9x16", compact: "4x5", landscape: "16x9" } as const;
 const MUSIC_SRC = `/${WORLD_TRACK.file}`;
 const MUSIC_LOOP = worldLoopSeconds();
 /** Each half of the reduced-motion crossfade (out, then in). */
@@ -48,30 +48,18 @@ const CONTROL_RING =
 const zone = (disabled: boolean) =>
   `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer"} ${ZONE_RING}`;
 /**
- * A strip above the stage that holds the web-only controls (Sound, Close). They
- * are not part of the composition, so the scenes' safe area can't keep text clear of them; the
- * stage shrinks to fit under the strip instead, and exports never see it. 44 px controls plus
- * 8 px either side, in rem so it grows with them under text zoom.
+ * How long the window must stay one size before the ride is rebuilt for it: a rebuild drops any
+ * move in flight, so a drag across the screen edge should cost one, not dozens.
  */
-const CONTROL_BAND = "3.75rem";
+const RESIZE_SETTLE_MS = 150;
 /**
  * The way on at the rested closing stop. Paper like the other controls: the closing sky is dark,
  * so a paper fill is what stands out there; the words, not an icon, say where it goes.
  */
 const CUE = `inline-flex min-h-11 max-w-[calc(100%-1.5rem)] cursor-pointer items-center rounded-md border border-ink/25 bg-paper/90 px-4 py-2 text-left font-semibold text-ink [overflow-wrap:anywhere] hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 const CONTROL = `grid size-11 cursor-pointer place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
-/** Close while a render runs: faded, no hover tint; the base layer's not-allowed cursor shows. */
-const CONTROL_OFF = `grid size-11 place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink opacity-50 ${CONTROL_RING}`;
 /** Why every way out is off while a render runs; the end screen shows it under its buttons. */
 const LEAVE_BLOCKED = "leave-blocked";
-
-function CloseIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none">
-      <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -111,7 +99,7 @@ export type WorldPlayerProps =
       /**
        * A visitor on someone else's /<username>: the public projection (`publicWorld`), no
        * letter. After the last stop, the files made from that projection and the ways to a recap
-       * of their own. Close and Escape call `onExit`.
+       * of their own. Escape calls `onExit`.
        */
       variant: "public";
       data: RecapData;
@@ -140,15 +128,26 @@ export function WorldPlayer(props: WorldPlayerProps) {
   const sfx = useSfx();
   const reduced = useReducedMotion();
 
-  const [format, setFormat] = useState<keyof typeof VIDEO_FORMATS>("9x16");
+  // The composition takes the window's own shape, so the story fills the screen edge to edge.
+  const [size, setSize] = useState(() => stageSize(1080, 1920));
   useEffect(() => {
-    const pick = () =>
-      setFormat(FORMAT_FOR_LAYOUT[layoutForSize(window.innerWidth, window.innerHeight)]);
+    let timer = 0;
+    const pick = () => {
+      const next = stageSize(window.innerWidth, window.innerHeight);
+      setSize((now) => (now.width === next.width && now.height === next.height ? now : next));
+    };
+    const later = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(pick, RESIZE_SETTLE_MS);
+    };
     pick();
-    window.addEventListener("resize", pick);
-    return () => window.removeEventListener("resize", pick);
+    window.addEventListener("resize", later);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", later);
+    };
   }, []);
-  const { width, height } = VIDEO_FORMATS[format];
+  const { width, height } = size;
   const { stops, timeline } = useMemo(
     () => buildRide(data, { width, height }, "interactive", VIDEO_FPS, { letter }),
     [data, width, height, letter],
@@ -260,7 +259,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
     [commit, last, music, reduced, sfx, stops, timeline],
   );
 
-  // A new format means new stops (the letter's page count varies) and new frames: drop any move in
+  // A new size means new stops (the letter's page count varies) and new frames: drop any move in
   // flight and rest on the stop it was heading to, found by id in the new list.
   const restedIds = useRef<string[]>([]);
   useEffect(() => {
@@ -316,7 +315,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
       if (ended) {
         // Arrow keys belong to the format radios while one has focus. A running render keeps the
-        // screen until it ends or is cancelled: Escape, Back, Close and the links all wait, since
+        // screen until it ends or is cancelled: Escape, Back and the links all wait, since
         // leaving would throw away minutes of encoding without a word.
         const onField = event.target instanceof Element && event.target.closest("input") !== null;
         if (event.key === "Escape" && !busy) {
@@ -351,18 +350,17 @@ export function WorldPlayer(props: WorldPlayerProps) {
     sfx.setMuted(next);
   };
 
-  // The chrome sits on a copy of the stage box, so it stays under the progress bar when the
-  // stage is letterboxed. The stage fits in what the controls' band leaves below it.
-  const stageWidth = `min(100svw, calc((100svh - ${CONTROL_BAND}) * ${width} / ${height}))`;
-  const stage = { width: stageWidth, aspectRatio: `${width} / ${height}` };
-  // Where the stage starts: centred in the height the band leaves. The controls end just above.
-  const stageTop = `calc(${CONTROL_BAND} + (100svh - ${CONTROL_BAND} - ${stageWidth} * ${height} / ${width}) / 2)`;
+  // The composition has the window's shape, so covering the screen crops at most a sliver (a
+  // shape past 21:9, or a resize still settling). The chrome sits on a copy of the same box.
+  const stage = {
+    width: `max(100dvw, calc(100dvh * ${width} / ${height}))`,
+    aspectRatio: `${width} / ${height}`,
+  };
+  // Scene units kept clear of the progress bar: the Sound control sits just under it.
+  const topClear = safeArea({ width, height }).top;
 
   return (
-    <div
-      className="fixed inset-0 grid place-items-center overflow-hidden bg-paper text-ink"
-      style={{ paddingTop: CONTROL_BAND }}
-    >
+    <div className="fixed inset-0 grid place-items-center overflow-hidden bg-ink text-ink">
       <h1 ref={titleRef} tabIndex={-1} className="sr-only">
         {props.title}
       </h1>
@@ -415,11 +413,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
           aria-labelledby="keep-your-year"
           className="on-light absolute inset-0 overflow-y-auto bg-paper/85"
         >
-          {/* Top padding clears the Sound and Close controls, which stay usable above it. */}
-          <div
-            className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-4 pb-8"
-            style={{ paddingTop: stageTop }}
-          >
+          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-4 py-20">
             <div className="flex flex-col gap-6 rounded-xl border border-ink/25 bg-paper p-5 sm:p-8">
               <div className="flex flex-col gap-2">
                 <h2
@@ -499,47 +493,22 @@ export function WorldPlayer(props: WorldPlayerProps) {
         className="pointer-events-none relative [container-type:inline-size] [grid-area:1/1]"
         style={stage}
       >
-        <div
-          className="absolute inset-x-3 bottom-full flex items-center justify-end gap-2"
-          style={{ height: CONTROL_BAND }}
+        {/* Web-only, like the cue: drawn over the story, never part of a file. Top right, just
+            under the progress bar. */}
+        <button
+          type="button"
+          aria-label="Sound"
+          aria-pressed={!muted}
+          onClick={toggleSound}
+          className={`pointer-events-auto absolute right-3 ${CONTROL}`}
+          style={{ top: `${(topClear / 10).toFixed(3)}cqw` }}
         >
-          <div className="pointer-events-auto flex gap-2">
-            <button
-              type="button"
-              aria-label="Sound"
-              aria-pressed={!muted}
-              onClick={toggleSound}
-              className={CONTROL}
-            >
-              <SpeakerIcon muted={muted} />
-            </button>
-            {/* Client navigation (or the visitor's exit, which unmounts the panel), so the panel's
-                beforeunload guard can't catch it: off while busy. */}
-            {busy ? (
-              <button
-                type="button"
-                disabled
-                aria-label="Close story"
-                aria-describedby={LEAVE_BLOCKED}
-                className={CONTROL_OFF}
-              >
-                <CloseIcon />
-              </button>
-            ) : onExit ? (
-              <button type="button" aria-label="Close story" onClick={onExit} className={CONTROL}>
-                <CloseIcon />
-              </button>
-            ) : (
-              <Link href="/dashboard" aria-label="Close story" className={CONTROL}>
-                <CloseIcon />
-              </Link>
-            )}
-          </div>
-        </div>
+          <SpeakerIcon muted={muted} />
+        </button>
         {/* Web-only, never part of the composition or a file. Bottom-left, just above the
             copyright line's safe area: the closing scene keeps that corner to the skyline (Cell
             stands centre in tall frames, right in landscape; the text is at the top or left-top).
-            After Close in tab order: it is the last control, so its visual spot can differ. */}
+            After Sound in tab order: it is the last control, so its visual spot can differ. */}
         {resting && at === last && !ended && (
           <button
             ref={cue}
