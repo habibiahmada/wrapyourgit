@@ -620,6 +620,39 @@ test("engineering: merged unknown puts no wagon on the main line and says so in 
   expect(text.filter((line) => /^[\d,.k]+$/.test(line))).toHaveLength(2);
 });
 
+test("engineering: the merged train runs along the main line behind its engine, and is back after 60 frames", () => {
+  const at = (frame: number, tag: string) =>
+    boxes(build("engineering", sampleRecap, 1, frame), tag).map((b) => b.at[0]);
+  // At a stop's own frame everything is where it stands; then the train moves, as one.
+  const rest = at(0, "pr-merged");
+  const later = at(15, "pr-merged");
+  expect(later).not.toEqual(rest);
+  const shift = (later[0] ?? 0) - (rest[0] ?? 0);
+  later.forEach((x, i) => {
+    expect(x - (rest[i] ?? 0)).toBeCloseTo(shift);
+  });
+  expect(at(60, "pr-merged")).toEqual(rest);
+  // The engine goes with it, and puffs.
+  expect((at(15, "shunter")[0] ?? 0) - (at(0, "shunter")[0] ?? 0)).toBeCloseTo(shift);
+  const puffs = (frame: number) =>
+    build("engineering", sampleRecap, 1, frame).filter((solid) => solid.kind === "ball");
+  expect(puffs(15)).toHaveLength(4);
+  expect(puffs(75)).toEqual(puffs(15));
+  // The whole train stays on the main line at both ends of its run.
+  const main = boxes(build("engineering", sampleRecap), "main-line")[0] as Box;
+  for (const frame of [15, 45]) {
+    const all = build("engineering", sampleRecap, 1, frame);
+    for (const box of [...boxes(all, "pr-merged"), ...boxes(all, "shunter")]) {
+      expect(box.at[0]).toBeGreaterThanOrEqual(main.at[0]);
+      expect(box.at[0] + box.size[0]).toBeLessThanOrEqual(main.at[0] + main.size[0]);
+    }
+  }
+  // While it is still being built nothing runs: a wagon is set down where it will stand.
+  expect(build("engineering", sampleRecap, 0.9, 15).filter((s) => s.kind === "ball")).toHaveLength(
+    0,
+  );
+});
+
 test("engineering: the wagons on the branches shunt, and the figures rise as the board lands", () => {
   const where = (frame: number) =>
     boxes(build("engineering", sampleRecap, 1, frame), "pr-open").map((b) => b.pivot?.[0]);

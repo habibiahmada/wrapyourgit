@@ -21,6 +21,11 @@ const JOINS = [-2.5, 0.6, 3.7];
 const BRANCH = { long: 3.0, angle: 0.56 };
 /** A wagon, and how far apart wagons stand on a line. */
 const WAGON = { long: 0.6, wide: 0.5, tall: 0.42, pitch: 0.72 };
+/** How far the merged train runs each way along the main line, and how far back from the middle it stands to leave room for its engine. */
+const TRAIN_RUN = 0.3;
+const TRAIN_BACK = -0.5;
+/** How far a branch's wagons shunt each way, as a share of the branch's length. */
+const SHUNT = 0.07;
 const MERGED = toneOf("#2ea043");
 const OPEN = toneOf("#e3b341");
 const BALLAST = toneOf("#3a424d");
@@ -50,7 +55,9 @@ function trackPaint(long: number): Decal[] {
  * open, up to the model's cap; the board behind carries the model's three rows (sent, merged,
  * reviews), each figure beside its words, between two signals whose lights change. When GitHub
  * could not say how many were merged, no wagon is on the main line and the row says so in words:
- * not knowing is not zero. The wagons on the branches shunt a little, on a 60-frame loop.
+ * not knowing is not zero. Once it is built the stop works: the merged train runs a little way
+ * along the main line and back behind its puffing engine, and the wagons on each branch shunt
+ * toward the main line and back, all on a 60-frame loop that ends where it began.
  */
 export const engineering: Station = (ctx) => {
   const { data, c, yaw, build, frame, stop } = ctx;
@@ -211,11 +218,15 @@ export const engineering: Station = (ctx) => {
     );
   });
 
-  // Merged: wagons coupled in a row on the main line, set down one after another.
+  // Merged: wagons coupled in a row on the main line behind a small engine, set down one after
+  // another. Once they are all down the train runs a little way along the line and back, once a
+  // loop, and the engine puffs: the stop is seen to be working, and it is where it began at 60.
+  const run = build >= 1 ? Math.sin(loop * Math.PI * 2) * TRAIN_RUN : 0;
+  const head = ((model.drawnLanded - 1) / 2) * WAGON.pitch + TRAIN_BACK;
   for (let i = 0; i < model.drawnLanded; i++) {
     const on = easeOut((build - 0.3 - i * 0.03) / 0.3);
     if (on <= 0) continue;
-    const dx = (i - (model.drawnLanded - 1) / 2) * WAGON.pitch;
+    const dx = (i - (model.drawnLanded - 1) / 2) * WAGON.pitch + TRAIN_BACK + run;
     out.push(
       part(
         c,
@@ -247,6 +258,52 @@ export const engineering: Station = (ctx) => {
       );
     }
   }
+  const engine = easeOut((build - 0.3 - model.drawnLanded * 0.03) / 0.3);
+  if (model.drawnLanded > 0 && engine > 0) {
+    const dx = head + WAGON.pitch + 0.14 + run;
+    const z = PLAZA_TOP + 0.06 + (1 - engine) * 4;
+    out.push(
+      // One box: its cab's window, its lamp and its wheels are painted on.
+      part(c, yaw, dx, side * MAIN.at, z, [0.9, 0.52, 0.56], toneOf("#1f8a3a"), {
+        tag: "shunter",
+        lit: true,
+        decals: [
+          { on: "all", rect: [0, 0, 1, 0.24], fill: "#161b22" },
+          { on: "sides", rect: [0.08, 0.5, 0.38, 0.86], fill: "#0d1117" },
+          { on: "front", rect: [0.36, 0.34, 0.64, 0.62], fill: "#ffd866", round: true },
+          ...[0.1, 0.42, 0.7].map(
+            (u): Decal => ({
+              on: "sides",
+              rect: [u, 0, u + 0.2, 0.3],
+              fill: "#c9d1d9",
+              round: true,
+            }),
+          ),
+        ],
+      }),
+      part(c, yaw, dx + 0.22, side * MAIN.at, z + 0.56, [0.16, 0.16, 0.22], TONE.ink, {
+        tag: "shunter",
+        edge: false,
+      }),
+    );
+    // Its smoke: four puffs, each rising and thinning over the loop, one after another.
+    if (build >= 1) {
+      for (let k = 0; k < 4; k++) {
+        const age = (loop + k / 4) % 1;
+        out.push({
+          kind: "ball",
+          c: [
+            c[0] + (dx + 0.22 - age * 0.3) * cos - side * MAIN.at * sin,
+            c[1] + (dx + 0.22 - age * 0.3) * sin + side * MAIN.at * cos,
+            c[2] + z + 0.85 + age * 0.9,
+          ],
+          r: 0.08 + age * 0.14,
+          color: "#b1bac4",
+          opacity: (1 - age) * 0.5,
+        });
+      }
+    }
+  }
   // Open: wagons waiting on the branches, the first nearest the main line. They come down over
   // the second half of the build, and shunt a little back and forth.
   const up = easeOut((build - 0.5) / 0.5);
@@ -254,8 +311,9 @@ export const engineering: Station = (ctx) => {
   for (let i = 0; i < model.drawnFlying; i++) {
     const k = i % JOINS.length;
     const place = Math.floor(i / JOINS.length);
-    const shunt = Math.sin((loop + i / 5) * Math.PI * 2) * 0.03;
-    const [wx, wy] = onBranch(k, 0.78 - place * (WAGON.pitch / BRANCH.long) + shunt);
+    // Each branch's wagons move together, toward the main line and back, a branch after a branch.
+    const shunt = build >= 1 ? Math.sin((loop + k / JOINS.length) * Math.PI * 2) * SHUNT : 0;
+    const [wx, wy] = onBranch(k, 0.74 - place * (WAGON.pitch / BRANCH.long) + shunt);
     out.push(
       askew(
         wx,
