@@ -387,18 +387,16 @@ export function WorldPlayer(props: WorldPlayerProps) {
         >
           <SpeakerIcon muted={muted} />
         </button>
-        {/* Web-only, never part of the composition or a file: on the grass right of the board
-            and above the train (`closingShelf`). The icons wrap into as many columns as fit. */}
+        {/* Web-only, never part of the composition or a file: on the grass at the right, its foot
+            on the spot `closingShelf` finds above the train. */}
         {resting && at === last && (
           <div
             className="pointer-events-auto absolute right-3"
-            style={{
-              left: `min(calc(${(shelf.left * 100).toFixed(2)}cqw + 0.5rem), calc(100cqw - 3.5rem))`,
-              bottom: `max(0.75rem, ${((1 - shelf.bottom) * 100).toFixed(2)}cqh)`,
-            }}
+            style={{ bottom: `max(0.75rem, ${((1 - shelf.bottom) * 100).toFixed(2)}cqh)` }}
           >
             <ExportShelf
               data={data}
+              title={keepLabel}
               privateNames={privateNames}
               card={card}
               letter={letter}

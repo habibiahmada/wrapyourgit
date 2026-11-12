@@ -18,19 +18,31 @@ const NOTE_MS = 5000;
 /** The rings sit on the city, which can be any colour: an ink line between two paper bands. */
 const RING =
   "focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2 focus-visible:shadow-[0_0_0_6px_var(--color-paper)]";
-/** Paper squares like the Sound control, so the story's web controls read as one set. */
-const ICON = `grid size-11 cursor-pointer place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink hover:bg-paper active:bg-ink/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-paper/90 aria-expanded:bg-paper aria-expanded:border-ink ${RING}`;
+/**
+ * A paper ticket: an ink tile with the file's pixel mark, then its name. Paper like the Sound
+ * control, so the story's web controls read as one set; the ink tile repeats the closing sky.
+ */
+const TICKET = `flex min-h-11 w-full cursor-pointer items-center gap-2.5 rounded-md border border-ink/25 bg-paper/95 py-1.5 pr-3 pl-1.5 text-left text-sm font-semibold text-ink hover:bg-paper hover:border-ink/60 active:bg-ink/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-ink/25 aria-expanded:border-ink ${RING}`;
+const TILE = "grid size-8 shrink-0 place-items-center rounded bg-ink text-paper";
 
 const ratio = (format: ExportFormat) => format.replace("x", ":");
+/** Each shape's short use, so the choice reads without the full label. */
+const USE: Record<ExportFormat, string> = {
+  "9x16": "Reels, TikTok",
+  "4x5": "Instagram feed",
+  "1x1": "Square post",
+  "16x9": "YouTube",
+};
 
 /**
- * "Keep your year" at the closing stop: the story's files as a few icons on the grass beside the
- * train, no panel and no words on screen (every icon is named for assistive tech and on hover).
- * Video opens a row of its four shapes. While a file is made, and only then, a small dialog shows
- * Cell, a bar and one sentence. Never part of the composition, so never in a file.
+ * "Keep your year" at the closing stop: the story's files as a short column of paper tickets on
+ * the grass beside the train, each an ink tile with a pixel mark and the file's name. Video opens
+ * its four shapes. While a file is made, and only then, a small dialog shows Cell, a bar and one
+ * sentence. Never part of the composition, so never in a file.
  */
 export function ExportShelf({
   data,
+  title,
   privateNames,
   card,
   letter,
@@ -39,6 +51,8 @@ export function ExportShelf({
 }: {
   /** A projection already (`storyData` or `publicWorld`): everything here leaves the site. */
   data: RecapData;
+  /** "Keep your year", or a visitor's "Keep @login's year": the column's heading. */
+  title: string;
   /** True when `data` names a private repository: the dialog then says the files do too. */
   privateNames: boolean;
   card: ShareCard;
@@ -50,11 +64,12 @@ export function ExportShelf({
   const { state, support, busy, run, cancel } = useExport(data, { letter, onBusyChange });
   const [shapes, setShapes] = useState(false);
   const videoButton = useRef<HTMLButtonElement>(null);
-  const shapesRow = useRef<HTMLFieldSetElement>(null);
+  const shapesList = useRef<HTMLFieldSetElement>(null);
   const started = useRef<HTMLElement | null>(null);
   const ids = useId();
   const reasonId = `${ids}-reason`;
   const cardId = `${ids}-card`;
+  const headingId = `${ids}-heading`;
 
   const checking = support === null;
   const mp4Off = checking || !support.mp4;
@@ -68,7 +83,7 @@ export function ExportShelf({
     run(job, format);
   };
 
-  // The row of shapes closes on Escape (focus back on Video) and on a press anywhere else.
+  // The shapes close on Escape (focus back on Video) and on a press anywhere else.
   useEffect(() => {
     if (!shapes) return;
     const onKey = (event: KeyboardEvent) => {
@@ -80,7 +95,7 @@ export function ExportShelf({
     };
     const onPress = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (videoButton.current?.contains(target) || shapesRow.current?.contains(target)) return;
+      if (videoButton.current?.contains(target) || shapesList.current?.contains(target)) return;
       setShapes(false);
     };
     window.addEventListener("keydown", onKey, true);
@@ -91,7 +106,7 @@ export function ExportShelf({
     };
   }, [shapes]);
 
-  // The dialog took focus; when it closes, give it back to the icon that started the file.
+  // The dialog took focus; when it closes, give it back to the ticket that started the file.
   useEffect(() => {
     if (busy) return;
     const back = started.current;
@@ -111,121 +126,132 @@ export function ExportShelf({
   }, [ended]);
 
   return (
-    <div className="relative">
-      <div className="relative">
-        {shapes && (
-          <fieldset
-            ref={shapesRow}
-            className="absolute right-0 bottom-full m-0 mb-2 flex gap-2 border-0 p-0"
+    <section aria-labelledby={headingId} className="relative w-44">
+      <h2
+        id={headingId}
+        className="mb-1.5 w-fit rounded bg-ink/80 px-2 py-0.5 text-sm font-bold text-paper [overflow-wrap:anywhere]"
+      >
+        {title}
+      </h2>
+      {shapes && (
+        // Opens to the left of the column, so the tickets under Video stay where they were.
+        <fieldset
+          ref={shapesList}
+          className="absolute top-8 right-full m-0 mr-2 flex w-44 flex-col gap-1.5 border-0 p-0"
+        >
+          <legend className="sr-only">Video shape</legend>
+          {FORMATS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              aria-label={`Video ${ratio(key)}, ${VIDEO_FORMATS[key].label}`}
+              onClick={(event) => start("mp4", key, videoButton.current ?? event.currentTarget)}
+              className={TICKET}
+            >
+              <span aria-hidden="true" className={TILE}>
+                <ShapeMark format={key} />
+              </span>
+              <span className="flex flex-col leading-tight">
+                {ratio(key)}
+                <span className="text-xs font-medium text-ink-soft">{USE[key]}</span>
+              </span>
+            </button>
+          ))}
+        </fieldset>
+      )}
+      <ul className="flex flex-col gap-1.5">
+        <li>
+          <button
+            ref={videoButton}
+            type="button"
+            aria-expanded={shapes}
+            disabled={mp4Off}
+            aria-describedby={describe(mp4Off)}
+            onClick={() => setShapes((open) => !open)}
+            className={TICKET}
           >
-            <legend className="sr-only">Video shape</legend>
-            {FORMATS.map((key) => (
-              <button
-                key={key}
-                type="button"
-                aria-label={`Video ${ratio(key)}, ${VIDEO_FORMATS[key].label}`}
-                title={`Video ${ratio(key)}`}
-                onClick={(event) => start("mp4", key, videoButton.current ?? event.currentTarget)}
-                className={ICON}
-              >
-                <ShapeIcon format={key} />
-              </button>
-            ))}
-          </fieldset>
-        )}
-        <ul aria-label="Keep your year" className="flex flex-wrap justify-end gap-2">
-          <li>
-            <button
-              ref={videoButton}
-              type="button"
-              aria-label="Video (MP4)"
-              title="Video (MP4)"
-              aria-expanded={shapes}
-              disabled={mp4Off}
-              aria-describedby={describe(mp4Off)}
-              onClick={() => setShapes((open) => !open)}
-              className={ICON}
-            >
-              <Glyph>
-                <rect x="2.5" y="4.5" width="15" height="11" />
-                <path d="M8.5 7.5v5l4-2.5z" fill="currentColor" stroke="none" />
-              </Glyph>
+            <span aria-hidden="true" className={TILE}>
+              <VideoMark />
+            </span>
+            Video
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            disabled={stillsOff}
+            aria-describedby={describe(stillsOff)}
+            onClick={(event) => start("zip", "9x16", event.currentTarget)}
+            className={TICKET}
+          >
+            <span aria-hidden="true" className={TILE}>
+              <SlidesMark />
+            </span>
+            <span>
+              Slides <span className="font-medium text-ink-soft">ZIP</span>
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            type="button"
+            disabled={stillsOff}
+            aria-describedby={describe(stillsOff)}
+            onClick={(event) => start("pdf", "9x16", event.currentTarget)}
+            className={TICKET}
+          >
+            <span aria-hidden="true" className={TILE}>
+              <PdfMark />
+            </span>
+            PDF
+          </button>
+        </li>
+        <li>
+          {"href" in card ? (
+            <a href={card.href} download={card.filename ?? true} className={TICKET}>
+              <span aria-hidden="true" className={TILE}>
+                <CardMark />
+              </span>
+              <span>
+                Share card <span className="font-medium text-ink-soft">PNG</span>
+              </span>
+            </a>
+          ) : (
+            <button type="button" disabled aria-describedby={cardId} className={TICKET}>
+              <span aria-hidden="true" className={TILE}>
+                <CardMark />
+              </span>
+              Share card
             </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              aria-label="Slides (PNG, ZIP)"
-              title="Slides (PNG, ZIP)"
-              disabled={stillsOff}
-              aria-describedby={describe(stillsOff)}
-              onClick={(event) => start("zip", "9x16", event.currentTarget)}
-              className={ICON}
-            >
-              <Glyph>
-                <rect x="5.5" y="2.5" width="12" height="10" />
-                <path d="M2.5 6.5v11h12" />
-              </Glyph>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              aria-label="PDF"
-              title="PDF"
-              disabled={stillsOff}
-              aria-describedby={describe(stillsOff)}
-              onClick={(event) => start("pdf", "9x16", event.currentTarget)}
-              className={ICON}
-            >
-              <Glyph>
-                <path d="M4.5 2.5h7l4 4v11h-11z" />
-                <path d="M11.5 2.5v4h4M7.5 10.5h5M7.5 13.5h5" />
-              </Glyph>
-            </button>
-          </li>
-          <li>
-            {"href" in card ? (
-              <a
-                href={card.href}
-                download={card.filename ?? true}
-                aria-label="Share card (PNG)"
-                title="Share card (PNG)"
-                className={ICON}
-              >
-                <CardGlyph />
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                aria-label="Share card (PNG)"
-                title={card.reason}
-                aria-describedby={cardId}
-                className={ICON}
-              >
-                <CardGlyph />
-              </button>
-            )}
-          </li>
-          {links.map((link) => (
+          )}
+        </li>
+        {links.map((link) => {
+          const inner = (
+            <>
+              <span aria-hidden="true" className={TILE}>
+                <LinkMark href={link.href} />
+              </span>
+              {link.label}
+            </>
+          );
+          return (
             <li key={link.href}>
               {link.route ? (
-                <a href={link.href} aria-label={link.label} title={link.label} className={ICON}>
-                  <LinkGlyph href={link.href} />
+                <a href={link.href} className={TICKET}>
+                  {inner}
                 </a>
               ) : (
-                <Link href={link.href} aria-label={link.label} title={link.label} className={ICON}>
-                  <LinkGlyph href={link.href} />
+                <Link href={link.href} className={TICKET}>
+                  {inner}
                 </Link>
               )}
             </li>
-          ))}
-        </ul>
-      </div>
+          );
+        })}
+      </ul>
 
       {note && (
-        // Floats under the icons, so they stay where they were.
+        // Floats under the tickets, so they stay where they were.
         <p
           aria-hidden="true"
           className="absolute top-full right-0 mt-2 w-max max-w-[min(16rem,calc(100vw-1.5rem))] rounded-md bg-paper/95 px-2 py-1 text-sm font-semibold text-ink"
@@ -255,14 +281,10 @@ export function ExportShelf({
           onCancel={cancel}
         />
       )}
-    </div>
+    </section>
   );
 }
 
-/**
- * The only screen over the story: modal, so nothing else can be pressed while the file is made
- * (leaving would throw it away). Escape cancels, like the button.
- */
 function Downloading({
   noun,
   value,
@@ -350,72 +372,120 @@ function Downloading({
   );
 }
 
-/** Square caps and mitred corners: blocky like the city, not a library's rounded strokes. */
-function Glyph({ children }: { children: ReactNode }) {
+/**
+ * The marks are drawn on a 16 × 16 pixel grid in square cells, like Cell and the city: paper on
+ * the ink tile, with the one green cell of the GitHub graph as the accent.
+ */
+function Mark({ children }: { children: ReactNode }) {
   return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      className="size-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="square"
-      strokeLinejoin="miter"
-    >
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="size-5" shapeRendering="crispEdges">
       {children}
     </svg>
   );
 }
 
-/** A video's shape drawn as itself: the frame at its ratio, with a play mark. */
-function ShapeIcon({ format }: { format: ExportFormat }) {
+const PAPER = "var(--color-paper)";
+const GREEN = "var(--color-cell)";
+
+/** A film frame with sprocket holes and a green play mark. */
+function VideoMark() {
+  return (
+    <Mark>
+      <rect x="1" y="3" width="14" height="10" fill={PAPER} />
+      {[2, 5, 8, 11, 13].map((x) => (
+        <rect key={`t${x}`} x={x} y="4" width="1" height="1" fill="var(--color-ink)" />
+      ))}
+      {[2, 5, 8, 11, 13].map((x) => (
+        <rect key={`b${x}`} x={x} y="11" width="1" height="1" fill="var(--color-ink)" />
+      ))}
+      <rect x="6" y="6" width="1" height="4" fill={GREEN} />
+      <rect x="7" y="6" width="1" height="4" fill={GREEN} />
+      <rect x="8" y="7" width="1" height="2" fill={GREEN} />
+      <rect x="9" y="7" width="1" height="2" fill={GREEN} />
+    </Mark>
+  );
+}
+
+/** Three slides fanned out, the front one with a green square of the graph. */
+function SlidesMark() {
+  return (
+    <Mark>
+      <rect x="6" y="1" width="9" height="8" fill={PAPER} opacity="0.45" />
+      <rect x="4" y="3" width="9" height="8" fill={PAPER} opacity="0.7" />
+      <rect x="1" y="6" width="10" height="9" fill={PAPER} />
+      <rect x="3" y="8" width="3" height="3" fill={GREEN} />
+      <rect x="3" y="12" width="6" height="1" fill="var(--color-ink)" />
+    </Mark>
+  );
+}
+
+/** A page with its corner folded and three lines of text. */
+function PdfMark() {
+  return (
+    <Mark>
+      <rect x="3" y="1" width="7" height="14" fill={PAPER} />
+      <rect x="10" y="4" width="3" height="11" fill={PAPER} />
+      <rect x="10" y="1" width="3" height="3" fill={GREEN} />
+      {[6, 9, 12].map((y) => (
+        <rect key={y} x="5" y={y} width={y === 12 ? 4 : 6} height="1" fill="var(--color-ink)" />
+      ))}
+    </Mark>
+  );
+}
+
+/** The share card: a picture square and two lines. */
+function CardMark() {
+  return (
+    <Mark>
+      <rect x="1" y="3" width="14" height="10" fill={PAPER} />
+      <rect x="3" y="5" width="4" height="4" fill={GREEN} />
+      <rect x="8" y="5" width="5" height="1" fill="var(--color-ink)" />
+      <rect x="8" y="7" width="3" height="1" fill="var(--color-ink)" />
+      <rect x="3" y="10" width="10" height="1" fill="var(--color-ink)" />
+    </Mark>
+  );
+}
+
+/** A video's shape drawn as itself: the frame at its ratio, with a green play mark. */
+function ShapeMark({ format }: { format: ExportFormat }) {
   const { width, height } = VIDEO_FORMATS[format];
-  const scale = 15 / Math.max(width, height);
-  const w = width * scale;
-  const h = height * scale;
+  const scale = 14 / Math.max(width, height);
+  const w = Math.round(width * scale);
+  const h = Math.round(height * scale);
   return (
-    <Glyph>
-      <rect x={10 - w / 2} y={10 - h / 2} width={w} height={h} />
-      <path d="M8.75 8v4l3.25-2z" fill="currentColor" stroke="none" />
-    </Glyph>
+    <Mark>
+      <rect x={8 - w / 2} y={8 - h / 2} width={w} height={h} fill={PAPER} />
+      <rect x="7" y="6" width="1" height="4" fill={GREEN} />
+      <rect x="8" y="7" width="1" height="2" fill={GREEN} />
+    </Mark>
   );
 }
 
-function CardGlyph() {
-  return (
-    <Glyph>
-      <rect x="2.5" y="4.5" width="15" height="11" />
-      <rect x="5" y="7.5" width="4" height="4" fill="currentColor" stroke="none" />
-      <path d="M11.5 8.5h3.5M11.5 11.5h2" />
-    </Glyph>
-  );
-}
-
-/** The way on: the dashboard's grid, a new recap's plus, or signing in. */
-function LinkGlyph({ href }: { href: string }) {
+/** The way on: the dashboard's tiles, a new recap's plus, or a door for signing in. */
+function LinkMark({ href }: { href: string }) {
   if (href === "/dashboard") {
     return (
-      <Glyph>
-        <rect x="3.5" y="3.5" width="5" height="5" />
-        <rect x="11.5" y="3.5" width="5" height="5" />
-        <rect x="3.5" y="11.5" width="5" height="5" />
-        <rect x="11.5" y="11.5" width="5" height="5" />
-      </Glyph>
+      <Mark>
+        <rect x="2" y="2" width="5" height="5" fill={GREEN} />
+        <rect x="9" y="2" width="5" height="5" fill={PAPER} />
+        <rect x="2" y="9" width="5" height="5" fill={PAPER} />
+        <rect x="9" y="9" width="5" height="5" fill={PAPER} />
+      </Mark>
     );
   }
   if (href === "/") {
     return (
-      <Glyph>
-        <rect x="3.5" y="3.5" width="13" height="13" />
-        <path d="M10 7v6M7 10h6" />
-      </Glyph>
+      <Mark>
+        <rect x="6" y="2" width="4" height="12" fill={GREEN} />
+        <rect x="2" y="6" width="12" height="4" fill={GREEN} />
+      </Mark>
     );
   }
   return (
-    <Glyph>
-      <path d="M11.5 3.5h5v13h-5" />
-      <path d="M3 10h9M9 6.5l3.5 3.5L9 13.5" />
-    </Glyph>
+    <Mark>
+      <rect x="8" y="1" width="6" height="14" fill={PAPER} />
+      <rect x="2" y="7" width="7" height="2" fill={GREEN} />
+      <rect x="6" y="5" width="2" height="6" fill={GREEN} />
+    </Mark>
   );
 }
