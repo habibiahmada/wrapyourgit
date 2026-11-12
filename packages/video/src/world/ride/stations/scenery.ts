@@ -370,7 +370,8 @@ export function scenery(ctx: StationContext, kind: StopKind, long: number, deep:
       tag: "scenery",
       under: 3,
     }),
-    road(ctx, 0, behind((AVENUE.from + AVENUE.to) / 2), [span, AVENUE.to - AVENUE.from], "x"),
+    // The avenue itself is the land's (land.ts), one road through every town: only the cross
+    // streets and the back street are the town's own.
   );
   const crossTo = two ? BACK.from : end;
   for (const side of [-1, 1]) {

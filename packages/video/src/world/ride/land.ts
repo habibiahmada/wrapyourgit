@@ -34,12 +34,15 @@ export const LIGHT_AHEAD = 15;
 const CLEAR = 8;
 /**
  * The avenue runs this far from the rail's middle: just behind a plaza of the usual depth, where
- * a station's own street is. It is laid in pieces this long, and a station's town takes over this
- * far each side of its plaza's middle.
+ * a station's town has its street. Behind a deeper plaza it eases further out.
  */
 const AVENUE_LATERAL = PLAZA_LATERAL + PLAZA.deep / 2 + 1.25;
-const AVENUE_STEP = 3;
-const TOWN_HALF = (PLAZA.long + 7) / 2;
+/** The avenue's pieces: long on a straight, short where it bends. A building stands every so often. */
+const AVENUE_LONG = 6;
+const AVENUE_SHORT = 1.5;
+const BUILDING_STEP = 6;
+/** How far along the rail the avenue takes to ease out to a deeper plaza's street and back. */
+const AVENUE_EASE = 4;
 const AVENUE_TONE = toneOf("#262c36");
 const AVENUE_WALLS = ["#3b4a5c", "#4a535e", "#30476b", "#5a4634", "#2f5d50"];
 /** How far from the rail's middle a month sign stands: clear of the train, and of the camera that rides behind it. */
@@ -269,45 +272,87 @@ export function land(
     );
   }
 
-  // The avenue: one road on each side of the rail, all the way along, so every station's town is
-  // on the same street as the next. Inside a turn there is no room for it, and beside a plaza the
-  // station lays its own stretch (scenery.ts). Between towns a building stands on it now and then.
-  const townStops = stops.filter((stop) => stop.plaza);
+  // The avenue: one road on each side of the rail, the rail's whole length, round the inside of
+  // every turn as well as the outside, and joined across both ends of the rail, so the town is one
+  // street network. Through a station's town it runs just behind that plaza, however deep the
+  // station built it, easing out and back over a few pieces. Between towns a building stands on
+  // it now and then.
+  const towns = stops
+    .filter((stop) => stop.plaza)
+    .map((stop) => {
+      const [long, deep] = stop.plazaSize ?? [PLAZA.long, PLAZA.deep];
+      return {
+        side: stop.side,
+        centre: stop.s + PLAZA_AHEAD,
+        half: (long + 7) / 2,
+        lateral: PLAZA_LATERAL + deep / 2 + 1.25,
+      };
+    });
+  /** How far out the avenue runs at `s` on `side`, and whether a town stands there. */
+  const avenueAt = (s: number, side: 1 | -1) => {
+    let lateral = AVENUE_LATERAL;
+    let inTown = false;
+    for (const town of towns) {
+      if (town.side !== side) continue;
+      const off = Math.abs(s - town.centre) - town.half;
+      if (off < 0) inTown = true;
+      const ease = Math.max(0, Math.min(1, 1 - off / AVENUE_EASE));
+      lateral = Math.max(lateral, AVENUE_LATERAL + (town.lateral - AVENUE_LATERAL) * ease);
+    }
+    return { lateral, inTown };
+  };
+  // Long pieces on the straights, short ones where the road bends: round a turn, and where it
+  // eases out to a deeper plaza's street. Seen from the overview, three times as long: too small there
+  // for the corners to show, and the frame keeps inside its polygon budget.
+  const short = far ? AVENUE_SHORT * 3 : AVENUE_SHORT;
+  const long = far ? AVENUE_LONG * 3 : AVENUE_LONG;
+  const bends = (s: number) =>
+    [-short, 0, long].some((d) => turning(s + d) !== 0) ||
+    towns.some((town) => {
+      const off = Math.abs(Math.abs(s - town.centre) - town.half);
+      return town.lateral !== AVENUE_LATERAL && off < AVENUE_EASE + long;
+    });
+  const start = Math.max(-AVENUE_SHORT, view.from - long);
+  const stop = Math.min(view.to, end) + AVENUE_SHORT;
+  const pieces: { s: number; step: number }[] = [];
+  for (let s = start; s < stop; ) {
+    const step = Math.min(bends(s) ? short : long, stop - s);
+    pieces.push({ s: s + step / 2, step });
+    s += step;
+  }
+  for (const { s, step } of pieces) {
+    const turn = turning(s);
+    for (const side of [-1, 1] as const) {
+      const { lateral } = avenueAt(s, side);
+      // Round a turn the road is longer than the rail on the outside and shorter on the inside.
+      const inside = turn !== 0 && side !== turn;
+      const stretch = turn === 0 ? 1 : inside ? 1 - lateral / TURN : 1 + lateral / TURN;
+      ground.push(
+        railBox(s, side * lateral, 0, [step * stretch + 0.2, 1.5, 0.06], AVENUE_TONE, {
+          tag: "avenue",
+          under: 2,
+          edge: false,
+          decals: far ? [] : [{ on: "top", rect: [0.3, 0.46, 0.7, 0.54], fill: "#8b949e" }],
+        }),
+      );
+    }
+  }
+  // Now and then a building on it between the towns: never in a town (it has its own rows),
+  // inside a turn (no room) or past the rail.
   for (
-    let k = Math.max(0, Math.ceil(view.from / AVENUE_STEP));
-    k * AVENUE_STEP <= Math.min(view.to, end);
+    let k = Math.max(0, Math.ceil(view.from / BUILDING_STEP));
+    k * BUILDING_STEP <= Math.min(view.to, end);
     k++
   ) {
-    const s = k * AVENUE_STEP;
+    const s = k * BUILDING_STEP;
     const turn = turning(s);
-    // The road is longer than the rail on the outside of a turn.
-    const stretch = turn === 0 ? 1 : 1 + AVENUE_LATERAL / TURN;
     for (const side of [-1, 1] as const) {
-      if (turn !== 0 && side !== turn) continue;
-      const inTown = townStops.some(
-        (stop) => stop.side === side && Math.abs(s - (stop.s + PLAZA_AHEAD)) * stretch < TOWN_HALF,
-      );
-      if (inTown) continue;
-      ground.push(
-        railBox(
-          s,
-          side * AVENUE_LATERAL,
-          0,
-          [AVENUE_STEP * stretch + 0.2, 1.5, 0.06],
-          AVENUE_TONE,
-          {
-            tag: "avenue",
-            under: 2,
-            edge: false,
-            decals: far ? [] : [{ on: "top", rect: [0.3, 0.46, 0.7, 0.54], fill: "#8b949e" }],
-          },
-        ),
-      );
-      if (k % 2 !== 0) continue;
+      const { lateral, inTown } = avenueAt(s, side);
+      if (inTown || (turn !== 0 && side !== turn)) continue;
       const wide = 2.2 + random(`avenue-wide-${k}-${side}`) * 0.9;
       objects.push(
         building(
-          { c: at(s, side * (AVENUE_LATERAL + 2.3)), yaw: heading(s), overview: view.overview },
+          { c: at(s, side * (lateral + 2.3)), yaw: heading(s), overview: view.overview },
           0,
           0,
           [wide, 2.0],
@@ -319,6 +364,17 @@ export function land(
         ),
       );
     }
+  }
+  // A street across each end of the rail joins the two sides into one loop.
+  for (const s of [-AVENUE_SHORT, end + AVENUE_SHORT]) {
+    if (s > view.to + AVENUE_LONG || s < view.from - AVENUE_LONG) continue;
+    ground.push(
+      railBox(s, 0, 0, [1.5, AVENUE_LATERAL * 2 + 1.5, 0.06], AVENUE_TONE, {
+        tag: "avenue",
+        under: 2,
+        edge: false,
+      }),
+    );
   }
 
   return { ground, objects };

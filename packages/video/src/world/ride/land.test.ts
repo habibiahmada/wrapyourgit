@@ -176,37 +176,41 @@ test("an empty year lays every day flat", () => {
   for (const b of boxes(all, "day")) expect(b.size[2]).toBeCloseTo(0.04);
 });
 
-test("an avenue runs along the rail on both sides, links the towns, and stays out of them", () => {
+test("the avenue is one road: both sides the rail's whole length, round every turn, joined at the ends", () => {
   const whole: View = { trainS: 30, from: 0, to: 400, overview: 0 };
   const c = buildCity(sampleRecap);
   const l = land(c, gates(sampleRecap, c), stops, whole);
   const pieces = boxes(l.ground, "avenue");
-  expect(pieces.length).toBeGreaterThan(20);
-  // Which side of the rail a piece is on, and where along it: from its pivot, the piece's middle.
+  // Where along the rail a piece is, and on which side: the nearest point of the rail to its middle.
   const placed = pieces.map((piece) => {
     const [px, py] = piece.pivot ?? [0, 0];
-    let best = { s: 0, side: 1, far: Number.POSITIVE_INFINITY };
-    for (let s = 0; s <= 160; s += 1.5) {
-      for (const side of [-1, 1]) {
-        const [x, y] = at(s, side * 12.65);
-        const far = Math.hypot(x - px, y - py);
-        if (far < best.far) best = { s, side, far };
+    let best = { s: 0, far: Number.POSITIVE_INFINITY, side: 1 };
+    for (let s = -4; s <= 170; s += 0.25) {
+      const [x, y] = at(s);
+      const far = Math.hypot(x - px, y - py);
+      if (far < best.far) {
+        const [rx, ry] = at(s, 1);
+        const side = (rx - x) * (px - x) + (ry - y) * (py - y) > 0 ? 1 : -1;
+        best = { s, far, side };
       }
     }
-    return best;
+    return { ...best, piece, x: px, y: py };
   });
-  expect(placed.some((p) => p.side === 1)).toBe(true);
-  expect(placed.some((p) => p.side === -1)).toBe(true);
-  for (const p of placed) {
-    // Never inside a turn: there is no room there.
-    const turn = turning(p.s);
-    if (turn !== 0) expect(p.side).toBe(turn);
-    // And never where a station lays its own stretch of it.
-    const own = stops.some(
-      (stop) => stop.plaza && stop.side === p.side && Math.abs(p.s - (stop.s + PLAZA_AHEAD)) < 3,
-    );
-    expect(own).toBe(false);
+  for (const side of [-1, 1]) {
+    const run = placed.filter((p) => p.side === side && p.far > 5).sort((a, b) => a.s - b.s);
+    expect(run.length).toBeGreaterThan(30);
+    // Every piece meets the next: no gap along the road, in towns and round turns alike.
+    run.slice(1).forEach((p, k) => {
+      const q = run[k];
+      if (!q) return;
+      const reach = (p.piece.size[0] + q.piece.size[0]) / 2 + 0.35;
+      expect({ at: q.s, gap: Math.hypot(p.x - q.x, p.y - q.y) <= reach }).toEqual({
+        at: q.s,
+        gap: true,
+      });
+    });
   }
-  // Buildings stand on it between the towns.
-  expect(boxes(l.objects, "scenery").length).toBeGreaterThan(5);
+  // A street across each end of the rail joins the two sides into one loop.
+  const across = pieces.filter((piece) => piece.size[1] > 24);
+  expect(across).toHaveLength(2);
 });

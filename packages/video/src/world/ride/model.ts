@@ -97,7 +97,9 @@ export function buildRide(
     // outermost corners used to be kept, and one that was not outermost on the ground could
     // still be the highest on screen.)
     const heroEdge: [number, number, number][] = [];
+    let plazaSize: [number, number] | undefined;
     for (const solid of station(ctx)) {
+      if (solid.kind === "box" && solid.tag === "plaza") plazaSize = [solid.size[0], solid.size[1]];
       // The plaza itself may run out of frame; what must stay in is what carries the chapter.
       if (solid.kind === "picture" && solid.reach !== undefined) {
         // A figure on a sheet: the camera frames how high it stands, not the sheet.
@@ -128,7 +130,7 @@ export function buildRide(
         }
       }
     }
-    return { ...stop, heroTop, heroEdge };
+    return { ...stop, heroTop, heroEdge, plazaSize };
   });
   return { city, stops, timeline: buildRideTimeline(stops, mode, fps), gates: gates(data, city) };
 }

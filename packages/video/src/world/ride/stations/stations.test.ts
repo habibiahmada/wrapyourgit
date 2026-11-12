@@ -310,6 +310,13 @@ test("city's billboard is lowered in as the overview settles, not put there all 
   expect(foot(0.95)).toBeGreaterThan(foot(1));
 });
 
+test("a town lays no avenue of its own: the land's avenue runs through it", () => {
+  const roads = boxes(build("busiest", sampleRecap), "scenery").filter(
+    (b) => b.size[0] > 10 && Math.abs(b.size[1] - 1.5) < 0.01 && b.size[2] < 0.05,
+  );
+  expect(roads).toEqual([]);
+});
+
 test("closing is a party: the gate carries the date and the year, the podium the numbers", () => {
   const model = closingModel(sampleRecap);
   const all = build("closing", sampleRecap);

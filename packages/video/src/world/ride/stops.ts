@@ -34,6 +34,11 @@ export type RideStop = Stop & {
   heroTop?: number;
   /** The hero's outermost corners, one per compass direction, so the camera can keep its sides in frame. Filled in by `buildRide`. */
   heroEdge?: [number, number, number][];
+  /**
+   * The plaza's length along the rail and depth across it, as the station built it for this
+   * frame, so the avenue can run just behind it. Filled in by `buildRide`.
+   */
+  plazaSize?: [number, number];
 };
 
 /**
