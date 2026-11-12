@@ -1,6 +1,6 @@
 # 0016. The story's files are rendered in the viewer's browser
 
-- Status: Accepted; decision 3 amended by [0017](0017-private-names-follow-the-owner.md)
+- Status: Accepted; decision 3 amended by [0017](0017-private-names-follow-the-owner.md); where the files are offered amended by [0024](0024-the-web-story-fills-the-window.md)
 - Date: 2026-11-10
 - Supersedes: [0004](0004-render-on-remotion-lambda.md) (MP4 on Remotion Lambda), [0011](0011-slides-from-the-composition.md) (slides rendered on the server)
 - Builds on: [0002](0002-one-composition-for-web-and-video.md), [0013](0013-baked-animation-no-webgl.md)
