@@ -36,22 +36,22 @@ How the story and the exported files are built. Code: `packages/video/src/world/
 
 Order lives in `world/stops.ts`; places on the rail in `ride/stops.ts`. Stations stand at even intervals on alternating sides of the rail. The letter's pages share one place, so moving between them is a page turn.
 
-| Stop        | Station                                                                                                    |
-| ----------- | ---------------------------------------------------------------------------------------------------------- |
-| hello       | the first platform; a board with the year and `@login` (and the public-data line on a public recap)        |
-| first-day   | the start of the contribution graph as a wall, the first day lit; the square large on a plinth with a flag |
-| private     | a locked vault with the private count on its side and no names; open and empty when there is nothing       |
-| city        | the overview of the whole year, a billboard with the year's total                                          |
-| busiest     | the tallest tower of the year beside the calendar page of that day; the count on its base                  |
-| rhythm      | a siding with seven wagons, Sunday to Saturday, each loaded by its share of the busiest weekday            |
-| languages   | a podium of blocks, one per language, as tall as its share, with its logo, share and name                  |
-| projects    | a stack of shipping containers, one per repository, each painted as long as its share of the largest       |
-| community   | an observatory with the stars on its hall and small stars rising from the dome; forks on the sign          |
-| engineering | a junction: merged pull requests on the main line, open ones on the branches, a board of the three counts  |
-| archetype   | the landing's city block for the archetype, playing its loop, its name on a board behind it                |
-| versus      | a seesaw with one weight per year, tipped by the model's angle                                             |
-| letter      | a writing desk and a pillar box; the letter comes up as a sheet of paper, one stop per page                |
-| closing     | the terminus: buffers, a board with the year's headline numbers, fireworks                                 |
+| Stop        | Station                                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| hello       | the first platform; a board with the year and `@login` (and the public-data line on a public recap)                                                                       |
+| first-day   | the start of the contribution graph as a wall, the first day lit; the square large on a plinth with a flag                                                                |
+| private     | a locked vault with the private count on its side and no names; open and empty when there is nothing                                                                      |
+| city        | the overview of the whole year, a billboard with the year's total                                                                                                         |
+| busiest     | the tallest tower of the year beside the calendar page of that day; the count on its base                                                                                 |
+| rhythm      | a siding with seven wagons, Sunday to Saturday, each loaded by its share of the busiest weekday                                                                           |
+| languages   | a podium of blocks, one per language, as tall as its share, with its logo, share and name                                                                                 |
+| projects    | a stack of shipping containers, one per repository, each painted as long as its share of the largest                                                                      |
+| community   | an observatory with the stars on its hall and small stars rising from the dome; forks on the sign                                                                         |
+| engineering | a junction: merged pull requests on the main line, open ones on the branches, a board of the three counts                                                                 |
+| archetype   | the landing's city block for the archetype, playing its loop, its name on a board behind it                                                                               |
+| versus      | a seesaw with one weight per year, tipped by the model's angle                                                                                                            |
+| letter      | a writing desk and a pillar box; the letter comes up as a sheet of paper, one stop per page                                                                               |
+| closing     | the terminus: buffers, and a party on a plaza: a gate with the year crowned by the months, a podium with the numbers and a trophy, balloons, bunting, confetti, fireworks |
 
 Cell is the only mascot ([ADR-0012](../architecture/decisions/0012-one-mascot-photo-backdrops.md)). On the ride it is built from boxes on the engine (`ride/cell.ts`); the archetype station shows its baked city block ([ADR-0022](../architecture/decisions/0022-archetype-art-is-a-city-block.md)). Re-bake after changing a look or motion: `bun scripts/render-art.ts <id>` ([ADR-0013](../architecture/decisions/0013-baked-animation-no-webgl.md)).
 
