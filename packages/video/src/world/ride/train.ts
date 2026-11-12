@@ -19,6 +19,18 @@ const HUB: Decal[] = [
   { on: "sides", rect: [0.36, 0.36, 0.64, 0.64], fill: INK, round: true },
 ];
 
+/** One wheel size for the engine and the wagons, each standing just outside its body's side. */
+const WHEEL = { size: 0.4, thick: 0.1 };
+/** Between the engine's axles. */
+const AXLE = 0.78;
+
+function wheel(c: V3, yaw: number, dx: number, dy: number): Solid {
+  return part(c, yaw, dx, dy, 0.02, [WHEEL.size, WHEEL.thick, WHEEL.size], TONE.ink, {
+    tag: "wheel",
+    decals: HUB,
+  });
+}
+
 /** The engine with its nose at `s`, and two wagons behind it. */
 export function train(s: number): Solid[] {
   const c = at(s);
@@ -54,12 +66,9 @@ export function train(s: number): Solid[] {
       ],
     }),
   ];
-  for (const dx of [-1.1, -0.3, 0.5]) {
-    for (const dy of [-0.6, 0.6]) {
-      out.push(
-        part(c, yaw, dx, dy, 0.02, [0.42, 0.1, 0.42], TONE.ink, { tag: "wheel", decals: HUB }),
-      );
-    }
+  // Three axles, evenly spaced under the frame with the same overhang at each end.
+  for (const dx of [-0.3 - AXLE, -0.3, -0.3 + AXLE]) {
+    for (const dy of [-1, 1]) out.push(wheel(c, yaw, dx, dy * (1.1 / 2 + WHEEL.thick / 2)));
   }
   for (const k of [0, 1]) {
     const ws = s - 2.8 - k * 1.5;
@@ -75,12 +84,8 @@ export function train(s: number): Solid[] {
         ],
       }),
     );
-    for (const dx of [-0.35, 0.35]) {
-      for (const dy of [-0.56, 0.56]) {
-        out.push(
-          part(wc, wy, dx, dy, 0.02, [0.36, 0.1, 0.36], TONE.ink, { tag: "wheel", decals: HUB }),
-        );
-      }
+    for (const dx of [-0.34, 0.34]) {
+      for (const dy of [-1, 1]) out.push(wheel(wc, wy, dx, dy * (1.05 / 2 + WHEEL.thick / 2)));
     }
   }
   return out;

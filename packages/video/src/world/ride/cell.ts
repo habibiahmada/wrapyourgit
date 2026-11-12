@@ -87,10 +87,13 @@ export function cell(c: V3, yaw: number, at: number, mood: Mood, amount = 1): So
       }),
     );
   }
-  [-0.16, 0, 0.16].forEach((dy, i) => {
-    const bounce = Math.max(0, Math.sin((frame / 30) * TAU - i * 0.8)) * 0.06 * k;
+  // The crest: three cells in a row across the head, with a gap between them so each reads as
+  // its own cell from any side. The middle one leads the bounce and the outer two follow
+  // together, so the crest stays level left to right.
+  [-0.21, 0, 0.21].forEach((dy, i) => {
+    const bounce = Math.max(0, Math.sin((frame / 30) * TAU - Math.abs(i - 1) * 0.8)) * 0.06 * k;
     out.push(
-      p(0, dy * k, leg + 0.62 * k + bounce, [0.12 * k, 0.12 * k, 0.12 * k], heat(i + 1), {
+      p(0, dy * k, leg + 0.62 * k + bounce, [0.13 * k, 0.13 * k, 0.13 * k], heat(i + 1), {
         tag: "cell-crest",
       }),
     );
