@@ -6,7 +6,7 @@ import {
   arrivalSound,
   edgeSounds,
   TAP_SOUND,
-  transitionSound,
+  TRAVEL_SOUND,
   travelSound,
   videoSounds,
 } from "./sound";
@@ -15,20 +15,12 @@ import { STOP_KINDS, type Stop, type StopKind } from "./stops";
 const PUBLIC = join(import.meta.dir, "../../public");
 
 describe("world sounds", () => {
-  test("every stop kind has a transition sound with a file", () => {
-    for (const kind of STOP_KINDS) {
-      const name = transitionSound(kind);
-      expect(existsSync(join(PUBLIC, sfxFile(name)))).toBe(true);
-      expect(SFX[name].seconds).toBeLessThanOrEqual(2); // never longer than the longest move
-    }
-  });
-
-  test("the garden rustles, the sky chirps, the city blows", () => {
-    expect(transitionSound("languages")).toBe("leaves");
-    expect(transitionSound("community")).toBe("crickets");
-    expect(transitionSound("city")).toBe("wind");
-    expect(transitionSound("closing")).toBe("wind");
-    expect(transitionSound("busiest")).toBe("dive");
+  test("every move is the train on its rails, a short loop that lasts as long as any move", () => {
+    expect(TRAVEL_SOUND).toBe("rails");
+    expect(existsSync(join(PUBLIC, sfxFile(TRAVEL_SOUND)))).toBe(true);
+    for (const kind of STOP_KINDS) expect(travelSound(kind, false)).toBe("rails");
+    expect(SFX.rails.loop).toBe(true);
+    expect(SFX.rails.seconds).toBeLessThanOrEqual(2);
   });
 
   test("a tap has its own file", () => {
@@ -44,7 +36,7 @@ describe("world sounds", () => {
     }
   });
 
-  test("each scene arrives with its own sound; the city leaves it to the wind", () => {
+  test("each scene arrives with its own sound; the city has none", () => {
     expect(arrivalSound("hello")).toBe("hello");
     expect(arrivalSound("first-day")).toBe("sprout");
     expect(arrivalSound("private")).toBe("lock");
@@ -63,8 +55,7 @@ describe("world sounds", () => {
 
   test("an in-place move (a page turn) plays no travel sound", () => {
     expect(travelSound("letter", true)).toBeNull();
-    expect(travelSound("letter", false)).toBe("dive");
-    expect(travelSound("languages", false)).toBe("leaves");
+    expect(travelSound("letter", false)).toBe("rails");
   });
 });
 
@@ -83,7 +74,7 @@ describe("edge and video sounds", () => {
 
   test("backward from closing to the last letter page crosses closing's edge: a flight", () => {
     expect(edgeSounds(world.timeline, world.stops, 5, 4)).toEqual({
-      travel: transitionSound("letter"),
+      travel: "rails",
       arrival: "page",
     });
   });
@@ -95,31 +86,31 @@ describe("edge and video sounds", () => {
 
   test("forward into a flight plays the target's travel and arrival", () => {
     expect(edgeSounds(world.timeline, world.stops, 4, 5)).toEqual({
-      travel: "wind",
+      travel: "rails",
       arrival: "firework",
     });
     expect(edgeSounds(world.timeline, world.stops, 1, 0)).toEqual({
-      travel: "dive",
+      travel: "rails",
       arrival: "hello",
     });
   });
 
-  test("arriving at the city leaves the arrival to the wind", () => {
+  test("arriving at the city has no arrival sound", () => {
     expect(edgeSounds(world.timeline, world.stops, 0, 1)).toEqual({
-      travel: "wind",
+      travel: "rails",
       arrival: null,
     });
   });
 
-  test("video sounds: hello at 0, travel at each move start, no travel on page turns", () => {
+  test("video sounds: hello at 0, the rails for each move and as long as it, none on page turns", () => {
     expect(videoSounds(world)).toEqual([
       { frame: 0, sound: "hello" },
-      { frame: 0, sound: "wind" },
-      { frame: 40, sound: "dive" },
+      { frame: 0, sound: "rails", frames: 40 },
+      { frame: 40, sound: "rails", frames: 40 },
       { frame: 80, sound: "page" },
       { frame: 120, sound: "page" },
       { frame: 160, sound: "page" },
-      { frame: 160, sound: "wind" },
+      { frame: 160, sound: "rails", frames: 40 },
       { frame: 200, sound: "firework" },
     ]);
   });

@@ -99,10 +99,10 @@ export function RideStory({ data, mode, music = true, letter = true, idle = 0 }:
       {/* A video carries its own sound; the web player plays the same sounds itself, on the tap. */}
       {mode === "video" && (
         <>
-          {videoSounds(model).map(({ frame: at, sound }, k) => (
+          {videoSounds(model).map(({ frame: at, sound, frames }, k) => (
             // Index keys: the list is fixed for a given ride, and one frame can hold two sounds.
             // biome-ignore lint/suspicious/noArrayIndexKey: see above
-            <WorldSfx key={`${k}-${sound}`} at={at} sound={sound} />
+            <WorldSfx key={`${k}-${sound}`} at={at} sound={sound} frames={frames} />
           ))}
           {music && <StoryMusic end={model.timeline.durationInFrames} fps={fps} />}
         </>

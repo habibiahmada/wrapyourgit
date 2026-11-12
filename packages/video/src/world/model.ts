@@ -7,12 +7,19 @@ import { buildStops, type Stop } from "./stops";
 import { buildTimeline, type Timeline, type WorldMode } from "./timeline";
 
 // Interactive mode renders no audio: the web player plays these itself, on the tap that moves.
-export { SFX, type SfxName, sfxFile } from "../audio/sfx";
+export {
+  CUT_FADE_SECONDS,
+  loops,
+  RAILS_IN_SECONDS,
+  SFX,
+  type SfxName,
+  sfxFile,
+} from "../audio/sfx";
 export {
   arrivalSound,
   edgeSounds,
   TAP_SOUND,
-  transitionSound,
+  TRAVEL_SOUND,
   travelSound,
   videoSounds,
 } from "./sound";

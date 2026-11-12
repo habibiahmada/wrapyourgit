@@ -59,9 +59,26 @@ export const SFX = {
   firework: { file: "audio/sfx/firework.wav", volume: 0.4, seconds: 1.2 },
   /** Arrival at the first stop: a friendly two-note chime. */
   hello: { file: "audio/sfx/hello.wav", volume: 0.35, seconds: 0.4 },
-} as const satisfies Record<string, { file: string; volume: number; seconds: number }>;
+  /**
+   * Every move of the ride: the wheels on the rails, a pair of clacks at each joint. A loop of
+   * four joints, played for as long as the move lasts: it rolls in as the train pulls away and
+   * fades as it pulls in (`RAILS_IN_SECONDS`, `CUT_FADE_SECONDS`).
+   */
+  rails: { file: "audio/sfx/rails.wav", volume: 0.4, seconds: 1.68, loop: true },
+} as const satisfies Record<
+  string,
+  { file: string; volume: number; seconds: number; loop?: boolean }
+>;
 
 export type SfxName = keyof typeof SFX;
+
+/** A sound cut short (the rails, as long as a move) fades out over this, so it ends without a click. */
+export const CUT_FADE_SECONDS = 0.35;
+/** A looping sound (the rails) comes in over this, as the train pulls away. */
+export const RAILS_IN_SECONDS = 0.6;
+
+/** Whether a sound loops for as long as it is played (only the rails do). */
+export const loops = (name: SfxName): boolean => "loop" in SFX[name];
 
 /** Pitches of `blip`, as frequency ratios of A5 (A minor pentatonic). */
 export const BLIP_STEPS = [1, 1.189, 1.335, 1.498, 1.782, 2, 2.378, 2.67] as const;

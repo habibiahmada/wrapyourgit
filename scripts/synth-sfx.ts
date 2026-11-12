@@ -302,6 +302,31 @@ const VOICES: Record<SfxName, (step: number) => (t: number, length: number) => n
     });
     return sum;
   },
+  rails: () => {
+    // The wheels on the rails: at each of four joints the front and back axles clack, "da-dum".
+    // Played as a loop (SFX.rails.loop), so the last clack has died away before the file ends
+    // and the loop joins on silence.
+    const hits = [0, 0.42, 0.84, 1.26].flatMap((at) => [
+      { at: at + 0.02, weight: 1 },
+      { at: at + 0.135, weight: 0.8 },
+    ]);
+    const click = highPass(1400);
+    return (t) => {
+      let sum = 0;
+      for (const hit of hits) {
+        const local = t - hit.at;
+        if (local < 0 || local > 0.14) continue;
+        const ring = 0.5 * sine(A5 * 2, local) + 0.3 * sine(A5 * 2.7, local);
+        const thump = 0.8 * sine(95, local);
+        sum +=
+          hit.weight *
+          (click(noise(), t) * 0.9 + ring * Math.exp(-local * 70) + thump) *
+          Math.min(1, local * 900) *
+          Math.exp(-local * 45);
+      }
+      return sum;
+    };
+  },
 };
 
 function wav(samples: Float32Array): ArrayBuffer {

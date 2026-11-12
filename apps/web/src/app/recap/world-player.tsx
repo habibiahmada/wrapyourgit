@@ -202,7 +202,9 @@ export function WorldPlayer(props: WorldPlayerProps) {
         cancelAnimationFrame(restRaf.current);
         sfx.play(TAP_SOUND);
         const sounds = edgeSounds(timeline, stops, move.from, move.to);
-        if (sounds.travel) sfx.play(sounds.travel);
+        // The wheels stop when the train does: the sound lasts as long as the move.
+        const seconds = Math.abs(move.endFrame - move.startFrame) / VIDEO_FPS;
+        if (sounds.travel) sfx.play(sounds.travel, reduced ? FADE_MS / 500 : seconds);
         if (!music.isPlaying()) music.play();
 
         const finish = () => {

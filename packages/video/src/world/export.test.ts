@@ -42,7 +42,8 @@ test("the ride's video has its sounds: a travel sound where each move starts, an
   const firstDay = ride.stops.findIndex((stop) => stop.kind === "first-day");
   expect(sounds).toContainEqual({
     frame: (stopFrames[firstDay - 1] ?? 0) + holdFrames,
-    sound: "dive",
+    sound: "rails",
+    frames: ride.timeline.moveFrames[firstDay] ?? -1,
   });
   expect(sounds).toContainEqual({ frame: stopFrames[firstDay] ?? -1, sound: "sprout" });
   expect(sounds.filter((s) => s.sound === "firework")).toHaveLength(1);

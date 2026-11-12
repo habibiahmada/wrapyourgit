@@ -1,6 +1,13 @@
 "use client";
 
-import { SFX, type SfxName, sfxFile } from "@wyg/video/world";
+import {
+  CUT_FADE_SECONDS,
+  loops,
+  RAILS_IN_SECONDS,
+  SFX,
+  type SfxName,
+  sfxFile,
+} from "@wyg/video/world";
 import { useEffect, useMemo, useRef } from "react";
 
 type Engine = {
@@ -10,8 +17,11 @@ type Engine = {
 };
 
 export type Sfx = {
-  /** Call from a click or key handler: the first call creates the AudioContext (autoplay rules). */
-  play(name: SfxName): void;
+  /**
+   * Call from a click or key handler: the first call creates the AudioContext (autoplay rules).
+   * With `seconds`, the sound is cut there with a short fade (the rails, as long as the move).
+   */
+  play(name: SfxName, seconds?: number): void;
   setMuted(muted: boolean): void;
 };
 
@@ -59,7 +69,7 @@ export function useSfx(): Sfx {
     };
 
     return {
-      play(name) {
+      play(name, seconds) {
         const e = ensure();
         void e.context.resume();
         void buffer(e, name).then((decoded) => {
@@ -70,7 +80,22 @@ export function useSfx(): Sfx {
           source.buffer = decoded;
           source.connect(gain).connect(e.mute);
           source.onended = () => gain.disconnect();
-          source.start();
+          const now = e.context.currentTime;
+          const volume = SFX[name].volume;
+          // A looping sound (the rails) goes round for `seconds`, rolling in as the train pulls away.
+          const looping = loops(name) && seconds !== undefined;
+          source.loop = looping;
+          if (looping) {
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(volume, now + Math.min(seconds, RAILS_IN_SECONDS));
+          }
+          source.start(now);
+          if (seconds !== undefined && (looping || seconds < decoded.duration)) {
+            const fade = Math.min(seconds, CUT_FADE_SECONDS);
+            gain.gain.setValueAtTime(volume, now + Math.max(0, seconds - fade));
+            gain.gain.linearRampToValueAtTime(0, now + seconds);
+            source.stop(now + seconds);
+          }
         });
       },
       setMuted(next) {
