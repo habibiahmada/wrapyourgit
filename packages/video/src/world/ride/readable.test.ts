@@ -296,4 +296,5 @@ test("every line a station prints can be read at its stop, in every format", () 
       });
     }
   }
-});
+  // Twenty rides, every station of each: well over the default limit on a busy machine.
+}, 30_000);
