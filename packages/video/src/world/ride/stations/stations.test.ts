@@ -552,50 +552,59 @@ test("community: a total is never passed off as this year's gain, and an estimat
   );
 });
 
-test("engineering: the departures board carries the model's three rows", () => {
+test("engineering: the board carries the model's three rows", () => {
   const model = planesModel(sampleRecap);
-  const text = printed(boxes(build("engineering", sampleRecap), "departures"));
+  const text = printed(boxes(build("engineering", sampleRecap), "pr-board"));
   for (const row of model.rows) {
     expect(text).toContain(row.label);
     if (row.value) expect(text).toContain(row.value);
   }
 });
 
-test("engineering: one plane in the air for each pull request in flight, one parked for each merged", () => {
+test("engineering: a wagon on the main line for each pull request merged, one on a branch for each open", () => {
   const model = planesModel(sampleRecap);
   const all = build("engineering", sampleRecap);
-  expect(boxes(all, "plane-flying")).toHaveLength(model.drawnFlying);
-  expect(boxes(all, "plane-parked")).toHaveLength(model.drawnLanded);
-  // Parked planes stand on the apron; the ones in flight are above the board.
-  const board = boxes(all, "departures")[0] as Box;
-  for (const plane of boxes(all, "plane-flying"))
-    expect(plane.at[2]).toBeGreaterThan(board.at[2] + board.size[2]);
-});
-
-test("engineering: the board hangs between a control tower and a mast, and what is on them turns", () => {
-  const all = build("engineering", sampleRecap, 1, 10);
-  const board = boxes(all, "departures")[0] as Box;
-  const mid = board.at[0] + board.size[0] / 2;
-  // One stands at each end of the board, clear of its text.
-  const tower = boxes(all, "tower")[0] as Box;
-  const mast = boxes(all, "mast")[0] as Box;
-  expect(tower.at[0] + tower.size[0]).toBeLessThanOrEqual(board.at[0] + 1e-6);
-  expect(mast.at[0]).toBeGreaterThanOrEqual(board.at[0] + board.size[0] - 1e-6);
-  expect(tower.at[0] + tower.size[0] / 2).toBeLessThan(mid);
-  // The tower's light and the mast's dish go round once every 60 frames.
-  for (const tag of ["tower-light", "dish"]) {
-    const yaw = (frame: number) => boxes(build("engineering", sampleRecap, 1, frame), tag)[0]?.yaw;
-    expect(yaw(10)).not.toBe(yaw(25));
-    expect(yaw(70)).toBeCloseTo(yaw(10) ?? 0);
+  const merged = boxes(all, "pr-merged");
+  const open = boxes(all, "pr-open");
+  expect(merged).toHaveLength(model.drawnLanded);
+  expect(open).toHaveLength(model.drawnFlying);
+  // The merged stand in one row along the main line; the open ones are askew, on the branches.
+  const main = boxes(all, "main-line")[0] as Box;
+  const across = main.at[1] + main.size[1] / 2;
+  for (const wagon of merged) {
+    expect(wagon.at[1] + wagon.size[1] / 2).toBeCloseTo(across);
+    expect(wagon.yaw).toBe(main.yaw);
   }
-  // The runway and the apron are there before anything else: an airfield from the first frame.
+  for (const wagon of open) expect(wagon.yaw).not.toBe(main.yaw);
+  // Three branches come in to the main line, each with a buffer at its far end.
+  expect(boxes(all, "branch")).toHaveLength(3);
+  expect(boxes(all, "buffer")).toHaveLength(3);
+  // The lines are there before anything is built: a junction from the first frame.
   const bare = build("engineering", sampleRecap, 0);
-  expect(boxes(bare, "runway")).toHaveLength(1);
-  expect(boxes(bare, "apron")).toHaveLength(1);
-  expect(boxes(bare, "tower")).toHaveLength(0);
+  expect(boxes(bare, "main-line")).toHaveLength(1);
+  expect(boxes(bare, "branch")).toHaveLength(3);
+  expect(boxes(bare, "pr-board")).toHaveLength(0);
 });
 
-test("engineering: merged unknown parks no plane and says so in words, with no figure", () => {
+test("engineering: a signal stands at each end of the board, and their lights change over", () => {
+  const all = build("engineering", sampleRecap, 1, 10);
+  const board = boxes(all, "pr-board")[0] as Box;
+  const signals = boxes(all, "signal");
+  expect(signals).toHaveLength(4);
+  for (const signal of signals) {
+    const mid = signal.at[0] + signal.size[0] / 2;
+    expect(mid < board.at[0] || mid > board.at[0] + board.size[0]).toBe(true);
+  }
+  const lit = (frame: number) =>
+    boxes(build("engineering", sampleRecap, 1, frame), "signal")
+      .flatMap((b) => b.decals ?? [])
+      .map((d) => d.fill)
+      .join();
+  expect(lit(10)).not.toBe(lit(40));
+  expect(lit(70)).toBe(lit(10));
+});
+
+test("engineering: merged unknown puts no wagon on the main line and says so in words, with no figure", () => {
   const unknown: RecapData = {
     ...sampleRecap,
     engineering: {
@@ -604,20 +613,20 @@ test("engineering: merged unknown parks no plane and says so in words, with no f
     },
   };
   const all = build("engineering", unknown);
-  expect(boxes(all, "plane-parked")).toHaveLength(0);
-  const text = printed(boxes(all, "departures"));
+  expect(boxes(all, "pr-merged")).toHaveLength(0);
+  const text = printed(boxes(all, "pr-board"));
   expect(text).toContain("merged: couldn't be read");
   // Two rows have figures; the third is a sentence.
   expect(text.filter((line) => /^[\d,.k]+$/.test(line))).toHaveLength(2);
 });
 
-test("engineering: the planes in flight drift, and the figures rise as the board lands", () => {
-  const z = (frame: number) =>
-    boxes(build("engineering", sampleRecap, 1, frame), "plane-flying").map((b) => b.at[2]);
-  expect(z(10)).not.toEqual(z(25));
-  expect(z(70)).toEqual(z(10));
+test("engineering: the wagons on the branches shunt, and the figures rise as the board lands", () => {
+  const where = (frame: number) =>
+    boxes(build("engineering", sampleRecap, 1, frame), "pr-open").map((b) => b.pivot?.[0]);
+  expect(where(10)).not.toEqual(where(25));
+  expect(where(70)).toEqual(where(10));
   const sent = planesModel(sampleRecap).rows[0].value ?? "";
-  expect(boxes(build("engineering", sampleRecap, 0), "departures")).toHaveLength(0);
+  expect(boxes(build("engineering", sampleRecap, 0), "pr-board")).toHaveLength(0);
   expect(printed(build("engineering", sampleRecap, 0.5))).not.toContain(sent);
   expect(printed(build("engineering", sampleRecap, 0.5))).not.toContain("0");
 });

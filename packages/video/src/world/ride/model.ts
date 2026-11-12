@@ -53,9 +53,9 @@ export const HERO_TAGS = [
   "observatory",
   "dome",
   "star",
-  "departures",
-  "plane-flying",
-  "plane-parked",
+  "pr-board",
+  "pr-merged",
+  "pr-open",
   "weight",
   "stage",
 ];

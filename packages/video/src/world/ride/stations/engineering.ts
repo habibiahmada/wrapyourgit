@@ -1,153 +1,134 @@
 import { formatCount } from "../../../theme";
 import { planesModel } from "../../scenes/planes.model";
 import { LIT, TONE, type Tone, toneOf } from "../palette";
-import type { Decal, FaceText, Solid } from "../prims";
+import type { Box, Decal, FaceText, Solid } from "../prims";
 import { PLAZA_TOP, part, plaza, type Station } from "./kit";
 
-/** The departures board: how wide it is, and its three rows in world units from its top. */
+/** The board of counts: how wide it is, and its three rows in world units from its top. */
 const BOARD = { wide: 9.2, tall: 3.05, lift: 0.5 };
-/** The plaza is a little longer than usual: the board stands between a tower and a mast. */
+/** The plaza is a little longer than usual: the board stands between two signals. */
 const LONG = 10.8;
 const ROWS: readonly [number, number][] = [
   [0.12, 1.3],
   [1.36, 2.08],
   [2.14, 2.86],
 ];
-/** Where the strips lie across the plaza, from its middle: the board at the back, the apron, the runway by the rail. */
+/** Where things lie across the plaza, from its middle: the board at the back, the main line by the rail. */
 const BACK = 1.95;
-const APRON = 0.35;
-const RUNWAY = { at: 1.5, wide: 1.5, long: 9.0 };
-const PAPER = toneOf("#e6edf3");
+const MAIN = { at: 1.45, long: 10.2, wide: 0.9 };
+/** The branch lines: where each joins the main line, how long it is, and the angle it comes in at. */
+const JOINS = [-2.5, 0.6, 3.7];
+const BRANCH = { long: 3.0, angle: 0.56 };
+/** A wagon, and how far apart wagons stand on a line. */
+const WAGON = { long: 0.6, wide: 0.5, tall: 0.42, pitch: 0.72 };
+const MERGED = toneOf("#2ea043");
+const OPEN = toneOf("#e3b341");
+const BALLAST = toneOf("#3a424d");
 const easeOut = (t: number) => 1 - (1 - Math.max(0, Math.min(1, t))) ** 3;
 
-/**
- * A small plane: a white body with a dark row of windows and a green nose, a wing across it and
- * a green fin on its tail. `along` points its nose down the plaza, the way planes in the air fly;
- * a parked one stands across, nose to the runway. Only the body carries `tag`: one body, one plane.
- */
-function plane(
-  ctx: { c: [number, number, number]; yaw: number },
-  dx: number,
-  dy: number,
-  z: number,
-  along: boolean,
-  tag: string,
-  toRunway = 1,
-): Solid[] {
-  const { c, yaw } = ctx;
-  const long = along ? 1.0 : 0.86;
-  const span = along ? 0.96 : 0.6;
-  const glass: Decal = {
-    on: along ? "sides" : "front",
-    rect: [0.3, 0.45, 0.9, 0.8],
-    fill: "#0d1117",
-  };
-  const body: [number, number, number] = along ? [long, 0.24, 0.2] : [0.24, long, 0.2];
-  const wing: [number, number, number] = along ? [0.3, span, 0.05] : [span, 0.3, 0.05];
-  const fin: [number, number, number] = along ? [0.2, 0.06, 0.24] : [0.06, 0.2, 0.24];
-  // The tail is the end away from the nose: behind along the rail, or away from the runway.
-  const tail = (long / 2 - 0.12) * (along ? -1 : -toRunway);
+/** A stretch of track's paint: sleepers across it and two rails along it. */
+function trackPaint(long: number): Decal[] {
+  const sleepers = Math.max(3, Math.round(long / 0.45));
   return [
-    part(c, yaw, dx, dy, z, body, PAPER, {
-      tag,
-      lit: true,
-      decals: [
-        glass,
-        { on: "back", rect: [0.3, 0.45, 0.9, 0.8], fill: "#0d1117" },
-        {
-          on: "top",
-          rect: along ? [0.82, 0, 1, 1] : [0, toRunway > 0 ? 0.82 : 0, 1, toRunway > 0 ? 1 : 0.18],
-          fill: LIT,
-        },
-      ],
-    }),
-    part(c, yaw, dx, dy, z + 0.09, wing, toneOf("#c9d1d9"), { tag: "plane-part", lit: true }),
-    part(c, yaw, dx + (along ? tail : 0), dy + (along ? 0 : tail), z + 0.2, fin, toneOf(LIT), {
-      tag: "plane-part",
-      lit: true,
-      edge: false,
-    }),
+    ...Array.from(
+      { length: sleepers },
+      (_, k): Decal => ({
+        on: "top",
+        rect: [(k + 0.3) / sleepers, 0.08, (k + 0.6) / sleepers, 0.92],
+        fill: "#6e5a48",
+      }),
+    ),
+    { on: "top", rect: [0, 0.2, 1, 0.28], fill: "#c9d1d9" },
+    { on: "top", rect: [0, 0.72, 1, 0.8], fill: "#c9d1d9" },
   ];
 }
 
 /**
- * Pull requests: a small airfield. The departures board carries the model's three rows (sent,
- * merged, reviews), each figure beside its words, hung between the control tower, whose light
- * turns, and a radar mast. One plane is in the air for each pull request still in flight and one
- * is parked on the apron for each merged, up to the model's cap; the board has the real numbers.
- * The runway by the rail has its centre line, its threshold bars and its edge lights, and a
- * windsock at its end. When GitHub could not say how many were merged, nothing is parked and the
- * row says so in words: not knowing is not zero. The planes in the air drift on a 60-frame loop.
+ * Pull requests: a junction. The main line runs along the plaza by the rail, and three branch
+ * lines come in to it from behind, as a branch is merged into main. One wagon stands on the main
+ * line, coupled in a row, for each pull request merged, and one waits on a branch for each still
+ * open, up to the model's cap; the board behind carries the model's three rows (sent, merged,
+ * reviews), each figure beside its words, between two signals whose lights change. When GitHub
+ * could not say how many were merged, no wagon is on the main line and the row says so in words:
+ * not knowing is not zero. The wagons on the branches shunt a little, on a 60-frame loop.
  */
 export const engineering: Station = (ctx) => {
   const { data, c, yaw, build, frame, stop } = ctx;
   const model = planesModel(data);
   const out: Solid[] = plaza(ctx, LONG);
-  const near = stop.side * RUNWAY.at;
-  const apron = stop.side * APRON;
-  const far = -stop.side * BACK;
+  const side = stop.side;
+  const far = -side * BACK;
   const loop = (((frame % 60) + 60) % 60) / 60;
-  // The runway: centre line, threshold bars at both ends, a lit lamp every so often on each edge.
-  out.push(
-    part(c, yaw, 0, near, PLAZA_TOP, [RUNWAY.long, RUNWAY.wide, 0.04], TONE.ink, {
-      tag: "runway",
-      under: 1,
-      decals: [
-        ...[0.18, 0.31, 0.44, 0.56, 0.69, 0.82].map(
-          (u): Decal => ({ on: "top", rect: [u - 0.035, 0.46, u + 0.035, 0.54], fill: "#c9d1d9" }),
-        ),
-        ...[0.02, 0.93].flatMap((u) =>
-          [0.14, 0.32, 0.5, 0.68, 0.86].map(
-            (v): Decal => ({ on: "top", rect: [u, v - 0.05, u + 0.05, v + 0.05], fill: "#c9d1d9" }),
-          ),
-        ),
-        ...[0.03, 0.97].flatMap((v) =>
-          [0.1, 0.23, 0.36, 0.5, 0.64, 0.77, 0.9].map(
-            (u): Decal => ({
-              on: "top",
-              rect: [u - 0.008, v - 0.03, u + 0.008, v + 0.03],
-              fill: "#ffd866",
-            }),
-          ),
-        ),
-      ],
-    }),
-    // The apron the parked planes stand on, with a stand line for each.
-    part(c, yaw, 0, apron, PLAZA_TOP, [RUNWAY.long, 1.3, 0.03], TONE.dark, {
-      tag: "apron",
-      under: 1,
-      decals: [{ on: "top", rect: [0.02, 0.44, 0.98, 0.56], fill: "#e3b341" }],
-    }),
-    // The windsock at the runway's far end: a pole and a striped sock that lifts and falls.
-    part(
-      c,
-      yaw,
-      RUNWAY.long / 2 - 0.2,
-      near + stop.side * 0.55,
-      PLAZA_TOP,
-      [0.08, 0.08, 1.3],
-      TONE.mid,
-      {
-        tag: "windsock",
+  const cos = Math.cos(yaw);
+  const sin = Math.sin(yaw);
+  /**
+   * A box turned about its own middle: `dx` along the rail and `dy` across it from the plaza's
+   * middle, turned `turn` more than the plaza. A branch line and what stands on it lie askew.
+   */
+  const askew = (
+    dx: number,
+    dy: number,
+    z: number,
+    size: [number, number, number],
+    tone: Tone,
+    turn: number,
+    extra: Partial<Box>,
+  ): Box => {
+    const mid: [number, number] = [c[0] + dx * cos - dy * sin, c[1] + dx * sin + dy * cos];
+    return {
+      kind: "box",
+      at: [mid[0] - size[0] / 2, mid[1] - size[1] / 2, c[2] + z],
+      size,
+      tone,
+      pivot: mid,
+      yaw: yaw + turn,
+      ...extra,
+    };
+  };
+  /** A point `t` along branch `k` from its far end (0) to where it joins the main line (1). */
+  const turn = side * BRANCH.angle;
+  const onBranch = (k: number, t: number): [number, number] => {
+    const back = (1 - t) * BRANCH.long;
+    return [
+      (JOINS[k] ?? 0) - Math.cos(BRANCH.angle) * back,
+      side * (MAIN.at - Math.sin(BRANCH.angle) * back),
+    ];
+  };
+  const wagonPaint = (load: string): Decal[] => [
+    { on: "top", rect: [0.1, 0.12, 0.9, 0.88], fill: load },
+    { on: "all", rect: [0, 0, 1, 0.3], fill: "#161b22" },
+    ...[0.14, 0.62].map(
+      (u): Decal => ({ on: "sides", rect: [u, 0, u + 0.24, 0.34], fill: "#c9d1d9", round: true }),
+    ),
+  ];
+
+  // The lines are there from the start: the main line, the three branches under it, and a
+  // buffer at each branch's far end.
+  JOINS.forEach((_, k) => {
+    const [mx, my] = onBranch(k, 0.5);
+    out.push(
+      askew(mx, my, PLAZA_TOP, [BRANCH.long, 0.8, 0.05], BALLAST, turn, {
+        tag: "branch",
+        under: 2,
         edge: false,
-      },
-    ),
-    part(
-      c,
-      yaw,
-      RUNWAY.long / 2 - 0.55,
-      near + stop.side * 0.55,
-      PLAZA_TOP + 1.05 + Math.sin(loop * Math.PI * 2) * 0.05,
-      [0.7, 0.2, 0.22],
-      toneOf("#ff9a5c"),
-      {
-        tag: "windsock",
-        lit: true,
-        decals: [0.2, 0.6].map(
-          (u): Decal => ({ on: "all", rect: [u, 0, u + 0.2, 1], fill: "#f0f6fc" }),
-        ),
-      },
-    ),
+        decals: trackPaint(BRANCH.long),
+      }),
+    );
+    const [bx, by] = onBranch(k, -0.04);
+    out.push(
+      askew(bx, by, PLAZA_TOP + 0.05, [0.16, 0.86, 0.34], toneOf("#da3633"), turn, {
+        tag: "buffer",
+        decals: [{ on: "all", rect: [0, 0.35, 1, 0.65], fill: "#f0f6fc" }],
+      }),
+    );
+  });
+  out.push(
+    part(c, yaw, 0, side * MAIN.at, PLAZA_TOP, [MAIN.long, MAIN.wide, 0.06], BALLAST, {
+      tag: "main-line",
+      under: 1,
+      edge: false,
+      decals: trackPaint(MAIN.long),
+    }),
   );
   const landed = easeOut(build / 0.4);
   if (landed <= 0) return out;
@@ -183,12 +164,12 @@ export const engineering: Station = (ctx) => {
   const top = PLAZA_TOP + BOARD.lift + BOARD.tall;
   out.push(
     part(c, yaw, 0, far, PLAZA_TOP + BOARD.lift + drop, [BOARD.wide, 0.16, BOARD.tall], TONE.ink, {
-      tag: "departures",
+      tag: "pr-board",
       lit: true,
       texts,
       decals: [
         { on: "sides", rect: [0, 0, 1, 0.03], fill: LIT },
-        // A rule under each row but the last, like a board of flights.
+        // A rule under each row but the last.
         ...ROWS.slice(0, 2).map(
           ([, bottom]): Decal => ({
             on: "sides",
@@ -205,94 +186,87 @@ export const engineering: Station = (ctx) => {
     }),
   );
 
-  // The board hangs between the control tower and the radar mast, one at each end.
+  // A signal at each end of the board: a mast and a head of three lamps. Green shows on one
+  // while amber shows on the other, and they change over twice a loop.
   const ends = BOARD.wide / 2 + 0.36;
-  out.push(
-    // The tower: a shaft with lit slits, a glass cab over the board's top, a roof.
-    part(
-      c,
-      yaw,
-      -ends,
-      far,
-      PLAZA_TOP + drop,
-      [0.6, 0.6, top - PLAZA_TOP + 0.15],
-      toneOf("#8b949e"),
-      {
-        tag: "tower",
-        decals: [0.2, 0.4, 0.6, 0.8].map(
-          (v): Decal => ({ on: "all", rect: [0.36, v - 0.03, 0.64, v + 0.03], fill: "#ffd866" }),
-        ),
-      },
-    ),
-    part(c, yaw, -ends, far, top + 0.15 + drop, [0.95, 0.95, 0.5], TONE.ink, {
-      tag: "tower",
-      lit: true,
-      decals: [{ on: "all", rect: [0.06, 0.16, 0.94, 0.84], fill: "#79c0ff" }],
-    }),
-    part(c, yaw, -ends, far, top + 0.65 + drop, [1.05, 1.05, 0.12], TONE.dark, { tag: "tower" }),
-    // The mast: a lattice of dark and light bands, and the dish on top, which turns.
-    part(
-      c,
-      yaw,
-      ends,
-      far,
-      PLAZA_TOP + drop,
-      [0.3, 0.3, top - PLAZA_TOP + 0.4],
-      toneOf("#da3633"),
-      {
-        tag: "mast",
-        decals: [0.25, 0.75].map(
-          (v): Decal => ({ on: "all", rect: [0, v - 0.125, 1, v + 0.125], fill: "#f0f6fc" }),
-        ),
-      },
-    ),
-  );
-  // What turns: the tower's light and the mast's dish, once every 60 frames, about their own posts.
-  const cos = Math.cos(yaw);
-  const sin = Math.sin(yaw);
-  const turning = (
-    dx: number,
-    z: number,
-    size: [number, number, number],
-    tone: Tone,
-    tag: string,
-  ): Solid => {
-    const mid: [number, number] = [c[0] + dx * cos - far * sin, c[1] + dx * sin + far * cos];
-    return {
-      kind: "box",
-      at: [mid[0] - size[0] / 2, mid[1] - size[1] / 2, z + drop],
-      size,
-      tone,
-      pivot: mid,
-      yaw: yaw + loop * Math.PI * 2,
-      lit: true,
-      tag,
-    };
-  };
-  out.push(
-    turning(-ends, top + 0.77, [0.7, 0.16, 0.16], TONE.lamp, "tower-light"),
-    turning(ends, top + 0.4, [0.9, 0.14, 0.42], toneOf("#c9d1d9"), "dish"),
-  );
-
-  // Parked planes roll out onto the apron one after another, noses to the runway; the ones in
-  // flight come down to their height over the second half of the build.
-  for (let i = 0; i < model.drawnLanded; i++) {
-    const out1 = easeOut((build - 0.3 - i * 0.03) / 0.3);
-    if (out1 <= 0) continue;
-    const dx = (i - (model.drawnLanded - 1) / 2) * 0.7;
+  const swap = Math.floor(loop * 2) % 2;
+  [-ends, ends].forEach((dx, k) => {
+    const green = (k + swap) % 2 === 0;
+    const lamp = (v: number, on: boolean, colour: string): Decal => ({
+      on: "sides",
+      rect: [0.2, v, 0.8, v + 0.2],
+      fill: on ? colour : "#30363d",
+      round: true,
+    });
     out.push(
-      ...plane(ctx, dx, apron, PLAZA_TOP + 0.05 + (1 - out1) * 4, false, "plane-parked", stop.side),
+      part(c, yaw, dx, far, PLAZA_TOP + drop, [0.16, 0.16, top - PLAZA_TOP - 0.5], TONE.mid, {
+        tag: "signal",
+        edge: false,
+      }),
+      part(c, yaw, dx, far, top - 0.5 + drop, [0.42, 0.3, 1.26], TONE.ink, {
+        tag: "signal",
+        lit: true,
+        decals: [lamp(0.7, false, "#da3633"), lamp(0.4, !green, "#e3b341"), lamp(0.1, green, LIT)],
+      }),
     );
+  });
+
+  // Merged: wagons coupled in a row on the main line, set down one after another.
+  for (let i = 0; i < model.drawnLanded; i++) {
+    const on = easeOut((build - 0.3 - i * 0.03) / 0.3);
+    if (on <= 0) continue;
+    const dx = (i - (model.drawnLanded - 1) / 2) * WAGON.pitch;
+    out.push(
+      part(
+        c,
+        yaw,
+        dx,
+        side * MAIN.at,
+        PLAZA_TOP + 0.06 + (1 - on) * 4,
+        [WAGON.long, WAGON.wide, WAGON.tall],
+        MERGED,
+        { tag: "pr-merged", lit: true, decals: wagonPaint(LIT) },
+      ),
+    );
+    // The coupling to the wagon before it.
+    if (i > 0 && on >= 1) {
+      out.push(
+        part(
+          c,
+          yaw,
+          dx - WAGON.pitch / 2,
+          side * MAIN.at,
+          PLAZA_TOP + 0.16,
+          [0.14, 0.08, 0.06],
+          TONE.dark,
+          {
+            tag: "coupling",
+            edge: false,
+          },
+        ),
+      );
+    }
   }
+  // Open: wagons waiting on the branches, the first nearest the main line. They come down over
+  // the second half of the build, and shunt a little back and forth.
   const up = easeOut((build - 0.5) / 0.5);
   if (up <= 0) return out;
-  // In the air: two lines over the runway, staggered, each plane at its own height.
   for (let i = 0; i < model.drawnFlying; i++) {
-    const phase = (loop + i / 5) * Math.PI * 2;
-    const dx = (i - (model.drawnFlying - 1) / 2) * 0.68 + Math.sin(phase) * 0.22;
-    const lane = near + (i % 2 === 0 ? -0.5 : 0.5) * stop.side;
-    const z = top + 0.7 + (i % 3) * 0.42 + Math.cos(phase) * 0.12 + (1 - up) * 6;
-    out.push(...plane(ctx, dx, lane, z, true, "plane-flying"));
+    const k = i % JOINS.length;
+    const place = Math.floor(i / JOINS.length);
+    const shunt = Math.sin((loop + i / 5) * Math.PI * 2) * 0.03;
+    const [wx, wy] = onBranch(k, 0.78 - place * (WAGON.pitch / BRANCH.long) + shunt);
+    out.push(
+      askew(
+        wx,
+        wy,
+        PLAZA_TOP + 0.05 + (1 - up) * 6,
+        [WAGON.long, WAGON.wide, WAGON.tall],
+        OPEN,
+        turn,
+        { tag: "pr-open", lit: true, decals: wagonPaint("#f5d36b") },
+      ),
+    );
   }
   return out;
 };
