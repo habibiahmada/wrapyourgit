@@ -7,7 +7,18 @@
 
 export type Vec = [x: number, y: number, z: number];
 export type Tone = { top: string; left: string; right: string };
-export type Box = { at: Vec; size: Vec; tone: Tone };
+/**
+ * A flat pane on one of a box's two side faces, a window or a light: `u` runs across the face
+ * (0 to 1, along x on the left face and along y on the right one), `z` up from the box's foot.
+ */
+export type Pane = {
+  face: "left" | "right";
+  u: [number, number];
+  z: [number, number];
+  fill: string;
+};
+/** `edge: false` leaves the hairline off: a box only a few pixels wide would be all outline. */
+export type Box = { at: Vec; size: Vec; tone: Tone; panes?: Pane[]; edge?: boolean };
 export type BoxPaths = { top: string; left: string; right: string; tone: Tone };
 
 /** GitHub-dark line art (DESIGN.md "Web"): dark faces, the contribution greens when lit. */
@@ -58,6 +69,27 @@ export function boxPaths({ at: [x, y, z], size: [w, d, h], tone }: Box): BoxPath
     ]),
     tone,
   };
+}
+
+/** The outline of a pane on its box's face, in the same projection. */
+export function panePath({ at: [x, y, z], size: [w, d] }: Box, pane: Pane): string {
+  const [u0, u1] = pane.u;
+  const [z0, z1] = pane.z;
+  return path(
+    pane.face === "left"
+      ? [
+          [x + u0 * w, y + d, z + z1],
+          [x + u1 * w, y + d, z + z1],
+          [x + u1 * w, y + d, z + z0],
+          [x + u0 * w, y + d, z + z0],
+        ]
+      : [
+          [x + w, y + u0 * d, z + z1],
+          [x + w, y + u1 * d, z + z1],
+          [x + w, y + u1 * d, z + z0],
+          [x + w, y + u0 * d, z + z0],
+        ],
+  );
 }
 
 const EPS = 1e-6;
