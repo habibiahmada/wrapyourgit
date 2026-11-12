@@ -8,8 +8,16 @@ import { layoutForSize } from "@wyg/schema";
 import { easeInOutCubic } from "../timeline";
 import { type Frame, projectPoint, type RideCamera, type V3 } from "./project";
 import type { RideStop } from "./stops";
-import { REST_SECONDS, type RideTimeline, trainAt } from "./timeline";
-import { at, billboardAt, FIRST_PLATFORM, heading, OVERVIEW_THETA, PLAZA_LATERAL } from "./track";
+import { type RideTimeline, trainAt } from "./timeline";
+import {
+  at,
+  billboardAt,
+  FIRST_PLATFORM,
+  heading,
+  OVERVIEW_THETA,
+  PLAZA_AHEAD,
+  PLAZA_LATERAL,
+} from "./track";
 
 export type Look = "ahead" | "cell" | "train" | "hero";
 /**
@@ -26,13 +34,14 @@ export const SHOTS = {
   /** Low and close beside the train, wheels at eye level. */
   SIDE: { theta: Math.PI * 0.56, radius: 5.6, height: 1.2, fov: 50, look: "train" },
   /** The landing's angle on a station: 45 degrees round, 30 up, far away through a long lens. */
-  ISO: { theta: Math.PI * 0.75, radius: 19.5, height: 11.3, fov: 22, look: "hero" },
+  // Ahead of the train and to the side, looking back across the rail: Cell faces the camera with
+  // the hero over its shoulder, and the camera stands over the station still to come, which has
+  // nothing built yet.
+  ISO: { theta: Math.PI * 0.25, radius: 19.5, height: 11.3, fov: 22, look: "hero" },
   /** hello: from the front and a little to the side, Cell and the platform board in frame. */
   HELLO: { theta: 1.0, radius: 3.2, height: 1.9, fov: 56, look: "cell" },
 } as const satisfies Record<string, Shot>;
 
-/** How far ahead of the engine a plaza's centre is. */
-export const PLAZA_AHEAD = 4.5;
 /** Where Cell sits on the engine, from its nose. */
 const CELL_SEAT = -0.35;
 const MIDDLE_MIN_SECONDS = 2.2;
@@ -40,12 +49,6 @@ const CITY_FOV = 34;
 const CITY_MARGIN = 0.06;
 /** The frame height the shots' lenses are written for (16:9). */
 const REFERENCE_HEIGHT = 1080;
-
-/** The shot in the middle of the move into stop `i`: they alternate, and a short move has none. */
-export function middleShot(i: number, moveSeconds: number): "OVER" | "SIDE" | null {
-  if (moveSeconds < MIDDLE_MIN_SECONDS) return null;
-  return i % 2 === 1 ? "OVER" : "SIDE";
-}
 
 /** A camera described the way the shots are: round a point on the rail. */
 type Pose = {
@@ -70,9 +73,14 @@ const lerpV = (a: V3, b: V3, t: number): V3 => [
 const logLerp = (a: number, b: number, t: number) => Math.exp(lerp(Math.log(a), Math.log(b), t));
 
 /** The centre of a stop's hero: its plaza, or for closing the board at the buffers. */
+/** The shot a station rests on. */
+export function stationShot(_stop: RideStop): Shot {
+  return SHOTS.ISO;
+}
+
 function heroPoint(stop: RideStop): V3 {
   if (stop.plaza) return at(stop.s + PLAZA_AHEAD, stop.side * PLAZA_LATERAL, 3.4);
-  return at(stop.s + 5.6, 0, 4.0);
+  return at(stop.s - 5.6, 0, 4.0);
 }
 
 function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
@@ -187,7 +195,7 @@ const FURTHEST = 2.2;
  * while it pulls in, so the shot does not drift.
  */
 function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
-  const base = shotPose(SHOTS.ISO, stop.s, stop, stop.side);
+  const base = shotPose(stationShot(stop), stop.s, stop, stop.side);
   const centre = heroPoint(stop);
   const top: V3 = [centre[0], centre[1], (stop.heroTop ?? 3.4) + 0.2];
   const cell = at(stop.s + CELL_SEAT, 0, 0.6);
@@ -259,7 +267,7 @@ function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
       rest = { ...rest, look: [rest.look[0], rest.look[1], z] };
     } else break;
   }
-  const now = shotPose(SHOTS.ISO, trainS, stop, stop.side);
+  const now = shotPose(stationShot(stop), trainS, stop, stop.side);
   // While the train pulls in, the look point keeps the offset the fit found for the train at rest.
   const moved: V3 = [
     now.look[0] + (rest.look[0] - base.look[0]),
@@ -330,31 +338,14 @@ export function rideCamera(
   } else if (!dest || frameIndex <= start || move === 0) {
     pose = restPose(from, stops, frame);
   } else {
-    const fps = timeline.restFrames / REST_SECONDS;
-    const middle = middleShot(to, move / fps);
-    const ride = (side: 1 | -1) => shotPose(SHOTS.RIDE, trainS, dest, side);
-    // The middle shot hangs behind the train, where the station it has just left stands: it
-    // takes the side away from that station's plaza, or it would fly through its hero.
-    const clear = from.plaza ? from.side : dest.side;
-    const keys: { at: number; pose: Pose }[] =
-      from.kind === "city" || dest.kind === "city"
-        ? // The overview is one long pull, straight up and out, and straight back down.
-          [
-            { at: 0, pose: restPoseAt(from, stops, frame, trainS) },
-            { at: 1, pose: restPoseAt(dest, stops, frame, trainS) },
-          ]
-        : [
-            { at: 0, pose: restPoseAt(from, stops, frame, trainS) },
-            { at: 0.24, pose: ride(dest.side) },
-            ...(middle
-              ? [
-                  { at: 0.42, pose: shotPose(SHOTS[middle], trainS, dest, clear) },
-                  { at: 0.58, pose: shotPose(SHOTS[middle], trainS, dest, clear) },
-                  { at: 0.76, pose: ride(dest.side) },
-                ]
-              : [{ at: 0.7, pose: ride(dest.side) }]),
-            { at: 1, pose: restPoseAt(dest, stops, frame, trainS) },
-          ];
+    // One glide from the shot it rests on to the next one's, round the train as it goes. The
+    // camera used to turn behind the train to ride with it, pass through a shot in the middle
+    // of the move and turn back out: with the stations close together that was four changes of
+    // direction in under three seconds.
+    const keys: { at: number; pose: Pose }[] = [
+      { at: 0, pose: restPoseAt(from, stops, frame, trainS) },
+      { at: 1, pose: restPoseAt(dest, stops, frame, trainS) },
+    ];
     const u = (frameIndex - start) / move;
     const k = Math.max(0, keys.findIndex((key) => key.at > u) - 1);
     const a = keys[k] as { at: number; pose: Pose };

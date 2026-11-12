@@ -41,7 +41,7 @@ export const closing: Station = ({ data, c, yaw, frame, build }) => {
     ...board(
       [c[0], c[1], c[2] + (1 - rise) * 14],
       yaw,
-      5.6,
+      -5.6,
       0,
       7.5,
       [

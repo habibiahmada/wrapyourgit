@@ -112,7 +112,7 @@ test("a month sign is low, and never stands in front of a station's own sign", (
     // Lower than the train, so it never stands in front of a station's hero.
     expect(sign.at[2] + sign.size[2]).toBeLessThan(2);
     const s = weekS(gate.col) - 0.8;
-    for (const plaza of plazas.filter((x) => s > x.s - 5 && s < x.s + 2)) {
+    for (const plaza of plazas.filter((x) => s > x.s - 2 && s < x.s + 5)) {
       const [x, y] = at(s, -plaza.side * SIGN_LATERAL);
       expect(sign.pivot?.[0]).toBeCloseTo(x);
       expect(sign.pivot?.[1]).toBeCloseTo(y);
@@ -129,7 +129,7 @@ test("between two stations a month sign keeps to the side of the one behind it",
   for (const gate of gates(sampleRecap, city)) {
     const s = weekS(gate.col) - 0.8;
     const behind = plazas.findLast((x) => x.s <= s);
-    if (!behind || plazas.some((x) => s > x.s - 5 && s < x.s + 2)) continue;
+    if (!behind || plazas.some((x) => s > x.s - 2 && s < x.s + 5)) continue;
     const [x, y] = at(s, behind.side * SIGN_LATERAL);
     expect(signAt(all, gate.col)?.pivot?.[0]).toBeCloseTo(x);
     expect(signAt(all, gate.col)?.pivot?.[1]).toBeCloseTo(y);

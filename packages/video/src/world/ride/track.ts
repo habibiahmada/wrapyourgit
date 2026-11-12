@@ -20,6 +20,12 @@ export const ROW_PITCH = 1.05;
 export const FIRST_ROW = 2.9;
 /** From the rail to a plaza's centre. */
 export const PLAZA_LATERAL = 8;
+/**
+ * A plaza's centre is this far along the rail from where the train stops: behind it. The station
+ * camera stands behind the train too, over the station before, so once the train has ridden on,
+ * every plaza it has left is behind the riding camera, and its hero can be taken down unseen.
+ */
+export const PLAZA_AHEAD = -4.5;
 export const PLAZA = { long: 9.6, deep: 4.8 };
 
 const SWING = 5;

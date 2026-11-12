@@ -10,12 +10,10 @@ import { part } from "../place";
 import type { FaceName, FaceText, Solid } from "../prims";
 import type { V3 } from "../project";
 import type { RideStop } from "../stops";
-import { at, heading, PLAZA, PLAZA_LATERAL } from "../track";
+import { at, heading, PLAZA, PLAZA_AHEAD, PLAZA_LATERAL } from "../track";
 
 export { part } from "../place";
 
-/** A plaza's centre is this far ahead of where the train stops. */
-export const PLAZA_AHEAD = 4.5;
 /** The top of a plaza's slab, where heroes stand. */
 export const PLAZA_TOP = 0.25;
 
@@ -222,8 +220,8 @@ const SIGN = { wide: 6.3, row: 0.4 };
  * and the plaza, where it covers nothing but paving. Every row is the same height, tall enough to
  * read (spec "How big printed text must be"); a line too long for the sign at that size goes onto
  * two rows instead of being set smaller. It is always there, like a station's name beside a
- * platform: a sign that appeared as the train came in read as a glitch. It stands ahead of the plaza's middle (seen from across
- * the rail, what is nearer the rail slides back along it).
+ * platform: a sign that appeared as the train came in read as a glitch. It stands behind the plaza's middle (seen from ahead and across
+ * the rail, what is nearer the rail slides forward along it).
  */
 export function nameBoard(
   ctx: StationContext,
@@ -244,15 +242,5 @@ export function nameBoard(
   });
   const dy = stop.side * (place.deep / 2 + 1.4);
   // With `fit` the camera keeps the sign in frame as it does the hero; without, the hero alone sets the shot.
-  return board(
-    c,
-    yaw,
-    -6,
-    dy,
-    SIGN.wide * scale,
-    rows,
-    "along",
-    0.15,
-    place.fit ? "board" : "sign",
-  );
+  return board(c, yaw, 6, dy, SIGN.wide * scale, rows, "along", 0.15, place.fit ? "board" : "sign");
 }

@@ -2,8 +2,9 @@ import { expect, test } from "bun:test";
 import { VIDEO_FORMATS } from "@wyg/schema";
 import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
-import { buildRide, rideDuration, rideFrame } from "./model";
+import { buildRide, HERO_TAGS, rideDuration, rideFrame } from "./model";
 import { type Box, type Solid, scenePrims } from "./prims";
+import { stationContext } from "./stations/kit";
 import { RIDE_KINDS } from "./stops";
 
 const f = VIDEO_FORMATS["16x9"];
@@ -74,7 +75,8 @@ test("Cell turns to the camera at a station and faces forward on the ride", () =
   const yaw = (frame: number) =>
     tagged(rideFrame(m, sampleRecap, frame, f, 30).objects, "cell-body")[0]?.yaw ?? 0;
   const riding = at - Math.round((m.timeline.moveFrames[i] ?? 0) / 2);
-  expect(Math.abs(yaw(at) - yaw(riding))).toBeGreaterThan(1);
+  // The camera stands ahead and to the side, so Cell turns part of the way round to face it.
+  expect(Math.abs(yaw(at) - yaw(riding))).toBeGreaterThan(0.5);
 });
 
 test("Cell's eyes are open on every stop's frame, whatever the timing", () => {
@@ -124,4 +126,29 @@ test("a frame stays inside the polygon budget", () => {
     const count = scenePrims(ground, cam, f, fog).length + scenePrims(objects, cam, f, fog).length;
     expect({ at, ok: count < 4000 }).toEqual({ at, ok: true });
   }
+});
+
+test("a hero is lifted away as the train pulls out, and is gone by the next station", () => {
+  const m = buildRide(sampleRecap, f, "video", 30);
+  const heroesAt = (frame: number, stop: (typeof m.stops)[number]) => {
+    const c = stationContext(sampleRecap, m.city, stop, 1, 0, 0).c;
+    return rideFrame(m, sampleRecap, frame, f, 30).objects.filter(
+      (s) =>
+        s.kind === "box" &&
+        // The sign and the first square are part of the plaza and stay.
+        s.tag !== "board" &&
+        s.tag !== "first-square" &&
+        HERO_TAGS.includes(s.tag ?? "") &&
+        Math.hypot((s.pivot?.[0] ?? 1e9) - c[0], (s.pivot?.[1] ?? 1e9) - c[1]) < 0.01,
+    ).length;
+  };
+  const plazas = m.stops.map((stop, i) => ({ stop, i })).filter(({ stop }) => stop.plaza);
+  plazas.forEach(({ stop, i }, k) => {
+    const rest = m.timeline.stopFrames[i] ?? 0;
+    expect(heroesAt(rest, stop)).toBeGreaterThan(0);
+    // Still there as the train pulls away, on its way up: it is lifted out, not switched off.
+    expect(heroesAt(rest + m.timeline.holdFrames + 12, stop)).toBeGreaterThan(0);
+    const next = plazas[k + 1];
+    if (next) expect(heroesAt(m.timeline.stopFrames[next.i] ?? 0, stop)).toBe(0);
+  });
 });

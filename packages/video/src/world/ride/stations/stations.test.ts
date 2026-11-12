@@ -12,6 +12,7 @@ import { firstDayModel } from "../../scenes/firstDay.model";
 import { gardenModel } from "../../scenes/garden.model";
 import { commitsText, projectsModel } from "../../scenes/projects.model";
 import { rhythmModel } from "../../scenes/rhythm.model";
+import { countText, skyModel } from "../../scenes/sky.model";
 import type { StopKind } from "../../stops";
 import type { Box, Solid } from "../prims";
 import { rideStops } from "../stops";
@@ -47,6 +48,7 @@ test("the stations built so far exist", () => {
     "busiest",
     "city",
     "closing",
+    "community",
     "first-day",
     "hello",
     "languages",
@@ -316,6 +318,7 @@ test("a station at rest is the same 60 frames later, and still moving in between
     "rhythm",
     "languages",
     "projects",
+    "community",
     "closing",
   ] as const) {
     expect(build(kind, sampleRecap, 1, 10)).toEqual(build(kind, sampleRecap, 1, 70));
@@ -456,7 +459,9 @@ test("rhythm: cargo is as tall as the weekday's share of the busiest, and a day 
   expect(cargo).toHaveLength(6);
   const tallest = Math.max(...cargo.map((box) => box.size[2]));
   const fills = model.cars.filter((car) => car.count > 0).map((car) => car.fill);
-  cargo.forEach((box, i) => expect(box.size[2] / tallest).toBeCloseTo(fills[i] ?? 0));
+  cargo.forEach((box, i) => {
+    expect(box.size[2] / tallest).toBeCloseTo(fills[i] ?? 0);
+  });
 });
 
 test("rhythm: a narrow frame stands four wagons behind and three in front; a wide one keeps a row", () => {
@@ -503,4 +508,53 @@ test("busiest: the beam draws in as the train leaves, so it does not sweep the n
   expect(reach(3)).toBeLessThan(reach(0));
   expect(reach(3)).toBeGreaterThan(0);
   expect(reach(8)).toBe(0);
+});
+
+const withCommunity = (community: Partial<RecapData["community"]>): RecapData => ({
+  ...sampleRecap,
+  community: { ...sampleRecap.community, ...community },
+});
+
+test("community: the observatory carries the stars, the sign says what they are and the forks", () => {
+  const model = skyModel(sampleRecap);
+  const all = build("community", sampleRecap);
+  expect(printed(boxes(all, "observatory"))).toContain(countText(model.stars.value, false));
+  const text = printed(all).join(" ");
+  expect(text).toContain(model.stars.label);
+  expect(text).toContain(`${countText(model.forks.value, false)} ${model.forks.label}`);
+});
+
+test("community: one small star per star earned, up to a sky that still reads", () => {
+  expect(boxes(build("community", sampleRecap), "star")).toHaveLength(28);
+  const few = withCommunity({ starsGained: { status: "ok", value: 5, estimated: false } });
+  expect(boxes(build("community", few), "star")).toHaveLength(5);
+});
+
+test("community: no stars is said in words, with no figure on the observatory and no small stars", () => {
+  const none = withCommunity({ starsGained: { status: "ok", value: 0, estimated: false } });
+  const all = build("community", none);
+  expect(printed(boxes(all, "observatory"))).toEqual([]);
+  expect(boxes(all, "star")).toHaveLength(0);
+  expect(printed(all).join(" ")).toContain("No stars this year");
+});
+
+test("community: a total is never passed off as this year's gain, and an estimate says about", () => {
+  const totals = withCommunity({ starsGained: { status: "unavailable", reason: "no history" } });
+  expect(printed(build("community", totals)).join(" ")).toContain("stars on your repositories");
+  const rough = withCommunity({ starsGained: { status: "ok", value: 12_900, estimated: true } });
+  expect(printed(boxes(build("community", rough), "observatory"))).toContain(
+    countText(12_900, true),
+  );
+});
+
+test("community: the stars come down as the train leaves", () => {
+  const city = buildCity(sampleRecap);
+  const stop = rideStops(sampleRecap, city).find((x) => x.kind === "community");
+  if (!stop) throw new Error("no stop");
+  const station = STATIONS.community as NonNullable<typeof STATIONS.community>;
+  const stars = (away: number) =>
+    boxes(station(stationContext(sampleRecap, city, stop, 1, 10, 0, "landscape", away)), "star");
+  const top = (away: number) => Math.max(0, ...stars(away).map((b) => b.at[2]));
+  expect(top(3)).toBeLessThan(top(0));
+  expect(stars(8)).toHaveLength(0);
 });

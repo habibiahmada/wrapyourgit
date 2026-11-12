@@ -8,7 +8,7 @@ import { congratsLetter } from "../../letter";
 import { buildCity, type City } from "../city";
 import { paginateLetter } from "../scenes/letter.model";
 import { easeInOutCubic, type WorldMode } from "../timeline";
-import { rideCamera, SHOTS } from "./camera";
+import { rideCamera, stationShot } from "./camera";
 import { cell, type Mood } from "./cell";
 import { type Gate, gates } from "./gates.model";
 import { land } from "./land";
@@ -48,6 +48,9 @@ export const HERO_TAGS = [
   "lighthouse-base",
   "wagon",
   "cargo",
+  "observatory",
+  "dome",
+  "star",
 ];
 
 export function buildRide(
@@ -67,6 +70,7 @@ export function buildRide(
     if (!station) return stop;
     const ctx = stationContext(data, city, stop, 1, 0, 0, layout);
     let heroTop = 0;
+    let heroFoot = Number.POSITIVE_INFINITY;
     // The corner that reaches furthest in each of sixteen directions from the plaza's centre.
     const edge: ([number, number, number] | null)[] = Array.from({ length: 16 }, () => null);
     const reach: number[] = Array.from({ length: 16 }, () => -1);
@@ -74,6 +78,7 @@ export function buildRide(
       // The plaza itself may run out of frame; what must stay in is what carries the chapter.
       if (solid.kind !== "box" || !HERO_TAGS.includes(solid.tag ?? "")) continue;
       heroTop = Math.max(heroTop, solid.at[2] + solid.size[2]);
+      heroFoot = Math.min(heroFoot, solid.at[2]);
       const [px, py] = solid.pivot ?? [ctx.c[0], ctx.c[1]];
       const cos = Math.cos(solid.yaw ?? 0);
       const sin = Math.sin(solid.yaw ?? 0);
@@ -92,7 +97,13 @@ export function buildRide(
         }
       }
     }
-    const heroEdge = edge.filter((point): point is [number, number, number] => point !== null);
+    const tops = edge.filter((point): point is [number, number, number] => point !== null);
+    // Each outermost corner at the hero's top and again at its foot: what stands nearest the
+    // camera reaches lowest in the picture, and must stay in it too.
+    const heroEdge = [
+      ...tops,
+      ...tops.map((p): [number, number, number] => [p[0], p[1], heroFoot]),
+    ];
     return { ...stop, heroTop, heroEdge };
   });
   return { city, stops, timeline: buildRideTimeline(stops, mode, fps), gates: gates(data, city) };
@@ -110,6 +121,20 @@ export function rideDuration(
 /** How far the track stays built behind and ahead of the train on the ride. */
 const BEHIND = 26;
 const AHEAD = 56;
+/** A hero is lifted away once the train is `from` past its stop, over the next `over`, up to `high`. */
+const LIFT = { from: 1.5, over: 4, high: 45 };
+/** What a station keeps when its hero is lifted away: the plaza, its sign, and what is laid into the plaza. */
+const STAYS = [
+  "plaza",
+  "step",
+  "bollard",
+  "board",
+  "board-post",
+  "sign",
+  "first-square",
+  "bed",
+  "pole",
+];
 /** Frames over which Cell turns to the camera as the train pulls in, and back as it leaves. */
 const TURN_FRAMES = 20;
 
@@ -182,7 +207,8 @@ export function rideFrame(
   const mood: Mood = building ? "cheer" : moving ? "ride" : "idle";
   const amount = building ? Math.sin(built * Math.PI) ** 2 : Math.min(1, speed * 4);
   const clock = idleClock(frameIndex, timeline);
-  const yaw = heading(trainS) + (turnTo ? SHOTS.ISO.theta * turnTo.side * 0.85 * turn : 0);
+  const yaw =
+    heading(trainS) + (turnTo ? stationShot(turnTo).theta * turnTo.side * 0.85 * turn : 0);
 
   objects.push(...train(trainS));
   objects.push(...smoke(frameIndex, trainS, speed));
@@ -193,11 +219,25 @@ export function rideFrame(
     if (!station) return;
     // The overview's billboard stands by the middle of the rail, wherever the train is.
     if (stop.kind !== "city" && (stop.s < view.from - 12 || stop.s > view.to + 12)) return;
-    const build = buildProgress(i, frameIndex, timeline, fps);
     const away = Math.abs(trainS - stop.s);
-    objects.push(
-      ...station(stationContext(data, city, stop, build, clock, overview, layout, away)),
-    );
+    const build = buildProgress(i, frameIndex, timeline, fps);
+    const solids = station(stationContext(data, city, stop, build, clock, overview, layout, away));
+    // The station camera looks back down the rail, so a hero the train has left would stand in
+    // the next station's picture. It is lifted away as the train pulls out, the way it was
+    // lowered in, and is gone before the next station. The plaza and its sign stay.
+    const lift = trainS > stop.s ? clamp01((away - LIFT.from) / LIFT.over) : 0;
+    for (const solid of solids) {
+      const stays = solid.kind === "box" && STAYS.includes(solid.tag ?? "");
+      if (lift <= 0 || stays) objects.push(solid);
+      else if (lift < 1) {
+        const up = lift * lift * LIFT.high;
+        objects.push(
+          solid.kind === "box"
+            ? { ...solid, at: [solid.at[0], solid.at[1], solid.at[2] + up] }
+            : { ...solid, c: [solid.c[0], solid.c[1], solid.c[2] + up] },
+        );
+      }
+    }
   });
 
   const reach = Math.hypot(

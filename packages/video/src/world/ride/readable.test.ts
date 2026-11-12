@@ -8,6 +8,7 @@ import { firstDayModel } from "../scenes/firstDay.model";
 import { gardenModel } from "../scenes/garden.model";
 import { privateModel } from "../scenes/private.model";
 import { commitsText, projectsModel } from "../scenes/projects.model";
+import { countText, skyModel } from "../scenes/sky.model";
 import { buildRide, HERO_TAGS, rideFrame } from "./model";
 import { type Box, type Prim, scenePrims } from "./prims";
 import { projectPoint, type RideCamera } from "./project";
@@ -39,7 +40,11 @@ function restFrames(data: RecapData) {
   return Object.entries(VIDEO_FORMATS).flatMap(([id, format]) => {
     const m = buildRide(data, format, "video", 30);
     return m.stops.flatMap((stop, i) => {
-      if (!["languages", "projects", "first-day", "private", "busiest"].includes(stop.kind))
+      if (
+        !["languages", "projects", "first-day", "private", "busiest", "community"].includes(
+          stop.kind,
+        )
+      )
         return [];
       const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
       const texts = scenePrims(
@@ -78,6 +83,15 @@ function check(data: RecapData) {
         expect({
           where,
           value: biggest(rest.texts, formatCount(day.count)) / rest.short >= HEADLINE,
+        }).toEqual({ where, value: true });
+    } else if (rest.kind === "community") {
+      const sky = skyModel(data);
+      if (sky.stars.value > 0)
+        expect({
+          where,
+          value:
+            biggest(rest.texts, countText(sky.stars.value, sky.stars.estimated)) / rest.short >=
+            HEADLINE,
         }).toEqual({ where, value: true });
     } else if (rest.kind === "private") {
       const vault = privateModel(data);

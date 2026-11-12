@@ -2,10 +2,10 @@ import { expect, test } from "bun:test";
 import { VIDEO_FORMATS } from "@wyg/schema";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity } from "../city";
-import { middleShot, restCamera, rideCamera, SHOTS } from "./camera";
+import { restCamera, rideCamera, SHOTS } from "./camera";
 import { projectPoint } from "./project";
 import { type RideStop, rideStops } from "./stops";
-import { buildRideTimeline } from "./timeline";
+import { buildRideTimeline, trainAt } from "./timeline";
 import { at, FIRST_PLATFORM, heading } from "./track";
 
 const stops = rideStops(sampleRecap, buildCity(sampleRecap));
@@ -17,7 +17,8 @@ test("the shots are the ones the spec names", () => {
   expect(SHOTS.RIDE).toMatchObject({ radius: 4.6, height: 2.4, fov: 56, look: "ahead" });
   expect(SHOTS.ISO).toMatchObject({ radius: 19.5, height: 11.3, look: "hero" });
   expect(SHOTS.RIDE.theta).toBeCloseTo(Math.PI);
-  expect(SHOTS.ISO.theta).toBeCloseTo(Math.PI * 0.75);
+  // Ahead of the train and to the side, looking back at it.
+  expect(SHOTS.ISO.theta).toBeCloseTo(Math.PI * 0.25);
 });
 
 test("the camera does not move during a hold", () => {
@@ -83,20 +84,51 @@ test("the camera never jumps", () => {
   }
 });
 
-test("the camera rides behind Cell in the middle of a long move", () => {
+test("in the middle of a move the camera is ahead of the train, looking back at it, and does not sway", () => {
   const i = stopOf("projects");
   const mid = (t.stopFrames[i] ?? 0) - Math.round((t.moveFrames[i] ?? 0) * 0.5);
-  const all = Array.from({ length: t.moveFrames[i] ?? 0 }, (_, k) =>
-    rideCamera((t.stopFrames[i] ?? 0) - k, stops, t, landscape),
-  );
-  expect(all.some((c) => c.riding)).toBe(true);
-  expect(rideCamera(mid, stops, t, landscape).speed).toBeGreaterThan(0);
+  const { cam, roll, speed } = rideCamera(mid, stops, t, landscape);
+  const s = trainAt(mid, stops, t);
+  const train = at(s);
+  const h = heading(s);
+  const ahead = (cam.pos[0] - train[0]) * Math.cos(h) + (cam.pos[1] - train[1]) * Math.sin(h);
+  expect(ahead).toBeGreaterThan(0);
+  expect(speed).toBeGreaterThan(0);
+  expect(roll).toBe(0);
 });
 
-test("middle shots alternate and short moves have none", () => {
-  expect(middleShot(1, 3)).not.toBe(middleShot(2, 3));
-  expect(middleShot(1, 3)).not.toBeNull();
-  expect(middleShot(1, 1.8)).toBeNull();
+test("on a move between two stations the camera turns one way round the train, and no more than a quarter turn", () => {
+  const bearing = (f: number) => {
+    const cam = rideCamera(f, stops, t, landscape).cam;
+    const train = at(trainAt(f, stops, t));
+    return Math.atan2(cam.pos[1] - train[1], cam.pos[0] - train[0]);
+  };
+  const turn = (a: number, b: number) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+  stops.forEach((stop, i) => {
+    const before = stops[i - 1];
+    if (!before || stop.kind === "city" || before.kind === "city" || stop.kind === "hello") return;
+    if (before.kind === "hello") return;
+    const arrive = t.stopFrames[i] ?? 0;
+    const start = arrive - (t.moveFrames[i] ?? 0);
+    let total = 0;
+    let left = 0;
+    let right = 0;
+    for (let f = start; f < arrive; f++) {
+      // The rail bends, so the bearing is taken against the rail's own heading.
+      const step = turn(
+        bearing(f) - heading(trainAt(f, stops, t)),
+        bearing(f + 1) - heading(trainAt(f + 1, stops, t)),
+      );
+      total += step;
+      if (step > 1e-4) left++;
+      if (step < -1e-4) right++;
+    }
+    expect({ kind: stop.kind, oneWay: left === 0 || right === 0 }).toEqual({
+      kind: stop.kind,
+      oneWay: true,
+    });
+    expect(Math.abs(total)).toBeLessThan(Math.PI / 2 + 0.2);
+  });
 });
 
 test("the city shot holds the whole rail in every format", () => {

@@ -11,18 +11,16 @@ import { heat, LIT, mixHex, TONE } from "./palette";
 import { part, railBox } from "./place";
 import type { FaceText, Solid } from "./prims";
 import type { RideStop } from "./stops";
-import { at, dayPlace, FIRST_ROW, ROW_PITCH, railEnd, SQUARE, weekS } from "./track";
+import { at, dayPlace, FIRST_ROW, PLAZA_AHEAD, ROW_PITCH, railEnd, SQUARE, weekS } from "./track";
 
 /** A day lights when the train is this close behind it. */
 export const LIGHT_AHEAD = 15;
-/** A plaza's centre is this far ahead of where the train stops. */
-const PLAZA_AHEAD = 4.5;
 /** Gates and props keep this far from a plaza, so nothing stands between the camera and a hero. */
 const CLEAR = 8;
 /** How far from the rail's middle a month sign stands: clear of the train, and of the camera that rides behind it. */
 export const SIGN_LATERAL = 3;
 /** How far behind and ahead of where the train rests a station's own sign reaches. */
-const SIGN_ZONE = [5, 2] as const;
+const SIGN_ZONE = [2, 5] as const;
 const SLEEPER = 0.7;
 
 export type View = {

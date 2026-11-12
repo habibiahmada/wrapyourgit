@@ -2,6 +2,7 @@ import type { StopKind } from "../../stops";
 import { busiest } from "./busiest";
 import { city } from "./city";
 import { closing } from "./closing";
+import { community } from "./community";
 import { firstDay } from "./firstDay";
 import { hello } from "./hello";
 import type { Station } from "./kit";
@@ -20,5 +21,6 @@ export const STATIONS: Partial<Record<StopKind, Station>> = {
   rhythm,
   languages,
   projects,
+  community,
   closing,
 };
