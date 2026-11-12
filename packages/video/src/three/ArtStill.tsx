@@ -22,13 +22,14 @@ type Framing = { look: [number, number, number]; span: number };
 
 const CUTOUT: Framing = { look: [0, 0.8, 0], span: 4.0 };
 const HEAD: Framing = { look: [0, 1.05, 0], span: 1.75 };
-const SCENE: Framing = { look: [0, 0.8, 0], span: 7.0 };
+/** A whole city block with Cell in its middle: corner to corner, and up to the crane's top. */
+const BLOCK: Framing = { look: [0, 1.55, 0], span: 13.8 };
 
 /**
  * One loop of Cell for baking (scripts/render-art.ts, ADR-0013), in the crisp isometric style of
  * the landing (ADR-0021): an orthographic camera at the landing's angle (30 degrees up, 45 round),
  * flat-coloured faces, hairline edges. Cutouts are Cell alone on a transparent background;
- * `skin-*` is the archetype's diorama; `hero-cast` is Cell on a small slab of its city. Time comes
+ * `skin-*` is the archetype's city block with Cell in its middle; `hero-cast` is Cell on a small slab of its city. Time comes
  * from the frame and every motion repeats after LOOP_SECONDS, so the loop plays without a jump.
  */
 export function ArtStill({ art }: { art: ArtId }) {
@@ -39,7 +40,7 @@ export function ArtStill({ art }: { art: ArtId }) {
   let framing = CUTOUT;
   let subject: ReactNode;
   if (art.startsWith("skin-")) {
-    framing = SCENE;
+    framing = BLOCK;
     subject = dioramaScene(`skin-${art.slice("skin-".length) as ArchetypeId}`, t);
   } else if (art === "head-cell") {
     framing = HEAD;
