@@ -32,19 +32,23 @@ const FADE_MS = 200;
 
 /*
  * Focus rings sit on the city, which can be paper, ink or anything between: an ink line between
- * two paper bands stays visible on all of them. The tap zones fill the screen, so theirs is inset.
+ * two paper bands stays visible on all of them.
  */
-const ZONE_RING =
-  "focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-[-4px] focus-visible:shadow-[inset_0_0_0_6px_var(--color-paper)]";
 const CONTROL_RING =
   "focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2 focus-visible:shadow-[0_0_0_6px_var(--color-paper)]";
-/** A zone at the end of the story stays focusable (focus must not vanish under the reader). */
 /**
- * No tint on hover or press: the zones are the whole story, and any shade over it reads as the
- * picture flickering. A keyboard focus ring stays, so keyboard users see where they are.
+ * The tap zones are the whole story: no tint on hover or press, and no focus ring, since they
+ * never take focus. A keyboard moves the story with the arrow keys, Space and Enter from anywhere
+ * on the page (the window's key handler), so the zones stay out of the Tab order, and a press does
+ * not focus them: a box drawn round a third of the story at the next arrow key was only noise.
+ * Screen readers still reach them as buttons, and the page says how to move.
  */
 const zone = (disabled: boolean) =>
-  `absolute inset-y-0 bg-transparent ${disabled ? "cursor-not-allowed" : "cursor-pointer"} ${ZONE_RING}`;
+  `absolute inset-y-0 bg-transparent outline-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`;
+/** How long a reader stays on a stop before the cue to tap on shows. */
+const CUE_MS = 5000;
+/** Keeps a press from moving focus to a tap zone. */
+const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault();
 /**
  * How long the window must stay one size before the ride is rebuilt for it: a rebuild drops any
  * move in flight, so a drag across the screen edge should cost one, not dozens.
@@ -160,6 +164,8 @@ export function WorldPlayer(props: WorldPlayerProps) {
   const [idle, setIdle] = useState(0);
   // A file is being made: the dialog over the story is up, and nothing else moves.
   const [busy, setBusy] = useState(false);
+  // The cue to tap on, after CUE_MS resting at a stop with nothing pressed.
+  const [cue, setCue] = useState(false);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const last = stops.length - 1;
   const login = data.profile.login;
@@ -256,6 +262,15 @@ export function WorldPlayer(props: WorldPlayerProps) {
 
   useEffect(() => stopLoop, [stopLoop]);
 
+  // A reader who stays on a stop is shown where to tap. Any move (a tap, an arrow key) leaves the
+  // stop's rest and so takes the cue away; the closing stop has nowhere further to go.
+  useEffect(() => {
+    setCue(false);
+    if (!resting || busy || at >= last) return;
+    const timer = window.setTimeout(() => setCue(true), CUE_MS);
+    return () => window.clearTimeout(timer);
+  }, [resting, busy, at, last]);
+
   // While the camera rests, the station keeps moving: smoke, Cell blinking, its own small loop.
   // Not under reduced motion, and not behind the end screen.
   useEffect(() => {
@@ -323,6 +338,10 @@ export function WorldPlayer(props: WorldPlayerProps) {
       <h1 ref={titleRef} tabIndex={-1} className="sr-only">
         {props.title}
       </h1>
+      <p className="sr-only">
+        Use the right and left arrow keys, or tap the right and left of the screen, to move through
+        the story.
+      </p>
       <div
         className="[grid-area:1/1]"
         style={{
@@ -352,6 +371,8 @@ export function WorldPlayer(props: WorldPlayerProps) {
         type="button"
         aria-label="Previous"
         aria-disabled={at <= 0}
+        tabIndex={-1}
+        onMouseDown={keepFocus}
         onClick={() => go(-1)}
         className={`${zone(at <= 0)} left-0 w-1/3`}
       />
@@ -359,9 +380,35 @@ export function WorldPlayer(props: WorldPlayerProps) {
         type="button"
         aria-label="Next"
         aria-disabled={at >= last}
+        tabIndex={-1}
+        onMouseDown={keepFocus}
         onClick={() => go(1)}
         className={`${zone(at >= last)} right-0 left-1/3`}
       />
+
+      {/* The cue to tap on: after a while at a stop with nothing pressed, the right of the screen
+          darkens and shows "»". Decoration over the Next zone, never in the way of a tap. */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-y-0 right-0 grid w-1/3 place-items-center bg-gradient-to-l from-ink/55 via-ink/20 to-transparent motion-safe:transition-opacity motion-safe:duration-500 ${
+          cue ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <span className="grid size-16 place-items-center rounded-full bg-paper/90 text-ink shadow-[0_0_0_6px_rgba(244,239,227,0.25)]">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className={`size-8 ${cue ? "motion-safe:animate-[nudge_1.2s_ease-in-out_3]" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+          >
+            <path d="M5 6l6 6-6 6M13 6l6 6-6 6" />
+          </svg>
+        </span>
+      </div>
 
       {/* An inline-size container: the Sound control and the shelf sit in scene units
           (1 unit = 0.1cqw). */}
