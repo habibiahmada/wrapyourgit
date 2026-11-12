@@ -253,7 +253,7 @@ test("the letter: the train stops, the camera comes in to the desk, the envelope
   }
   expect(rideFrame(m, sampleRecap, arrives + 4, f, 30).cam).not.toEqual(desk);
   expect(desk.pos[2]).toBeLessThan(rideFrame(m, sampleRecap, arrives + 4, f, 30).cam.pos[2]);
-  // A later page turns over the end of the hold of the one before it, never faded.
+  // A later page slides in over the move to it, after the hold of the one before, never faded.
   if (pages.length > 1) {
     const turn = letterBeat(m, at(pages[1] ?? 0) - 5);
     expect(turn.sheet?.stop.page).toBe(2);
@@ -315,4 +315,30 @@ test("an idle offset runs the idle motion ahead without moving anything else", (
   expect(rideFrame(m, sampleRecap, at, f, 30, 20).cam).toEqual(
     rideFrame(m, sampleRecap, at, f, 30).cam,
   );
+});
+
+test("a letter page stays still through its whole rest, and the next one slides in on the move to it", () => {
+  // Square frames paginate the sample's letter, and the web holds each page for one rest loop.
+  const m = buildRide(sampleRecap, VIDEO_FORMATS["1x1"], "interactive", 30);
+  const pages = m.stops.flatMap((stop, i) => (stop.kind === "letter" ? [i] : []));
+  expect(pages.length).toBeGreaterThan(1);
+  const at = (i: number) => m.timeline.stopFrames[i] ?? 0;
+  for (const [k, i] of pages.slice(0, -1).entries()) {
+    // The rest loop plays these frames over and over: nothing of the next page may be in them.
+    for (let frame = at(i); frame < at(i) + m.timeline.holdFrames; frame++) {
+      const beat = letterBeat(m, frame);
+      expect({ frame, page: beat.sheet?.stop.page, enter: beat.sheet?.enter }).toEqual({
+        frame,
+        page: k + 1,
+        enter: 1,
+      });
+    }
+    // The turn is a move of its own, so a tap plays it and a tap back plays it in reverse.
+    const next = pages[k + 1] ?? 0;
+    expect(m.timeline.moveFrames[next]).toBeGreaterThan(10);
+    const middle = letterBeat(m, at(next) - Math.round((m.timeline.moveFrames[next] ?? 0) / 2));
+    expect(middle.sheet?.stop.page).toBe(k + 2);
+    expect(middle.sheet?.enter ?? 0).toBeGreaterThan(0);
+    expect(middle.sheet?.enter ?? 1).toBeLessThan(1);
+  }
 });

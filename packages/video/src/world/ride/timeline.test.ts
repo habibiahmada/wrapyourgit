@@ -8,6 +8,7 @@ import {
   buildProgress,
   buildRideTimeline,
   idleClock,
+  PAGE_SECONDS,
   trainAt,
 } from "./timeline";
 
@@ -32,9 +33,9 @@ test("moves take between 1.6 and 4.2 seconds", () => {
     const opens = stop?.kind === "letter" && (stop.page ?? 1) === 1;
     const closes = prev?.kind === "letter" && stop?.kind !== "letter";
     const ride = move - (opens ? video.letterIntro : 0) - (closes ? video.letterOutro : 0);
-    // A later page of the letter turns in place: there is nothing to ride.
+    // A later page of the letter slides in in place: there is nothing to ride, only the page.
     if (stop?.kind === "letter" && !opens) {
-      expect(ride).toBe(0);
+      expect(ride).toBe(Math.round(PAGE_SECONDS * 30));
       return;
     }
     expect(ride).toBeGreaterThanOrEqual(48);

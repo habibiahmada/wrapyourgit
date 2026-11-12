@@ -200,8 +200,6 @@ export type LetterBeat = {
 };
 
 const AWAY: LetterBeat = { push: 0, open: 0, sheet: null };
-/** How much of a page's hold its turn to the next takes. */
-const TURN_SHARE = 0.3;
 
 /**
  * The letter, beat by beat. The train stops and stands a moment at the station's own shot; the
@@ -240,12 +238,12 @@ export function letterBeat(model: RideModel, frame: number): LetterBeat {
       sheet: gone < 1 ? { stop: stops[last] as RideStop, enter: 1, opacity: 1 - gone } : null,
     };
   }
-  // On a page: whole, or turning to the next over the end of this one's hold.
+  // On a page: whole through its hold, and the next one sliding in over the move to it.
   const reached = stops.findLastIndex((_, i) => frame >= (timeline.stopFrames[i] ?? 0));
   const next = stops[reached + 1];
   const nextAt = timeline.stopFrames[reached + 1];
   if (next?.kind === "letter" && nextAt !== undefined) {
-    const frames = Math.max(1, Math.round(timeline.holdFrames * TURN_SHARE));
+    const frames = Math.max(1, timeline.moveFrames[reached + 1] ?? 1);
     const enter = clamp01((frame - (nextAt - frames)) / frames);
     if (enter > 0) return { push: 1, open: 1, sheet: { stop: next, enter, opacity: 1 } };
   }

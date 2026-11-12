@@ -45,7 +45,6 @@ export const SHOTS = {
 
 /** Where Cell sits on the engine, from its nose. */
 const CELL_SEAT = -0.35;
-const MIDDLE_MIN_SECONDS = 2.2;
 const CITY_FOV = 34;
 const CITY_MARGIN = 0.06;
 /** The frame height the shots' lenses are written for (16:9). */
