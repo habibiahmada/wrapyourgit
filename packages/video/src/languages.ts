@@ -16,6 +16,8 @@ const ICONS: Record<string, string> = {
   "C++": "cplusplus",
   "C#": "csharp",
   PHP: "php",
+  // Laravel's template language: it has no logo of its own, and editors show Laravel's.
+  Blade: "laravel",
   Ruby: "ruby",
   Dart: "dart",
   HTML: "html5",
@@ -59,6 +61,17 @@ const ICONS: Record<string, string> = {
 export function languageIcon(name: string): string | null {
   const slug = ICONS[name];
   return slug ? `lang/${slug}.svg` : null;
+}
+
+/**
+ * Logos drawn in the very colour GitHub gives their language (Blade's red is Laravel's): printed
+ * straight on the language's block they vanish, so they stand on the dark badge instead.
+ */
+const SAME_COLOUR = new Set(["Blade"]);
+
+/** True when the language's logo needs a backing to show on its own block. */
+export function logoNeedsBacking(name: string): boolean {
+  return SAME_COLOUR.has(name) && languageIcon(name) !== null;
 }
 
 /** One or two letters for the fallback badge: "Go" -> "Go", "Jupyter Notebook" -> "JN". */
