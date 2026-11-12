@@ -5,7 +5,7 @@ import type { ExportFormat } from "@wyg/video/export";
 import Link from "next/link";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Art } from "@/components/art";
-import type { EndLink, ShareCard } from "./end-screen";
+import { cardLink, type EndLink, type ShareCard } from "./end-screen";
 import { announcement, type ExportJob, NOUN, percent } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { useExport } from "./use-export";
@@ -26,6 +26,17 @@ const TICKET = `flex min-h-11 w-full cursor-pointer items-center gap-2.5 rounded
 const TILE = "grid size-8 shrink-0 place-items-center rounded bg-ink text-paper";
 
 const ratio = (format: ExportFormat) => format.replace("x", ":");
+/** The files on the shelf: the three made here, and the card the server draws. */
+type Kind = ExportJob | "card";
+const KINDS: readonly Kind[] = ["mp4", "zip", "pdf", "card"];
+const NAME: Record<Kind, string> = { mp4: "Video", zip: "Slides", pdf: "PDF", card: "Share card" };
+const TYPE: Record<Kind, string> = { mp4: "MP4", zip: "ZIP", pdf: "", card: "PNG" };
+const MARK: Record<Kind, ReactNode> = {
+  mp4: <VideoMark />,
+  zip: <SlidesMark />,
+  pdf: <PdfMark />,
+  card: <CardMark />,
+};
 /** Each shape's short use, so the choice reads without the full label. */
 const USE: Record<ExportFormat, string> = {
   "9x16": "Reels, TikTok",
@@ -36,8 +47,8 @@ const USE: Record<ExportFormat, string> = {
 
 /**
  * "Keep your year" at the closing stop: the story's files as two columns of paper tickets on the
- * grass at the bottom right, each an ink tile with a pixel mark and the file's name. Video opens
- * its four shapes. While a file is made, and only then, a small dialog shows Cell, a bar and one
+ * grass at the bottom right, each an ink tile with a pixel mark and the file's name. Each file
+ * opens its four shapes first. While a file is made, and only then, a small dialog shows Cell, a bar and one
  * sentence. Never part of the composition, so never in a file.
  */
 export function ExportShelf({
@@ -62,8 +73,9 @@ export function ExportShelf({
   onBusyChange: (busy: boolean) => void;
 }) {
   const { state, support, busy, run, cancel } = useExport(data, { letter, onBusyChange });
-  const [shapes, setShapes] = useState(false);
-  const videoButton = useRef<HTMLButtonElement>(null);
+  // Which file's shapes are open, if any; and each file's ticket, to take focus back.
+  const [open, setOpen] = useState<Kind | null>(null);
+  const tickets = useRef<Partial<Record<Kind, HTMLButtonElement | null>>>({});
   const shapesList = useRef<HTMLFieldSetElement>(null);
   const started = useRef<HTMLElement | null>(null);
   const ids = useId();
@@ -79,24 +91,25 @@ export function ExportShelf({
 
   const start = (job: ExportJob, format: ExportFormat, from: HTMLElement | null) => {
     started.current = from;
-    setShapes(false);
+    setOpen(null);
     run(job, format);
   };
 
-  // The shapes close on Escape (focus back on Video) and on a press anywhere else.
+  // The shapes close on Escape (focus back on their ticket) and on a press anywhere else.
   useEffect(() => {
-    if (!shapes) return;
+    if (!open) return;
+    const ticket = tickets.current[open];
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
       event.stopPropagation();
-      setShapes(false);
-      videoButton.current?.focus();
+      setOpen(null);
+      ticket?.focus();
     };
     const onPress = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (videoButton.current?.contains(target) || shapesList.current?.contains(target)) return;
-      setShapes(false);
+      if (ticket?.contains(target) || shapesList.current?.contains(target)) return;
+      setOpen(null);
     };
     window.addEventListener("keydown", onKey, true);
     window.addEventListener("pointerdown", onPress, true);
@@ -104,14 +117,13 @@ export function ExportShelf({
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("pointerdown", onPress, true);
     };
-  }, [shapes]);
+  }, [open]);
 
   // The dialog took focus; when it closes, give it back to the ticket that started the file.
   useEffect(() => {
     if (busy) return;
     const back = started.current;
     if (back?.isConnected) back.focus();
-    else if (back) videoButton.current?.focus();
   }, [busy]);
 
   const said = announcement(state);
@@ -133,98 +145,83 @@ export function ExportShelf({
       >
         {title}
       </h2>
-      {shapes && (
+      {open && (
         // Opens above the tickets, so they stay where they were.
         <fieldset
           ref={shapesList}
           className="absolute right-0 bottom-full m-0 mb-1.5 grid w-full grid-cols-2 gap-1.5 border-0 p-0"
         >
-          <legend className="sr-only">Video shape</legend>
-          {FORMATS.map((key) => (
-            <button
-              key={key}
-              type="button"
-              aria-label={`Video ${ratio(key)}, ${VIDEO_FORMATS[key].label}`}
-              onClick={(event) => start("mp4", key, videoButton.current ?? event.currentTarget)}
-              className={TICKET}
-            >
-              <span aria-hidden="true" className={TILE}>
-                <ShapeMark format={key} />
-              </span>
-              <span className="flex flex-col leading-tight">
-                {ratio(key)}
-                <span className="text-xs font-medium text-ink-soft">{USE[key]}</span>
-              </span>
-            </button>
-          ))}
+          <legend className="sr-only">{`${NAME[open]} size`}</legend>
+          {FORMATS.map((key) => {
+            const label = `${NAME[open]} ${ratio(key)}, ${VIDEO_FORMATS[key].label}`;
+            const inner = (
+              <>
+                <span aria-hidden="true" className={TILE}>
+                  <ShapeMark format={key} />
+                </span>
+                <span className="flex flex-col leading-tight">
+                  {ratio(key)}
+                  <span className="text-xs font-medium text-ink-soft">{USE[key]}</span>
+                </span>
+              </>
+            );
+            if (open === "card") {
+              const link = cardLink(card, key);
+              return link ? (
+                <a
+                  key={key}
+                  href={link.href}
+                  download={link.filename ?? true}
+                  aria-label={label}
+                  onClick={() => setOpen(null)}
+                  className={TICKET}
+                >
+                  {inner}
+                </a>
+              ) : null;
+            }
+            const job = open;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-label={label}
+                onClick={(event) => start(job, key, tickets.current[job] ?? event.currentTarget)}
+                className={TICKET}
+              >
+                {inner}
+              </button>
+            );
+          })}
         </fieldset>
       )}
       <ul className="grid grid-cols-2 gap-1.5">
-        <li>
-          <button
-            ref={videoButton}
-            type="button"
-            aria-expanded={shapes}
-            disabled={mp4Off}
-            aria-describedby={describe(mp4Off)}
-            onClick={() => setShapes((open) => !open)}
-            className={TICKET}
-          >
-            <span aria-hidden="true" className={TILE}>
-              <VideoMark />
-            </span>
-            Video
-          </button>
-        </li>
-        <li>
-          <button
-            type="button"
-            disabled={stillsOff}
-            aria-describedby={describe(stillsOff)}
-            onClick={(event) => start("zip", "9x16", event.currentTarget)}
-            className={TICKET}
-          >
-            <span aria-hidden="true" className={TILE}>
-              <SlidesMark />
-            </span>
-            <span>
-              Slides <span className="font-medium text-ink-soft">ZIP</span>
-            </span>
-          </button>
-        </li>
-        <li>
-          <button
-            type="button"
-            disabled={stillsOff}
-            aria-describedby={describe(stillsOff)}
-            onClick={(event) => start("pdf", "9x16", event.currentTarget)}
-            className={TICKET}
-          >
-            <span aria-hidden="true" className={TILE}>
-              <PdfMark />
-            </span>
-            PDF
-          </button>
-        </li>
-        <li>
-          {"href" in card ? (
-            <a href={card.href} download={card.filename ?? true} className={TICKET}>
-              <span aria-hidden="true" className={TILE}>
-                <CardMark />
-              </span>
-              <span>
-                Share card <span className="font-medium text-ink-soft">PNG</span>
-              </span>
-            </a>
-          ) : (
-            <button type="button" disabled aria-describedby={cardId} className={TICKET}>
-              <span aria-hidden="true" className={TILE}>
-                <CardMark />
-              </span>
-              Share card
-            </button>
-          )}
-        </li>
+        {KINDS.map((kind) => {
+          const off = kind === "mp4" ? mp4Off : kind === "card" ? !("href" in card) : stillsOff;
+          const why = kind === "card" ? ("reason" in card ? cardId : undefined) : describe(off);
+          return (
+            <li key={kind}>
+              <button
+                ref={(node) => {
+                  tickets.current[kind] = node;
+                }}
+                type="button"
+                aria-expanded={open === kind}
+                disabled={off}
+                aria-describedby={why}
+                onClick={() => setOpen((now) => (now === kind ? null : kind))}
+                className={TICKET}
+              >
+                <span aria-hidden="true" className={TILE}>
+                  {MARK[kind]}
+                </span>
+                <span>
+                  {NAME[kind]} <span className="font-medium text-ink-soft">{TYPE[kind]}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
         {links.map((link) => {
           const inner = (
             <>
