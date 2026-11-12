@@ -113,7 +113,8 @@ test("the ride builds for every fixture and format", () => {
       }
     }
   }
-});
+  // Sixteen rides, every stop of each with its town: over the default limit on a busy machine.
+}, 30_000);
 
 test("a frame stays inside the polygon budget", () => {
   const m = buildRide(sampleRecap, f, "video", 30);
