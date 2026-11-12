@@ -59,8 +59,23 @@ test("Cell's eyes are open on the frames slides are taken from", () => {
   }
 });
 
-test("Cell wears its crest of three cells", () => {
-  expect(tagged(cell([0, 0, 0], 0, 0, "idle"), "cell-crest")).toHaveLength(3);
+test("Cell wears its crest: three cells of one size in an even row, darkest to brightest", () => {
+  const crest = tagged(cell([0, 0, 0], 0, 0, "idle"), "cell-crest");
+  expect(crest).toHaveLength(3);
+  // One size and one height, so the row is level and balanced from every side.
+  for (const one of crest) expect(one.size).toEqual(crest[0]?.size as Box["size"]);
+  for (const one of crest) expect(one.at[2]).toBe(crest[0]?.at[2] as number);
+  // Chunky, not a pillar: no taller than it is wide.
+  expect(crest[0]?.size[2]).toBeLessThanOrEqual(crest[0]?.size[0] ?? 0);
+  // Evenly spaced across the head, centred on it.
+  const ys = crest.map((one) => one.at[1] + one.size[1] / 2);
+  expect((ys[1] ?? 0) - (ys[0] ?? 0)).toBeCloseTo((ys[2] ?? 0) - (ys[1] ?? 0));
+  expect(ys[1]).toBeCloseTo(0);
+  // Each brighter than the last.
+  const light = (hex: string) => Number.parseInt(hex.slice(3, 5), 16);
+  const greens = crest.map((one) => light(one.tone.left));
+  expect(greens[0]).toBeLessThan(greens[1] ?? 0);
+  expect(greens[1]).toBeLessThan(greens[2] ?? 0);
 });
 
 test("Cell stands where it is put and turns as a whole", () => {

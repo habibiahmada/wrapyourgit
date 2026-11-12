@@ -1,10 +1,10 @@
 /*
  * Cell, drawn live from boxes so it can move: it hops, blinks, waves and cheers. Its face is on
  * its front, a small pack sits on its back (so it reads from behind, where the camera rides), and
- * it wears the crest of three contribution cells, darkest to brightest. Every cycle divides 60
+ * it wears the crest of three contribution cells, darkest to brightest, all one height. Every cycle divides 60
  * frames, so a station's two-second rest loop ends where it began.
  */
-import { heat, INK, LIT, TONE } from "./palette";
+import { GREENS, INK, LIT, TONE, toneOf } from "./palette";
 import { type BoxExtra, part } from "./place";
 import type { Decal, Solid } from "./prims";
 import type { V3 } from "./project";
@@ -15,6 +15,8 @@ const SIZE = 1.15;
 /** Frames in which every one of Cell's cycles repeats. */
 const LOOP = 60;
 const TAU = Math.PI * 2;
+/** The crest's three cells, darkest to brightest. */
+const CREST = [toneOf(GREENS[1]), toneOf(GREENS[2]), toneOf("#7ee787")];
 
 /**
  * Cell standing on `c`, facing `yaw`. `amount` (0 to 1) is how much of the mood shows: at 0 a
@@ -87,14 +89,14 @@ export function cell(c: V3, yaw: number, at: number, mood: Mood, amount = 1): So
       }),
     );
   }
-  // The crest, as on the landing page's Cell: three cells in a row across the back of the head,
-  // each a step taller and a step brighter than the one before, so it reads as a rising run of
-  // contribution cells from any side. They bounce together, so the steps keep their order.
-  const bounce = Math.max(0, Math.sin((frame / 30) * TAU)) * 0.05 * k;
-  [-0.14, 0, 0.14].forEach((dy, i) => {
-    const tall = (0.12 + i * 0.045) * k;
+  // The crest: three chunky cells of one height in a tight row across the top of the head,
+  // darkest to brightest, like a run of contribution cells. One height and one gap keep it level
+  // and balanced from every side; tall thin cells read as two chimneys from the riding camera.
+  // They bounce together, so the row stays level.
+  const bounce = Math.max(0, Math.sin((frame / 30) * TAU)) * 0.04 * k;
+  CREST.forEach((color, i) => {
     out.push(
-      p(-0.07 * k, dy * k, leg + 0.62 * k + bounce, [0.12 * k, 0.12 * k, tall], heat(i + 1), {
+      p(0, (i - 1) * 0.17 * k, leg + 0.62 * k + bounce, [0.16 * k, 0.16 * k, 0.11 * k], color, {
         tag: "cell-crest",
       }),
     );
