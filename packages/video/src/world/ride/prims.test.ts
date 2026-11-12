@@ -131,6 +131,32 @@ test("a logo prints on the upright faces that are tall enough", () => {
   expect(prims.filter((p) => p.kind === "image")).toHaveLength(2);
 });
 
+test("a logo paints over its face's decals and under its text", () => {
+  const prims = scenePrims(
+    [
+      {
+        ...box,
+        size: [1, 1, 2],
+        lit: true,
+        logo: "lang/x.svg",
+        decals: [{ on: "all", rect: [0.2, 0.6, 0.8, 0.95], fill: "#161b22" }],
+        texts: [{ on: "all", rect: [0.1, 0.1, 0.9, 0.3], text: "6%", fill: "#ffffff" }],
+      },
+    ],
+    cam,
+    frame,
+    clear,
+  );
+  // Painted far to near, so the nearest face's decal, logo and text come last, in that order.
+  const lastOf = (kind: string) => prims.findLastIndex((p) => p.kind === kind);
+  const decal = prims.findLastIndex(
+    (p) => p.kind === "poly" && "fill" in p && p.fill === "#161b22",
+  );
+  expect(decal).toBeGreaterThan(-1);
+  expect(lastOf("image")).toBeGreaterThan(decal);
+  expect(lastOf("text")).toBeGreaterThan(lastOf("image"));
+});
+
 test("a flipped text is turned half round in its rect, for reading from the other side", () => {
   const rect: [number, number, number, number] = [0.1, 0.2, 0.9, 0.8];
   const one = (flip: boolean) => {
