@@ -3,10 +3,9 @@
 import { Player, type PlayerRef } from "@remotion/player";
 import { type RecapData, VIDEO_FPS } from "@wyg/schema";
 import { RideStory } from "@wyg/video";
-import { buildRide } from "@wyg/video/ride";
+import { buildRide, closingShelf } from "@wyg/video/ride";
 import { edgeSounds, safeArea, TAP_SOUND } from "@wyg/video/world";
 import { WORLD_TRACK, worldLoopSeconds } from "@wyg/video/world-track";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -20,8 +19,7 @@ import {
   settle,
 } from "./controller";
 import { endScreenFor, shareCardFor } from "./end-screen";
-import { ExportPanel } from "./export-panel";
-import { PAPER_BUTTON } from "./paper-button";
+import { ExportShelf } from "./export-shelf";
 import { publicWorld } from "./public-world";
 import { stageSize } from "./stage-size";
 import { useMusic } from "./use-music";
@@ -52,14 +50,7 @@ const zone = (disabled: boolean) =>
  * move in flight, so a drag across the screen edge should cost one, not dozens.
  */
 const RESIZE_SETTLE_MS = 150;
-/**
- * The way on at the rested closing stop. Paper like the other controls: the closing sky is dark,
- * so a paper fill is what stands out there; the words, not an icon, say where it goes.
- */
-const CUE = `inline-flex min-h-11 max-w-[calc(100%-1.5rem)] cursor-pointer items-center rounded-md border border-ink/25 bg-paper/90 px-4 py-2 text-left font-semibold text-ink [overflow-wrap:anywhere] hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
 const CONTROL = `grid size-11 cursor-pointer place-items-center rounded-md border border-ink/25 bg-paper/90 text-ink hover:bg-paper active:bg-ink/10 ${CONTROL_RING}`;
-/** Why every way out is off while a render runs; the end screen shows it under its buttons. */
-const LEAVE_BLOCKED = "leave-blocked";
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -148,15 +139,21 @@ export function WorldPlayer(props: WorldPlayerProps) {
     };
   }, []);
   const { width, height } = size;
-  const { stops, timeline } = useMemo(
+  const model = useMemo(
     () => buildRide(data, { width, height }, "interactive", VIDEO_FPS, { letter }),
     [data, width, height, letter],
+  );
+  const { stops, timeline } = model;
+  // The grass the "keep your year" icons stand on at the closing stop, as fractions of the frame.
+  const shelf = useMemo(
+    () => closingShelf(model, data, { width, height }, VIDEO_FPS),
+    [model, data, width, height],
   );
 
   // The controller lives in a ref (the frame loop reads it every tick); `at` mirrors it for render.
   const state = useRef<ControllerState>(initialState());
   const [at, setAt] = useState(0);
-  // Mirrors `!state.moving`: the end-screen cue shows only once the camera has settled.
+  // Mirrors `!state.moving`: the closing stop's icons show only once the camera has settled.
   const [resting, setResting] = useState(true);
   const [muted, setMuted] = useState(false);
   const [faded, setFaded] = useState(false);
@@ -167,22 +164,16 @@ export function WorldPlayer(props: WorldPlayerProps) {
   const restPhase = useRef(0);
   // Idle motion carried into a move from where the rest loop was (see controller `idleOffset`).
   const [idle, setIdle] = useState(0);
-  // "Keep your year": a web-only screen over the paused closing stop, never part of the story.
-  const [ended, setEnded] = useState(false);
+  // A file is being made: the dialog over the story is up, and nothing else moves.
   const [busy, setBusy] = useState(false);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const endHeading = useRef<HTMLHeadingElement>(null);
-  const nextZone = useRef<HTMLButtonElement>(null);
-  const cue = useRef<HTMLButtonElement>(null);
   const last = stops.length - 1;
   const login = data.profile.login;
   // A visitor keeps someone else's year: "your" would name the wrong person.
   const keepLabel = owner ? "Keep your year" : `Keep @${login}'s year`;
-  const lastStopNote = `. ${keepLabel} is next.`;
+  const lastStopNote = `. ${keepLabel}: the files are on screen.`;
   const endScreen = endScreenFor(props.variant);
   const card = shareCardFor(props.variant, data);
-  // Scene units kept clear of the copyright line (the composition's own safe area).
-  const footerClear = safeArea({ width, height }).bottom;
 
   const commit = useCallback((next: ControllerState) => {
     state.current = next;
@@ -246,13 +237,9 @@ export function WorldPlayer(props: WorldPlayerProps) {
         if (result.start) begin();
       };
 
-      // Next at the rested closing stop opens the end screen. Only a fresh tap does: a tap queued
-      // during the flight in must not end the story before the closing stop has been seen.
+      // The story ends at the closing stop: Next there does nothing.
       const rest = state.current;
-      if (direction === 1 && !rest.moving && rest.stop >= last) {
-        setEnded(true);
-        return;
-      }
+      if (direction === 1 && !rest.moving && rest.stop >= last) return;
       // A tap at rest sets off from where the rest loop is; one during a move only queues.
       step(direction, rest.moving ? 0 : restPhase.current);
     },
@@ -279,7 +266,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
   // Not under reduced motion, and not behind the end screen.
   useEffect(() => {
     restPhase.current = 0;
-    if (!resting || ended || reduced) return;
+    if (!resting || busy || reduced) return;
     const begun = performance.now();
     const loop = (now: number) => {
       const rested = state.current;
@@ -291,14 +278,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
     };
     restRaf.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(restRaf.current);
-  }, [resting, ended, reduced, timeline]);
-
-  const closeEnd = useCallback(() => {
-    setEnded(false);
-    // The screen's own controls unmount; hand focus back to the cue that opened it, which is back
-    // by the next frame. The Next zone is the fallback, should the cue not be there.
-    requestAnimationFrame(() => (cue.current ?? nextZone.current)?.focus());
-  }, []);
+  }, [resting, busy, reduced, timeline]);
 
   // The control that opened the story (the question's answer, the card's Play) unmounts or is
   // hidden on the same commit; without this, focus would fall back to <body>.
@@ -307,25 +287,10 @@ export function WorldPlayer(props: WorldPlayerProps) {
   }, []);
 
   useEffect(() => {
-    if (ended) endHeading.current?.focus();
-  }, [ended]);
-
-  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
-      if (ended) {
-        // Arrow keys belong to the format radios while one has focus. A running render keeps the
-        // screen until it ends or is cancelled: Escape, Back and the links all wait, since
-        // leaving would throw away minutes of encoding without a word.
-        const onField = event.target instanceof Element && event.target.closest("input") !== null;
-        if (event.key === "Escape" && !busy) {
-          if (onExit) onExit();
-          else router.push("/dashboard");
-        } else if (event.key === "ArrowLeft" && !onField && !busy) closeEnd();
-        else return;
-        event.preventDefault();
-        return;
-      }
+      // The dialog over the story owns the keys while a file is made (Escape cancels it).
+      if (busy) return;
       // A focused button or link activates itself on Enter and Space; handling them here too
       // would move twice.
       const onControl =
@@ -341,7 +306,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [busy, closeEnd, ended, go, onExit, router]);
+  }, [busy, go, onExit, router]);
 
   const toggleSound = () => {
     const next = !muted;
@@ -366,7 +331,6 @@ export function WorldPlayer(props: WorldPlayerProps) {
       </h1>
       <div
         className="[grid-area:1/1]"
-        inert={ended}
         style={{
           ...stage,
           opacity: faded ? 0 : 1,
@@ -394,103 +358,21 @@ export function WorldPlayer(props: WorldPlayerProps) {
         type="button"
         aria-label="Previous"
         aria-disabled={at <= 0}
-        inert={ended}
         onClick={() => go(-1)}
         className={`${zone(at <= 0)} left-0 w-1/3`}
       />
-      {/* Never disabled: at the closing stop, Next opens the end screen. */}
       <button
-        ref={nextZone}
         type="button"
         aria-label="Next"
-        inert={ended}
+        aria-disabled={at >= last}
         onClick={() => go(1)}
-        className={`${zone(false)} right-0 left-1/3`}
+        className={`${zone(at >= last)} right-0 left-1/3`}
       />
 
-      {ended && (
-        <section
-          aria-labelledby="keep-your-year"
-          className="on-light absolute inset-0 overflow-y-auto bg-paper/85"
-        >
-          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-4 py-20">
-            <div className="flex flex-col gap-6 rounded-xl border border-ink/25 bg-paper p-5 sm:p-8">
-              <div className="flex flex-col gap-2">
-                <h2
-                  id="keep-your-year"
-                  ref={endHeading}
-                  tabIndex={-1}
-                  className="text-3xl font-bold tracking-tight [overflow-wrap:anywhere] sm:text-4xl"
-                >
-                  {keepLabel}
-                </h2>
-                <p className="text-lg text-ink-soft [overflow-wrap:anywhere]">
-                  {owner ? (
-                    <>
-                      Your story as files to keep and post, made in this browser.
-                      {privateNames ? "" : " Private repositories are never named."}
-                    </>
-                  ) : (
-                    `@${login}'s story as files to keep and post, made in this browser from their public GitHub activity.`
-                  )}
-                </p>
-              </div>
-              {endScreen.exports && (
-                <ExportPanel
-                  data={data}
-                  privateNames={privateNames}
-                  card={card}
-                  letter={letter}
-                  onBusyChange={setBusy}
-                />
-              )}
-              <div className="flex flex-col gap-3 border-t border-ink/25 pt-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-describedby={busy ? LEAVE_BLOCKED : undefined}
-                    onClick={closeEnd}
-                    className={PAPER_BUTTON.secondary}
-                  >
-                    Back to the story
-                  </button>
-                  {endScreen.links.map((link) =>
-                    busy ? (
-                      <button
-                        key={link.href}
-                        type="button"
-                        disabled
-                        aria-describedby={LEAVE_BLOCKED}
-                        className={PAPER_BUTTON.secondary}
-                      >
-                        {link.label}
-                      </button>
-                    ) : link.route ? (
-                      <a key={link.href} href={link.href} className={PAPER_BUTTON.secondary}>
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link key={link.href} href={link.href} className={PAPER_BUTTON.secondary}>
-                        {link.label}
-                      </Link>
-                    ),
-                  )}
-                </div>
-                {busy && (
-                  <p id={LEAVE_BLOCKED} className="text-base text-ink-soft">
-                    Cancel the render first to go back to the story or leave it.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* An inline-size container, so the cue can sit in scene units (1 unit = 0.1cqw). */}
+      {/* A size container: the Sound control sits in scene units (1 unit = 0.1cqw), the shelf in
+          fractions of the frame (cqw, cqh). */}
       <div
-        className="pointer-events-none relative [container-type:inline-size] [grid-area:1/1]"
+        className="pointer-events-none relative [container-type:size] [grid-area:1/1]"
         style={stage}
       >
         {/* Web-only, like the cue: drawn over the story, never part of a file. Top right, just
@@ -505,20 +387,25 @@ export function WorldPlayer(props: WorldPlayerProps) {
         >
           <SpeakerIcon muted={muted} />
         </button>
-        {/* Web-only, never part of the composition or a file. Bottom-left, just above the
-            copyright line's safe area: the closing scene keeps that corner to the skyline (Cell
-            stands centre in tall frames, right in landscape; the text is at the top or left-top).
-            After Sound in tab order: it is the last control, so its visual spot can differ. */}
-        {resting && at === last && !ended && (
-          <button
-            ref={cue}
-            type="button"
-            onClick={() => setEnded(true)}
-            className={`pointer-events-auto absolute left-3 ${CUE}`}
-            style={{ bottom: `${(footerClear / 10).toFixed(3)}cqw` }}
+        {/* Web-only, never part of the composition or a file: on the grass right of the board
+            and above the train (`closingShelf`). The icons wrap into as many columns as fit. */}
+        {resting && at === last && (
+          <div
+            className="pointer-events-auto absolute right-3"
+            style={{
+              left: `min(calc(${(shelf.left * 100).toFixed(2)}cqw + 0.5rem), calc(100cqw - 3.5rem))`,
+              bottom: `max(0.75rem, ${((1 - shelf.bottom) * 100).toFixed(2)}cqh)`,
+            }}
           >
-            {keepLabel}
-          </button>
+            <ExportShelf
+              data={data}
+              privateNames={privateNames}
+              card={card}
+              letter={letter}
+              links={endScreen.links}
+              onBusyChange={setBusy}
+            />
+          </div>
         )}
       </div>
 
