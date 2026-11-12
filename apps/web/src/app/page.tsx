@@ -8,10 +8,13 @@ import {
   ClosingSection,
   FAQ,
   FaqSection,
-  KeepSection,
+  JourneySection,
   LetterSection,
+  MetricsSection,
+  PlayerSection,
+  PrintsSection,
   PrivacySection,
-  StorySection,
+  ReelSection,
 } from "@/components/landing/sections";
 import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -150,10 +153,13 @@ export default function Home({ searchParams }: PageProps<"/">) {
             </div>
           </section>
 
-          <StorySection />
+          <JourneySection />
+          <ReelSection />
+          <MetricsSection />
           <ArchetypesSection />
           <LetterSection />
-          <KeepSection />
+          <PlayerSection />
+          <PrintsSection />
           <PrivacySection />
           <FaqSection />
           <ClosingSection
