@@ -8,8 +8,17 @@ import { layoutForSize } from "@wyg/schema";
 import { easeInOutCubic } from "../timeline";
 import { type Frame, projectPoint, type RideCamera, type V3 } from "./project";
 import type { RideStop } from "./stops";
-import { REST_SECONDS, type RideTimeline, trainAt } from "./timeline";
-import { at, billboardAt, FIRST_PLATFORM, heading, OVERVIEW_THETA, PLAZA_LATERAL } from "./track";
+import { type RideTimeline, trainAt } from "./timeline";
+import {
+  at,
+  billboardAt,
+  FIRST_PLATFORM,
+  heading,
+  OVERVIEW_THETA,
+  PLAZA_AHEAD,
+  PLAZA_LATERAL,
+  railBounds,
+} from "./track";
 
 export type Look = "ahead" | "cell" | "train" | "hero";
 /**
@@ -26,13 +35,14 @@ export const SHOTS = {
   /** Low and close beside the train, wheels at eye level. */
   SIDE: { theta: Math.PI * 0.56, radius: 5.6, height: 1.2, fov: 50, look: "train" },
   /** The landing's angle on a station: 45 degrees round, 30 up, far away through a long lens. */
-  ISO: { theta: Math.PI * 0.75, radius: 19.5, height: 11.3, fov: 22, look: "hero" },
+  // Ahead of the train and to the side, looking back across the rail: Cell faces the camera with
+  // the hero over its shoulder, and the camera stands over the station still to come, which has
+  // nothing built yet.
+  ISO: { theta: Math.PI * 0.25, radius: 19.5, height: 11.3, fov: 22, look: "hero" },
   /** hello: from the front and a little to the side, Cell and the platform board in frame. */
   HELLO: { theta: 1.0, radius: 3.2, height: 1.9, fov: 56, look: "cell" },
 } as const satisfies Record<string, Shot>;
 
-/** How far ahead of the engine a plaza's centre is. */
-export const PLAZA_AHEAD = 4.5;
 /** Where Cell sits on the engine, from its nose. */
 const CELL_SEAT = -0.35;
 const MIDDLE_MIN_SECONDS = 2.2;
@@ -40,12 +50,6 @@ const CITY_FOV = 34;
 const CITY_MARGIN = 0.06;
 /** The frame height the shots' lenses are written for (16:9). */
 const REFERENCE_HEIGHT = 1080;
-
-/** The shot in the middle of the move into stop `i`: they alternate, and a short move has none. */
-export function middleShot(i: number, moveSeconds: number): "OVER" | "SIDE" | null {
-  if (moveSeconds < MIDDLE_MIN_SECONDS) return null;
-  return i % 2 === 1 ? "OVER" : "SIDE";
-}
 
 /** A camera described the way the shots are: round a point on the rail. */
 type Pose = {
@@ -70,9 +74,14 @@ const lerpV = (a: V3, b: V3, t: number): V3 => [
 const logLerp = (a: number, b: number, t: number) => Math.exp(lerp(Math.log(a), Math.log(b), t));
 
 /** The centre of a stop's hero: its plaza, or for closing the board at the buffers. */
+/** The shot a station rests on. */
+export function stationShot(_stop: RideStop): Shot {
+  return SHOTS.ISO;
+}
+
 function heroPoint(stop: RideStop): V3 {
   if (stop.plaza) return at(stop.s + PLAZA_AHEAD, stop.side * PLAZA_LATERAL, 3.4);
-  return at(stop.s + 5.6, 0, 4.0);
+  return at(stop.s - 5.6, 0, 4.0);
 }
 
 function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
@@ -134,18 +143,32 @@ function poseCamera(pose: Pose, frame: Frame): RideCamera {
   };
 }
 
-/** The overview: high above the middle of the rail, pulled out until both ends are in frame. */
+/** The overview: high above the middle of the year's ground, pulled out until all of it is in frame. */
 function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
   const end = (stops.at(-1)?.s ?? FIRST_PLATFORM) + 4;
-  const middle = (FIRST_PLATFORM + end) / 2;
+  // The fit depends only on the rail's length and the frame, and every frame of the climb and
+  // the descent asks for it: worked out once, then kept.
+  const key = `${end}:${frame.width}x${frame.height}`;
+  const kept = cityPoses.get(key);
+  if (kept) return kept;
+  const pose = fitCityPose(end, frame);
+  cityPoses.set(key, pose);
+  return pose;
+}
+const cityPoses = new Map<string, Pose>();
+
+function fitCityPose(end: number, frame: Frame): Pose {
+  const layout = layoutForSize(frame.width, frame.height);
+  const { min, max } = railBounds(end);
+  const middle: V3 = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, 0];
   const pose: Pose = {
-    anchor: at(middle),
+    anchor: middle,
     heading: 0,
-    theta: OVERVIEW_THETA[layoutForSize(frame.width, frame.height)],
+    theta: OVERVIEW_THETA[layout],
     radius: 30,
     height: 30 * 0.75,
     fov: CITY_FOV,
-    look: at(middle),
+    look: middle,
     ride: 0,
   };
   const inside = (p: V3) => {
@@ -155,18 +178,51 @@ function cityPose(stops: readonly RideStop[], frame: Frame): Pose {
     const my = frame.height * CITY_MARGIN;
     return s[0] > mx && s[0] < frame.width - mx && s[1] > my && s[1] < frame.height - my;
   };
-  // Both ends of the rail, the squares beside it, and the billboard from foot to top.
-  const layout = layoutForSize(frame.width, frame.height);
-  const ends = [
-    at(FIRST_PLATFORM),
-    at(end),
-    at(middle, 8),
-    at(middle, -8),
-    ...billboardAt(middle, layout).corners,
-  ];
-  while (!ends.every(inside) && pose.radius < 600) {
-    pose.radius *= 1.06;
+  // The rail folds back on itself, so it is sampled along its whole length with the squares and
+  // plazas beside it, plus the billboard from foot to top.
+  const points: V3[] = [...billboardAt(end, layout).corners];
+  for (let s = 0; s <= end; s += 4) points.push(at(s, 11), at(s, -11));
+  while (!points.every(inside) && pose.radius < 600) {
+    pose.radius *= 1.04;
     pose.height = pose.radius * 0.75;
+  }
+  // The billboard stands tall behind the ground, so a camera aimed at the ground's middle has
+  // the picture high in the frame with nothing under it. Aim at the middle of what is on screen
+  // instead, and come in until something touches the margin.
+  const forward: [number, number] = [-Math.cos(pose.theta), -Math.sin(pose.theta)];
+  const right: [number, number] = [-forward[1], forward[0]];
+  const move = (along: number, across: number) => {
+    const d: V3 = [
+      forward[0] * along + right[0] * across,
+      forward[1] * along + right[1] * across,
+      0,
+    ];
+    pose.anchor = [pose.anchor[0] + d[0], pose.anchor[1] + d[1], 0];
+    pose.look = [pose.look[0] + d[0], pose.look[1] + d[1], 0];
+  };
+  for (let i = 0; i < 400; i++) {
+    const cam = poseCamera(pose, frame);
+    const seen = points.map((p) => projectPoint(p, cam, frame));
+    if (seen.some((p) => !p)) break;
+    const xs = seen.map((p) => p?.[0] ?? 0);
+    const ys = seen.map((p) => p?.[1] ?? 0);
+    const offX = (Math.min(...xs) + Math.max(...xs)) / 2 / frame.width - 0.5;
+    const offY = (Math.min(...ys) + Math.max(...ys)) / 2 / frame.height - 0.5;
+    const step = pose.radius * 0.01;
+    if (Math.abs(offY) > 0.006) {
+      // Aiming further away moves the picture down the frame.
+      move(offY < 0 ? step : -step, 0);
+    } else if (Math.abs(offX) > 0.006) {
+      move(0, offX < 0 ? step : -step);
+    } else {
+      const closer = { radius: pose.radius / 1.015, height: (pose.radius / 1.015) * 0.75 };
+      const kept = { radius: pose.radius, height: pose.height };
+      Object.assign(pose, closer);
+      if (!points.every(inside)) {
+        Object.assign(pose, kept);
+        break;
+      }
+    }
   }
   return pose;
 }
@@ -187,7 +243,48 @@ const FURTHEST = 2.2;
  * while it pulls in, so the shot does not drift.
  */
 function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
-  const base = shotPose(SHOTS.ISO, stop.s, stop, stop.side);
+  const base = shotPose(stationShot(stop), stop.s, stop, stop.side);
+  const rest = stationRest(stop, base, frame);
+  const now = shotPose(stationShot(stop), trainS, stop, stop.side);
+  // While the train pulls in, the look point keeps the offset the fit found for the train at rest.
+  const moved: V3 = [
+    now.look[0] + (rest.look[0] - base.look[0]),
+    now.look[1] + (rest.look[1] - base.look[1]),
+    rest.look[2],
+  ];
+  return {
+    ...now,
+    radius: rest.radius,
+    height: rest.height,
+    look: trainS === stop.s ? rest.look : moved,
+  };
+}
+
+const stationRests = new Map<string, Pose>();
+
+/**
+ * The fit for the train at rest. It depends only on the station, its hero and the frame, and
+ * every frame of the move in and the stop asks for it (twice a frame while the camera glides
+ * between two stations): worked out once, then kept.
+ */
+function stationRest(stop: RideStop, base: Pose, frame: Frame): Pose {
+  const key = [
+    stop.id,
+    stop.s,
+    stop.side,
+    stop.heroTop,
+    (stop.heroEdge ?? []).map((p) => p.map((n) => n.toFixed(3)).join(",")).join(";"),
+    frame.width,
+    frame.height,
+  ].join("|");
+  const kept = stationRests.get(key);
+  if (kept) return kept;
+  const found = fitStationRest(stop, base, frame);
+  stationRests.set(key, found);
+  return found;
+}
+
+function fitStationRest(stop: RideStop, base: Pose, frame: Frame): Pose {
   const centre = heroPoint(stop);
   const top: V3 = [centre[0], centre[1], (stop.heroTop ?? 3.4) + 0.2];
   const cell = at(stop.s + CELL_SEAT, 0, 0.6);
@@ -208,7 +305,11 @@ function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
       (high, p) => (p && (!high || p[1] < high[1]) ? p : high),
       tops[0] ?? null,
     );
-    const b = projectPoint(cell, cam, frame);
+    // The lowest point on screen: Cell, or a part of the hero that stands lower in the picture.
+    const b = [...tops, projectPoint(cell, cam, frame)].reduce(
+      (low, p) => (p && (!low || p[1] > low[1]) ? p : low),
+      null,
+    );
     // Cell counts among what must stay between the sides, with room for the engine round it.
     const xs = [...ring, ...seat].map((p) => projectPoint(p, cam, frame)?.[0] ?? Number.NaN);
     if (!a || !b || xs.some(Number.isNaN)) return null;
@@ -255,19 +356,7 @@ function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
       rest = { ...rest, look: [rest.look[0], rest.look[1], z] };
     } else break;
   }
-  const now = shotPose(SHOTS.ISO, trainS, stop, stop.side);
-  // While the train pulls in, the look point keeps the offset the fit found for the train at rest.
-  const moved: V3 = [
-    now.look[0] + (rest.look[0] - base.look[0]),
-    now.look[1] + (rest.look[1] - base.look[1]),
-    rest.look[2],
-  ];
-  return {
-    ...now,
-    radius: rest.radius,
-    height: rest.height,
-    look: trainS === stop.s ? rest.look : moved,
-  };
+  return rest;
 }
 
 function restPose(stop: RideStop, stops: readonly RideStop[], frame: Frame): Pose {
@@ -326,28 +415,14 @@ export function rideCamera(
   } else if (!dest || frameIndex <= start || move === 0) {
     pose = restPose(from, stops, frame);
   } else {
-    const fps = timeline.restFrames / REST_SECONDS;
-    const middle = middleShot(to, move / fps);
-    const ride = (side: 1 | -1) => shotPose(SHOTS.RIDE, trainS, dest, side);
-    const keys: { at: number; pose: Pose }[] =
-      from.kind === "city" || dest.kind === "city"
-        ? // The overview is one long pull, straight up and out, and straight back down.
-          [
-            { at: 0, pose: restPoseAt(from, stops, frame, trainS) },
-            { at: 1, pose: restPoseAt(dest, stops, frame, trainS) },
-          ]
-        : [
-            { at: 0, pose: restPoseAt(from, stops, frame, trainS) },
-            { at: 0.24, pose: ride(dest.side) },
-            ...(middle
-              ? [
-                  { at: 0.42, pose: shotPose(SHOTS[middle], trainS, dest, dest.side) },
-                  { at: 0.58, pose: shotPose(SHOTS[middle], trainS, dest, dest.side) },
-                  { at: 0.76, pose: ride(dest.side) },
-                ]
-              : [{ at: 0.7, pose: ride(dest.side) }]),
-            { at: 1, pose: restPoseAt(dest, stops, frame, trainS) },
-          ];
+    // One glide from the shot it rests on to the next one's, round the train as it goes. The
+    // camera used to turn behind the train to ride with it, pass through a shot in the middle
+    // of the move and turn back out: with the stations close together that was four changes of
+    // direction in under three seconds.
+    const keys: { at: number; pose: Pose }[] = [
+      { at: 0, pose: restPoseAt(from, stops, frame, trainS) },
+      { at: 1, pose: restPoseAt(dest, stops, frame, trainS) },
+    ];
     const u = (frameIndex - start) / move;
     const k = Math.max(0, keys.findIndex((key) => key.at > u) - 1);
     const a = keys[k] as { at: number; pose: Pose };

@@ -212,3 +212,31 @@ test("text on a face seen in steep perspective runs along its middle line, end t
   const along = Math.atan2(Math.abs(right[1] - left[1]), Math.abs(right[0] - left[0]));
   expect(Math.atan2(Math.abs(b), Math.abs(a))).toBeCloseTo(along, 3);
 });
+
+test("a picture stands square to the screen, as wide as its distance makes it, on its anchor", () => {
+  const picture = {
+    kind: "picture" as const,
+    c: [2, 1, 0] as [number, number, number],
+    href: "art/room.png",
+    wide: 4,
+    tall: 3,
+    anchor: [0.5, 0.6] as [number, number],
+  };
+  const prims = scenePrims([picture], cam, frame, clear);
+  expect(prims).toHaveLength(1);
+  const image = prims[0];
+  if (image?.kind !== "image") throw new Error("a picture is drawn as an image");
+  const [a, b, c, d, e, f] = image.matrix;
+  // No turn and no slant: it faces whoever is looking, like a cut-out.
+  expect(b).toBe(0);
+  expect(c).toBe(0);
+  expect(a / d).toBeCloseTo(4 / 3);
+  // Its anchor is where its place on the ground lands on screen.
+  const foot = projectPoint([2, 1, 0], cam, frame);
+  expect(e + a * 0.5).toBeCloseTo(foot?.[0] ?? 0);
+  expect(f + d * 0.6).toBeCloseTo(foot?.[1] ?? 0);
+  // Twice as far, half as wide.
+  const far = scenePrims([{ ...picture, c: [20, -11, -14] }], cam, frame, clear)[0];
+  if (far?.kind !== "image") throw new Error("a picture is drawn as an image");
+  expect(far.matrix[0]).toBeLessThan(a);
+});

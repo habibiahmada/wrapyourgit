@@ -47,7 +47,7 @@ export function HeroArt({ className }: { className?: string }) {
           boxes={SCENE.boxes}
           viewBox={SCENE.viewBox}
           rise
-          label="Illustration: a quarter of a sample year drawn as a city on a slab, its busiest day lit green, linked to small blocks for languages, stars and a letter."
+          label="Illustration: a quarter of a sample year drawn as a city on a slab with lit windows, streets, cars and trees round it, its busiest day lit green, linked to small blocks for languages, stars and a letter."
           className="block h-auto w-full overflow-visible"
           before={
             <>

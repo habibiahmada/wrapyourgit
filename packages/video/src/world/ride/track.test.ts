@@ -6,10 +6,15 @@ import {
   FIRST_ROW,
   heading,
   PLAZA,
+  PLAZA_AHEAD,
+  PLAZA_LATERAL,
   ROW_PITCH,
+  RUN,
   railEnd,
   stationPlace,
+  TURN,
   terminus,
+  turning,
   WEEK,
   weekS,
   YEAR_START,
@@ -52,12 +57,43 @@ test("stations sit at even intervals from the first platform to the terminus", (
   for (const gap of gaps) expect(gap).toBeCloseTo(gaps[0] ?? 0);
 });
 
-test("neighbouring plazas are on opposite sides, and same-side plazas clear each other", () => {
+test("on a turn a plaza stands outside it, and no two plazas share ground", () => {
   const places = Array.from({ length: 12 }, (_, i) => stationPlace(i, 12, 53));
-  places.slice(1).forEach((p, i) => {
-    expect(p.side).toBe(-(places[i]?.side ?? 0) as 1 | -1);
+  for (const place of places) {
+    const turn = turning(place.s + PLAZA_AHEAD) || turning(place.s);
+    if (turn !== 0) expect(place.side).toBe(turn);
+  }
+  const centres = places.map((p) => at(p.s + PLAZA_AHEAD, p.side * PLAZA_LATERAL));
+  centres.forEach((a, i) => {
+    centres.slice(i + 1).forEach((b) => {
+      expect(Math.hypot(a[0] - b[0], a[1] - b[1])).toBeGreaterThan(PLAZA.long + 1);
+    });
   });
-  expect((places[2]?.s ?? 0) - (places[0]?.s ?? 0)).toBeGreaterThan(PLAZA.long + 2);
+});
+
+test("the rail doubles back: a half turn left, then a half turn right", () => {
+  // The first run heads along +x, the turn brings the train round to head back along -x one
+  // turn's width over, and the next turn brings it round again.
+  expect(heading(RUN / 2)).toBeCloseTo(0);
+  const back = RUN + Math.PI * TURN + RUN / 2;
+  expect(heading(back)).toBeCloseTo(Math.PI);
+  expect(at(back)[1] - at(RUN / 2)[1]).toBeCloseTo(2 * TURN);
+  expect(at(back)[0]).toBeCloseTo(at(RUN / 2)[0]);
+  const again = back + RUN + Math.PI * TURN;
+  expect(heading(again)).toBeCloseTo(0);
+  expect(at(again)[1] - at(RUN / 2)[1]).toBeCloseTo(4 * TURN);
+  expect(turning(RUN + 1)).toBe(1);
+  expect(turning(back + RUN / 2 + 1)).toBe(-1);
+  expect(turning(RUN / 2)).toBe(0);
+});
+
+test("the rail has no kinks: neighbouring points are as far apart as the distance between them", () => {
+  for (let s = 0; s < 160; s += 0.5) {
+    const a = at(s);
+    const b = at(s + 0.5);
+    expect(Math.hypot(b[0] - a[0], b[1] - a[1])).toBeCloseTo(0.5, 1);
+    expect(Math.abs(heading(s + 0.5) - heading(s))).toBeLessThan(0.05);
+  }
 });
 
 test("one station alone sits on the first platform", () => {

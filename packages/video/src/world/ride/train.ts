@@ -1,7 +1,7 @@
 /*
  * The train Cell drives: a small engine and two wagons of green cargo, each turned to its own
  * piece of rail so the train bends with the line. Detail is painted on the faces (a stripe, a
- * headlamp, tail lamps, wheel hubs), not added as more boxes.
+ * headlamp, tail lamps, the wheels), not added as more boxes.
  */
 import { heat, INK, TONE } from "./palette";
 import { type BoxExtra, part } from "./place";
@@ -14,10 +14,38 @@ export const CELL_SEAT = -0.35;
 /** The chimney, from the nose. */
 const CHIMNEY = 0.62;
 
-const HUB: Decal[] = [
-  { on: "sides", rect: [0.12, 0.12, 0.88, 0.88], fill: "#8b949e", round: true },
-  { on: "sides", rect: [0.36, 0.36, 0.64, 0.64], fill: INK, round: true },
-];
+/** A wheel's size, the same on the engine and the wagons, and the skirt it is painted on. */
+const WHEEL = 0.36;
+const SKIRT = 0.38;
+const SKIRT_FILL = "#161b22";
+
+/**
+ * The lower side of a body `long` by `tall` that stands on the rail: a dark skirt with a wheel
+ * painted at each of `axles` (distances from the body's middle). The wheels are paint on the
+ * body's own sides, like every other detail of the train. As boxes of their own they were sorted
+ * against the body face by face, and from some angles the body was painted over half a wheel, so
+ * one wheel of a pair looked whole and the other cut.
+ */
+function running(long: number, tall: number, axles: readonly number[]): Decal[] {
+  const v = (z: number) => z / tall;
+  const out: Decal[] = [{ on: "all", rect: [0, 0, 1, v(SKIRT)], fill: SKIRT_FILL }];
+  for (const axle of axles) {
+    const u = 0.5 + axle / long;
+    const disc = (share: number, fill: string): Decal => ({
+      on: "sides",
+      rect: [
+        u - ((WHEEL / 2) * share) / long,
+        v(WHEEL / 2 - (WHEEL / 2) * share),
+        u + ((WHEEL / 2) * share) / long,
+        v(WHEEL / 2 + (WHEEL / 2) * share),
+      ],
+      fill,
+      round: true,
+    });
+    out.push(disc(1, INK), disc(0.78, "#8b949e"), disc(0.3, INK));
+  }
+  return out;
+}
 
 /** The engine with its nose at `s`, and two wagons behind it. */
 export function train(s: number): Solid[] {
@@ -32,8 +60,14 @@ export function train(s: number): Solid[] {
     extra: BoxExtra = {},
   ) => part(c, yaw, dx, dy, z, size, tone, { tag: "engine", ...extra });
   const out: Solid[] = [
-    e(-0.3, 0, 0.2, [2.5, 1.1, 0.3], TONE.engine, {
-      decals: [{ on: "sides", rect: [0, 0.5, 1, 0.78], fill: "#56d364" }],
+    // The frame stands on the rail: its lower part is the skirt with the wheels, three axles
+    // evenly spaced with the same overhang at each end, and a bright stripe above them.
+    e(-0.3, 0, 0.02, [2.5, 1.1, 0.48], TONE.engine, {
+      tag: "frame",
+      decals: [
+        ...running(2.5, 0.48, [-0.78, 0, 0.78]),
+        { on: "sides", rect: [0, 0.84, 1, 0.94], fill: "#56d364" },
+      ],
     }),
     e(1.0, 0, 0.2, [0.1, 1.24, 0.16], TONE.mid),
     e(0.45, 0, 0.5, [1.0, 0.8, 0.44], TONE.engineDark, {
@@ -54,18 +88,16 @@ export function train(s: number): Solid[] {
       ],
     }),
   ];
-  for (const dx of [-1.1, -0.3, 0.5]) {
-    for (const dy of [-0.6, 0.6]) {
-      out.push(
-        part(c, yaw, dx, dy, 0.02, [0.42, 0.1, 0.42], TONE.ink, { tag: "wheel", decals: HUB }),
-      );
-    }
-  }
   for (const k of [0, 1]) {
     const ws = s - 2.8 - k * 1.5;
     const wc = at(ws);
     const wy = heading(ws);
-    out.push(part(wc, wy, 0, 0, 0.2, [1.25, 1.05, 0.26], TONE.dark, { tag: "wagon" }));
+    out.push(
+      part(wc, wy, 0, 0, 0.02, [1.25, 1.05, 0.44], TONE.dark, {
+        tag: "wagon",
+        decals: running(1.25, 0.44, [-0.34, 0.34]),
+      }),
+    );
     out.push(
       part(wc, wy, 0, 0, 0.46, [1.05, 0.85, 0.36 + k * 0.12], heat(2 + k), {
         tag: "cargo",
@@ -75,13 +107,6 @@ export function train(s: number): Solid[] {
         ],
       }),
     );
-    for (const dx of [-0.35, 0.35]) {
-      for (const dy of [-0.56, 0.56]) {
-        out.push(
-          part(wc, wy, dx, dy, 0.02, [0.36, 0.1, 0.36], TONE.ink, { tag: "wheel", decals: HUB }),
-        );
-      }
-    }
   }
   return out;
 }
@@ -93,6 +118,7 @@ export function train(s: number): Solid[] {
  */
 export function smoke(frame: number, trainS: number, speed: number): Solid[] {
   const out: Solid[] = [];
+  const moving = Math.min(1, speed * 8);
   for (let k = 0; k < 8; k++) {
     const born = Math.floor(frame / 5) * 5 - k * 5;
     const age = (frame - born) / 35;
@@ -100,10 +126,12 @@ export function smoke(frame: number, trainS: number, speed: number): Solid[] {
     const [x, y] = at(trainS + CHIMNEY - age * 35 * speed);
     out.push({
       kind: "ball",
-      c: [x, y, 1.6 + age * 2.4],
-      r: 0.14 + age * 0.34,
+      // At rest the column is short and faint: a tall one stood in front of the station's sign
+      // for the whole stop. On the move it streams back, where it covers nothing.
+      c: [x, y, 1.6 + age * (1.2 + moving * 1.2)],
+      r: 0.14 + age * (0.22 + moving * 0.12),
       color: "#b1bac4",
-      opacity: (1 - age) * 0.5,
+      opacity: (1 - age) * (0.32 + moving * 0.18),
     });
   }
   return out;

@@ -7,15 +7,13 @@ import type { LayoutFamily, RecapData } from "@wyg/schema";
 import type { City } from "../../city";
 import { INK, LIT, TONE } from "../palette";
 import { part } from "../place";
-import type { FaceName, FaceText, Solid } from "../prims";
+import type { Decal, FaceName, FaceText, Solid } from "../prims";
 import type { V3 } from "../project";
 import type { RideStop } from "../stops";
-import { at, heading, PLAZA, PLAZA_LATERAL } from "../track";
+import { at, heading, PLAZA, PLAZA_AHEAD, PLAZA_LATERAL } from "../track";
 
 export { part } from "../place";
 
-/** A plaza's centre is this far ahead of where the train stops. */
-export const PLAZA_AHEAD = 4.5;
 /** The top of a plaza's slab, where heroes stand. */
 export const PLAZA_TOP = 0.25;
 
@@ -35,6 +33,8 @@ export type StationContext = {
   overview: number;
   /** The frame's layout family: a narrow frame stacks a hero that a wide one lays in a row. */
   layout: LayoutFamily;
+  /** At the letter's stop: how far the envelope on the desk is open, 0 to 1. */
+  letterOpen?: number;
 };
 export type Station = (ctx: StationContext) => Solid[];
 
@@ -211,31 +211,108 @@ export function wrap(text: string, max: number): string[] {
 }
 
 /** The station sign: how wide it is, and how tall one of its rows. */
-const SIGN = { wide: 5.5, row: 0.38 };
+const SIGN_SCALE = 1.12;
+/** Where a station sign's end toward the engine is, from the plaza's middle along the rail. */
+/** How far out from the plaza's edge a station sign stands, toward the rail. */
+const SIGN_OUT = 3.2;
+export const SIGN_END = -PLAZA_AHEAD - 0.6;
+const SIGN = { wide: 6.3, row: 0.4 };
 
 /**
  * A station's title and what explains its numbers, on a low sign on the ground between the rail
  * and the plaza, where it covers nothing but paving. Every row is the same height, tall enough to
  * read (spec "How big printed text must be"); a line too long for the sign at that size goes onto
- * two rows instead of being set smaller. It stands ahead of the plaza's middle (seen from across
- * the rail, what is nearer the rail slides back along it).
+ * two rows instead of being set smaller. It is always there, like a station's name beside a
+ * platform: a sign that appeared as the train came in read as a glitch. It stands behind the plaza's middle (seen from ahead and across
+ * the rail, what is nearer the rail slides forward along it).
  */
 export function nameBoard(
   ctx: StationContext,
   lines: readonly BoardLine[],
-  place: { deep: number; fit?: boolean },
+  place: { deep: number; fit?: boolean; scale?: number; wide?: number },
 ): Solid[] {
   const { c, yaw, stop } = ctx;
-  const max = Math.floor((SIGN.wide * 0.9) / (0.6 * SIGN.row * 0.92));
+  // A tall hero sets the camera further back; its sign is made larger by `scale` to read the same.
+  // The usual scale leaves room over the smallest size that reads: where a station stands on the
+  // rail's bends moves its sign a little nearer or further, and a sign set exactly at the limit
+  // fell under it whenever a station was added or the rail changed.
+  const scale = place.scale ?? SIGN_SCALE;
+  // A wider sign holds a long line on one row: fewer rows make a lower sign, which stands in
+  // front of less of the hero.
+  const wide = place.wide ?? SIGN.wide;
+  const max = Math.floor((wide * 0.9) / (0.6 * SIGN.row * 0.92));
   const rows: BoardLine[] = lines.flatMap((line) => {
     const text = typeof line === "string" ? line : line.text;
     const look =
       typeof line === "string"
         ? { fill: "#ffffff", weight: 800 }
         : { fill: line.fill ?? "#c9d1d9", weight: line.weight ?? 700 };
-    return wrap(text, max).map((piece) => ({ text: piece, tall: SIGN.row, ...look }));
+    return wrap(text, max).map((piece) => ({ text: piece, tall: SIGN.row * scale, ...look }));
   });
-  const dy = stop.side * (place.deep / 2 + 2.2);
+  // Well out from the plaza toward the rail: a sign nearer the camera sits lower in the picture,
+  // under the hero instead of across its foot.
+  const dy = stop.side * (place.deep / 2 + SIGN_OUT);
   // With `fit` the camera keeps the sign in frame as it does the hero; without, the hero alone sets the shot.
-  return board(c, yaw, -6, dy, SIGN.wide, rows, "along", 0.15, place.fit ? "board" : "sign");
+  // The sign ends just short of where the engine rests (the plaza's middle is PLAZA_AHEAD behind
+  // the train), whatever its width: further along it stood behind the chimney, and the smoke
+  // rose in front of its words. Further back it sticks out past the plaza, and a narrow frame
+  // has to pull away to hold it.
+  const dx = SIGN_END - (wide * scale) / 2;
+  return board(c, yaw, dx, dy, wide * scale, rows, "along", 0.15, place.fit ? "board" : "sign");
+}
+
+/** What travels on a line: how long one is, the least room it needs, and about how far it goes in a 60-frame loop. */
+export type Flowing = { long: number; pitch: number; travel: number };
+
+/**
+ * Where `count` things are on a stretch of line from `from` to `to` at `loop` (0 to 1): spaced
+ * evenly, all moving toward `to`, and each one that goes out at `to` comes in at `from`. They
+ * move a whole number of spaces in a loop, so the line looks the same at its end as at its start.
+ * Each is the part of it that is on the stretch: one going in or coming out is shorter, and may
+ * be in two parts, one at each end. No more are put on a line than it has room for.
+ */
+export function flow(
+  count: number,
+  from: number,
+  to: number,
+  loop: number,
+  item: Flowing,
+): { mid: number; long: number; whole: boolean }[][] {
+  const reach = to - from;
+  const fits = Math.min(count, Math.floor(reach / item.pitch));
+  if (fits <= 0) return [];
+  const space = reach / fits;
+  const steps = Math.max(1, Math.round(item.travel / space));
+  return Array.from({ length: fits }, (_, i) => {
+    const mid = (((i + 0.5 + steps * loop) * space) % reach) + from;
+    const parts: { mid: number; long: number; whole: boolean }[] = [];
+    for (const shift of [0, -reach, reach]) {
+      const a = Math.max(from, mid + shift - item.long / 2);
+      const b = Math.min(to, mid + shift + item.long / 2);
+      if (b - a > 0.02)
+        parts.push({ mid: (a + b) / 2, long: b - a, whole: b - a > item.long - 1e-6 });
+    }
+    // The larger part first: it is the one that carries the thing's tag.
+    return parts.sort((x, y) => y.long - x.long);
+  });
+}
+
+/** How far into the climb to the overview the fine paint and the small moving things are still drawn. */
+export const NEAR_ENOUGH = 0.35;
+
+/** A stretch of track's paint, for the top of a flat box laid along it: sleepers across, two rails along. */
+export function trackPaint(long: number): Decal[] {
+  const sleepers = Math.max(3, Math.round(long / 0.45));
+  return [
+    ...Array.from(
+      { length: sleepers },
+      (_, k): Decal => ({
+        on: "top",
+        rect: [(k + 0.3) / sleepers, 0.08, (k + 0.6) / sleepers, 0.92],
+        fill: "#6e5a48",
+      }),
+    ),
+    { on: "top", rect: [0, 0.2, 1, 0.28], fill: "#c9d1d9" },
+    { on: "top", rect: [0, 0.72, 1, 0.8], fill: "#c9d1d9" },
+  ];
 }

@@ -6,8 +6,8 @@ import { NeutralToneMapping } from "three";
 import { CELL_POSES, type CellPose } from "../art";
 import { archetypeRole } from "../cast";
 import { IsoCell } from "./diorama/IsoCell";
-import { IsoBox, T } from "./diorama/isokit";
-import { dioramaScene } from "./diorama/scenes";
+import { type ArtPass, IsoBox, Pass, T } from "./diorama/isokit";
+import { BLOCK_FRAMING, dioramaScene } from "./diorama/scenes";
 
 /** Every baked composition: web art and the letterhead head. */
 export type ArtId =
@@ -22,16 +22,18 @@ type Framing = { look: [number, number, number]; span: number };
 
 const CUTOUT: Framing = { look: [0, 0.8, 0], span: 4.0 };
 const HEAD: Framing = { look: [0, 1.05, 0], span: 1.75 };
-const SCENE: Framing = { look: [0, 0.8, 0], span: 7.0 };
+const BLOCK: Framing = BLOCK_FRAMING;
 
 /**
  * One loop of Cell for baking (scripts/render-art.ts, ADR-0013), in the crisp isometric style of
  * the landing (ADR-0021): an orthographic camera at the landing's angle (30 degrees up, 45 round),
  * flat-coloured faces, hairline edges. Cutouts are Cell alone on a transparent background;
- * `skin-*` is the archetype's diorama; `hero-cast` is Cell on a small slab of its city. Time comes
+ * `skin-*` is the archetype's city block with Cell in its middle; `hero-cast` is Cell on a small slab of its city. Time comes
  * from the frame and every motion repeats after LOOP_SECONDS, so the loop plays without a jump.
+ * `pass` picks a layer of the picture (isokit.tsx Pass): the bake asks for the still part and the
+ * moving part of a city block apart.
  */
-export function ArtStill({ art }: { art: ArtId }) {
+export function ArtStill({ art, pass = "all" }: { art: ArtId; pass?: ArtPass }) {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const t = frame / fps;
@@ -39,7 +41,7 @@ export function ArtStill({ art }: { art: ArtId }) {
   let framing = CUTOUT;
   let subject: ReactNode;
   if (art.startsWith("skin-")) {
-    framing = SCENE;
+    framing = BLOCK;
     subject = dioramaScene(`skin-${art.slice("skin-".length) as ArchetypeId}`, t);
   } else if (art === "head-cell") {
     framing = HEAD;
@@ -92,7 +94,7 @@ export function ArtStill({ art }: { art: ArtId }) {
           state.gl.toneMapping = NeutralToneMapping;
         }}
       >
-        {subject}
+        <Pass pass={pass}>{subject}</Pass>
       </ThreeCanvas>
     </AbsoluteFill>
   );

@@ -115,14 +115,18 @@ export function StorySection() {
 
 /** What each archetype's diorama shows, for its alt text. */
 const SCENES: Record<ArchetypeId, string> = {
-  builder: "Cell in a hard hat hammering in a workshop full of crates, a beaver bringing a plank",
-  consistent: "Cell running laps on a track past a board where the week lights up day by day",
-  explorer: "Cell in a cap and backpack waving on a trail of stepping stones below snowy peaks",
-  collaborator: "Cell in a headset handing a pull request to a teammate between two desks",
+  builder:
+    "Cell in a hard hat, hammering, in the middle of a city block where a building is going up under a crane",
+  consistent:
+    "Cell in a sweatband running in the middle of a city block with a running track, a podium and a clock tower",
+  explorer:
+    "Cell in a cap and backpack waving in the middle of a block with a snowy mountain, a lake, tents and a lighthouse",
+  collaborator:
+    "Cell in a headset in the middle of an office campus where a team in every colour talks round café tables",
   "night-owl":
-    "Cell in glasses grooving in a room lit by a monitor, the moon in the window, an owl on the shelf",
+    "Cell in glasses in the middle of a city block late at night, most windows lit, an owl on a roof",
   "open-sourcer":
-    "Cell cheering on a stage with friends from other projects under a mural of the year",
+    "Cell in a scarf cheering in the middle of a town square with a stage, a crowd, market stalls and a fountain",
 };
 
 const ARCHETYPES: { id: ArchetypeId; rule: string }[] = [
@@ -199,7 +203,7 @@ export function LetterSection() {
           </p>
           <Art
             id="iso-letter"
-            alt="Cell thinking at a writing desk with sheets, a sealed envelope and a post box, a bird waiting for the letter"
+            alt="Cell in glasses, thinking, in the middle of a city block round a post office: pillar boxes with a queue, mail vans, a letter as tall as a house, envelopes in the air"
             className="mt-8 h-auto w-full max-w-lg"
           />
         </div>
@@ -375,7 +379,7 @@ export function PrivacySection() {
         </div>
         <Art
           id="iso-privacy"
-          alt="Cell standing guard in a vault room with a locked door, a server rack and a sleeping cat"
+          alt="Cell standing guard in the middle of a city block round a vault with a round door: a data centre behind a fence, a guard post, cameras, and padlocks and keys in the air"
           className="reveal-right h-auto w-full"
         />
       </div>
@@ -474,7 +478,7 @@ export function ClosingSection({ action }: { action: ReactNode }) {
         <figure className="min-w-0">
           <Art
             id="iso-closing"
-            alt="A whole sample year as a city of contribution blocks, Cell crowned on a stage in front, fireworks above"
+            alt="A whole sample year as a city of contribution towers with lit windows, a small train running along its front, Cell crowned on a stage before a cheering crowd, fireworks above"
             width={1600}
             height={900}
             className="h-auto w-full"

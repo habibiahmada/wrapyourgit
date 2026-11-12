@@ -10,7 +10,8 @@ test("the train has an engine and two wagons", () => {
   const parts = train(40);
   expect(tagged(parts, "engine").length).toBeGreaterThan(0);
   expect(tagged(parts, "wagon")).toHaveLength(2);
-  expect(tagged(parts, "wheel")).toHaveLength(14);
+  // Wheels are painted on the bodies, never boxes of their own.
+  expect(tagged(parts, "wheel")).toHaveLength(0);
 });
 
 test("the engine's nose is where the train is", () => {
@@ -27,10 +28,27 @@ test("each wagon follows its own piece of rail", () => {
   expect(wagons[0]?.yaw).not.toBeCloseTo(engine?.yaw ?? 0, 3);
 });
 
-test("the wheels show their hubs on both sides", () => {
-  for (const w of tagged(train(40), "wheel")) {
-    expect(w.decals?.some((d) => d.on === "sides" && d.round)).toBe(true);
+test("every wheel is the same size, painted on both sides of its body: three axles on the engine, two on a wagon", () => {
+  const parts = train(40);
+  const wheels = (box: Box | undefined) => {
+    if (!box) throw new Error("no body");
+    // A wheel is its tyre, its rim and its hub: the tyre is the widest round decal.
+    const tyres = (box.decals ?? []).filter((d) => d.round && d.fill === "#0d1117");
+    const widths = tyres.map((d) => (d.rect[2] - d.rect[0]) * box.size[0]);
+    const tall = tyres.map((d) => (d.rect[3] - d.rect[1]) * box.size[2]);
+    expect(tyres.every((d) => d.on === "sides")).toBe(true);
+    return { count: tyres.length / 2, size: Math.max(...widths), height: Math.max(...tall) };
+  };
+  const engine = wheels(tagged(parts, "frame")[0]);
+  const wagons = tagged(parts, "wagon").map(wheels);
+  expect(engine.count).toBe(3);
+  for (const wagon of wagons) {
+    expect(wagon.count).toBe(2);
+    expect(wagon.size).toBeCloseTo(engine.size);
+    expect(wagon.height).toBeCloseTo(engine.height);
   }
+  // Round on screen: as wide as it is tall.
+  expect(engine.size).toBeCloseTo(engine.height);
 });
 
 test("smoke repeats every five frames while the train rests", () => {

@@ -3,10 +3,10 @@ import { emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity, type City } from "../city";
 import { gates } from "./gates.model";
-import { land, type View } from "./land";
+import { land, SIGN_LATERAL, SIGN_ZONE, type View } from "./land";
 import type { Box, Solid } from "./prims";
 import { rideStops } from "./stops";
-import { at, dayPlace, weekS } from "./track";
+import { at, dayPlace, PLAZA_AHEAD, turning, weekS } from "./track";
 
 const city = buildCity(sampleRecap);
 const stops = rideStops(sampleRecap, city);
@@ -27,19 +27,26 @@ const dayBox = (solids: Solid[], c: City, date: string): Box | undefined => {
     (b) => Math.abs((b.pivot?.[0] ?? 1e9) - x) < 1e-6 && Math.abs((b.pivot?.[1] ?? 1e9) - y) < 1e-6,
   );
 };
-const signTexts = (solids: Solid[], col: number) => {
-  const [x, y] = at(weekS(col) - 0.8);
-  const sign = boxes(solids, "gate-sign").find(
-    (b) => Math.abs((b.pivot?.[0] ?? 1e9) - x) < 1e-6 && Math.abs((b.pivot?.[1] ?? 1e9) - y) < 1e-6,
+/** The month sign at a gate's week, on whichever side of the rail it stands. */
+const signAt = (solids: Solid[], col: number) =>
+  boxes(solids, "gate-sign").find((b) =>
+    [-1, 1].some((side) => {
+      const [x, y] = at(weekS(col) - 0.8, side * SIGN_LATERAL);
+      return (
+        Math.abs((b.pivot?.[0] ?? 1e9) - x) < 1e-6 && Math.abs((b.pivot?.[1] ?? 1e9) - y) < 1e-6
+      );
+    }),
   );
+const signTexts = (solids: Solid[], col: number) => {
+  const sign = signAt(solids, col);
   return sign ? (sign.texts ?? []).filter((t) => t.on === "back").map((t) => t.text) : null;
 };
 
 test("a day that has not happened is an outline, a zero day is flat and dim", () => {
-  const view: View = { trainS: 80, from: 60, to: 100, overview: 0 };
+  const view: View = { trainS: 124, from: 93, to: 150, overview: 0 };
   const { city: c, all } = build(provisionalRecap, view);
   const notYet = c.plots.find((p) => p.state === "not-yet");
-  const zero = c.plots.find((p) => p.state === "zero" && weekS(p.col) > 62 && weekS(p.col) < 98);
+  const zero = c.plots.find((p) => p.state === "zero" && weekS(p.col) > 96 && weekS(p.col) < 147);
   expect(dayBox(all, c, notYet?.date ?? "")?.outline).toBe(true);
   const flat = dayBox(all, c, zero?.date ?? "");
   expect(flat?.outline).toBeUndefined();
@@ -57,7 +64,7 @@ test("days light only as the train nears", () => {
 });
 
 test("a busier day stands taller once lit", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 200, from: 0, to: 110, overview: 0 });
+  const { city: c, all } = build(sampleRecap, { trainS: 200, from: 0, to: 160, overview: 0 });
   const heights = c.plots
     .filter((p) => p.state === "active")
     .map((p) => ({ count: p.count, h: dayBox(all, c, p.date)?.size[2] ?? 0 }));
@@ -67,7 +74,7 @@ test("a busier day stands taller once lit", () => {
 });
 
 test("the overview lights every day with data and drops the sleepers", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 4, from: 0, to: 110, overview: 1 });
+  const { city: c, all } = build(sampleRecap, { trainS: 4, from: 0, to: 160, overview: 1 });
   for (const p of c.plots.filter((x) => x.state === "active")) {
     expect(dayBox(all, c, p.date)?.decals?.length).toBe(1);
   }
@@ -77,33 +84,80 @@ test("the overview lights every day with data and drops the sleepers", () => {
 });
 
 test("January's sign carries one line, a later month's two", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 20, from: 0, to: 110, overview: 0 });
+  const { city: c, all } = build(sampleRecap, { trainS: 0, from: 0, to: 160, overview: 0 });
   const g = gates(sampleRecap, c);
   expect(signTexts(all, g[0]?.col ?? 0)).toEqual(["JAN"]);
-  // March stands clear of every plaza in the sample year.
   expect(g[2]?.line).not.toBeNull();
   expect(signTexts(all, g[2]?.col ?? 0)).toEqual(["MAR", g[2]?.line ?? ""]);
 });
 
-test("a gate next to a plaza is left out", () => {
-  const { city: c, all } = build(sampleRecap, { trainS: 20, from: 0, to: 110, overview: 0 });
-  const g = gates(sampleRecap, c);
-  const plazas = stops.filter((s) => s.plaza);
-  const hidden = g.filter((gate) =>
-    plazas.some((p) => Math.abs(weekS(gate.col) - 0.8 - (p.s + 4.5)) < 8),
-  );
-  expect(hidden.length).toBeGreaterThan(0);
-  for (const gate of hidden) expect(signTexts(all, gate.col)).toBeNull();
+test("every month has its sign beside the rail, and it stays put wherever the train is", () => {
+  const view = (trainS: number): View => ({ trainS, from: 0, to: 160, overview: 0 });
+  const g = gates(sampleRecap, city);
+  const far = build(sampleRecap, view(0)).all;
+  for (const gate of g) expect(signAt(far, gate.col)).toBeDefined();
+  // At rest in each station nothing has folded, moved or gone.
+  for (const stop of stops.filter((x) => x.plaza)) {
+    const here = build(sampleRecap, view(stop.s)).all;
+    for (const gate of g) expect(signAt(here, gate.col)).toEqual(signAt(far, gate.col));
+  }
+});
+
+test("a month sign is low, and never stands in front of a station's own sign", () => {
+  const { all } = build(sampleRecap, { trainS: 0, from: 0, to: 160, overview: 0 });
+  const plazas = stops.filter((x) => x.plaza);
+  for (const gate of gates(sampleRecap, city)) {
+    const sign = signAt(all, gate.col);
+    if (!sign) throw new Error(`no sign for ${gate.name}`);
+    // Lower than the train, so it never stands in front of a station's hero.
+    expect(sign.at[2] + sign.size[2]).toBeLessThan(2);
+    const s = weekS(gate.col) - 0.8;
+    for (const plaza of plazas.filter((x) => s > x.s - SIGN_ZONE[0] && s < x.s + SIGN_ZONE[1])) {
+      const [x, y] = at(s, -plaza.side * SIGN_LATERAL);
+      expect(sign.pivot?.[0]).toBeCloseTo(x);
+      expect(sign.pivot?.[1]).toBeCloseTo(y);
+    }
+  }
+});
+
+test("between two stations a month sign keeps to the side of the one behind it", () => {
+  // The camera's shot in the middle of a move is on the other side: a sign there would pass
+  // between the camera and the train.
+  // Without the letter's station the stations stand far enough apart for a sign to fall between
+  // two of them; with it nearly every sign is inside a station's zone and crosses the rail.
+  const apart = rideStops(sampleRecap, city, { letter: false });
+  const l = land(city, gates(sampleRecap, city), apart, {
+    trainS: 0,
+    from: 0,
+    to: 160,
+    overview: 0,
+  });
+  const all = [...l.ground, ...l.objects];
+  const plazas = apart.filter((x) => x.plaza);
+  let checked = 0;
+  for (const gate of gates(sampleRecap, city)) {
+    const s = weekS(gate.col) - 0.8;
+    const behind = plazas.findLast((x) => x.s <= s);
+    if (!behind || plazas.some((x) => s > x.s - SIGN_ZONE[0] && s < x.s + SIGN_ZONE[1])) continue;
+    const [x, y] = at(s, behind.side * SIGN_LATERAL);
+    expect(signAt(all, gate.col)?.pivot?.[0]).toBeCloseTo(x);
+    expect(signAt(all, gate.col)?.pivot?.[1]).toBeCloseTo(y);
+    checked++;
+  }
+  expect(checked).toBeGreaterThan(0);
 });
 
 test("nothing is built outside the view", () => {
   const { all } = build();
+  // The rail doubles back, so "in view" is a stretch of rail, not a range of x: every box stands
+  // near some point of the rail between the view's ends.
+  const line: [number, number][] = [];
+  for (let s = ride.from - 8; s <= ride.to + 8; s += 1) line.push([at(s)[0], at(s)[1]]);
   for (const b of all.filter((s): s is Box => s.kind === "box")) {
-    // x is not the distance along the rail: on a bend, something beside the rail sits a few
-    // units ahead of or behind its place on the line.
     const x = b.pivot?.[0] ?? b.at[0];
-    expect(x).toBeGreaterThan(ride.from - 8);
-    expect(x).toBeLessThan(ride.to + 8);
+    const y = b.pivot?.[1] ?? b.at[1];
+    const nearest = Math.min(...line.map(([lx, ly]) => Math.hypot(x - lx, y - ly)));
+    expect(nearest).toBeLessThan(18);
   }
 });
 
@@ -112,12 +166,47 @@ test("the land is the same for the same view", () => {
 });
 
 test("the first and the busiest day carry a beacon, an empty year none", () => {
-  const whole: View = { trainS: 20, from: 0, to: 110, overview: 0 };
+  const whole: View = { trainS: 20, from: 0, to: 160, overview: 0 };
   expect(boxes(build(sampleRecap, whole).all, "beacon").length).toBeGreaterThanOrEqual(2);
   expect(boxes(build(emptyRecap, whole).all, "beacon")).toHaveLength(0);
 });
 
 test("an empty year lays every day flat", () => {
-  const { all } = build(emptyRecap, { trainS: 200, from: 0, to: 110, overview: 0 });
+  const { all } = build(emptyRecap, { trainS: 200, from: 0, to: 160, overview: 0 });
   for (const b of boxes(all, "day")) expect(b.size[2]).toBeCloseTo(0.04);
+});
+
+test("an avenue runs along the rail on both sides, links the towns, and stays out of them", () => {
+  const whole: View = { trainS: 30, from: 0, to: 400, overview: 0 };
+  const c = buildCity(sampleRecap);
+  const l = land(c, gates(sampleRecap, c), stops, whole);
+  const pieces = boxes(l.ground, "avenue");
+  expect(pieces.length).toBeGreaterThan(20);
+  // Which side of the rail a piece is on, and where along it: from its pivot, the piece's middle.
+  const placed = pieces.map((piece) => {
+    const [px, py] = piece.pivot ?? [0, 0];
+    let best = { s: 0, side: 1, far: Number.POSITIVE_INFINITY };
+    for (let s = 0; s <= 160; s += 1.5) {
+      for (const side of [-1, 1]) {
+        const [x, y] = at(s, side * 12.65);
+        const far = Math.hypot(x - px, y - py);
+        if (far < best.far) best = { s, side, far };
+      }
+    }
+    return best;
+  });
+  expect(placed.some((p) => p.side === 1)).toBe(true);
+  expect(placed.some((p) => p.side === -1)).toBe(true);
+  for (const p of placed) {
+    // Never inside a turn: there is no room there.
+    const turn = turning(p.s);
+    if (turn !== 0) expect(p.side).toBe(turn);
+    // And never where a station lays its own stretch of it.
+    const own = stops.some(
+      (stop) => stop.plaza && stop.side === p.side && Math.abs(p.s - (stop.s + PLAZA_AHEAD)) < 3,
+    );
+    expect(own).toBe(false);
+  }
+  // Buildings stand on it between the towns.
+  expect(boxes(l.objects, "scenery").length).toBeGreaterThan(5);
 });

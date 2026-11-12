@@ -3,6 +3,11 @@
  * no WebGL in the page. Under reduced motion the browser picks the still PNG of the same art
  * instead. Plain <picture>/<img>: next/image does not resize animated images anyway, and the
  * source switch on `prefers-reduced-motion` needs <picture>.
+ *
+ * A city block (`skin-*`, `iso-*`) is two layers (ADR-0022): a still of the block, and over it a
+ * loop of only Cell, the one thing in it that moves on a page. A loop of the whole block weighed
+ * about a megabyte; the two layers weigh about a quarter of that. Both are the same size on the
+ * page, so the loop lies exactly over the plaza it was cut from.
  */
 export function Art({
   id,
@@ -12,7 +17,7 @@ export function Art({
   width = 1200,
   height = 900,
 }: {
-  /** Art id, e.g. "cutout-cell-wave", "skin-builder", "hero-cast", "head-cell". */
+  /** Art id, e.g. "cutout-cell-wave", "skin-builder", "iso-letter", "head-cell". */
   id: string;
   /** Empty for decoration. */
   alt: string;
@@ -22,20 +27,55 @@ export function Art({
   width?: number;
   height?: number;
 }) {
+  const layered = id.startsWith("skin-") || id.startsWith("iso-");
+  if (!layered) {
+    return (
+      <picture>
+        <source srcSet={`/art/${id}.png`} media="(prefers-reduced-motion: reduce)" />
+        <img
+          src={`/art/${id}.webp`}
+          alt={alt}
+          width={width}
+          height={height}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
+          decoding="async"
+          draggable={false}
+          className={className}
+        />
+      </picture>
+    );
+  }
   return (
-    <picture>
-      <source srcSet={`/art/${id}.png`} media="(prefers-reduced-motion: reduce)" />
+    <span className={`relative block ${className ?? ""}`}>
+      <picture>
+        {/* The whole picture, still, Cell included. */}
+        <source srcSet={`/art/${id}.png`} media="(prefers-reduced-motion: reduce)" />
+        <img
+          src={`/art/${id}-base.webp`}
+          alt={alt}
+          width={width}
+          height={height}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
+          decoding="async"
+          draggable={false}
+          className="block h-auto w-full"
+        />
+      </picture>
+      {/* Cell, moving. Not shown under reduced motion, where the still above already has it. */}
+      {/* biome-ignore lint/performance/noImgElement: an animated WebP, which next/image does not resize */}
       <img
         src={`/art/${id}.webp`}
-        alt={alt}
+        alt=""
+        aria-hidden="true"
         width={width}
         height={height}
         loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : undefined}
         decoding="async"
         draggable={false}
-        className={className}
+        className="absolute inset-0 h-full w-full motion-reduce:hidden"
       />
-    </picture>
+    </span>
   );
 }

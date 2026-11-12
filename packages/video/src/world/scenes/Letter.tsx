@@ -33,8 +33,9 @@ const MOTIF: { x: number; y: number; s: number; lit?: boolean }[] = [
  * The congratulations letter as a sheet of stationery on a desk, one stop per page: Cell's
  * letterhead and the person's own last weeks of contributions as the rule, the page's lines, an
  * "n / N" tab and a folded corner. All pages share one plot (ruling R7), so moving to a later
- * page is only its turn: the new sheet turns in over the previous one around its left edge (2D
- * scaleX and skewY from `enter`), and going back plays the turn in reverse.
+ * page is only its turn: the page before turns away about its left edge and uncovers the new one
+ * underneath (2D scaleX and skewY from `enter`), the way a page is turned forward; going back
+ * plays the turn in reverse, so the earlier page comes back over it from the left.
  */
 export function Letter({ data, stop, size, enter }: SceneProps) {
   const { width, height } = size;
@@ -55,9 +56,7 @@ export function Letter({ data, stop, size, enter }: SceneProps) {
   const t = easeOut(interpolate(enter, [0, 1], [0, 1], { extrapolateRight: "clamp" }));
   const px = size.width / SCENE_WIDTH;
   const turning = n > 1;
-  const transform = turning
-    ? `scaleX(${interpolate(t, [0, 1], [0.04, 1])}) skewY(${interpolate(t, [0, 1], [-12, 0])}deg)`
-    : `translateY(${(1 - t) * g.body * 1.5 * px}px)`;
+  const origin = `${g.sheet.x * px}px ${(g.sheet.y + g.sheet.height / 2) * px}px`;
 
   return (
     <AbsoluteFill style={{ backgroundColor: DESK }}>
@@ -71,29 +70,43 @@ export function Letter({ data, stop, size, enter }: SceneProps) {
           <rect key={y} x={0} y={y * size.height} width={size.width} height={2} fill={GRAIN} />
         ))}
       </svg>
-      {/* The page being turned over stays put underneath, so the turn reveals nothing but desk. */}
-      {turning && (
-        // Hidden from assistive tech: only the page being turned to is announced.
-        <AbsoluteFill aria-hidden>
-          <Sheet
-            data={data}
-            g={g}
-            strip={strip}
-            lines={pages[n - 2] ?? []}
-            n={n - 1}
-            total={total}
-          />
+      {turning ? (
+        <>
+          {/* The page being turned to lies underneath, whole: the turn uncovers it. */}
+          <AbsoluteFill>
+            <Sheet data={data} g={g} strip={strip} lines={pages[n - 1] ?? []} n={n} total={total} />
+          </AbsoluteFill>
+          {/* The page before it turns away about its left edge, the way a page is turned
+              forward. Hidden from assistive tech: only the page turned to is announced. */}
+          <AbsoluteFill
+            aria-hidden
+            style={{
+              opacity: t >= 1 ? 0 : 1,
+              transform: `scaleX(${interpolate(t, [0, 1], [1, 0.04])}) skewY(${interpolate(t, [0, 1], [0, -12])}deg)`,
+              transformOrigin: origin,
+            }}
+          >
+            <Sheet
+              data={data}
+              g={g}
+              strip={strip}
+              lines={pages[n - 2] ?? []}
+              n={n - 1}
+              total={total}
+            />
+          </AbsoluteFill>
+        </>
+      ) : (
+        <AbsoluteFill
+          style={{
+            opacity: t,
+            transform: `translateY(${(1 - t) * g.body * 1.5 * px}px)`,
+            transformOrigin: origin,
+          }}
+        >
+          <Sheet data={data} g={g} strip={strip} lines={pages[n - 1] ?? []} n={n} total={total} />
         </AbsoluteFill>
       )}
-      <AbsoluteFill
-        style={{
-          opacity: turning ? 1 : t,
-          transform,
-          transformOrigin: `${g.sheet.x * px}px ${(g.sheet.y + g.sheet.height / 2) * px}px`,
-        }}
-      >
-        <Sheet data={data} g={g} strip={strip} lines={pages[n - 1] ?? []} n={n} total={total} />
-      </AbsoluteFill>
     </AbsoluteFill>
   );
 }

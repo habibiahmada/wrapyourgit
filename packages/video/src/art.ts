@@ -18,7 +18,7 @@ export const LOOP_FRAMES = LOOP_SECONDS * BAKE_FPS;
 /** Cell's poses for the web pages (cutout-cell-*). */
 export type CellPose = "wave" | "cheer" | "think" | "proud" | "sleep";
 
-/** Web art, 1200 × 900 compositions: `public/art/<id>.webp` (loop) and `<id>.png` (still). */
+/** Web art, 1200 × 900 compositions: `public/art/<id>.webp` (loop) and `<id>.png` (still); a `skin-*` also has `<id>-base.webp` (ADR-0022). */
 export type WebArtId =
   | `cutout-cell-${CellPose}`
   | `cutout-${ArchetypeId}`

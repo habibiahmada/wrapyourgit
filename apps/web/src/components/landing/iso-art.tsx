@@ -1,9 +1,9 @@
 import type { CSSProperties, ReactNode } from "react";
-import { type Box, boxPaths, EDGE, paintOrder } from "./iso";
+import { type Box, boxPaths, EDGE, paintOrder, panePath } from "./iso";
 
 /**
- * An isometric line-art illustration: boxes painted back to front with hairline edges, plus
- * any extra SVG (lines, glows, glyphs) drawn by the caller in screen units. Server-rendered.
+ * An isometric line-art illustration: boxes painted back to front with hairline edges, each
+ * with the panes on its faces (windows, lights), plus any extra SVG (lines, glows, glyphs) drawn by the caller in screen units. Server-rendered.
  * `rise` gives each box an entrance delay by depth (CSS `.iso-rise`, motion-safe only).
  */
 export function IsoArt({
@@ -47,13 +47,21 @@ export function IsoArt({
             key={i}
             className={rise ? "iso-rise" : undefined}
             style={rise ? ({ "--delay": delay } as CSSProperties) : undefined}
-            stroke={EDGE}
+            stroke={box.edge === false ? "none" : EDGE}
             strokeWidth="0.75"
             strokeLinejoin="round"
           >
             <path d={faces.left} fill={faces.tone.left} vectorEffect="non-scaling-stroke" />
             <path d={faces.right} fill={faces.tone.right} vectorEffect="non-scaling-stroke" />
             <path d={faces.top} fill={faces.tone.top} vectorEffect="non-scaling-stroke" />
+            {box.panes?.map((pane) => (
+              <path
+                key={`${pane.face}${pane.u[0]}${pane.z[0]}`}
+                d={panePath(box, pane)}
+                fill={pane.fill}
+                stroke="none"
+              />
+            ))}
           </g>
         );
       })}

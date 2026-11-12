@@ -2,9 +2,17 @@ import { expect, test } from "bun:test";
 import { layoutForSize, type RecapData, VIDEO_FORMATS } from "@wyg/schema";
 import { busyRecap, emptyRecap, provisionalRecap } from "../../fixtures/edge-recaps";
 import { sampleRecap } from "../../fixtures/sample-recap";
+import { formatCount } from "../../theme";
+import { archetypeModel } from "../scenes/archetype.model";
+import { busiestModel } from "../scenes/busiest.model";
+import { firstDayModel } from "../scenes/firstDay.model";
 import { gardenModel } from "../scenes/garden.model";
+import { planesModel } from "../scenes/planes.model";
+import { privateModel } from "../scenes/private.model";
 import { commitsText, projectsModel } from "../scenes/projects.model";
-import { buildRide, rideFrame } from "./model";
+import { seesawModel } from "../scenes/seesaw.model";
+import { countText, skyModel } from "../scenes/sky.model";
+import { buildRide, HERO_TAGS, rideFrame } from "./model";
 import { type Box, type Prim, scenePrims } from "./prims";
 import { projectPoint, type RideCamera } from "./project";
 import { STATIONS } from "./stations";
@@ -35,7 +43,20 @@ function restFrames(data: RecapData) {
   return Object.entries(VIDEO_FORMATS).flatMap(([id, format]) => {
     const m = buildRide(data, format, "video", 30);
     return m.stops.flatMap((stop, i) => {
-      if (stop.kind !== "languages" && stop.kind !== "projects") return [];
+      if (
+        ![
+          "languages",
+          "projects",
+          "first-day",
+          "private",
+          "busiest",
+          "community",
+          "engineering",
+          "archetype",
+          "versus",
+        ].includes(stop.kind)
+      )
+        return [];
       const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
       const texts = scenePrims(
         [...frame.ground, ...frame.objects],
@@ -60,7 +81,65 @@ function check(data: RecapData) {
   const projects = projectsModel(data);
   for (const rest of restFrames(data)) {
     const where = `${rest.id} ${rest.kind}`;
-    if (rest.kind === "languages") {
+    if (rest.kind === "first-day") {
+      const day = firstDayModel(data);
+      if (day)
+        expect({ where, value: biggest(rest.texts, day.date) / rest.short >= HEADLINE }).toEqual({
+          where,
+          value: true,
+        });
+    } else if (rest.kind === "busiest") {
+      const day = busiestModel(data);
+      if (day)
+        expect({
+          where,
+          value: biggest(rest.texts, formatCount(day.count)) / rest.short >= HEADLINE,
+        }).toEqual({ where, value: true });
+    } else if (rest.kind === "community") {
+      const sky = skyModel(data);
+      if (sky.stars.value > 0)
+        expect({
+          where,
+          value:
+            biggest(rest.texts, countText(sky.stars.value, sky.stars.estimated)) / rest.short >=
+            HEADLINE,
+        }).toEqual({ where, value: true });
+    } else if (rest.kind === "engineering") {
+      const sent = planesModel(data).rows[0].value ?? "";
+      expect({ where, value: biggest(rest.texts, sent) / rest.short >= HEADLINE }).toEqual({
+        where,
+        value: true,
+      });
+    } else if (rest.kind === "archetype") {
+      const style = archetypeModel(data);
+      if (style)
+        expect({ where, value: biggest(rest.texts, style.title) / rest.short >= HEADLINE }).toEqual(
+          {
+            where,
+            value: true,
+          },
+        );
+    } else if (rest.kind === "versus") {
+      const scale = seesawModel(data);
+      expect({
+        where,
+        value: biggest(rest.texts, formatCount(scale.current.value)) / rest.short >= HEADLINE,
+      }).toEqual({ where, value: true });
+      if (!("unavailable" in scale))
+        expect({
+          where,
+          last: biggest(rest.texts, formatCount(scale.last.value)) / rest.short >= HEADLINE,
+        }).toEqual({ where, last: true });
+    } else if (rest.kind === "private") {
+      const vault = privateModel(data);
+      if (vault.kind === "count") {
+        const figure = `${vault.estimated ? "about " : ""}${formatCount(vault.count)}`;
+        expect({ where, value: biggest(rest.texts, figure) / rest.short >= HEADLINE }).toEqual({
+          where,
+          value: true,
+        });
+      }
+    } else if (rest.kind === "languages") {
       const top = garden.trees[0];
       if (top)
         expect({ where, value: biggest(rest.texts, top.label) / rest.short >= HEADLINE }).toEqual({
@@ -157,20 +236,23 @@ function corners(
   return out;
 }
 
-const HERO = ["language", "container", "board"];
-
 test("no hero is cut off at its stop, and Cell stands clear of the frame's edge", () => {
   for (const data of [sampleRecap, busyRecap, hugeRecap]) {
     for (const [id, format] of Object.entries(VIDEO_FORMATS)) {
       const m = buildRide(data, format, "video", 30);
       m.stops.forEach((stop, i) => {
         if (stop.kind === "hello" || stop.kind === "city") return;
-        const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
+        // On a page of the letter the camera is at the desk and the sheet is over the scene. Its
+        // station is seen as the train stops there, before the camera goes in.
+        if (stop.kind === "letter" && (stop.page ?? 1) > 1) return;
+        const arrives = (m.timeline.stopFrames[i] ?? 0) - m.timeline.letterIntro;
+        const shown = stop.kind === "letter" ? arrives : (m.timeline.stopFrames[i] ?? 0);
+        const frame = rideFrame(m, data, shown, format, 30);
         const centre = stationContext(data, m.city, stop, 1, 0, 0).c;
         const mine = frame.objects.filter(
           (s): s is Box =>
             s.kind === "box" &&
-            HERO.includes(s.tag ?? "") &&
+            HERO_TAGS.includes(s.tag ?? "") &&
             Math.hypot((s.pivot?.[0] ?? 1e9) - centre[0], (s.pivot?.[1] ?? 1e9) - centre[1]) < 0.01,
         );
         const points = mine.flatMap((box) => corners(box, frame.cam, format));
@@ -219,4 +301,5 @@ test("every line a station prints can be read at its stop, in every format", () 
       });
     }
   }
-});
+  // Twenty rides, every station of each: well over the default limit on a busy machine.
+}, 30_000);

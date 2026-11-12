@@ -37,7 +37,7 @@ export type Box = {
   /** Turn about the vertical through `pivot` (the box's centre when left out), radians. */
   yaw?: number;
   pivot?: [number, number];
-  /** A hairline edge in a darker shade of the face. Default true. */
+  /** A hairline edge in a lighter shade of the face. Default true. */
   edge?: boolean;
   /** Skip the fog: lit things stay bright far away. */
   lit?: boolean;
@@ -60,7 +60,30 @@ export type Box = {
   under?: number;
 };
 export type Ball = { kind: "ball"; c: V3; r: number; color: string; opacity?: number };
-export type Solid = Box | Ball;
+/**
+ * A flat picture standing in the world, always square to the screen, like a cut-out. `c` is
+ * where it stands; `anchor` is the point of the picture (0 to 1 across and down) that stands
+ * there; `wide` and `tall` are its size in world units at that distance.
+ */
+export type Picture = {
+  kind: "picture";
+  c: V3;
+  href: string;
+  wide: number;
+  tall: number;
+  anchor: [number, number];
+  /**
+   * How high over `c` what the picture shows stands, when that is less than the picture itself
+   * (a figure in the middle of a wider sheet). The camera frames this, as it frames a hero's top.
+   */
+  reach?: number;
+  /**
+   * How far to each side of `c` what the picture shows reaches on screen, when it is wider than
+   * the boxes round it (a whole city block on one sheet). The camera keeps this in frame too.
+   */
+  spread?: number;
+};
+export type Solid = Box | Ball | Picture;
 export type Fog = { color: string; near: number; far: number };
 
 type Matrix = [number, number, number, number, number, number];
@@ -100,6 +123,11 @@ export type Prim =
 
 /** Further than anything in the scene: what `under` adds to a slab's place in the painting order. */
 const UNDER = 10_000;
+/**
+ * How far toward white a face's hairline is from the face: a light line round every face, as on
+ * the landing's isometric kit (isokit.tsx Tone.edge), so a box reads as a drawn block.
+ */
+const EDGE_LIGHT = 0.2;
 /** A puff nearer than this would cover the view. */
 const BALL_NEAR = 3;
 const CAP_HEIGHT = 0.7;
@@ -205,6 +233,21 @@ export function scenePrims(
       continue;
     }
 
+    if (solid.kind === "picture") {
+      const c = lens.toCamera(solid.c);
+      if (c[2] < BALL_NEAR) continue;
+      const [px, py] = lens.toScreen(c);
+      const w = (solid.wide * lens.focal) / c[2];
+      const h = (solid.tall * lens.focal) / c[2];
+      prims.push({
+        kind: "image",
+        matrix: [w, 0, 0, h, px - solid.anchor[0] * w, py - solid.anchor[1] * h],
+        href: solid.href,
+        depth: c[2],
+      });
+      continue;
+    }
+
     const [x, y, z] = solid.at;
     const [w, d, h] = solid.size;
     const yaw = solid.yaw ?? 0;
@@ -219,6 +262,20 @@ export function scenePrims(
             py + (p[0] - px) * sin + (p[1] - py) * cos,
             p[2],
           ];
+
+    // A box wholly outside the frame draws nothing. The whole year is always on the ground (the
+    // rail doubles back, so any of it can be in a shot), and most of it is off screen in any one
+    // frame: leaving it out here costs one projection instead of up to three faces.
+    const middle = lens.toCamera(turn([x + w / 2, y + d / 2, z + h / 2]));
+    const reach = Math.hypot(w, d, h) / 2;
+    if (middle[2] < -reach) continue;
+    if (middle[2] > reach) {
+      const [mx, my] = lens.toScreen(middle);
+      const spread = (reach * lens.focal) / (middle[2] - reach);
+      if (mx < -spread || mx > frame.width + spread || my < -spread || my > frame.height + spread) {
+        continue;
+      }
+    }
 
     for (const face of FACES) {
       const n = face.normal;
@@ -253,7 +310,7 @@ export function scenePrims(
           ? fogged(solid.tone.top, seen, solid.lit)
           : solid.edge === false
             ? colour
-            : mixHex(colour, "#000000", 0.35),
+            : mixHex(colour, "#ffffff", EDGE_LIGHT),
         depth,
       });
       /** A point on the face from its own units. */

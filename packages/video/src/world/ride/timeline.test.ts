@@ -2,7 +2,14 @@ import { expect, test } from "bun:test";
 import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity } from "../city";
 import { rideStops } from "./stops";
-import { buildProgress, buildRideTimeline, idleClock, trainAt } from "./timeline";
+import {
+  BUILD_SECONDS,
+  buildFrames,
+  buildProgress,
+  buildRideTimeline,
+  idleClock,
+  trainAt,
+} from "./timeline";
 
 const stops = rideStops(sampleRecap, buildCity(sampleRecap));
 const video = buildRideTimeline(stops, "video", 30);
@@ -17,12 +24,26 @@ test("video mode holds three seconds, interactive holds the rest loop", () => {
 
 test("moves take between 1.6 and 4.2 seconds", () => {
   expect(video.moveFrames[0]).toBe(0);
-  for (const move of video.moveFrames.slice(1)) {
-    expect(move).toBeGreaterThanOrEqual(48);
-    expect(move).toBeLessThanOrEqual(126);
-  }
-  // The sample's five stops stand far apart: its longest move takes the longest time.
-  expect(Math.max(...video.moveFrames)).toBe(126);
+  video.moveFrames.slice(1).forEach((move, k) => {
+    // The letter's time at the desk is part of the move into its first page, and the camera's
+    // way back out part of the move away from its last: the ride itself is what is measured here.
+    const stop = stops[k + 1];
+    const prev = stops[k];
+    const opens = stop?.kind === "letter" && (stop.page ?? 1) === 1;
+    const closes = prev?.kind === "letter" && stop?.kind !== "letter";
+    const ride = move - (opens ? video.letterIntro : 0) - (closes ? video.letterOutro : 0);
+    // A later page of the letter turns in place: there is nothing to ride.
+    if (stop?.kind === "letter" && !opens) {
+      expect(ride).toBe(0);
+      return;
+    }
+    expect(ride).toBeGreaterThanOrEqual(48);
+    expect(ride).toBeLessThanOrEqual(126);
+  });
+  // The moves up to the overview and down from it take the longest time, however near the stops.
+  const overview = stops.findIndex((stop) => stop.kind === "city");
+  expect(video.moveFrames[overview]).toBe(126);
+  expect(video.moveFrames[overview + 1]).toBe(126);
 });
 
 test("each stop comes one hold and one move after the last", () => {
@@ -59,10 +80,27 @@ test("a hero has finished building on its stop's frame", () => {
   const f = video.stopFrames[2] ?? 0;
   expect(buildProgress(2, f, video, 30)).toBe(1);
   expect(buildProgress(2, f + 20, video, 30)).toBe(1);
-  expect(buildProgress(2, f - 36, video, 30)).toBe(0);
-  expect(buildProgress(2, f - 18, video, 30)).toBeGreaterThan(0);
-  expect(buildProgress(2, f - 18, video, 30)).toBeLessThan(1);
+  const frames = buildFrames(2, video, 30);
+  expect(buildProgress(2, f - frames, video, 30)).toBe(0);
+  expect(buildProgress(2, f - Math.round(frames / 2), video, 30)).toBeGreaterThan(0);
+  expect(buildProgress(2, f - Math.round(frames / 2), video, 30)).toBeLessThan(1);
   expect(buildProgress(0, 0, video, 30)).toBe(1);
+});
+
+test("a hero takes long enough to watch, and never starts before the train has left", () => {
+  video.stopFrames.forEach((stop, i) => {
+    if (i === 0) return;
+    const frames = buildFrames(i, video, 30);
+    const move = video.moveFrames[i] ?? 0;
+    // Well over a second where the move is long enough, and inside the move always.
+    expect(frames).toBeLessThanOrEqual(Math.round(BUILD_SECONDS * 30));
+    expect(frames).toBeLessThan(move);
+    if (move >= 90) expect(frames).toBeGreaterThanOrEqual(60);
+    // Still nothing built while the train rests at the stop before.
+    const left = (video.stopFrames[i - 1] ?? 0) + video.holdFrames;
+    expect(buildProgress(i, left, video, 30)).toBe(0);
+    expect(buildProgress(i, stop, video, 30)).toBe(1);
+  });
 });
 
 test("the duration ends one frame after the last hold", () => {

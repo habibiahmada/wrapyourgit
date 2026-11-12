@@ -59,8 +59,28 @@ test("Cell's eyes are open on the frames slides are taken from", () => {
   }
 });
 
-test("Cell wears its crest of three cells", () => {
-  expect(tagged(cell([0, 0, 0], 0, 0, "idle"), "cell-crest")).toHaveLength(3);
+test("Cell wears its crest: one box painted as three even cells, darkest to brightest", () => {
+  const crest = tagged(cell([0, 0, 0], 0, 0, "idle"), "cell-crest");
+  // One box, so no cell can be painted over its neighbour whichever way Cell turns.
+  expect(crest).toHaveLength(1);
+  const box = crest[0] as Box;
+  // Centred across the head, and chunky: each cell is no taller than it is wide.
+  expect(box.at[1] + box.size[1] / 2).toBeCloseTo(0);
+  expect(box.size[2]).toBeLessThanOrEqual(box.size[1] / 3);
+  const green = (hex: string) => Number.parseInt(hex.slice(3, 5), 16);
+  const cells = (on: string) =>
+    (box.decals ?? []).filter((d) => d.on === on && d.fill !== "#0e4429").map((d) => d);
+  // The top is cut in three equal parts along the row, each brighter than the last.
+  const top = cells("top").sort((a, b) => a.rect[1] - b.rect[1]);
+  expect(top).toHaveLength(3);
+  for (const part of top) expect(part.rect[3] - part.rect[1]).toBeCloseTo(1 / 3);
+  expect(green(top[0]?.fill ?? "")).toBeLessThan(green(top[1]?.fill ?? ""));
+  expect(green(top[1]?.fill ?? "")).toBeLessThan(green(top[2]?.fill ?? ""));
+  // The back face runs the other way round, so the dark cell is at the same end on both sides.
+  const front = cells("front").sort((a, b) => a.rect[0] - b.rect[0]);
+  const back = cells("back").sort((a, b) => a.rect[0] - b.rect[0]);
+  expect(green(front[0]?.fill ?? "")).toBeLessThan(green(front[2]?.fill ?? ""));
+  expect(green(back[0]?.fill ?? "")).toBeGreaterThan(green(back[2]?.fill ?? ""));
 });
 
 test("Cell stands where it is put and turns as a whole", () => {

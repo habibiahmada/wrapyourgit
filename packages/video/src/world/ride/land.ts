@@ -7,18 +7,48 @@ import { random } from "remotion";
 import { heatLevels } from "../../heat";
 import type { City } from "../city";
 import type { Gate } from "./gates.model";
-import { heat, LIT, mixHex, TONE } from "./palette";
+import { heat, LIT, mixHex, TONE, toneOf } from "./palette";
 import { part, railBox } from "./place";
 import type { FaceText, Solid } from "./prims";
+import { building } from "./stations/scenery";
 import type { RideStop } from "./stops";
-import { at, dayPlace, FIRST_ROW, ROW_PITCH, railEnd, SQUARE, weekS } from "./track";
+import {
+  at,
+  dayPlace,
+  FIRST_ROW,
+  heading,
+  PLAZA,
+  PLAZA_AHEAD,
+  PLAZA_LATERAL,
+  ROW_PITCH,
+  railEnd,
+  SQUARE,
+  TURN,
+  turning,
+  weekS,
+} from "./track";
 
 /** A day lights when the train is this close behind it. */
 export const LIGHT_AHEAD = 15;
-/** A plaza's centre is this far ahead of where the train stops. */
-const PLAZA_AHEAD = 4.5;
 /** Gates and props keep this far from a plaza, so nothing stands between the camera and a hero. */
 const CLEAR = 8;
+/**
+ * The avenue runs this far from the rail's middle: just behind a plaza of the usual depth, where
+ * a station's own street is. It is laid in pieces this long, and a station's town takes over this
+ * far each side of its plaza's middle.
+ */
+const AVENUE_LATERAL = PLAZA_LATERAL + PLAZA.deep / 2 + 1.25;
+const AVENUE_STEP = 3;
+const TOWN_HALF = (PLAZA.long + 7) / 2;
+const AVENUE_TONE = toneOf("#262c36");
+const AVENUE_WALLS = ["#3b4a5c", "#4a535e", "#30476b", "#5a4634", "#2f5d50"];
+/** How far from the rail's middle a month sign stands: clear of the train, and of the camera that rides behind it. */
+export const SIGN_LATERAL = 3;
+/**
+ * How far behind and ahead of where the train rests a station's own sign reaches: its widest is
+ * about nine long and ends just behind the engine. A month sign there crosses the rail.
+ */
+export const SIGN_ZONE = [10, 1] as const;
 const SLEEPER = 0.7;
 
 export type View = {
@@ -28,6 +58,11 @@ export type View = {
   to: number;
   /** 0 on the ride; 1 at the overview, where every day with data is lit and small things are left out. */
   overview: number;
+  /**
+   * The stretch of rail drawn with its sleepers. Outside it the rail is long plain strips, as at
+   * the overview. Left out, the whole view has sleepers.
+   */
+  detail?: [number, number];
 };
 export type Land = { ground: Solid[]; objects: Solid[] };
 
@@ -80,15 +115,15 @@ export function land(
     );
   }
 
-  // The rail on its ballast. From far away the sleepers go and the rails are long strips.
-  const piece = far ? 4 : SLEEPER;
-  const first = Math.max(0, Math.floor(view.from / piece) * piece);
-  for (let s = first; s <= Math.min(view.to, end); s += piece) {
+  // The rail on its ballast. Near the train it has sleepers; further off, and from far away, it
+  // is long strips. The rail doubles back, so a run the train is not on can be in the picture:
+  // it is always drawn, only plainer.
+  const strip = (s: number, piece: number, sleepers: boolean) => {
     const mid = s + piece / 2;
     ground.push(
       railBox(mid, 0, 0, [piece + 0.02, 2.3, 0.02], TONE.gravel, { edge: false, tag: "ballast" }),
     );
-    if (!far)
+    if (sleepers)
       ground.push(
         railBox(s, 0, 0.02, [0.22, 1.5, 0.05], TONE.soil, { edge: false, tag: "sleeper" }),
       );
@@ -100,43 +135,63 @@ export function land(
         }),
       );
     }
+  };
+  const railFrom = Math.max(0, view.from);
+  const railTo = Math.min(view.to, end);
+  const [nearFrom, nearTo] = far
+    ? [railTo, railTo]
+    : [
+        Math.max(railFrom, Math.floor((view.detail?.[0] ?? railFrom) / SLEEPER) * SLEEPER),
+        Math.min(railTo, view.detail?.[1] ?? railTo),
+      ];
+  const COARSE = 4;
+  for (let s = Math.floor(railFrom / COARSE) * COARSE; s + COARSE <= nearFrom; s += COARSE) {
+    strip(Math.max(0, s), COARSE, false);
   }
+  if (!far) for (let s = nearFrom; s <= nearTo; s += SLEEPER) strip(s, SLEEPER, true);
+  for (let s = nearTo + (far ? 0 : SLEEPER); s <= railTo; s += COARSE) strip(s, COARSE, false);
 
-  // A gate per month, with its name and the contributions made before it on the sign.
+  // A sign per month beside the rail, with its name and the contributions made before it. It is
+  // low, so it never stands in front of a station's hero. A gate over the rail had to fold away
+  // at every station once the stations stood close together.
+  const plazaStops = stops.filter((stop) => stop.plaza);
   for (const gate of gates) {
     const s = weekS(gate.col) - 0.8;
-    if (!inView(s) || byPlaza(s)) continue;
-    for (const lateral of [-2.1, 2.1]) {
-      objects.push(railBox(s, lateral, 0, [0.5, 0.5, 0.3], TONE.mid, { tag: "gate-post" }));
+    if (!inView(s)) continue;
+    // Between two stations it keeps to the side of the one behind it: the shot in the middle of
+    // a move is on the other side, and a sign there would pass between the camera and the train.
+    // Where a station's own sign stands between the rail and its plaza, it crosses over.
+    const behind = plazaStops.findLast((stop) => stop.s <= s);
+    const ahead = plazaStops.find((stop) => stop.s > s);
+    const kept = behind ? behind.side : ahead ? -ahead.side : 1;
+    const beside = plazaStops.some(
+      (stop) => stop.side === kept && s > stop.s - SIGN_ZONE[0] && s < stop.s + SIGN_ZONE[1],
+    );
+    const lateral = (beside ? -kept : kept) * SIGN_LATERAL;
+    for (const dy of [-0.8, 0.8]) {
       objects.push(
-        railBox(s, lateral, 0.3, [0.28, 0.28, 3.3], TONE.dark, {
+        railBox(s, lateral + dy, 0, [0.14, 0.14, 0.6], TONE.dark, {
           tag: "gate-post",
-          decals: [{ on: "all", rect: [0, 0.86, 1, 0.94], fill: LIT }],
+          edge: false,
         }),
       );
     }
-    objects.push(
-      railBox(
-        s,
-        0,
-        3.6,
-        [0.32, 4.6, 0.3],
-        { top: "#56e070", left: LIT, right: "#26a641" },
-        { lit: true, tag: "gate-beam" },
-      ),
-    );
     const texts: FaceText[] = (["front", "back"] as const).flatMap((on): FaceText[] =>
       gate.line
         ? [
             { on, rect: [0.06, 0.54, 0.94, 0.94], text: gate.name, fill: "#ffffff" },
             // As tall as the month: the total is what the sign is for.
-            { on, rect: [0.04, 0.06, 0.96, 0.5], text: gate.line, fill: "#7ee08f" },
+            { on, rect: [0.04, 0.1, 0.96, 0.52], text: gate.line, fill: "#7ee08f" },
           ]
         : [{ on, rect: [0.08, 0.2, 0.92, 0.8], text: gate.name, fill: "#ffffff" }],
     );
     objects.push(
-      // Large enough to read from several squares away, so it is in view for longer.
-      railBox(s, 0, 3.9, [0.14, 3.4, 1.6], TONE.ink, { lit: true, tag: "gate-sign", texts }),
+      railBox(s, lateral, 0.6, [0.12, 2.4, 1.25], TONE.ink, {
+        lit: true,
+        tag: "gate-sign",
+        texts,
+        decals: [{ on: "all", rect: [0, 0, 1, 0.07], fill: LIT }],
+      }),
     );
   }
 
@@ -160,7 +215,9 @@ export function land(
           );
         }
         const kind = random(`prop-${k}-${side}`);
-        const c = at(s, side * (outer + 1.6 + random(`prop-lat-${k}-${side}`) * 5));
+        // Clear of the avenue and what stands on it: near the squares, or out beyond them.
+        const roll = random(`prop-lat-${k}-${side}`);
+        const c = at(s, side * (roll < 0.45 ? outer + 1.4 + roll * 3.6 : outer + 9.6 + roll * 5));
         const size = 0.8 + random(`prop-size-${k}-${side}`) * 0.5;
         if (kind < 0.5) {
           objects.push(
@@ -210,6 +267,58 @@ export function land(
     objects.push(
       railBox(s, lateral, 3.3, [0.34, 0.34, 0.34], TONE.lamp, { lit: true, tag: "beacon-cap" }),
     );
+  }
+
+  // The avenue: one road on each side of the rail, all the way along, so every station's town is
+  // on the same street as the next. Inside a turn there is no room for it, and beside a plaza the
+  // station lays its own stretch (scenery.ts). Between towns a building stands on it now and then.
+  const townStops = stops.filter((stop) => stop.plaza);
+  for (
+    let k = Math.max(0, Math.ceil(view.from / AVENUE_STEP));
+    k * AVENUE_STEP <= Math.min(view.to, end);
+    k++
+  ) {
+    const s = k * AVENUE_STEP;
+    const turn = turning(s);
+    // The road is longer than the rail on the outside of a turn.
+    const stretch = turn === 0 ? 1 : 1 + AVENUE_LATERAL / TURN;
+    for (const side of [-1, 1] as const) {
+      if (turn !== 0 && side !== turn) continue;
+      const inTown = townStops.some(
+        (stop) => stop.side === side && Math.abs(s - (stop.s + PLAZA_AHEAD)) * stretch < TOWN_HALF,
+      );
+      if (inTown) continue;
+      ground.push(
+        railBox(
+          s,
+          side * AVENUE_LATERAL,
+          0,
+          [AVENUE_STEP * stretch + 0.2, 1.5, 0.06],
+          AVENUE_TONE,
+          {
+            tag: "avenue",
+            under: 2,
+            edge: false,
+            decals: far ? [] : [{ on: "top", rect: [0.3, 0.46, 0.7, 0.54], fill: "#8b949e" }],
+          },
+        ),
+      );
+      if (k % 2 !== 0) continue;
+      const wide = 2.2 + random(`avenue-wide-${k}-${side}`) * 0.9;
+      objects.push(
+        building(
+          { c: at(s, side * (AVENUE_LATERAL + 2.3)), yaw: heading(s), overview: view.overview },
+          0,
+          0,
+          [wide, 2.0],
+          2 + Math.floor(random(`avenue-floors-${k}-${side}`) * 3),
+          AVENUE_WALLS[k % AVENUE_WALLS.length] ?? "#3b4a5c",
+          0.3,
+          `avenue-${k}-${side}`,
+          false,
+        ),
+      );
+    }
   }
 
   return { ground, objects };
