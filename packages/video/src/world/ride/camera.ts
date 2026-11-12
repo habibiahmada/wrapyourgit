@@ -244,6 +244,47 @@ const FURTHEST = 2.2;
  */
 function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
   const base = shotPose(stationShot(stop), stop.s, stop, stop.side);
+  const rest = stationRest(stop, base, frame);
+  const now = shotPose(stationShot(stop), trainS, stop, stop.side);
+  // While the train pulls in, the look point keeps the offset the fit found for the train at rest.
+  const moved: V3 = [
+    now.look[0] + (rest.look[0] - base.look[0]),
+    now.look[1] + (rest.look[1] - base.look[1]),
+    rest.look[2],
+  ];
+  return {
+    ...now,
+    radius: rest.radius,
+    height: rest.height,
+    look: trainS === stop.s ? rest.look : moved,
+  };
+}
+
+const stationRests = new Map<string, Pose>();
+
+/**
+ * The fit for the train at rest. It depends only on the station, its hero and the frame, and
+ * every frame of the move in and the stop asks for it (twice a frame while the camera glides
+ * between two stations): worked out once, then kept.
+ */
+function stationRest(stop: RideStop, base: Pose, frame: Frame): Pose {
+  const key = [
+    stop.id,
+    stop.s,
+    stop.side,
+    stop.heroTop,
+    (stop.heroEdge ?? []).map((p) => p.map((n) => n.toFixed(3)).join(",")).join(";"),
+    frame.width,
+    frame.height,
+  ].join("|");
+  const kept = stationRests.get(key);
+  if (kept) return kept;
+  const found = fitStationRest(stop, base, frame);
+  stationRests.set(key, found);
+  return found;
+}
+
+function fitStationRest(stop: RideStop, base: Pose, frame: Frame): Pose {
   const centre = heroPoint(stop);
   const top: V3 = [centre[0], centre[1], (stop.heroTop ?? 3.4) + 0.2];
   const cell = at(stop.s + CELL_SEAT, 0, 0.6);
@@ -315,19 +356,7 @@ function stationPose(stop: RideStop, trainS: number, frame: Frame): Pose {
       rest = { ...rest, look: [rest.look[0], rest.look[1], z] };
     } else break;
   }
-  const now = shotPose(stationShot(stop), trainS, stop, stop.side);
-  // While the train pulls in, the look point keeps the offset the fit found for the train at rest.
-  const moved: V3 = [
-    now.look[0] + (rest.look[0] - base.look[0]),
-    now.look[1] + (rest.look[1] - base.look[1]),
-    rest.look[2],
-  ];
-  return {
-    ...now,
-    radius: rest.radius,
-    height: rest.height,
-    look: trainS === stop.s ? rest.look : moved,
-  };
+  return rest;
 }
 
 function restPose(stop: RideStop, stops: readonly RideStop[], frame: Frame): Pose {
