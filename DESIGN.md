@@ -41,11 +41,12 @@ Why these colors: the green is the color of the user's own contribution graph, s
 ## Motion
 
 - Everything is frame-driven (`interpolate`, `spring`, `random(seed)`).
-- Cuts and the start of each count-up land on beats of the track. Scene lengths are whole beats.
-- Every cut has its own camera-like move, never repeated: dive into a cell, tilt, whip pan, iris, contribution-row blinds, card flip, a flash with camera shake for the archetype, and a pull-back into the closing (scene-system.md, Transitions).
-- Everything that moves makes a sound (ADR-0009), quieter than the music: pops for things appearing, ticks while a number counts, a landing thump when it settles, climbing blips for bars and rows, a shimmer for graphs, an impact for the archetype. Groups get one sound, not one per item.
-- After each count-up, the final number holds still for at least 1.5 s.
-- Text and numbers stop once their beat is delivered. Characters don't: Cell (screen face made of light, stubby limbs on real joints) keeps moving on the beat in every view: waving, jumping, running, thinking, hammering, nodding, celebrating, as baked 3D loops (ADR-0013). Characters never cross a number or label.
+- The story is one train ride ([ADR-0023](docs/architecture/decisions/0023-the-story-is-a-train-ride.md)). The camera glides once per move, from one station's side to the next, never turning back and forth. The train pulls away, cruises and pulls in.
+- Nothing appears or disappears on the spot. A station's hero is lowered in as the train comes in and is finished when it stops; it stays standing until it is out of the frame. Signs never move.
+- A station is alive at rest: smoke, Cell blinking, the station's own small loop, every cycle two seconds long so the rest loops without a seam.
+- Everything that moves makes a sound (ADR-0009), quieter than the music: the wheels on the rails for every move, and an arrival sound at each stop.
+- Numbers count up while their hero builds and are exact when the train stops; a stop holds at least three seconds in a video.
+- Characters never cross a number or label.
 
 ## Web (landing, dashboard, story page)
 
@@ -90,7 +91,7 @@ Chosen by the maintainer on 2026-11-11 ([ADR-0021](docs/architecture/decisions/0
 - **Cell is a contribution cell** (`three/diorama/IsoCell.tsx`): one block for body and head, pixel eyes with a white glint and bar brows on its front, prism arms and legs on real joints, and a crest of three small cells from dark to bright green, its signature. Motions come from `three/pose.ts` and loop in two seconds.
 - **Each archetype has its own Cell** (`archetypeRole`, `ARCHETYPE_COLORS` in `cast.ts`): body colour and blocky gear. Builder orange, hard hat and hammer; Consistent green, sweatband; Explorer sky blue, cap and backpack; Collaborator pink, headset; Night owl lavender, owl tufts and glasses; Open sourcer teal, scarf.
 - **City blocks and dioramas** (`three/diorama/scenes.tsx`, `three/diorama/city.tsx`, [ADR-0022](docs/architecture/decisions/0022-archetype-art-is-a-city-block.md)): each archetype's `skin-*` is a dense city block with Cell, large, on a plaza in its middle, turned to the camera: a building site under a crane; a running track with a podium and a clock tower; a mountain, a lake and a camp; an office campus with a courtyard of tables; a block late at night with the owl on a roof; a town square with a stage, a market and a fountain. The things of its rule float round Cell, never in front of it. The landing adds three rooms: the letter (a writing desk, a post box, a carrier bird), privacy (a vault, a server rack, a sleeping cat) and the close (the whole sample year as a city, Cell crowned on a stage, fireworks).
-- **Baked loops** (`three/ArtStill.tsx`, `three/diorama/DioramaStill.tsx`, `bun scripts/render-art.ts`, ADR-0013): animated WebP for pages and a still PNG at each motion's peak for reduced motion, the share card and the story world. City blocks (`skin-*`, `iso-*`) are baked in two layers, `<id>-base.webp` and a loop of Cell alone. Ids: `cutout-cell-*`, `cutout-<archetype>`, `skin-<archetype>`, `hero-cast`, `head-cell`, `iso-letter`, `iso-privacy`, `iso-closing`. The bake falls back to ImageMagick without ffmpeg and can reuse a local headless Chrome (`REMOTION_BROWSER_EXECUTABLE`).
+- **Baked loops** (`three/ArtStill.tsx`, `three/diorama/DioramaStill.tsx`, `bun scripts/render-art.ts`, ADR-0013): animated WebP for pages and a still PNG at each motion's peak for reduced motion and the share card; the archetype station plays its city block's loop frame by frame. City blocks (`skin-*`, `iso-*`) are baked in two layers, `<id>-base.webp` and a loop of Cell alone. Ids: `cutout-cell-*`, `cutout-<archetype>`, `skin-<archetype>`, `hero-cast`, `head-cell`, `iso-letter`, `iso-privacy`, `iso-closing`. The bake falls back to ImageMagick without ffmpeg and can reuse a local headless Chrome (`REMOTION_BROWSER_EXECUTABLE`).
 
 ## Words
 
