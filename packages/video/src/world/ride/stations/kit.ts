@@ -33,6 +33,8 @@ export type StationContext = {
   overview: number;
   /** The frame's layout family: a narrow frame stacks a hero that a wide one lays in a row. */
   layout: LayoutFamily;
+  /** At the letter's stop: how far the envelope on the desk is open, 0 to 1. */
+  letterOpen?: number;
 };
 export type Station = (ctx: StationContext) => Solid[];
 

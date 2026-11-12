@@ -14,9 +14,10 @@ import { type Gate, gates } from "./gates.model";
 import { land } from "./land";
 import { HAZE } from "./palette";
 import type { Fog, Solid } from "./prims";
-import type { Frame, RideCamera } from "./project";
+import type { Frame, RideCamera, V3 } from "./project";
 import { STATIONS } from "./stations";
 import { stationContext } from "./stations/kit";
+import { deskShot } from "./stations/letter";
 import { type RideStop, rideStops } from "./stops";
 import {
   buildFrames,
@@ -162,48 +163,93 @@ const solidKey = (solid: Solid): string =>
       ? `ball|${solid.c.join(",")}|${solid.r}`
       : `picture|${solid.href}|${solid.c.join(",")}`;
 
-/** How long the letter takes to open over the scene, and to go as the train pulls out. */
-const LETTER_OPEN_SECONDS = 0.9;
-const LETTER_CLOSE_SECONDS = 0.5;
+/**
+ * The frame the train and the riding camera are at. It is the frame itself, except round the
+ * letter: the move in to its first page ends with the time at the desk, so the travel is done in
+ * the frames before that and the train then stands; and the move away from its last page begins
+ * with the camera coming back out, so the train does not start until that is over.
+ */
+export function rideClock(model: RideModel, frame: number): number {
+  const { stops, timeline } = model;
+  for (let i = 1; i < stops.length; i++) {
+    const stop = stops[i];
+    const prev = stops[i - 1];
+    const end = timeline.stopFrames[i] ?? 0;
+    const total = timeline.moveFrames[i] ?? 0;
+    const start = end - total;
+    if (frame <= start || frame >= end) continue;
+    if (stop?.kind === "letter" && (stop.page ?? 1) === 1 && total > timeline.letterIntro) {
+      return start + Math.min(1, (frame - start) / (total - timeline.letterIntro)) * total;
+    }
+    if (prev?.kind === "letter" && stop?.kind !== "letter" && total > timeline.letterOutro) {
+      const moved = (frame - start - timeline.letterOutro) / (total - timeline.letterOutro);
+      return start + Math.max(0, moved) * total;
+    }
+  }
+  return frame;
+}
+
+/** What the letter's stop is doing at a frame. */
+export type LetterBeat = {
+  /** How far the camera has come in from the station's shot to the desk, 0 to 1. */
+  push: number;
+  /** How far the envelope on the desk is open, 0 to 1. */
+  open: number;
+  /** The sheet over the scene, or null when no page is to be seen. */
+  sheet: { stop: RideStop; enter: number; opacity: number } | null;
+};
+
+const AWAY: LetterBeat = { push: 0, open: 0, sheet: null };
+/** How much of a page's hold its turn to the next takes. */
+const TURN_SHARE = 0.3;
 
 /**
- * The letter's sheet, which lies over the scene: the one place where text covers the picture
- * (spec "Calls"). On the way in to its first page the sheet opens, and is whole on that stop's
- * frame; a later page turns over the one before it without the camera moving; and after the
- * last page it goes as the train pulls out. `enter` is what the sheet's own turn runs on, and
- * `opacity` fades the whole of it, desk and all. Null when no page is to be seen.
+ * The letter, beat by beat. The train stops and stands a moment at the station's own shot; the
+ * camera comes in to the desk; the envelope on it opens and the letter comes out; and the sheet
+ * comes up over the scene, whole on the first page's frame: the one place where text covers the
+ * picture (spec "Calls"). A later page turns at the end of the hold of the one before it, the
+ * camera still. When the last page's hold is over the sheet goes, the envelope closes, and the
+ * camera comes back out to the station before the train leaves. The public ride has no letter.
  */
-export function letterView(
-  model: RideModel,
-  frame: number,
-  fps: number,
-): { stop: RideStop; enter: number; opacity: number } | null {
+export function letterBeat(model: RideModel, frame: number): LetterBeat {
   const { stops, timeline } = model;
-  const reached = Math.max(
-    0,
-    stops.findLastIndex((_, i) => frame >= (timeline.stopFrames[i] ?? 0)),
-  );
-  const current = stops[reached];
+  const first = stops.findIndex((stop) => stop.kind === "letter");
+  if (first === -1) return AWAY;
+  const last = stops.findLastIndex((stop) => stop.kind === "letter");
+  const begins = timeline.stopFrames[first] ?? 0;
+  const arrives = begins - timeline.letterIntro;
+  const leaves = (timeline.stopFrames[last] ?? 0) + timeline.holdFrames;
+  if (frame <= arrives || frame >= leaves + timeline.letterOutro) return AWAY;
+  const page = stops[first] as RideStop;
+  if (frame < begins) {
+    const t = (frame - arrives) / Math.max(1, timeline.letterIntro);
+    const up = clamp01((t - 0.84) / 0.16);
+    return {
+      push: easeInOutCubic(clamp01((t - 0.14) / 0.32)),
+      // Even, not eased: the station's own beats (flap, letter out, letter up) ease themselves.
+      open: clamp01((t - 0.4) / 0.44),
+      sheet: up > 0 ? { stop: page, enter: up, opacity: up } : null,
+    };
+  }
+  if (frame > leaves) {
+    const t = (frame - leaves) / Math.max(1, timeline.letterOutro);
+    const gone = clamp01(t / 0.3);
+    return {
+      push: 1 - easeInOutCubic(clamp01((t - 0.3) / 0.7)),
+      open: 1 - easeInOutCubic(clamp01((t - 0.1) / 0.45)),
+      sheet: gone < 1 ? { stop: stops[last] as RideStop, enter: 1, opacity: 1 - gone } : null,
+    };
+  }
+  // On a page: whole, or turning to the next over the end of this one's hold.
+  const reached = stops.findLastIndex((_, i) => frame >= (timeline.stopFrames[i] ?? 0));
   const next = stops[reached + 1];
   const nextAt = timeline.stopFrames[reached + 1];
-  const left = (timeline.stopFrames[reached] ?? 0) + timeline.holdFrames;
   if (next?.kind === "letter" && nextAt !== undefined) {
-    // A page turns in place: no move comes between two pages, so the turn takes the end of the
-    // hold of the page before. The first page opens over the end of the way in.
-    const room = timeline.inPlace?.[reached + 1]
-      ? Math.round(timeline.holdFrames * 0.4)
-      : nextAt - left;
-    const frames = Math.max(1, Math.min(Math.round(LETTER_OPEN_SECONDS * fps), room));
+    const frames = Math.max(1, Math.round(timeline.holdFrames * TURN_SHARE));
     const enter = clamp01((frame - (nextAt - frames)) / frames);
-    // The first page fades in with its desk; a later one turns over a page that is already there.
-    if (enter > 0) return { stop: next, enter, opacity: (next.page ?? 1) === 1 ? enter : 1 };
+    if (enter > 0) return { push: 1, open: 1, sheet: { stop: next, enter, opacity: 1 } };
   }
-  if (current?.kind !== "letter") return null;
-  const gone =
-    next && next.kind !== "letter"
-      ? clamp01((frame - left) / Math.max(1, Math.round(LETTER_CLOSE_SECONDS * fps)))
-      : 0;
-  return gone >= 1 ? null : { stop: current, enter: 1, opacity: 1 - gone };
+  return { push: 1, open: 1, sheet: { stop: stops[reached] as RideStop, enter: 1, opacity: 1 } };
 }
 
 /** `solid` at `grown` (0 to 1) of its height and of its height over the ground at `floor`. */
@@ -236,9 +282,14 @@ export function rideFrame(
   fps: number,
 ): { cam: RideCamera; roll: number; fog: Fog; ground: Solid[]; objects: Solid[] } {
   const { city, stops, timeline } = model;
-  const trainS = trainAt(frameIndex, stops, timeline);
-  const { cam, roll, speed } = rideCamera(frameIndex, stops, timeline, format);
-  const overview = overviewAt(frameIndex, model);
+  // Round the letter the train and the riding camera keep their own time (rideClock).
+  const tick = rideClock(model, frameIndex);
+  const beat = letterBeat(model, frameIndex);
+  const trainS = trainAt(tick, stops, timeline);
+  const riding = rideCamera(tick, stops, timeline, format);
+  const { speed } = riding;
+  let { cam, roll } = riding;
+  const overview = overviewAt(tick, model);
   const layout = layoutForSize(format.width, format.height);
   const weeks = Math.max(...city.plots.map((plot) => plot.col)) + 1;
   // The whole year is always on the ground: the rail doubles back, so a run the train is not on
@@ -254,10 +305,10 @@ export function rideFrame(
   const { ground, objects } = land(city, model.gates, stops, view);
 
   // The stop the train is at, or is pulling into.
-  let to = stops.findIndex((_, i) => frameIndex <= (timeline.stopFrames[i] ?? 0));
+  let to = stops.findIndex((_, i) => tick <= (timeline.stopFrames[i] ?? 0));
   if (to === -1) to = stops.length - 1;
   const arrive = timeline.stopFrames[to] ?? 0;
-  const resting = stops.findLast((_, i) => frameIndex >= (timeline.stopFrames[i] ?? 0)) ?? stops[0];
+  const resting = stops.findLast((_, i) => tick >= (timeline.stopFrames[i] ?? 0)) ?? stops[0];
   const moving = speed > 0;
   const dest = stops[to];
 
@@ -267,21 +318,21 @@ export function rideFrame(
     stop && stop.kind !== "hello" && stop.kind !== "city";
   let turn = 0;
   let turnTo: RideStop | undefined;
-  if (moving && facesCamera(dest) && arrive - frameIndex <= TURN_FRAMES) {
-    turn = easeInOutCubic(1 - (arrive - frameIndex) / TURN_FRAMES);
+  if (moving && facesCamera(dest) && arrive - tick <= TURN_FRAMES) {
+    turn = easeInOutCubic(1 - (arrive - tick) / TURN_FRAMES);
     turnTo = dest;
   } else if (facesCamera(resting) && resting) {
     const left = (timeline.stopFrames[stops.indexOf(resting)] ?? 0) + timeline.holdFrames;
-    turn = moving ? easeInOutCubic(clamp01(1 - (frameIndex - left) / TURN_FRAMES)) : 1;
+    turn = moving ? easeInOutCubic(clamp01(1 - (tick - left) / TURN_FRAMES)) : 1;
     turnTo = resting;
   }
   // Cell cheers while a hero builds and waves while the train moves. Both ease in and out (the
   // cheer over the build, the wave with the speed), so its pose never snaps at a stop.
-  const built = clamp01(1 - (arrive - frameIndex) / buildFrames(to, timeline, fps));
+  const built = clamp01(1 - (arrive - tick) / buildFrames(to, timeline, fps));
   const building = Boolean(dest?.plaza) && moving && built > 0;
   const mood: Mood = building ? "cheer" : moving ? "ride" : "idle";
   const amount = building ? Math.sin(built * Math.PI) ** 2 : Math.min(1, speed * 4);
-  const clock = idleClock(frameIndex, timeline);
+  const clock = idleClock(tick, timeline);
   const yaw =
     heading(trainS) + (turnTo ? stationShot(turnTo).theta * turnTo.side * 0.85 * turn : 0);
 
@@ -296,8 +347,28 @@ export function rideFrame(
     // Every station is always there: its plaza and its sign from the start, its hero from the
     // moment the train pulls in, for the rest of the ride. Nothing is put up or taken down by
     // where the train is, so nothing appears or goes when a shot happens to catch it.
-    const build = buildProgress(i, frameIndex, timeline, fps);
-    const ctx = stationContext(data, city, stop, build, clock, overview, layout);
+    // The letter's station is whole when the train stops, which is before its first page's frame.
+    const first = stop.kind === "letter";
+    const build = buildProgress(i, frameIndex + (first ? timeline.letterIntro : 0), timeline, fps);
+    const ctx = {
+      ...stationContext(data, city, stop, build, clock, overview, layout),
+      letterOpen: first ? beat.open : 0,
+    };
+    // At the letter the camera leaves the station's shot for the desk, and comes back to it.
+    if (first && beat.push > 0) {
+      const desk = deskShot(ctx);
+      const mix = (a: V3, b: V3): V3 => [
+        a[0] + (b[0] - a[0]) * beat.push,
+        a[1] + (b[1] - a[1]) * beat.push,
+        a[2] + (b[2] - a[2]) * beat.push,
+      ];
+      cam = {
+        pos: mix(cam.pos, desk.pos),
+        look: mix(cam.look, desk.look),
+        fov: cam.fov + (desk.fov - cam.fov) * beat.push,
+      };
+      roll *= 1 - beat.push;
+    }
     const solids = station(ctx);
     if (build <= 0 || build >= RISE_UNTIL || stop.kind === "city") {
       objects.push(...solids);

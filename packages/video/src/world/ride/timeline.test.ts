@@ -24,10 +24,22 @@ test("video mode holds three seconds, interactive holds the rest loop", () => {
 
 test("moves take between 1.6 and 4.2 seconds", () => {
   expect(video.moveFrames[0]).toBe(0);
-  for (const move of video.moveFrames.slice(1)) {
-    expect(move).toBeGreaterThanOrEqual(48);
-    expect(move).toBeLessThanOrEqual(126);
-  }
+  video.moveFrames.slice(1).forEach((move, k) => {
+    // The letter's time at the desk is part of the move into its first page, and the camera's
+    // way back out part of the move away from its last: the ride itself is what is measured here.
+    const stop = stops[k + 1];
+    const prev = stops[k];
+    const opens = stop?.kind === "letter" && (stop.page ?? 1) === 1;
+    const closes = prev?.kind === "letter" && stop?.kind !== "letter";
+    const ride = move - (opens ? video.letterIntro : 0) - (closes ? video.letterOutro : 0);
+    // A later page of the letter turns in place: there is nothing to ride.
+    if (stop?.kind === "letter" && !opens) {
+      expect(ride).toBe(0);
+      return;
+    }
+    expect(ride).toBeGreaterThanOrEqual(48);
+    expect(ride).toBeLessThanOrEqual(126);
+  });
   // The moves up to the overview and down from it take the longest time, however near the stops.
   const overview = stops.findIndex((stop) => stop.kind === "city");
   expect(video.moveFrames[overview]).toBe(126);

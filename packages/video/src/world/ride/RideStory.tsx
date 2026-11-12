@@ -9,7 +9,7 @@ import { gardenModel } from "../scenes/garden.model";
 import { Letter } from "../scenes/Letter";
 import type { WorldMode } from "../timeline";
 import { backdrop } from "./backdrop";
-import { buildRide, letterView, rideFrame } from "./model";
+import { buildRide, letterBeat, rideFrame } from "./model";
 import { SKY } from "./palette";
 import { scenePrims } from "./prims";
 import { RideCanvas } from "./RideCanvas";
@@ -29,7 +29,7 @@ export type RideStoryProps = {
  * from `rideFrame`, a pure function of the frame; this component only paints it on one canvas
  * (the backdrop, the ground, then the objects), with the chrome over it. No text is laid over
  * the scene: every number is printed on a solid inside it. The one exception is the letter,
- * whose sheet of paper opens over the scene at its stops (model.ts `letterView`).
+ * whose sheet of paper comes up over the scene at its stops (model.ts `letterBeat`).
  */
 export function RideStory({ data, mode, letter = true }: RideStoryProps) {
   const { width, height, fps } = useVideoConfig();
@@ -49,7 +49,7 @@ export function RideStory({ data, mode, letter = true }: RideStoryProps) {
       ...archetypeFigures(data),
     ].map((file) => staticFile(file));
   }, [data]);
-  const sheet = letterView(model, frame, fps);
+  const { sheet } = letterBeat(model, frame);
   const layers = [
     backdrop(cam, size, model.city, frame),
     scenePrims(ground, cam, size, fog),

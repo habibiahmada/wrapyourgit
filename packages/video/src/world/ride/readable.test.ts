@@ -242,7 +242,12 @@ test("no hero is cut off at its stop, and Cell stands clear of the frame's edge"
       const m = buildRide(data, format, "video", 30);
       m.stops.forEach((stop, i) => {
         if (stop.kind === "hello" || stop.kind === "city") return;
-        const frame = rideFrame(m, data, m.timeline.stopFrames[i] ?? 0, format, 30);
+        // On a page of the letter the camera is at the desk and the sheet is over the scene. Its
+        // station is seen as the train stops there, before the camera goes in.
+        if (stop.kind === "letter" && (stop.page ?? 1) > 1) return;
+        const arrives = (m.timeline.stopFrames[i] ?? 0) - m.timeline.letterIntro;
+        const shown = stop.kind === "letter" ? arrives : (m.timeline.stopFrames[i] ?? 0);
+        const frame = rideFrame(m, data, shown, format, 30);
         const centre = stationContext(data, m.city, stop, 1, 0, 0).c;
         const mine = frame.objects.filter(
           (s): s is Box =>
