@@ -115,14 +115,18 @@ export function StorySection() {
 
 /** What each archetype's diorama shows, for its alt text. */
 const SCENES: Record<ArchetypeId, string> = {
-  builder: "Cell in a hard hat hammering in a workshop full of crates, a beaver bringing a plank",
-  consistent: "Cell running laps on a track past a board where the week lights up day by day",
-  explorer: "Cell in a cap and backpack waving on a trail of stepping stones below snowy peaks",
-  collaborator: "Cell in a headset handing a pull request to a teammate between two desks",
+  builder:
+    "Cell in a hard hat, hammering, in the middle of a city block where a building is going up under a crane",
+  consistent:
+    "Cell in a sweatband running in the middle of a city block with a running track, a podium and a clock tower",
+  explorer:
+    "Cell in a cap and backpack waving in the middle of a block with a snowy mountain, a lake, tents and a lighthouse",
+  collaborator:
+    "Cell in a headset in the middle of an office campus where a team in every colour talks round café tables",
   "night-owl":
-    "Cell in glasses grooving in a room lit by a monitor, the moon in the window, an owl on the shelf",
+    "Cell in glasses in the middle of a city block late at night, most windows lit, an owl on a roof",
   "open-sourcer":
-    "Cell cheering on a stage with friends from other projects under a mural of the year",
+    "Cell in a scarf cheering in the middle of a town square with a stage, a crowd, market stalls and a fountain",
 };
 
 const ARCHETYPES: { id: ArchetypeId; rule: string }[] = [
