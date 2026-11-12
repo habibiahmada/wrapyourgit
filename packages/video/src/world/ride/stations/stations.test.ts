@@ -349,6 +349,26 @@ test("closing's party is lowered in as the train arrives, never put there at onc
   }
 });
 
+test("closing's balloons float on strings, and the party has its carpet, gifts and lights", () => {
+  const all = build("closing", sampleRecap);
+  const strings = boxes(all, "balloon-string");
+  const balloons = all.filter((s) => s.kind === "ball" && s.r >= 0.25);
+  expect(strings.length).toBeGreaterThanOrEqual(10);
+  expect(balloons).toHaveLength(strings.length);
+  // Every balloon is just above the top of a string.
+  for (const balloon of balloons) {
+    if (balloon.kind !== "ball") continue;
+    const tied = strings.some((t) => {
+      const top = t.at[2] + t.size[2];
+      return Math.abs(balloon.c[2] - balloon.r - top) < 0.15;
+    });
+    expect(tied).toBe(true);
+  }
+  expect(boxes(all, "carpet").length).toBeGreaterThan(0);
+  expect(boxes(all, "gift").length).toBeGreaterThanOrEqual(3);
+  expect(boxes(all, "spotlight").length).toBeGreaterThanOrEqual(2);
+});
+
 test("closing without an archetype still has a full podium", () => {
   const text = printed(boxes(build("closing", emptyRecap), "podium"));
   expect(text).toContain("0");

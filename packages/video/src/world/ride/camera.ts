@@ -80,8 +80,8 @@ export function stationShot(_stop: RideStop): Shot {
 
 function heroPoint(stop: RideStop): V3 {
   if (stop.plaza) return at(stop.s + PLAZA_AHEAD, stop.side * PLAZA_LATERAL, 3.4);
-  // Closing's plaza stands 9 back along the rail and 5.8 out on its side (stations/closing.ts).
-  return at(stop.s - 9, stop.side * 5.8, 2.6);
+  // Closing's plaza stands 7 back along the rail and 5.8 out on its side (stations/closing.ts).
+  return at(stop.s - 7, stop.side * 5.8, 2.6);
 }
 
 function lookPoint(look: Look, trainS: number, stop: RideStop): V3 {
