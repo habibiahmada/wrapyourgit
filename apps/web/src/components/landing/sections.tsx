@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Art } from "@/components/art";
 import { SITE } from "@/site";
 import { FrameReel } from "./frame-reel";
+import { ACT_IMAGES, RIDE_IMAGES } from "./frames";
 import { GlowOrb, IsoBackdrop, MiniIsoCluster } from "./iso-backdrop";
 
 /*
@@ -136,10 +137,8 @@ export function JourneySection() {
             >
               {/* A real frame of the act, from the sample ride: what it is, not a symbol of it. */}
               <Image
-                src={`/landing/act-${i + 1}.webp`}
+                src={ACT_IMAGES[i] ?? RIDE_IMAGES.city}
                 alt={act.alt}
-                width={960}
-                height={540}
                 sizes="(min-width: 768px) 33vw, 100vw"
                 className="h-auto w-full border-b border-line"
               />
@@ -190,6 +189,7 @@ export function ReelSection() {
         <FrameReel
           frames={FRAMES.map((frame) => ({
             ...frame,
+            src: RIDE_IMAGES[frame.file],
             label: `${stopNumber(frame.file)} ${STOP_TITLES[frame.file]}`,
           }))}
         />
@@ -493,10 +493,8 @@ export function PrintsSection() {
           {(["city", "archetype", "rhythm"] as const).map((file, i) => (
             <Image
               key={file}
-              src={`/landing/ride-${file}.webp`}
+              src={RIDE_IMAGES[file]}
               alt=""
-              width={540}
-              height={675}
               sizes="16rem"
               className="absolute left-1/2 h-auto w-48 rounded-lg border border-line sm:w-60"
               style={{
