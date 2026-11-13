@@ -206,8 +206,9 @@ const SECTIONS: LegalSection[] = [
         whose Turnstile widget runs the check that you are a person and whose Web Analytics counts
         page views, under its own privacy policy. Vercel also hosts the site, and its server code
         runs in Singapore. Your account, recap, tokens and sessions are stored in a Postgres
-        database at Neon, also in Singapore. Cloudflare answers the site's DNS and sees no recap
-        data. Each works under its own privacy policy.
+        database at Neon, also in Singapore. A nightly backup of that database is kept in a private,
+        encrypted Amazon S3 bucket, also in Singapore. Cloudflare answers the site's DNS and sees no
+        recap data. Each works under its own privacy policy.
       </p>
     ),
   },
@@ -217,6 +218,10 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ul>
         <li>Your recap and tokens: until you delete your data.</li>
+        <li>
+          Database backups: 14 days, then deleted. Data you delete leaves the live database at once
+          and the last backup that holds it within 14 days.
+        </li>
         <li>
           Public recaps: until the owner hides theirs or deletes their data. A stored recap is read
           again from GitHub when it is more than 12 hours old. While GitHub is busy, a copy up to 7
@@ -248,6 +253,7 @@ const SECTIONS: LegalSection[] = [
         <li>
           <strong>Delete my data</strong> in Settings removes your account, recap, tokens and
           sessions, hides and deletes your public recap, and revokes WrapYourGit's access to GitHub.
+          Backups taken before that are deleted within 14 days.
         </li>
         <li>You can also revoke access at any time on GitHub, under Settings, Applications.</li>
         <li>
