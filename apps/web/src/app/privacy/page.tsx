@@ -1,9 +1,5 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { Art } from "@/components/art";
-import { PageTransition } from "@/components/site/page-transition";
-import { SiteFooter } from "@/components/site/site-footer";
-import { SiteHeader } from "@/components/site/site-header";
+import { LegalPage, type LegalSection } from "@/components/site/legal-page";
 import { OPEN_GRAPH } from "@/site";
 
 const TITLE = "Privacy policy";
@@ -35,7 +31,7 @@ const UPDATED = "11 November 2026";
  * page in the same change that changes the behaviour.
  */
 
-const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
+const SECTIONS: LegalSection[] = [
   {
     id: "summary",
     title: "The short version",
@@ -273,58 +269,12 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
 
 export default function PrivacyPage() {
   return (
-    <>
-      <SiteHeader base="/" />
-      <PageTransition>
-        <main id="main" className="flex flex-1 flex-col">
-          <section className="relative overflow-hidden border-b border-line">
-            <div className="mx-auto grid max-w-7xl items-center gap-6 px-4 py-14 sm:px-8 lg:grid-cols-[1.3fr_1fr]">
-              <div>
-                <h1 className="reveal text-6xl leading-[0.92] font-extrabold tracking-tight sm:text-8xl">
-                  Privacy policy
-                </h1>
-                <p className="mt-6 max-w-xl text-lg sm:text-xl">
-                  Read-only, and yours to delete. Here is exactly what that means.
-                </p>
-                <p className="mt-4 text-base">Last updated {UPDATED}</p>
-              </div>
-              <Art id="skin-night-owl" alt="" priority className="h-auto w-full" />
-            </div>
-          </section>
-          <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[16rem_1fr]">
-            <nav aria-label="On this page" className="lg:sticky lg:top-24 lg:self-start">
-              <ul className="space-y-1">
-                {SECTIONS.map(({ id, title }) => (
-                  <li key={id}>
-                    <a
-                      href={`#${id}`}
-                      className="inline-flex min-h-11 items-center font-bold underline-offset-4 hover:underline"
-                    >
-                      {title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-            <article className="max-w-3xl">
-              {SECTIONS.map(({ id, title, body }) => (
-                <section
-                  key={id}
-                  id={id}
-                  aria-labelledby={`${id}-title`}
-                  className="border-t border-line py-8 text-lg text-muted [&_strong]:text-fg [&_li]:mt-2 [&_p+p]:mt-4 [&_p+ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul+p]:mt-4"
-                >
-                  <h2 id={`${id}-title`} className="text-2xl font-bold text-fg">
-                    {title}
-                  </h2>
-                  <div className="mt-4">{body}</div>
-                </section>
-              ))}
-            </article>
-          </div>
-        </main>
-        <SiteFooter base="/" />
-      </PageTransition>
-    </>
+    <LegalPage
+      title="Privacy policy"
+      lead="Read-only, and yours to delete. Here is exactly what that means."
+      updated={UPDATED}
+      art="skin-night-owl"
+      sections={SECTIONS}
+    />
   );
 }
