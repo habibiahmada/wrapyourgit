@@ -89,12 +89,12 @@ Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, 
 
 ### Backups and monitoring
 
-Not set up yet (M6). The checklist:
-
-- **Database backups.**
+- **Database backups** (#134).
   - Neon keeps a restore window for point-in-time recovery; how long depends on the plan. Check it under Neon → the project → Settings, and write it here.
-  - For a copy outside Neon, run `pg_dump -Fc "<direct connection string>"` on a schedule, keeping about 14 days. `pg_dump` needs the direct (unpooled) string from Neon → Connect, not the pooled `DATABASE_URL`. Check whether the Vercel integration also added it as a variable.
-  - Restore one dump into a scratch Neon branch before launch.
+  - **Nightly dump to S3.** `.github/workflows/backup.yml` runs at 19:30 UTC (and from Actions → Backup → Run workflow). It runs `pg_dump --format=custom` with the Postgres 18 client, checks the file with `pg_restore --list`, and uploads it to `s3://wrapyourgit-db-backups/neon/<UTC time>.dump` (`ap-southeast-1`). A failed scheduled run emails the repository owner.
+  - **Where things live.** The bucket blocks public access, encrypts with SSE-S3, refuses non-TLS requests, and its lifecycle rule `expire-dumps-after-14-days` deletes dumps under `neon/` after 14 days; the privacy page promises that window, so change both together. The job signs in with GitHub OIDC to the IAM role `wrapyourgit-db-backup`, which may only `s3:PutObject` under `neon/` and only from this repository's `backup` environment. That environment accepts only `main`, holds the variables `AWS_BACKUP_ROLE_ARN` and `BACKUP_BUCKET`, and the secret `NEON_DIRECT_URL`: Neon's **direct** (unpooled) string, the `DATABASE_URL_UNPOOLED` value from the Vercel integration, because `pg_dump` cannot run through the pooler. If the database password is rotated, update that secret.
+  - **Restore.** With an AWS identity that can read the bucket (the role cannot): `aws s3 cp s3://wrapyourgit-db-backups/neon/<file>.dump db.dump --region ap-southeast-1`, then into an empty database, `pg_restore --no-owner --no-privileges --dbname "<target string>" db.dump` with a Postgres 18 client. Restore into a new Neon branch or a local container first and check row counts before pointing anything at it.
+  - Scheduled workflows stop after 60 days without activity in a **public** repository; GitHub emails before it disables them. Re-enable under Actions → Backup.
 - **What to watch:**
   - **Vercel → Logs.** Search for:
     - `public recap failed` (a public fetch that errored; it carries no login);
