@@ -110,7 +110,7 @@ Not set up yet (M6). The checklist:
 
 Three layers, and only one of them sees a request: **Vercel's firewall**. Cloudflare answers DNS and nothing else, and the app sends a few headers of its own.
 
-> **Status (2026-11-13):** the headers ship with the app, and the human check ships switched off until its keys are set. The rate limit rule is live for `/api` only: a test that day got 429 after 60 requests on `/api/card`, while 75 requests to `/privacy` (which has the shape of a recap page) all passed, so its third condition was never published. Everything else in this section is **written down but not applied yet**: tick it off here as it is done.
+> **Status (2026-11-13):** the headers ship with the app, and the human check has been on in production since its keys were set that day. The rate limit rule is live for `/api` only: a test that day got 429 after 60 requests on `/api/card`, while 75 requests to `/privacy` (which has the shape of a recap page) all passed, so its third condition was never published. Everything else in this section is **written down but not applied yet**: tick it off here as it is done.
 
 #### Why Cloudflare stays DNS-only
 
@@ -185,9 +185,11 @@ What these rules do not stop: a probe for a name that _could_ be a username (`/a
 
 The edge rules count requests per address. They cannot tell a person from a script, and a script with many addresses can still drain the one GitHub token every visitor shares. So before the server reads a recap nobody has fetched lately, a visitor who is not signed in passes Cloudflare Turnstile once an hour ([ADR-0026](../architecture/decisions/0026-a-human-check-before-a-new-public-fetch.md)). Stored recaps, and their link previews, are never checked. Turnstile is a widget on the page, so it works with the proxy off.
 
-- [ ] **Create the widget.** Cloudflare dashboard → Turnstile → Add widget: any name, hostname `wrapyourgit.com`, mode **Managed**. Copy the site key and the secret key.
-- [ ] **Set both in Vercel** → Settings → Environment Variables, Production: `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` (the secret marked Sensitive), then redeploy. With either missing the check is off and the site behaves as before, which is also how to switch it off in a hurry.
-- [ ] **Check it** in a private window: open `/<a username nobody has opened today>`. The page "One quick check before @…'s recap" appears, passes, and the recap loads. Open it again: no check. Then `curl -s https://wrapyourgit.com/<another new name> | grep -c "One quick check"` prints 1, and nothing in Vercel's logs shows a GitHub fetch for it.
+- [x] **Create the widget.** Cloudflare dashboard → Application security → Turnstile → Add widget: any name, hostname `wrapyourgit.com`, mode **Managed**. Copy the site key and the secret key.
+- [x] **Set both in Vercel** → Settings → Environment Variables, Production: `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` (the secret marked Sensitive), then redeploy. With either missing the check is off and the site behaves as before, which is also how to switch it off in a hurry.
+- [x] **Check it** in a private window: open `/<a username nobody has opened today>`. The page "One quick check before @…'s recap" appears, passes, and the recap loads. Open it again: no check. Then `curl -s https://wrapyourgit.com/<another new name> | grep -c "One quick check"` prints 1, and nothing in Vercel's logs shows a GitHub fetch for it.
+
+Done on 2026-11-13: the widget is `wrapyourgit` (Managed, one hostname). From outside, a made-up name with no session got the check page with the real site key; `/api/verify` answered 403 to a made-up token, to Cloudflare's dummy token and to a request with no `Origin`; a forged pass was asked to check again; the preview image of a new name was the site's card; and `/habibiahmada`, which is stored, played with no check. The maintainer passed the widget in a private window.
 
 Locally, Cloudflare's published test keys go in `apps/web/.env.local`: site `1x00000000000000000000AA` with secret `1x0000000000000000000000000000000AA` always passes, `2x00000000000000000000AB` with `2x0000000000000000000000000000000AA` always fails, and site `3x00000000000000000000FF` shows the tick box.
 
