@@ -109,7 +109,7 @@ Not set up yet (M6). The checklist:
 
 Three layers, and only one of them sees a request: **Vercel's firewall**. Cloudflare answers DNS and nothing else, and the app sends a few headers of its own.
 
-> **Status (2026-11-13):** the headers ship with the app, and the human check has been on in production since its keys were set that day. The rate limit rule is live for `/api` and `/u/` only, and on this plan it stays that way (rule 1 below). The other steps in this section are **written down but not applied yet**: tick them off here as they are done.
+> **Status (2026-11-13):** the headers ship with the app; the human check, the probe rule and Bot Protection (both in log mode), the four mail records and DNSSEC were all applied that day. The rate limit covers `/api` and `/u/` only, and on this plan it stays that way (rule 1 below). Still to do: move the probe rule from log to deny after reading a day of matches, the optional CAA record, and the account checks.
 
 #### Why Cloudflare stays DNS-only
 
@@ -141,7 +141,7 @@ From a terminal, once: `npx vercel@latest login`, then `cd apps/web && npx verce
   seq 1 75 | xargs -P 15 -I{} curl -s -o /dev/null -w "%{http_code}\n" https://wrapyourgit.com/privacy | sort | uniq -c
   ```
 
-- [ ] **Rule 2, deny probes.** Scanners ask every site for `/.env`, `/wp-login.php`, `/.git/config` and the like. Here each of those would wake the `/<username>` function, since any single segment is a possible username. None of them can be a page of this app: a GitHub username has no dot, nothing the app serves starts with a dot except `/.well-known/`, and the app only handles `GET`, `HEAD` and `POST`.
+- [x] **Rule 2, deny probes** (live in **log** mode since 2026-11-13, as "Deny probes"). Scanners ask every site for `/.env`, `/wp-login.php`, `/.git/config` and the like. Here each of those would wake the `/<username>` function, since any single segment is a possible username. None of them can be a page of this app: a GitHub username has no dot, nothing the app serves starts with a dot except `/.well-known/`, and the app only handles `GET`, `HEAD` and `POST`.
 
   ```bash
   npx vercel@latest firewall rules add "Deny probes" \
@@ -177,8 +177,8 @@ From a terminal, once: `npx vercel@latest login`, then `cd apps/web && npx verce
 
   Remove it when the attack is over (`rules remove "Challenge recap pages" --yes`, then `publish`): while it is on, link previews from services Vercel does not list as verified bots get the challenge instead of the card. For an attack on the whole site, Attack Mode challenges every visitor and still lets verified bots through; it applies at once, with no publish: `npx vercel@latest firewall attack-mode enable --duration 1h --yes`.
 
-- [ ] **Bot Protection: log, not challenge.** `npx vercel@latest firewall rules update bot-protection --action log --yes`, then `publish`. A recap is made to be shared, and a shared link is fetched by a bot. Vercel lets its verified bots through (X, Facebook, LinkedIn, Google and others are on its list), but on 2026-11-13 that list had no entry for Slack, Discord, WhatsApp or Telegram, so **challenge** would risk blank cards exactly where developers paste links. Log shows who comes without stopping anyone. Read it for a while before deciding more.
-- [ ] **AI Bots: allow.** The site publishes `llms.txt` and wants to be found. Nothing to change; this is here so it is a decision and not an oversight.
+- [x] **Bot Protection: log, not challenge** (set 2026-11-13). `npx vercel@latest firewall rules update bot-protection --action log --yes`, then `publish`. A recap is made to be shared, and a shared link is fetched by a bot. Vercel lets its verified bots through (X, Facebook, LinkedIn, Google and others are on its list), but on 2026-11-13 that list had no entry for Slack, Discord, WhatsApp or Telegram, so **challenge** would risk blank cards exactly where developers paste links. Log shows who comes without stopping anyone. Read it for a while before deciding more.
+- [x] **AI Bots: allow.** The site publishes `llms.txt` and wants to be found. Nothing to change; this is here so it is a decision and not an oversight.
 
 What these rules do not stop: a probe for a name that _could_ be a username (`/admin`, `/login`, `/wp-admin`). It reaches the app. With [the human check](#the-human-check) on it starts nothing, since a scanner holds no pass; without it, it may start one public fetch, bounded by the 12-hour cache and the 20 new lookups an hour per client.
 
@@ -198,7 +198,7 @@ Locally, Cloudflare's published test keys go in `apps/web/.env.local`: site `1x0
 
 With the proxy off, what Cloudflare can protect is the domain itself.
 
-- [ ] **Nobody can send mail as `@wrapyourgit.com`.** The domain sends and receives no mail, and today nothing says so, so anyone can forge it. DNS → Records → Add record:
+- [x] **Nobody can send mail as `@wrapyourgit.com`** (the four records below added 2026-11-13, read back from Cloudflare's nameservers). The domain sends and receives no mail, and today nothing says so, so anyone can forge it. DNS → Records → Add record:
 
   | Type  | Name           | Content                                           |
   | ----- | -------------- | ------------------------------------------------- |
@@ -209,7 +209,7 @@ With the proxy off, what Cloudflare can protect is the domain itself.
 
   If the domain ever gets a mailbox, these four are replaced by the provider's own records first.
 
-- [ ] **DNSSEC**, so a resolver can tell a forged answer for the domain from a real one. Cloudflare → DNS → Settings → Enable DNSSEC shows a DS record. The registrar is Hostinger, not Cloudflare, so that DS record has to be entered there by hand (Hostinger → the domain → DNS / Nameservers → DNSSEC; algorithm 13, also called ECDSA P-256 with SHA-256). Do both steps in one sitting. To turn it off again, remove the DS record at Hostinger first and wait a day before disabling it in Cloudflare; the other order takes the domain offline for validating resolvers.
+- [x] **DNSSEC** (on since 2026-11-13: key tag 2371, algorithm 13, digest type 2, DS entered at Hostinger → DNS / Nameservers → DNSSEC), so a resolver can tell a forged answer for the domain from a real one. Cloudflare → DNS → Settings → Enable DNSSEC shows a DS record. The registrar is Hostinger, not Cloudflare, so that DS record has to be entered there by hand (Hostinger → the domain → DNS / Nameservers → DNSSEC; algorithm 13, also called ECDSA P-256 with SHA-256). Do both steps in one sitting. To turn it off again, remove the DS record at Hostinger first and wait a day before disabling it in Cloudflare; the other order takes the domain offline for validating resolvers.
 - [ ] **CAA (optional)**, so only Vercel's certificate authority may issue for the domain: `CAA @ 0 issue "letsencrypt.org"`. Vercel's documentation names Let's Encrypt, and that is who issued the current certificate. Skip this if in doubt: a CAA record that leaves Vercel's authority out stops renewal, and no CAA record at all is allowed.
 - [ ] **Accounts.** Two-factor sign-in on Cloudflare, Vercel, Hostinger and GitHub; any Cloudflare API token scoped to this zone's DNS only; the registrar's transfer lock left on (it is: `clientTransferProhibited`).
 
