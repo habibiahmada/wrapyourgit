@@ -4,17 +4,18 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { HeroArt } from "@/components/landing/hero-art";
 import {
+  ArchetypesCommunitySection,
   ArchetypesSection,
   ClosingSection,
   FAQ,
   FaqSection,
-  JourneySection,
+  KeepSection,
   LetterSection,
-  MetricsSection,
-  PlayerSection,
-  PrintsSection,
+  MetricsTrioSection,
   PrivacySection,
-  ReelSection,
+  SampleReelSection,
+  StorySection,
+  VideoExportSection,
 } from "@/components/landing/sections";
 import { PageTransition } from "@/components/site/page-transition";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -128,17 +129,18 @@ export default function Home({ searchParams }: PageProps<"/">) {
       />
       <SiteHeader />
       <PageTransition>
-        <main id="main" className="flex flex-1 flex-col">
+        {/* One isometric floor under every section, so the page reads as one continuous place. */}
+        <main id="main" className="iso-field flex flex-1 flex-col">
           {/* 90svh, not vh: on phones vh counts the space behind the address bar. */}
           <section
             aria-labelledby="hero-title"
-            className="relative flex min-h-[90svh] flex-col overflow-hidden bg-canvas"
+            className="band band-open motif-lattice reach-right relative flex min-h-[90svh] flex-col overflow-hidden"
           >
-            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 sm:px-8">
+            <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 sm:px-8">
               <Suspense fallback={null}>
                 <Notice searchParams={searchParams} />
               </Suspense>
-              <div className="grid flex-1 items-center gap-12 pt-12 pb-16 sm:pt-16 lg:grid-cols-[0.85fr_1.15fr]">
+              <div className="grid flex-1 items-center gap-12 pt-12 pb-16 sm:pt-16 lg:grid-cols-[0.88fr_1.12fr]">
                 <div>
                   <h1
                     id="hero-title"
@@ -154,14 +156,14 @@ export default function Home({ searchParams }: PageProps<"/">) {
                     <Suspense fallback={<HeroForm />}>
                       <HeroFormWithError searchParams={searchParams} />
                     </Suspense>
-                  </div>
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <Suspense fallback={<SignInButton variant="secondary" />}>
-                      <PrimaryAction variant="secondary" />
-                    </Suspense>
-                    <a href="#story" className={button.quiet}>
-                      See the city
-                    </a>
+                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                      <Suspense fallback={<SignInButton variant="secondary" />}>
+                        <PrimaryAction variant="secondary" />
+                      </Suspense>
+                      <a href="#story" className={button.quiet}>
+                        See the city
+                      </a>
+                    </div>
                   </div>
                 </div>
                 {/* A quarter of a year as a city, linked to what the story does with it. */}
@@ -170,13 +172,14 @@ export default function Home({ searchParams }: PageProps<"/">) {
             </div>
           </section>
 
-          <JourneySection />
-          <ReelSection />
-          <MetricsSection />
+          <StorySection />
+          <SampleReelSection />
+          <MetricsTrioSection />
           <ArchetypesSection />
+          <ArchetypesCommunitySection />
           <LetterSection />
-          <PlayerSection />
-          <PrintsSection />
+          <VideoExportSection />
+          <KeepSection />
           <PrivacySection />
           <FaqSection />
           <ClosingSection

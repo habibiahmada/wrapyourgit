@@ -44,7 +44,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${mona.variable} h-full antialiased`}>
+    // data-scroll-behavior: globals.css scrolls smoothly within a page, and since Next 16 a route
+    // change would glide too, from the old page's position, and stop part way through the view
+    // transition. With it, Next turns smooth scrolling off for each navigation, so a new page
+    // opens at its top.
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${bricolage.variable} ${mona.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">
         {children}
         <PageAnalytics />

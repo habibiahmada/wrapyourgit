@@ -1,20 +1,17 @@
 "use client";
 
 import Image, { type StaticImageData } from "next/image";
-import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
-import { button } from "@/components/ui";
+import { type PointerEvent, useCallback, useEffect, useRef } from "react";
 
-export type ReelFrame = { file: string; src: StaticImageData; label: string; alt: string };
+export type ReelFrame = { file: string; src: StaticImageData; alt: string };
 
 /**
  * The sample frames as a reel that drifts on its own: to the end, back to the start, again.
  * Drag it with a mouse, swipe it on touch, or scroll it with the keyboard; it stops while you hover,
  * focus or hold it, and picks up again a moment after you let go. Reduced motion never starts it.
- * Includes a visible Pause/Play button (R-39) so anyone can stop or resume the motion at any time.
  */
 export function FrameReel({ frames }: { frames: ReelFrame[] }) {
   const track = useRef<HTMLElement>(null);
-  const [paused, setPaused] = useState(false);
   const hovering = useRef(false);
   const busy = useRef(0); // timestamp until which the user is in control
   const direction = useRef(1);
@@ -26,11 +23,8 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
 
   useEffect(() => {
     const element = track.current;
-    if (!element || paused) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setPaused(true);
-      return;
-    }
+    if (!element) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let frame = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -47,7 +41,7 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [paused]);
+  }, []);
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     hold();
@@ -65,59 +59,37 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
   };
 
   return (
-    <div className="relative">
-      <div className="mx-auto mb-4 flex max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
-        <p className="text-sm text-muted">
-          Drag, swipe, or use Left and Right arrow keys to inspect each frame.
-        </p>
-        <button
-          type="button"
-          aria-pressed={paused}
-          onClick={() => setPaused((value) => !value)}
-          className={`${button.secondary} text-sm`}
-        >
-          {paused ? "Play sample reel" : "Pause sample reel"}
-        </button>
-      </div>
-      <section
-        ref={track}
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: the reel scrolls, so it must be reachable by keyboard
-        tabIndex={0}
-        aria-label="Frames from a sample recap. Drag or use arrow keys to scroll."
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onWheel={hold}
-        onKeyDown={hold}
-        onFocus={hold}
-        onPointerEnter={() => {
-          hovering.current = true;
-        }}
-        onPointerLeave={() => {
-          hovering.current = false;
-          hold();
-        }}
-        className="flex cursor-grab gap-6 overflow-x-auto px-4 py-8 select-none [scrollbar-width:none] active:cursor-grabbing sm:px-8 [&::-webkit-scrollbar]:hidden"
-      >
-        {frames.map((frame, i) => (
-          <figure
-            key={frame.file}
-            className={`w-56 shrink-0 rounded-2xl border border-line bg-surface p-3 sm:w-64 ${i % 2 ? "translate-y-6" : ""}`}
-          >
-            <Image
-              src={frame.src}
-              alt={frame.alt}
-              draggable={false}
-              sizes="16rem"
-              className="pointer-events-none h-auto w-full rounded-xl border border-line"
-            />
-            <figcaption className="mt-3 px-1 text-sm font-semibold text-fg">
-              {frame.label}
-            </figcaption>
-          </figure>
-        ))}
-      </section>
-    </div>
+    <section
+      ref={track}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: the reel scrolls, so it must be reachable by keyboard
+      tabIndex={0}
+      aria-label="Frames from a sample recap. Drag or use arrow keys to scroll."
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onWheel={hold}
+      onKeyDown={hold}
+      onFocus={hold}
+      onPointerEnter={() => {
+        hovering.current = true;
+      }}
+      onPointerLeave={() => {
+        hovering.current = false;
+        hold();
+      }}
+      className="flex cursor-grab gap-6 overflow-x-auto px-4 py-8 select-none [scrollbar-width:none] active:cursor-grabbing sm:px-8 [&::-webkit-scrollbar]:hidden"
+    >
+      {frames.map((frame, i) => (
+        <Image
+          key={frame.file}
+          src={frame.src}
+          alt={frame.alt}
+          draggable={false}
+          sizes="16rem"
+          className={`pointer-events-none h-auto w-56 shrink-0 sm:w-64 ${i % 2 ? "translate-y-6" : ""}`}
+        />
+      ))}
+    </section>
   );
 }
