@@ -18,6 +18,7 @@ export const RESERVED: ReadonlySet<string> = new Set([
   "privacy",
   "recap",
   "settings",
+  "terms",
   "u",
 ]);
 

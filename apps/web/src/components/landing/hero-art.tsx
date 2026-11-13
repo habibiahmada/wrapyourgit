@@ -1,4 +1,3 @@
-import { EDITION_YEAR } from "@wyg/schema";
 import { sampleRecap } from "@wyg/video/sample";
 import { Art } from "@/components/art";
 import { heroScene, linePath } from "./hero-scene";
@@ -76,7 +75,7 @@ const WALLS = heroWallLines();
 /**
  * The hero illustration: a quarter of a sample year as a city on a slab, the busiest day lit
  * with Cell on its roof, isometric walls rising behind it, and three floating glass HUD cards
- * showing real facts from `sampleRecap` (labelled as sample data). Inline SVG, drawn on the server.
+ * showing real facts from `sampleRecap`. Inline SVG, drawn on the server.
  */
 export function HeroArt({ className }: { className?: string }) {
   const { busiest, links, modules } = SCENE;
@@ -217,7 +216,7 @@ export function HeroArt({ className }: { className?: string }) {
           <p className="font-bold text-fg tabular-nums">
             {sampleRecap.contributions.total.toLocaleString("en-US")} contributions
           </p>
-          <p className="text-muted">Sample {EDITION_YEAR} city (@octo-sample)</p>
+          <p className="text-muted">One building per day</p>
         </div>
 
         {topLang && (
@@ -228,7 +227,7 @@ export function HeroArt({ className }: { className?: string }) {
             <p className="font-bold text-fg tabular-nums">
               {topLang.name} {Math.round(topLang.share * 100)}%
             </p>
-            <p className="text-muted">{sampleRecap.languages.distinctCount} languages in sample</p>
+            <p className="text-muted">{sampleRecap.languages.distinctCount} languages</p>
           </div>
         )}
 
@@ -240,7 +239,7 @@ export function HeroArt({ className }: { className?: string }) {
             {sampleRecap.contributions.longestStreak.days}-day longest streak
           </p>
           <p className="text-muted tabular-nums">
-            {sampleRecap.contributions.activeDays} active days (sample data)
+            {sampleRecap.contributions.activeDays} active days
           </p>
         </div>
       </div>
