@@ -32,7 +32,7 @@
 | [0012](architecture/decisions/0012-one-mascot-photo-backdrops.md)        | One mascot, silhouettes, GitHub motifs; photos only in web art                           | Accepted                                              |
 | [0013](architecture/decisions/0013-baked-animation-no-webgl.md)          | Cell moves through baked loops, no WebGL in the browser                                  | Accepted                                              |
 | [0014](architecture/decisions/0014-contribution-workflow-enforcement.md) | Contribution workflow enforced by hooks, a CI check and rulesets                         | Accepted                                              |
-| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later                               | Accepted, amended by 0018                             |
+| [0015](architecture/decisions/0015-production-on-vercel-first.md)        | Production on Vercel + Neon first; the AWS VPS comes later                               | Accepted, amended by 0018, domain amended by 0025     |
 | [0016](architecture/decisions/0016-exports-in-the-browser.md)            | The story's files are rendered in the viewer's browser                                   | Accepted, decision 3 amended by 0017, amended by 0024 |
 | [0017](architecture/decisions/0017-private-names-follow-the-owner.md)    | Private repo names follow the owner in their own story; public surfaces always hide them | Accepted, rule 1 amended by 0019                      |
 | [0018](architecture/decisions/0018-production-only-deploys.md)           | Vercel deploys production only; no preview deployments or database branches              | Accepted                                              |
@@ -42,3 +42,4 @@
 | [0022](architecture/decisions/0022-archetype-art-is-a-city-block.md)     | An archetype's picture is a dense city block with Cell in its middle                     | Accepted                                              |
 | [0023](architecture/decisions/0023-the-story-is-a-train-ride.md)         | The story is a train ride, painted on one canvas                                         | Accepted                                              |
 | [0024](architecture/decisions/0024-the-web-story-fills-the-window.md)    | The web story fills the window, and keeps its files at the closing stop                  | Accepted                                              |
+| [0025](architecture/decisions/0025-production-at-wrapyourgit-com.md)     | Production lives at wrapyourgit.com; the old domain redirects there                      | Accepted                                              |

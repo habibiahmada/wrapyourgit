@@ -637,6 +637,10 @@ const FAQ_GROUPS = [
     title: "About your recap",
     items: [
       {
+        q: "What is WrapYourGit?",
+        a: `A GitHub Wrapped for ${EDITION_YEAR}: it turns a year of GitHub activity into a short animated story, a train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype. It is free and open source, and works for any GitHub username.`,
+      },
+      {
         q: "Why is my active-days number slightly different from my GitHub profile?",
         a: "Your yearly total matches the profile. On a few days GitHub's public graph files one contribution on the neighbouring day, so active days can differ by one or two.",
       },
@@ -650,7 +654,7 @@ const FAQ_GROUPS = [
       },
       {
         q: "Can I download the video?",
-        a: "Yes. At the end of your story, and on your dashboard, you can make an MP4 in four shapes, every stop as a PNG, all of them in a ZIP, or one PDF. They are made in your browser, so keep the tab open while a video renders.",
+        a: "Yes. At the end of your story, and on your dashboard, you can make an MP4, every stop as a PNG in a ZIP, or one PDF, each in four shapes (9:16, 4:5, 1:1 and 16:9), and download a share card. They are made in your browser, so keep the tab open while a video renders.",
       },
     ],
   },

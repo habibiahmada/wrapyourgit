@@ -6,6 +6,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 The 2026 edition, before its first release.
 
+### Changed
+
+- Production moved to [wrapyourgit.com](https://wrapyourgit.com); the old domain redirects there (ADR-0025). Titles, descriptions, keywords, JSON-LD, the FAQ and `llms.txt` describe the site as a GitHub Wrapped, and a NOTICE file and a README section ask forks to keep the credit ([#98](https://github.com/habibiahmada/wrapyourgit/issues/98)).
+
 ### Added
 
 - Preview deployments get their own Neon database branch, and a per-IP rate limit (60 per minute, then 429) covers `/api` and `/u/` ([#36](https://github.com/habibiahmada/wrapyourgit/issues/36)).

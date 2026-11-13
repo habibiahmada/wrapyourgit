@@ -55,7 +55,7 @@ export function Chrome({
           opacity: 0.7,
         }}
       >
-        © {year} WrapYourGit · wrapyourgit.habibiahmada.dev
+        © {year} WrapYourGit · wrapyourgit.com
       </div>
     </AbsoluteFill>
   );

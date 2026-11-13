@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<a href="https://wrapyourgit.habibiahmada.dev">
+<a href="https://wrapyourgit.com">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/logo-dark.svg">
     <img src=".github/assets/logo-light.svg" alt="WrapYourGit" width="330" height="44">
@@ -11,12 +11,12 @@
 
 ### Every green square has a story. Here's yours, in motion.
 
-Your GitHub year, played back as a short animated story with its own soundtrack:<br>
+Your GitHub Wrapped: your GitHub year, played back as a short animated story with its own soundtrack:<br>
 contributions, streaks, the languages you lived in, the projects you built, and the kind of developer you turned out to be.
 
 [![CI](https://github.com/habibiahmada/wrapyourgit/actions/workflows/ci.yml/badge.svg)](https://github.com/habibiahmada/wrapyourgit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-3fb950)](LICENSE)
-[![Edition](https://img.shields.io/badge/edition-2026-26a641)](https://wrapyourgit.habibiahmada.dev)
+[![Edition](https://img.shields.io/badge/edition-2026-26a641)](https://wrapyourgit.com)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-4493f8)](CONTRIBUTING.md)
 
 [![Next.js](https://img.shields.io/badge/Next.js_16-000?logo=nextdotjs&logoColor=fff)](https://nextjs.org)
@@ -26,7 +26,7 @@ contributions, streaks, the languages you lived in, the projects you built, and 
 [![Bun](https://img.shields.io/badge/Bun-14151a?logo=bun&logoColor=fff)](https://bun.sh)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169e1?logo=postgresql&logoColor=fff)](https://www.postgresql.org)
 
-**[Get your recap](https://wrapyourgit.habibiahmada.dev)** ·
+**[Get your recap](https://wrapyourgit.com)** ·
 [How it works](#how-it-works) ·
 [Privacy](#privacy-by-design) ·
 [Report a bug](https://github.com/habibiahmada/wrapyourgit/issues/new?template=bug_report.yml) ·
@@ -135,7 +135,7 @@ The dashboard adds a profile-style overview: your calendar, highlights, language
 - **What goes public:** a recap of your public GitHub activity at `/<your-username>`, like your profile. It never shows private repository names, your timezone or the hours you commit, and Settings has a switch to hide it.
 - **How to leave:** Settings → Delete my data removes everything and revokes WrapYourGit's access.
 
-Full policy: [wrapyourgit.habibiahmada.dev/privacy](https://wrapyourgit.habibiahmada.dev/privacy).
+Full policy: [wrapyourgit.com/privacy](https://wrapyourgit.com/privacy).
 
 <br clear="right">
 
@@ -239,7 +239,15 @@ Contributions are welcome, from a wrong number you spotted to a new scene. Start
 
 ## License and credits
 
-WrapYourGit is released under the [MIT License](LICENSE). Its dependencies keep their own licences ([third-party notices](THIRD_PARTY_NOTICES.md)); notably **Remotion is not MIT** and needs a company licence for companies with more than three employees ([remotion.dev/license](https://www.remotion.dev/license)).
+WrapYourGit is released under the [MIT License](LICENSE), © 2026 Habibi Ahmad Aziz.
+
+**Credit when you fork or modify it.** The MIT License requires every copy, fork and modified version to keep the copyright notice and the license text; do not remove or replace them. If you fork, modify or deploy WrapYourGit, please also credit the original author in your README and, for a public deployment, where people can see it (a footer or an about page), for example:
+
+> Based on [WrapYourGit](https://github.com/habibiahmada/wrapyourgit) by [Habibi Ahmad Aziz](https://github.com/habibiahmada)
+
+The [NOTICE](NOTICE) file says the same.
+
+Its dependencies keep their own licences ([third-party notices](THIRD_PARTY_NOTICES.md)); notably **Remotion is not MIT** and needs a company licence for companies with more than three employees ([remotion.dev/license](https://www.remotion.dev/license)).
 
 - Language logos from [Devicon](https://github.com/devicons/devicon) (MIT); the logos are trademarks of their owners.
 - The soundtrack is synthesised by `scripts/synth-track.ts` and released as CC0.
@@ -250,7 +258,7 @@ WrapYourGit is an independent project. It reads your activity through the public
 
 <div align="center">
 <br>
-Made by <a href="https://habibiahmada.dev">habibiahmada</a> · <a href="https://wrapyourgit.habibiahmada.dev">wrapyourgit.habibiahmada.dev</a>
+Made by <a href="https://habibiahmada.dev">habibiahmada</a> · <a href="https://wrapyourgit.com">wrapyourgit.com</a>
 <br><br>
 <p align="right"><a href="#readme-top">back to top</a></p>
 </div>

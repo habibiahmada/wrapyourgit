@@ -2,17 +2,17 @@
 
 How to run WrapYourGit outside a laptop. For local development see [development/setup.md](../development/setup.md).
 
-> **Status (2026-11-05):** production is **live on Vercel** at `https://wrapyourgit.habibiahmada.dev`: sign-in, sync and the story work there ([ADR-0015](../architecture/decisions/0015-production-on-vercel-first.md)). The AWS VPS below is the later home for production (ADR-0005), not set up yet. Steps not yet run against a real platform are marked **Not yet verified**.
+> **Status (2026-11-05):** production is **live on Vercel** at `https://wrapyourgit.com`: sign-in, sync and the story work there ([ADR-0015](../architecture/decisions/0015-production-on-vercel-first.md)). The AWS VPS below is the later home for production (ADR-0005), not set up yet. Steps not yet run against a real platform are marked **Not yet verified**.
 
 ## What runs where
 
-| Piece                              | Now (Vercel)                                      | Later (AWS VPS, ADR-0005)          |
-| ---------------------------------- | ------------------------------------------------- | ---------------------------------- |
-| Web app (`apps/web`, Next.js 16)   | Vercel Hobby, functions in Singapore (`sin1`)     | `next start` behind Caddy (HTTPS)  |
-| Database (Postgres)                | Neon `wrapyourgit-db`, Singapore, free plan       | Postgres container on the same VPS |
-| Story exports (MP4, PNG, ZIP, PDF) | In the viewer's browser (ADR-0016)                | The same                           |
-| GitHub sign-in                     | GitHub App `wrapyourgit` (public)                 | The same app                       |
-| DNS                                | Cloudflare `CNAME wrapyourgit` → Vercel, DNS only | `A` record → the VPS               |
+| Piece                              | Now (Vercel)                                            | Later (AWS VPS, ADR-0005)          |
+| ---------------------------------- | ------------------------------------------------------- | ---------------------------------- |
+| Web app (`apps/web`, Next.js 16)   | Vercel Hobby, functions in Singapore (`sin1`)           | `next start` behind Caddy (HTTPS)  |
+| Database (Postgres)                | Neon `wrapyourgit-db`, Singapore, free plan             | Postgres container on the same VPS |
+| Story exports (MP4, PNG, ZIP, PDF) | In the viewer's browser (ADR-0016)                      | The same                           |
+| GitHub sign-in                     | GitHub App `wrapyourgit` (public)                       | The same app                       |
+| DNS                                | Cloudflare `CNAME @` and `CNAME www` → Vercel, DNS only | `A` record → the VPS               |
 
 No server renders the story: the MP4, slides, ZIP and PDF are made in the viewer's browser ([ADR-0016](../architecture/decisions/0016-exports-in-the-browser.md)), so every host serves them the same way and needs no render setup. The share card is next/og on the server, which works on Vercel.
 
@@ -22,7 +22,7 @@ The template is [`.env.example`](../../.env.example). The web app reads these; s
 
 | Variable                                           | Required | Notes                                                                                                                                                         |
 | -------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_URL`                                          | yes      | Origin, no trailing slash, e.g. `https://wrapyourgit.habibiahmada.dev`. Drives OAuth callbacks, canonical URLs, the sitemap and secure cookies (`https://`).  |
+| `APP_URL`                                          | yes      | Origin, no trailing slash, e.g. `https://wrapyourgit.com`. Drives OAuth callbacks, canonical URLs, the sitemap and secure cookies (`https://`).               |
 | `DATABASE_URL`                                     | yes      | Postgres connection string. On Neon, use the **pooled** string with `sslmode=require`.                                                                        |
 | `TOKEN_ENCRYPTION_KEY`                             | yes      | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts GitHub tokens at rest. **Changing it makes every stored token unreadable:** users sign in again. |
 | `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET` | yes      | From the GitHub App for that environment.                                                                                                                     |
@@ -48,9 +48,9 @@ On Vercel, `DATABASE_URL` and the other `DATABASE_*` variables come from the Neo
 
 ## GitHub App
 
-One GitHub App, `wrapyourgit` (App ID 5604815), serves both local development and production: it lists both callback URLs, `http://localhost:3000/api/auth/callback/github` and `https://wrapyourgit.habibiahmada.dev/api/auth/callback/github`, and each environment uses its own client secret (GitHub allows several). It is **public**, which GitHub requires for anyone other than its owner to sign in. Settings, as in [development/setup.md](../development/setup.md#github-app-m2):
+One GitHub App, `wrapyourgit` (App ID 5604815), serves both local development and production: it lists both callback URLs, `http://localhost:3000/api/auth/callback/github` and `https://wrapyourgit.com/api/auth/callback/github`, and each environment uses its own client secret (GitHub allows several). It is **public**, which GitHub requires for anyone other than its owner to sign in. Settings, as in [development/setup.md](../development/setup.md#github-app-m2):
 
-- **Homepage:** `https://wrapyourgit.habibiahmada.dev`
+- **Homepage:** `https://wrapyourgit.com`
 - **Expire user authorization tokens:** on. **Webhook:** off. **Repository permissions:** none; Metadata: read only if you use the optional install (ADR-0006, ADR-0008).
 - A separate app per environment is still possible; it would need its own name (users see it on GitHub's consent screen).
 
@@ -82,7 +82,7 @@ What is set up, and how to set it up again:
    - matches the expression `^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$`: the recap pages `/<username>` and their preview images. Each one can start a GitHub fetch held open for up to `maxDuration` (120 s), so they need the same per-IP ceiling as the API.
 
    The expression only matches one or two path segments with no dot, so static assets (`/_next/…`, `/art/…`, `/robots.txt`, `/icon.svg`) are never limited. It also matches site pages such as `/settings` and `/privacy`, which is harmless at 60 a minute. This edge limit sits in front of the app's own one (20 new lookups per client per hour, `server/public-policy.ts`), which only counts requests that reach GitHub; if the plan's rule editor ever lacks expression matching, keep the first two conditions and rely on that in-app limit for `/<username>`. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish.
-5. **Domain:** Vercel → Domains → add `wrapyourgit.habibiahmada.dev`; Vercel shows a project-specific CNAME target. In Cloudflare (zone `habibiahmada.dev`): `CNAME wrapyourgit → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate.
+5. **Domain:** Vercel → Domains → add `wrapyourgit.com` (connected to Production, with "redirect apex to www" unticked) and `www.wrapyourgit.com` (308 redirect to `wrapyourgit.com`); Vercel shows a project-specific CNAME target. In Cloudflare (zone `wrapyourgit.com`): `CNAME @ → <that target>` and `CNAME www → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate. The first domain, `wrapyourgit.habibiahmada.dev`, stays on the project as a 308 redirect to `wrapyourgit.com` ([ADR-0025](../architecture/decisions/0025-production-at-wrapyourgit-com.md)).
 
 Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, `/lang`; `/sprites` was removed later, #63), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
 
@@ -179,7 +179,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now wrapyourgit
 `/etc/caddy/Caddyfile`:
 
 ```
-wrapyourgit.habibiahmada.dev {
+wrapyourgit.com {
   encode zstd gzip
   # The app sends no HSTS header itself; Caddy adds it.
   header Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -191,7 +191,7 @@ Point the domain's `A` record at the VPS, then `sudo systemctl reload caddy`; Ca
 
 **Not yet verified:**
 
-- `curl -I https://wrapyourgit.habibiahmada.dev` returns 200 with `Strict-Transport-Security`.
+- `curl -I https://wrapyourgit.com` returns 200 with `Strict-Transport-Security`.
 
 ### Update and roll back
 

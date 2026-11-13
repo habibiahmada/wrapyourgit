@@ -4,7 +4,7 @@ WrapYourGit signs people in with GitHub and stores their access tokens, so secur
 
 ## Supported versions
 
-Only the latest version on `main`, which is what runs at [wrapyourgit.habibiahmada.dev](https://wrapyourgit.habibiahmada.dev), receives fixes.
+Only the latest version on `main`, which is what runs at [wrapyourgit.com](https://wrapyourgit.com), receives fixes.
 
 ## Reporting a vulnerability
 
@@ -32,4 +32,4 @@ You can expect an acknowledgement within 3 days and an assessment within 7. Once
 
 ## How the app protects data
 
-GitHub tokens are encrypted at rest with AES-256-GCM and never sent to the browser; sign-in asks GitHub for no repository permissions; public recaps are built from a projection that removes private repository names, the timezone and commit hours; and "Delete my data" removes everything and revokes the app's GitHub access. Details: [privacy policy](https://wrapyourgit.habibiahmada.dev/privacy), [ADR-0006](docs/architecture/decisions/0006-github-app-auth.md) and the [security review](docs/security/2026-11-04-review.md).
+GitHub tokens are encrypted at rest with AES-256-GCM and never sent to the browser; sign-in asks GitHub for no repository permissions; public recaps are built from a projection that removes private repository names, the timezone and commit hours; and "Delete my data" removes everything and revokes the app's GitHub access. Details: [privacy policy](https://wrapyourgit.com/privacy), [ADR-0006](docs/architecture/decisions/0006-github-app-auth.md) and the [security review](docs/security/2026-11-04-review.md).
