@@ -1,26 +1,29 @@
 # WrapYourGit: full description
 
-> WrapYourGit turns a developer's GitHub activity for one year into an animated, shareable story. Free, read-only GitHub sign-in, no access to source code. Edition: 2026. Site: https://wrapyourgit.habibiahmada.dev
+> WrapYourGit is a GitHub Wrapped for 2026: it turns a developer's GitHub activity for one year into an animated, shareable story. Free and open source (MIT), read-only GitHub sign-in, no access to source code. Edition: 2026. Site: https://wrapyourgit.com
 
 ## What it is
 
-A web app. You sign in with GitHub, WrapYourGit reads the activity counts GitHub keeps for your account for the year, and plays them back as a short story set to music, chapter by chapter, at your own pace. Its promise is that every number on screen is correct and explainable: each metric has a written definition, and anything GitHub does not provide is shown as unavailable rather than as zero. Estimates are labelled.
+A web app, also known by what people search for: GitHub Wrapped, wrap GitHub, Git wrapped, GitHub year in review, GitHub recap. Type any GitHub username, or sign in with GitHub, and WrapYourGit reads the activity counts GitHub keeps for that account for the year and plays them back as a story set to music, at your own pace. Its promise is that every number on screen is correct and explainable: each metric has a written definition, and anything GitHub does not provide is shown as unavailable rather than as zero. Estimates are labelled.
 
-## The story
+## The story: a train ride through the year
 
-Three short warm-up slides, then nine chapters (about one minute of music), then a comparison with last year, a letter, and your downloads.
+The story is one ride. A small train carries Cell, the mascot, along a rail that runs through the year, past one square per day, a sign for every month with the total so far, and a town. It stops at a station for each chapter; you tap or press the arrow keys to move on, and each station keeps moving gently while you read it. The screen fills the whole window on a phone or a desktop.
 
-1. Intro: the first week of your contribution graph lights up.
-2. Contributions: total contributions, active days and longest streak.
-3. Rhythm: your year as a contribution calendar, your busiest month and weekday pattern.
-4. Languages: the languages you wrote, weighted by your own commits to each repository rather than by repository size.
-5. Projects: your most active repositories, new repositories and repositories you contributed to.
-6. Community: stars and forks your repositories gained this year, and the most starred one.
-7. Engineering: pull requests opened and merged, reviews and issues.
-8. Identity: your developer archetype and the facts that earned it.
-9. Closing: your handle, four headline facts and the year as a small graph.
-
-After the chapters: this year against the same stretch of last year (fair while the year is still running), and a letter from Cell, the mascot, that reads your year the way a friend would. A quiet year is told it counts; a relentless one is told to rest.
+1. Hello: the first platform, a board with the year and your username.
+2. First day: the start of your contribution graph as a wall, your first active day lit.
+3. Private work: a vault with your private contribution count on its side and no repository names.
+4. The city: the whole year from above, with your total on a billboard.
+5. Busiest day: the tallest tower of the year beside the calendar page of that day.
+6. Rhythm: seven wagons, Sunday to Saturday, each loaded by its share of your busiest weekday.
+7. Languages: a podium of blocks, one per language, as tall as its share, weighted by your own commits rather than repository size.
+8. Projects: shipping containers, one per repository, each as long as its share.
+9. Community: an observatory with the stars your repositories gained this year; forks on its sign.
+10. Engineering: a junction with merged pull requests on the main line and open ones on the branches, and your reviews and issues.
+11. Archetype: your developer archetype as a city block, its name on a board behind it.
+12. Versus: a seesaw weighing this year against the same stretch of last year.
+13. Letter: a letter from Cell, one page at a time, that reads your year the way a friend would.
+14. Closing: a party at the terminus. A gate with the year and twelve bars for the months, a podium with your contributions, active days and archetype under a gold trophy, and Cell hopping off the train to stand by it.
 
 ## Archetypes
 
@@ -35,11 +38,15 @@ One main archetype plus up to two runner-ups. If none fits yet, the story says s
 
 ## What you can keep
 
-- The story itself, in the browser, with its soundtrack.
-- Ten slides as PNG (1080 × 1350, one per chapter plus the letter), or all ten in a ZIP.
-- One PDF with the same ten slides.
+At the closing stop, and on your dashboard:
+
+- An MP4 video of the whole ride with its sound, in four shapes: 9:16 (Reels, TikTok, Shorts), 4:5 (Instagram feed), 1:1 (square posts) and 16:9 (YouTube, desktop).
+- Slides: every stop as a PNG, all of them in a ZIP, in the same four shapes.
+- One PDF with every stop, in the same four shapes.
+- A share card (PNG, 1200 x 630, the link preview's size) with your figures, your contribution graph and your archetype's picture.
 - A public page at /<your-username>, built from public activity only, for every GitHub username; private repository names never appear, and the owner can hide it in Settings.
-- An MP4 video in four aspect ratios: coming soon, not available yet.
+
+Files are made in your browser, so keep the tab open while a video renders.
 
 ## Privacy
 
@@ -48,25 +55,31 @@ One main archetype plus up to two runner-ups. If none fits yet, the story says s
 - Token: kept on the server only, encrypted at rest, never sent to the browser.
 - Public: a recap of your public activity at /<your-username>, open to anyone like your GitHub profile. It drops private repository names, your timezone and the hours you commit. Settings has a switch to hide it.
 - Leaving: Settings, then Delete my data, removes your account and recap, hides your public recap and revokes WrapYourGit's access to GitHub.
-- Full policy: https://wrapyourgit.habibiahmada.dev/privacy
+- Full policy: https://wrapyourgit.com/privacy
 
 ## FAQ
 
+**What is WrapYourGit?** A GitHub Wrapped for 2026: it turns a year of GitHub activity into a short animated story, a train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype. It is free and open source, and works for any GitHub username.
+
 **Does WrapYourGit read my code?** No. Signing in asks GitHub for no repository permissions, and it only reads the counts GitHub keeps about your activity.
 
-**Why is my active-days number slightly different from my GitHub profile?** Your yearly total matches the profile. On a few days GitHub's public graph files one contribution on the neighbouring day, so active days can differ by one or two.
-
-**Are private repositories included?** Your contributions to private repositories, your own and your organisations', count toward your total. Their names never appear in anything you can share.
-
-**2026 isn't over yet. Is my recap final?** Not until the year ends. Until then the story says "so far", and you can sync again from your dashboard to bring it up to date.
-
-**Does it compare with last year?** Yes. Your dashboard and the story put this year next to the same stretch of last year.
-
-**Can I download the video?** Not yet. MP4 export is still being set up. Today you can download every slide as a PNG, all of them as a ZIP, or one PDF.
+**Are private repositories included?** Your contributions to private repositories, your own and your organisations', count toward your total. Your public page and its card never name them. Your own story and the files you download show their names only if you choose to, and you can change that in Settings.
 
 **Can anyone open a recap of my username?** Yes. Like your GitHub profile, a recap of your public activity is open to anyone at /your-username. It never names private repositories. To hide it, sign in and turn on Hide my public recap in Settings.
 
 **How do I delete my data?** Sign in, open Settings and choose Delete my data. It removes your recap and account, hides your public recap and revokes WrapYourGit's access to GitHub.
+
+**Why is my active-days number slightly different from my GitHub profile?** Your yearly total matches the profile. On a few days GitHub's public graph files one contribution on the neighbouring day, so active days can differ by one or two.
+
+**2026 isn't over yet. Is my recap final?** Not until the year ends. Until then the story says "so far", and you can sync again from your dashboard to bring it up to date.
+
+**Does it compare with last year?** Yes. Your dashboard and the story put this year next to the same stretch of last year, so the comparison is fair while the year is still running.
+
+**Can I download the video?** Yes. At the end of your story, and on your dashboard, you can make an MP4, every stop as a PNG in a ZIP, or one PDF, each in four shapes (9:16, 4:5, 1:1 and 16:9), and download a share card. They are made in your browser, so keep the tab open while a video renders.
+
+## Source, license and credit
+
+The source is at https://github.com/habibiahmada/wrapyourgit under the MIT License. Forks and modified versions must keep the copyright notice ("Copyright (c) 2026 Habibi Ahmad Aziz") and are asked to credit the author with a link to the repository, as the NOTICE file explains.
 
 ## Author
 

@@ -1,21 +1,27 @@
 # WrapYourGit
 
-> WrapYourGit turns a developer's GitHub activity for one year into an animated, shareable story: contributions, streaks, languages, top repositories, pull requests and reviews, a developer archetype, a comparison with last year, and a letter from Cell, the mascot. It is free, signs in with GitHub read-only, never reads source code, and every number on screen has a written definition. The current edition is 2026.
+> WrapYourGit is a GitHub Wrapped for 2026: it turns a developer's GitHub activity for one year into an animated, shareable story, a train ride through their contributions, streaks, busiest day, weekly rhythm, languages, top repositories, stars and forks, pull requests and reviews, developer archetype, a comparison with last year and a letter from Cell, the mascot. It is free and open source (MIT), works for any GitHub username, signs in with GitHub read-only, never reads source code, and every number on screen has a written definition.
 
-Any GitHub username has a recap of its public activity at https://wrapyourgit.habibiahmada.dev/<username>; signing in with GitHub adds your private contribution counts to your own. The story is built from the counts GitHub keeps about your activity; before 31 December it says "so far" and can be synced again. Private repositories count toward totals but are never named in anything that can be shared.
+Site: https://wrapyourgit.com. People also call this kind of recap "GitHub Wrapped", "wrap GitHub", "Git wrapped" or "GitHub year in review".
+
+Any GitHub username has a recap of its public activity at https://wrapyourgit.com/<username>; signing in with GitHub adds private contribution counts to your own. Before 31 December the story says "so far" and can be synced again. Private repositories count toward totals but are never named in anything that can be shared.
 
 ## Pages
 
-- [Home](https://wrapyourgit.habibiahmada.dev/): what the recap contains, the nine chapters, the archetypes, what you can download, privacy facts and the FAQ
-- [Privacy policy](https://wrapyourgit.habibiahmada.dev/privacy): what is read from GitHub, what is stored, what goes public and how to delete it
+- [Home](https://wrapyourgit.com/): what the recap contains, the stations of the ride, the archetypes, what you can download, privacy facts and the FAQ
+- [Privacy policy](https://wrapyourgit.com/privacy): what is read from GitHub, what is stored, what goes public and how to delete it
 
 Recaps live at /<github-username>. Every username has one unless its owner hid it, so they are not listed here; each recap page is marked noindex.
 
 ## Details
 
-- [Full description for language models](https://wrapyourgit.habibiahmada.dev/llms-full.txt): features, how the numbers are computed, privacy, downloads and FAQ in one file
+- [Full description for language models](https://wrapyourgit.com/llms-full.txt): the stations, how the numbers are computed, downloads, privacy and the FAQ in one file
+
+## Source and credit
+
+- [Source code on GitHub](https://github.com/habibiahmada/wrapyourgit), MIT licensed. Forks and modified versions keep the copyright notice and credit the author, Habibi Ahmad Aziz, with a link to the repository.
 
 ## Optional
 
-- [Sitemap](https://wrapyourgit.habibiahmada.dev/sitemap.xml)
-- [Author: habibiahmada](https://habibiahmada.dev) (also on [GitHub](https://github.com/habibiahmada))
+- [Sitemap](https://wrapyourgit.com/sitemap.xml)
+- [Author: Habibi Ahmad Aziz (habibiahmada)](https://habibiahmada.dev), also on [GitHub](https://github.com/habibiahmada)
