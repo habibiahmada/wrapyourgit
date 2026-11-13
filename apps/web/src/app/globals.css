@@ -510,6 +510,10 @@ html {
 .reach-center {
   --reach: radial-gradient(ellipse 50% 60% at 50% 50%, black, transparent);
 }
+/* Both side edges, clear in the middle where a centred column stands. */
+.reach-sides {
+  --reach: linear-gradient(to right, black, transparent 28%, transparent 72%, black);
+}
 .reach-top {
   --reach: radial-gradient(ellipse 80% 55% at 50% 0%, black, transparent);
 }

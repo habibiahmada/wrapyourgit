@@ -623,18 +623,15 @@ export function FaqSection() {
     <section
       id="faq"
       aria-labelledby="faq-title"
-      className="band tone-dark motif-hatch reach-top relative overflow-hidden py-24 sm:py-32"
+      className="band tone-dark motif-hatch reach-sides relative overflow-hidden py-24 sm:py-32"
     >
-      <div className="relative z-10 mx-auto grid max-w-7xl gap-12 px-4 sm:px-8 lg:grid-cols-12">
-        <div className="lg:sticky lg:top-24 lg:col-span-4 lg:self-start">
-          <h2 id="faq-title" className={`reveal-left ${heading}`}>
-            Questions people ask.
-          </h2>
-          <Art id="cutout-cell-think" alt="" className="reveal-float mt-8 hidden w-44 lg:block" />
-        </div>
+      {/* One centred column: the heading over the list, nothing beside them. */}
+      <div className="relative z-10 mx-auto max-w-3xl px-4 sm:px-8">
+        <h2 id="faq-title" className={`reveal text-center ${heading}`}>
+          Questions people ask.
+        </h2>
 
-        {/* Single unified FAQ list with crisp GitHub-style 8px radius (`rounded-lg`) */}
-        <div className="reveal divide-y divide-line rounded-lg border border-line bg-surface lg:col-span-8">
+        <div className="reveal mt-12 divide-y divide-line rounded-lg border border-line bg-surface text-left">
           {FAQ.map(({ q, a }, i) => (
             <details key={q} open={i === 0} className="faq-item group px-6 py-5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-fg select-none [&::-webkit-details-marker]:hidden">
