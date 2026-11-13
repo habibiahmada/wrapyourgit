@@ -28,7 +28,7 @@ export function LegalPage({
       <SiteHeader base="/" />
       <PageTransition>
         <main id="main" className="flex flex-1 flex-col">
-          <section className="relative overflow-hidden border-b border-line">
+          <section className="relative overflow-clip border-b border-line">
             <div className="mx-auto grid max-w-7xl items-center gap-6 px-4 py-14 sm:px-8 lg:grid-cols-[1.3fr_1fr]">
               <div>
                 <h1 className="reveal text-6xl leading-[0.92] font-extrabold tracking-tight sm:text-8xl">

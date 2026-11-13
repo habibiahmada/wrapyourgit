@@ -114,7 +114,10 @@
 
   /* Scroll motion, CSS only: elements fade, rise, slide, float in isometric depth, or tilt as they
      enter the viewport and fade out as they leave, so the page breathes while scrolling (MOTION 3).
-     Browsers without scroll timelines, and reduced motion, simply show the content. */
+     Browsers without scroll timelines, and reduced motion, simply show the content.
+     view() follows the nearest scroll container, and `overflow: hidden` makes one even though it
+     never scrolls: a reveal inside it stops part way, faded and shifted. Anything that wraps a
+     reveal clips with `overflow-clip` instead, which makes no scroll container. */
   @supports (animation-timeline: view()) {
     .reveal,
     .reveal-left,
