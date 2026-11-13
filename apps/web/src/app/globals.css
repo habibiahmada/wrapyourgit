@@ -331,12 +331,29 @@
   }
 }
 
-/* No visible scrollbars anywhere (the maintainer's call); scrolling itself is unchanged. */
-* {
-  scrollbar-width: none;
+/*
+ * The page keeps its scrollbar, drawn thin in the canvas's colours so it belongs to the dark
+ * theme. Only the sample reel hides its sideways one (frame-reel.tsx): it drifts and is dragged,
+ * so a bar under it would only add a line.
+ */
+html {
+  scrollbar-color: var(--color-line) var(--color-canvas);
+  scrollbar-width: thin;
 }
 ::-webkit-scrollbar {
-  display: none;
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-canvas);
+}
+::-webkit-scrollbar-thumb {
+  border: 2px solid var(--color-canvas);
+  border-radius: 999px;
+  background: var(--color-line);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
 }
 
 html {
