@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
 };
 
-const UPDATED = "11 November 2026";
+const UPDATED = "13 November 2026";
 
 /*
  * Every statement here describes what the code does today (server/auth.ts, server/recaps.ts,
@@ -203,9 +203,10 @@ const SECTIONS: LegalSection[] = [
       <p>
         GitHub, whose API we read your activity from under its own privacy statement. Vercel, which
         counts page views (Web Analytics) under its own privacy policy. Cloudflare, whose Turnstile
-        widget runs the check that you are a person, under its own privacy policy. The service runs
-        on cloud infrastructure; the hosting and database providers will be named here before the
-        public launch.
+        widget runs the check that you are a person, under its own privacy policy. Vercel also hosts
+        the site, and its server code runs in Singapore. Your account, recap, tokens and sessions
+        are stored in a Postgres database at Neon, also in Singapore. Cloudflare answers the site's
+        DNS and sees no recap data. Each works under its own privacy policy.
       </p>
     ),
   },
