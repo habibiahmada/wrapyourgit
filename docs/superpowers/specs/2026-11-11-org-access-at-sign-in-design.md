@@ -1,6 +1,6 @@
 # Organisation access at sign-in: design
 
-Date: 2026-11-11. Status: approved by the maintainer on 2026-11-11; implementation waits on the Phase 0 spike.
+Date: 2026-11-11. Status: **stopped on 2026-11-13** at the Phase 0 spike: an organisation installation with Metadata: read does not reveal a member's private contributions, and a Request does not return to the Setup URL ([ADR-0027](../../architecture/decisions/0027-organisation-installs-do-not-reveal-private-work.md)). Approved by the maintainer on 2026-11-11.
 
 ## Intent
 
