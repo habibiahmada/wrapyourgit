@@ -1,11 +1,11 @@
 import type { RecapData } from "@wyg/schema";
 
 /*
- * This year against the same span of last year, as small multiples: one panel per measure, each
- * on its own scale, because contributions and reviews differ by orders of magnitude and must
- * never share an axis. Two series in a fixed order (this year GitHub green, last year blue,
- * validated with the dataviz palette checks on the dark surface), always labelled in text, so colour is
- * never the only cue.
+ * This year against the same span of last year, in one panel: a row per measure, each row on its
+ * own scale, because contributions and reviews differ by orders of magnitude and must never share
+ * an axis. Two series in a fixed order (this year GitHub green, last year blue, validated with the
+ * dataviz palette checks on the dark surface), always labelled in text, so colour is never the
+ * only cue. The two largest changes are said in words above it.
  */
 
 const THIS = "#26a641";
@@ -13,61 +13,42 @@ const LAST = "#4493f8";
 
 const n = (value: number) => value.toLocaleString("en-US");
 
+type Row = { label: string; noun: string; now: number; before: number };
+
+/** "+1,022 (+24%)", or "Same" when nothing moved. */
 function change(now: number, before: number): string {
-  if (now === before) return "Same as last year";
+  if (now === before) return "Same";
   const diff = now - before;
   const sign = diff > 0 ? "+" : "−";
   const pct = before > 0 ? ` (${sign}${Math.round((Math.abs(diff) / before) * 100)}%)` : "";
-  return `${sign}${n(Math.abs(diff))}${pct} ${diff > 0 ? "more" : "fewer"} than last year`;
+  return `${sign}${n(Math.abs(diff))}${pct}`;
 }
 
-function Panel({
-  label,
-  now,
-  before,
-  years,
-}: {
-  label: string;
-  now: number;
-  before: number;
-  years: [string, string];
-}) {
-  const max = Math.max(now, before, 1);
-  const bars = [
-    { year: years[0], value: now, color: THIS },
-    { year: years[1], value: before, color: LAST },
-  ];
-  return (
-    <li className="reveal-zoom rounded-xl border border-line bg-surface p-5">
-      <h3 className="font-semibold">{label}</h3>
-      <p className="mt-1 text-sm text-muted">{change(now, before)}</p>
-      <div className="mt-4 flex flex-col gap-[2px]">
-        {bars.map((bar) => (
-          <div key={bar.year} className="grid grid-cols-[6.5rem_1fr] items-center gap-3">
-            <span className="text-sm text-muted">{bar.year}</span>
-            <div className="flex items-center gap-2">
-              <span
-                title={`${bar.year}: ${n(bar.value)}`}
-                className="h-5 rounded-r-[4px]"
-                style={{
-                  width: `${Math.max(2, (bar.value / max) * 100)}%`,
-                  background: bar.color,
-                }}
-              />
-              <span className="text-base font-semibold tabular-nums">{n(bar.value)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </li>
-  );
+/**
+ * The changes worth a sentence: the two that moved most against last year, as a ratio. A measure
+ * last year had fewer than ten of is left out, so going from 1 to 58 issues is not the headline.
+ */
+function headlines(rows: Row[], lastYear: number): string[] {
+  return rows
+    .filter((row) => row.before >= 10 && row.now !== row.before)
+    .map((row) => ({ row, ratio: row.now / row.before }))
+    .sort((a, b) => Math.abs(Math.log(b.ratio)) - Math.abs(Math.log(a.ratio)))
+    .slice(0, 2)
+    .map(({ row, ratio }) => {
+      if (ratio >= 2) {
+        const times = ratio >= 10 ? Math.round(ratio) : Math.round(ratio * 10) / 10;
+        return `${times}× the ${row.noun} of ${lastYear}`;
+      }
+      const pct = Math.round(Math.abs(ratio - 1) * 100);
+      return `${pct}% ${ratio > 1 ? "more" : "fewer"} ${row.noun} than ${lastYear}`;
+    });
 }
 
 export function YearComparison({ data }: { data: RecapData }) {
   const { previousYear, contributions, engineering, repositories, meta } = data;
   if (previousYear.status !== "ok") {
     return (
-      <p className="max-w-2xl text-muted">
+      <p className="px-4 py-4 text-muted">
         Last year couldn't be read from GitHub this time. Sync again later to see how {meta.year}{" "}
         compares.
       </p>
@@ -77,21 +58,38 @@ export function YearComparison({ data }: { data: RecapData }) {
   const span = last.sameSpan;
   const years: [string, string] = meta.isFinal
     ? [String(meta.year), String(last.year)]
-    : [`${meta.year} so far`, `${last.year} same span`];
-  const panels = [
-    { label: "Contributions", now: contributions.total, before: span.contributions },
-    { label: "Active days", now: contributions.activeDays, before: span.activeDays },
+    : [`${meta.year} so far`, `${last.year}, same span`];
+  const rows: Row[] = [
+    {
+      label: "Contributions",
+      noun: "contributions",
+      now: contributions.total,
+      before: span.contributions,
+    },
+    {
+      label: "Active days",
+      noun: "active days",
+      now: contributions.activeDays,
+      before: span.activeDays,
+    },
     {
       label: "Longest streak (days)",
+      noun: "days in your longest streak",
       now: contributions.longestStreak.days,
       before: span.longestStreak,
     },
-    { label: "Commits", now: contributions.commits, before: span.commits },
-    { label: "Pull requests", now: engineering.prsOpened, before: span.pullRequests },
-    { label: "Reviews", now: engineering.reviews, before: span.reviews },
-    { label: "Issues", now: engineering.issuesOpened, before: span.issues },
+    { label: "Commits", noun: "commits", now: contributions.commits, before: span.commits },
+    {
+      label: "Pull requests",
+      noun: "pull requests",
+      now: engineering.prsOpened,
+      before: span.pullRequests,
+    },
+    { label: "Reviews", noun: "reviews", now: engineering.reviews, before: span.reviews },
+    { label: "Issues", noun: "issues", now: engineering.issuesOpened, before: span.issues },
     {
       label: "Repositories you committed to",
+      noun: "repositories committed to",
       now: repositories.contributedTo,
       before: span.reposWithCommits,
     },
@@ -99,28 +97,85 @@ export function YearComparison({ data }: { data: RecapData }) {
       ? [
           {
             label: "Private contributions",
+            noun: "private contributions",
             now: contributions.privateCount.value,
             before: span.privateCount,
           },
         ]
       : []),
   ];
+  const said = headlines(rows, last.year);
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted" aria-hidden>
-        <span className="flex items-center gap-2">
-          <span className="size-4 rounded-[3px]" style={{ background: THIS }} /> {years[0]}
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="size-4 rounded-[3px]" style={{ background: LAST }} /> {years[1]}
-        </span>
+      {said.length > 0 && (
+        <ul className="grid gap-x-6 gap-y-1 border-b border-line px-4 py-3 sm:grid-cols-2">
+          {said.map((line) => (
+            <li key={line} className="font-semibold text-balance">
+              {line}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line px-4 py-2 text-sm text-muted">
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="size-3 rounded-[3px]" style={{ background: THIS }} />{" "}
+            {years[0]}
+          </span>
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="size-3 rounded-[3px]" style={{ background: LAST }} />{" "}
+            {years[1]}
+          </span>
+        </div>
+        <table className="w-full text-left">
+          <caption className="sr-only">
+            {meta.year} against the same span of {last.year}, measure by measure
+          </caption>
+          <thead className="sr-only">
+            <tr>
+              <th scope="col">Measure</th>
+              <th scope="col">{years[0]}</th>
+              <th scope="col">{years[1]}</th>
+              <th scope="col">Change</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {rows.map((row) => {
+              const max = Math.max(row.now, row.before, 1);
+              return (
+                <tr
+                  key={row.label}
+                  className="grid gap-x-6 gap-y-1.5 px-4 py-3 md:grid-cols-[12rem_1fr_8rem] md:items-center"
+                >
+                  <th scope="row" className="text-sm font-semibold">
+                    {row.label}
+                  </th>
+                  {[
+                    { value: row.now, color: THIS, year: years[0] },
+                    { value: row.before, color: LAST, year: years[1] },
+                  ].map((bar) => (
+                    <td key={bar.year} className="flex items-center gap-3 md:col-start-2">
+                      <span
+                        aria-hidden
+                        className="h-2.5 rounded-r-[2px]"
+                        style={{
+                          width: `${Math.max(1, (bar.value / max) * 70)}%`,
+                          background: bar.color,
+                        }}
+                      />
+                      <span className="text-sm font-semibold tabular-nums">{n(bar.value)}</span>
+                    </td>
+                  ))}
+                  <td className="text-sm text-muted tabular-nums md:col-start-3 md:row-span-2 md:row-start-1 md:text-right">
+                    {change(row.now, row.before)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-      <ul className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        {panels.map((panel) => (
-          <Panel key={panel.label} {...panel} years={years} />
-        ))}
-      </ul>
-      <p className="mt-8 max-w-3xl text-muted">
+      <p className="border-t border-line px-4 py-3 text-sm text-muted">
         All of {last.year}: {n(last.fullYear.contributions)} contributions on{" "}
         {n(last.fullYear.activeDays)} days, with a longest streak of {last.fullYear.longestStreak}{" "}
         days.
