@@ -81,7 +81,7 @@ What is set up, and how to set it up again:
    - starts with `/u/` (these redirect to `/<username>`, but `/u/<reserved name>` serves a recap itself);
    - matches the expression `^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$`: the recap pages `/<username>` and their preview images. Each one can start a GitHub fetch held open for up to `maxDuration` (120 s), so they need the same per-IP ceiling as the API.
 
-   The expression only matches one or two path segments with no dot, so static assets (`/_next/…`, `/art/…`, `/robots.txt`, `/icon.svg`) are never limited. It also matches site pages such as `/settings` and `/privacy`, which is harmless at 60 a minute. This edge limit sits in front of the app's own one (20 new lookups per client per hour, `server/public-policy.ts`), which only counts requests that reach GitHub; if the plan's rule editor ever lacks expression matching, keep the first two conditions and rely on that in-app limit for `/<username>`. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish.
+   The expression only matches one or two path segments with no dot, so static assets (`/_next/…`, `/art/…`, `/robots.txt`, `/icon.svg`) are never limited. It also matches site pages such as `/settings` and `/privacy`, which is harmless at 60 a minute. This edge limit sits in front of the app's own one (20 new lookups per client per hour, `server/public-policy.ts`), which only counts requests that reach GitHub; if the plan's rule editor ever lacks expression matching, keep the first two conditions and rely on that in-app limit for `/<username>`. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish. The other rules, Cloudflare's part and the headers are in [Firewall, DNS and headers](#firewall-dns-and-headers).
 5. **Domain:** Vercel → Domains → add `wrapyourgit.com` (connected to Production, with "redirect apex to www" unticked) and `www.wrapyourgit.com` (308 redirect to `wrapyourgit.com`); Vercel shows a project-specific CNAME target. In Cloudflare (zone `wrapyourgit.com`): `CNAME @ → <that target>` and `CNAME www → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate. The first domain, `wrapyourgit.habibiahmada.dev`, stays on the project as a 308 redirect to `wrapyourgit.com` ([ADR-0025](../architecture/decisions/0025-production-at-wrapyourgit-com.md)).
 
 Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, `/lang`; `/sprites` was removed later, #63), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
@@ -103,6 +103,124 @@ Not set up yet (M6). The checklist:
   - **Neon → Monitoring.** Compute hours and storage against the free plan's limits.
   - **Vercel → Analytics.** Page views, top pages, referrers, countries and devices from Vercel Web Analytics (`components/site/page-analytics.tsx`, which strips query strings first). Enable it once under the project's Analytics tab; the privacy page describes what it collects.
 - **Quota.** `bun --env-file=apps/web/.env.local` with a short script against `https://api.github.com/rate_limit` shows the public token's GraphQL and REST quota left. That call costs nothing.
+
+### Firewall, DNS and headers
+
+Three layers, and only one of them sees a request: **Vercel's firewall**. Cloudflare answers DNS and nothing else, and the app sends a few headers of its own.
+
+> **Status (2026-11-13):** the rate limit rule has been live since 2026-11-05 and the headers ship with the app. Everything else in this section is **written down but not applied yet**: tick it off here as it is done.
+
+#### Why Cloudflare stays DNS-only
+
+Cloudflare's firewall only acts on proxied (orange cloud) records. Turning the proxy on would put it in front of Vercel, and here that costs more than it gives:
+
+- Vercel would see Cloudflare's addresses instead of the visitor's. The edge rate limit (60 a minute **per IP**) and the app's own limit (20 new lookups per client an hour, `clientKey()` in `server/public-recaps.ts`, which reads the first `x-forwarded-for` address) would then count many visitors as one and lock real people out.
+- Vercel's Bot Protection does not work behind a reverse proxy, and its DDoS mitigation may block a shared Cloudflare address that carries real visitors too.
+- Two caches: a deploy on Vercel would not clear Cloudflare's, so old HTML could point at assets that are gone.
+
+Vercel's own guidance is the same: connect directly where possible, and use Cloudflare in DNS-only mode. If the proxy is ever wanted, that is a decision of its own (Full (strict) TLS, the rate limit moved to Cloudflare, and `clientKey()` taught to trust `CF-Connecting-IP`), not a switch to flip.
+
+#### Vercel Firewall
+
+Hobby allows **three custom rules**, one of which may be a rate limit, plus ten IP blocks. Changes apply without a redeploy and can be rolled back from Firewall → ⋯ → View Audit Log.
+
+From a terminal, once: `npx vercel@latest login`, then `cd apps/web && npx vercel@latest link` (`.vercel/` is gitignored). Rule changes are staged as a draft; `npx vercel@latest firewall diff` shows the draft and `npx vercel@latest firewall publish` puts it live. `npx vercel@latest firewall status` lists what is live, in the order it runs.
+
+- [x] **Rule 1, the rate limit** (item 4 above). To make it again:
+
+  ```bash
+  npx vercel@latest firewall rules add "Rate limit /api, /u/ and recap pages" \
+    --condition '{"type":"path","op":"pre","value":"/api"}' --or \
+    --condition '{"type":"path","op":"pre","value":"/u/"}' --or \
+    --condition '{"type":"path","op":"re","value":"^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$"}' \
+    --action rate_limit --rate-limit-window 60 --rate-limit-requests 60 --rate-limit-keys ip --yes
+  ```
+
+  Check that the third condition is there: `npx vercel@latest firewall rules list --expand`. Without it the recap pages are only covered by the app's own limit.
+
+- [ ] **Rule 2, deny probes.** Scanners ask every site for `/.env`, `/wp-login.php`, `/.git/config` and the like. Here each of those would wake the `/<username>` function, since any single segment is a possible username. None of them can be a page of this app: a GitHub username has no dot, nothing the app serves starts with a dot except `/.well-known/`, and the app only handles `GET`, `HEAD` and `POST`.
+
+  ```bash
+  npx vercel@latest firewall rules add "Deny probes" \
+    --description "Dotfiles, script and backup extensions, and methods the app never handles" \
+    --condition '{"type":"path","op":"re","value":"/\\.[^/]"}' \
+    --condition '{"type":"path","op":"pre","value":"/.well-known/","neg":true}' \
+    --or \
+    --condition '{"type":"path","op":"re","value":"\\.(php[0-9]?|phtml|asp|aspx|jsp|cgi|sql|bak|old|ini|pem)$"}' \
+    --or \
+    --condition '{"type":"method","op":"inc","value":["PUT","PATCH","DELETE","TRACE","CONNECT"]}' \
+    --action log --yes
+  npx vercel@latest firewall rules move "Deny probes" --first --yes
+  npx vercel@latest firewall publish
+  ```
+
+  It starts as **log**. After a day, read what it matched (`npx vercel@latest firewall traffic list --dimension path --dimension rule`). If every path is a probe, make it deny:
+
+  ```bash
+  npx vercel@latest firewall rules update "Deny probes" --action deny --yes
+  npx vercel@latest firewall publish
+  ```
+
+  `/.well-known/` stays open on purpose: Vercel renews the certificate through it.
+
+- [ ] **Rule 3 is kept free**, for the day something is wrong. An attack on the recap pages can be met at once with a challenge on them, which real browsers pass:
+
+  ```bash
+  npx vercel@latest firewall rules add "Challenge recap pages" \
+    --condition '{"type":"path","op":"re","value":"^/[A-Za-z0-9-]{1,39}$"}' \
+    --action challenge --yes
+  npx vercel@latest firewall publish
+  ```
+
+  Remove it when the attack is over (`rules remove "Challenge recap pages" --yes`, then `publish`): while it is on, link previews from services Vercel does not list as verified bots get the challenge instead of the card. For an attack on the whole site, Attack Mode challenges every visitor and still lets verified bots through; it applies at once, with no publish: `npx vercel@latest firewall attack-mode enable --duration 1h --yes`.
+
+- [ ] **Bot Protection: log, not challenge.** `npx vercel@latest firewall rules update bot-protection --action log --yes`, then `publish`. A recap is made to be shared, and a shared link is fetched by a bot. Vercel lets its verified bots through (X, Facebook, LinkedIn, Google and others are on its list), but on 2026-11-13 that list had no entry for Slack, Discord, WhatsApp or Telegram, so **challenge** would risk blank cards exactly where developers paste links. Log shows who comes without stopping anyone. Read it for a while before deciding more.
+- [ ] **AI Bots: allow.** The site publishes `llms.txt` and wants to be found. Nothing to change; this is here so it is a decision and not an oversight.
+
+What these rules do not stop: a probe for a name that _could_ be a username (`/admin`, `/login`, `/wp-admin`). It reaches the app and may start one public fetch. That is bounded three ways: the fetch is cached for 12 hours whoever asks, a client gets 20 new lookups an hour, and rule 1 allows 60 requests a minute.
+
+#### Cloudflare (zone `wrapyourgit.com`)
+
+With the proxy off, what Cloudflare can protect is the domain itself.
+
+- [ ] **Nobody can send mail as `@wrapyourgit.com`.** The domain sends and receives no mail, and today nothing says so, so anyone can forge it. DNS → Records → Add record:
+
+  | Type  | Name           | Content                                           |
+  | ----- | -------------- | ------------------------------------------------- |
+  | `TXT` | `@`            | `v=spf1 -all`                                     |
+  | `TXT` | `_dmarc`       | `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s`  |
+  | `TXT` | `*._domainkey` | `v=DKIM1; p=`                                     |
+  | `MX`  | `@`            | `.` with priority `0` (a "null MX": no mail here) |
+
+  If the domain ever gets a mailbox, these four are replaced by the provider's own records first.
+
+- [ ] **DNSSEC**, so a resolver can tell a forged answer for the domain from a real one. Cloudflare → DNS → Settings → Enable DNSSEC shows a DS record. The registrar is Hostinger, not Cloudflare, so that DS record has to be entered there by hand (Hostinger → the domain → DNS / Nameservers → DNSSEC; algorithm 13, also called ECDSA P-256 with SHA-256). Do both steps in one sitting. To turn it off again, remove the DS record at Hostinger first and wait a day before disabling it in Cloudflare; the other order takes the domain offline for validating resolvers.
+- [ ] **CAA (optional)**, so only Vercel's certificate authority may issue for the domain: `CAA @ 0 issue "letsencrypt.org"`. Vercel's documentation names Let's Encrypt, and that is who issued the current certificate. Skip this if in doubt: a CAA record that leaves Vercel's authority out stops renewal, and no CAA record at all is allowed.
+- [ ] **Accounts.** Two-factor sign-in on Cloudflare, Vercel, Hostinger and GitHub; any Cloudflare API token scoped to this zone's DNS only; the registrar's transfer lock left on (it is: `clientTransferProhibited`).
+
+#### Headers the app sends
+
+Set in `apps/web/next.config.ts` for every response; `Strict-Transport-Security` is Vercel's.
+
+| Header                    | Value                                                          | Why                                                                                    |
+| ------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `X-Content-Type-Options`  | `nosniff`                                                      | A response is never read as another type than it says.                                 |
+| `Referrer-Policy`         | `strict-origin-when-cross-origin`                              | A link out names the site, not the page: a recap's address has a username in it.       |
+| `X-Frame-Options`         | `DENY`                                                         | No page is drawn inside another site's frame (clickjacking), for older browsers.       |
+| `Content-Security-Policy` | `frame-ancestors 'none'`                                       | The same, for current browsers. Only this directive: a full policy is not written yet. |
+| `Permissions-Policy`      | `camera=(), microphone=(), geolocation=(), browsing-topics=()` | The site asks for none of them, so nothing loaded into it may.                         |
+
+A full `Content-Security-Policy` (scripts, images, workers) is not set: the story's renderer and the exports use inline scripts, blobs and workers, and a policy that breaks a download is worse than none. It belongs in `Content-Security-Policy-Report-Only` first.
+
+#### Check it
+
+```bash
+curl -sI https://wrapyourgit.com/ | grep -i -E "x-content-type|referrer-policy|x-frame|content-security|permissions-policy|strict-transport"
+curl -s -o /dev/null -w "%{http_code}\n" https://wrapyourgit.com/.env        # 403 once rule 2 denies
+curl -s -o /dev/null -w "%{http_code}\n" -X DELETE https://wrapyourgit.com/  # 403 once rule 2 denies
+dig +short TXT wrapyourgit.com; dig +short TXT _dmarc.wrapyourgit.com; dig +short MX wrapyourgit.com
+dig +short DS wrapyourgit.com                                                # not empty once DNSSEC is on
+```
 
 ## Later: production on an AWS VPS
 
