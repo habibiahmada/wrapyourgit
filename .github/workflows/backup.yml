@@ -1,0 +1,68 @@
+# A copy of the production database outside Neon, every night (deployment guide, "Backups and
+# monitoring"). pg_dump writes a custom-format dump, pg_restore reads its table of contents back
+# so an unreadable file fails the run, and the dump goes to a private S3 bucket in Singapore, next
+# to Neon. The bucket's lifecycle rule deletes dumps after 14 days.
+#
+# No AWS keys live in the repository: the job trades GitHub's OIDC token for a role that can only
+# write under neon/ in that bucket, and only from the `backup` environment, which only main may
+# use. The database string is a secret of that environment. A failed scheduled run emails the
+# repository owner.
+
+name: Backup
+
+on:
+  schedule:
+    # 19:30 UTC is 02:30 in Jakarta, when hardly anyone is syncing.
+    - cron: "30 19 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+permissions:
+  contents: none
+
+jobs:
+  dump:
+    name: Dump to S3
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: backup
+    permissions:
+      id-token: write
+    env:
+      # pg_dump must be at least the server's major version; 18 reads every Neon version.
+      PG_IMAGE: postgres:18-alpine
+      AWS_REGION: ap-southeast-1
+    steps:
+      - name: Dump the database
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DIRECT_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::The backup environment has no NEON_DIRECT_URL secret."
+            exit 1
+          fi
+          mkdir -p dump
+          docker run --rm -e DATABASE_URL -v "$PWD/dump:/dump" "$PG_IMAGE" \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges --file=/dump/db.dump "$DATABASE_URL" \
+              && pg_restore --list /dump/db.dump > /dump/toc.txt'
+          echo "Dump: $(du -h dump/db.dump | cut -f1), $(grep -c 'TABLE DATA' dump/toc.txt) tables with data"
+
+      - name: Get AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_BACKUP_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: wrapyourgit-backup-${{ github.run_id }}
+
+      - name: Upload
+        env:
+          BUCKET: ${{ vars.BACKUP_BUCKET }}
+        run: |
+          set -euo pipefail
+          key="neon/$(date -u +%Y-%m-%dT%H%MZ).dump"
+          aws s3 cp dump/db.dump "s3://$BUCKET/$key" --only-show-errors
+          echo "Uploaded s3://$BUCKET/$key"
