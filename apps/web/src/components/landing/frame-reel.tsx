@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { button } from "@/components/ui";
 
-export type ReelFrame = { file: string; label: string; alt: string };
+export type ReelFrame = { file: string; src: StaticImageData; label: string; alt: string };
 
 /**
  * The sample frames as a reel that drifts on its own: to the end, back to the start, again.
@@ -106,10 +106,8 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
             className={`w-56 shrink-0 rounded-2xl border border-line bg-surface p-3 sm:w-64 ${i % 2 ? "translate-y-6" : ""}`}
           >
             <Image
-              src={`/landing/ride-${frame.file}.webp`}
+              src={frame.src}
               alt={frame.alt}
-              width={540}
-              height={675}
               draggable={false}
               sizes="16rem"
               className="pointer-events-none h-auto w-full rounded-xl border border-line"
