@@ -44,6 +44,32 @@ function headlines(rows: Row[], lastYear: number): string[] {
     });
 }
 
+/**
+ * The change as a coloured chip: green and an up arrow for more, amber and a down arrow for less
+ * (amber, not red: a slower year is something to beat, not a failure). The arrow and the sign
+ * carry the direction too, so colour is never the only cue. Both pass 4.5:1 on the surface.
+ */
+function Change({ now, before }: { now: number; before: number }) {
+  const tone =
+    now > before
+      ? { cls: "bg-[#3fb950]/15 text-[#3fb950]", arrow: "▲" }
+      : now < before
+        ? { cls: "bg-[#d29922]/15 text-[#d29922]", arrow: "▼" }
+        : { cls: "bg-overlay text-muted", arrow: "" };
+  return (
+    <span
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-sm font-semibold tabular-nums ${tone.cls}`}
+    >
+      {tone.arrow && (
+        <span aria-hidden className="text-xs">
+          {tone.arrow}
+        </span>
+      )}
+      {change(now, before)}
+    </span>
+  );
+}
+
 export function YearComparison({ data }: { data: RecapData }) {
   const { previousYear, contributions, engineering, repositories, meta } = data;
   if (previousYear.status !== "ok") {
@@ -145,7 +171,7 @@ export function YearComparison({ data }: { data: RecapData }) {
               return (
                 <tr
                   key={row.label}
-                  className="grid gap-x-6 gap-y-1.5 px-4 py-3 md:grid-cols-[12rem_1fr_8rem] md:items-center"
+                  className="grid gap-x-6 gap-y-1.5 px-4 py-3 md:grid-cols-[12rem_1fr_10rem] md:items-center"
                 >
                   <th scope="row" className="text-sm font-semibold">
                     {row.label}
@@ -166,8 +192,8 @@ export function YearComparison({ data }: { data: RecapData }) {
                       <span className="text-sm font-semibold tabular-nums">{n(bar.value)}</span>
                     </td>
                   ))}
-                  <td className="text-sm text-muted tabular-nums md:col-start-3 md:row-span-2 md:row-start-1 md:text-right">
-                    {change(row.now, row.before)}
+                  <td className="md:col-start-3 md:row-span-2 md:row-start-1 md:text-right">
+                    <Change now={row.now} before={row.before} />
                   </td>
                 </tr>
               );
