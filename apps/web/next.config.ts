@@ -21,7 +21,11 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   headers: async () => [{ source: "/:path*", headers: SECURITY_HEADERS }],
   // Signed-in users' own GitHub avatars on the dashboard.
-  images: { remotePatterns: [{ protocol: "https", hostname: "avatars.githubusercontent.com" }] },
+  images: {
+    // AVIF first: about a fifth smaller than WebP for the story frames; browsers without it get WebP.
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [{ protocol: "https", hostname: "avatars.githubusercontent.com" }],
+  },
   partialPrefetching: true,
   // Workspace packages ship TypeScript source (no build step), so Next must compile them.
   transpilePackages: ["@wyg/schema", "@wyg/analytics", "@wyg/github", "@wyg/video"],
