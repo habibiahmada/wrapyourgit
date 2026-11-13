@@ -35,7 +35,10 @@ import { comparisonSpanEnd, yearRange } from "./sync-policy";
 
 export type PublicResult =
   | { kind: "recap"; login: string; data: RecapData }
-  | { kind: "missing" | "organization" | "hidden" | "busy" | "limited" | "error"; login: string };
+  | {
+      kind: "missing" | "organization" | "hidden" | "busy" | "limited" | "verify" | "error";
+      login: string;
+    };
 
 /** How often, and how long, a request waits for another request's fetch of the same account. */
 const POLL_MS = 2_000;
@@ -94,16 +97,22 @@ export interface PublicDeps {
 /**
  * The public recap of any GitHub user, as anyone may see it: always the public projection of a
  * fetch with the server's public token (it cannot see private repositories), built in UTC.
- * `client` is clientKey() of the request.
+ * `client` is clientKey() of the request, and `human` whether a person is known to be behind it
+ * (human.ts): only then may it make the server ask GitHub (ADR-0026).
  */
-export function loadPublicRecap(login: string, client: string): Promise<PublicResult> {
-  return loadPublicRecapWith(defaultDeps, login, client);
+export function loadPublicRecap(
+  login: string,
+  client: string,
+  human: boolean,
+): Promise<PublicResult> {
+  return loadPublicRecapWith(defaultDeps, login, client, human);
 }
 
 export async function loadPublicRecapWith(
   deps: PublicDeps,
   requested: string,
   client: string,
+  human: boolean,
 ): Promise<PublicResult> {
   const { store } = deps;
   let login = requested;
@@ -129,6 +138,16 @@ export async function loadPublicRecapWith(
     // counting against the client: a shared link with a typo shouldn't use up anyone's lookups.
     const missed = await store.missedAt(requested);
     if (missed && missIsFresh(missed, deps.now())) return { kind: "missing", login };
+
+    // From here on GitHub is asked, on a token every visitor shares. A request with no person
+    // known to be behind it starts nothing: it gets the stored recap while that may still stand
+    // in, or is asked to pass the check. No lookup is recorded for it, so a crawler cannot use up
+    // the limit of a person who shares its address.
+    if (!human) {
+      return cached && canServeStale(cached.fetchedAt, deps.now())
+        ? serveStored(store, cached)
+        : { kind: "verify", login };
+    }
 
     // Every request that gets this far asks GitHub at least once (the lookup, maybe a fetch), and
     // lookups spend the shared token too: the client's limit is checked and one row recorded

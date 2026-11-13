@@ -156,7 +156,7 @@ const deps: Deps = {
 
 /** Runs one lookup that fetches, so the store holds a recap fetched at the current clock. */
 async function seed() {
-  const result = await loadPublicRecapWith(deps, "octo", "client-a");
+  const result = await loadPublicRecapWith(deps, "octo", "client-a", true);
   expect(result.kind).toBe("recap");
   recorded = [];
   calls = { lookup: 0, year: 0, previous: 0 };
@@ -191,12 +191,12 @@ afterEach(() => {
 describe("loadPublicRecapWith", () => {
   test("missing and organisation accounts are answered from the lookup alone", async () => {
     account = { kind: "missing", remaining: 5000, resetAt: "" };
-    expect(await loadPublicRecapWith(deps, "nobody", "c")).toEqual({
+    expect(await loadPublicRecapWith(deps, "nobody", "c", true)).toEqual({
       kind: "missing",
       login: "nobody",
     });
     account = { kind: "organization", login: "Vercel", remaining: 5000, resetAt: "" };
-    expect(await loadPublicRecapWith(deps, "vercel", "c")).toEqual({
+    expect(await loadPublicRecapWith(deps, "vercel", "c", true)).toEqual({
       kind: "organization",
       login: "Vercel",
     });
@@ -205,29 +205,32 @@ describe("loadPublicRecapWith", () => {
 
   test("a missing name is remembered: the next visit asks GitHub nothing and spends no lookup", async () => {
     account = { kind: "missing", remaining: 5000, resetAt: "" };
-    expect((await loadPublicRecapWith(deps, "Nobody", "c")).kind).toBe("missing");
-    expect((await loadPublicRecapWith(deps, "nobody", "c")).kind).toBe("missing");
+    expect((await loadPublicRecapWith(deps, "Nobody", "c", true)).kind).toBe("missing");
+    expect((await loadPublicRecapWith(deps, "nobody", "c", true)).kind).toBe("missing");
     expect(calls.lookup).toBe(1);
     expect(recorded).toEqual(["c"]);
   });
 
   test("a remembered miss expires after ten minutes, so a new account shows up", async () => {
     account = { kind: "missing", remaining: 5000, resetAt: "" };
-    await loadPublicRecapWith(deps, "newbie", "c");
+    await loadPublicRecapWith(deps, "newbie", "c", true);
     clock += 10 * 60 * 1000 + 1;
     account = { kind: "user", id: ID, login: "newbie", remaining: 5000, resetAt: "" };
-    expect((await loadPublicRecapWith(deps, "newbie", "c")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "newbie", "c", true)).kind).toBe("recap");
     expect(calls.lookup).toBe(2);
   });
 
   test("a hidden account is never fetched", async () => {
     hidden = true;
-    expect(await loadPublicRecapWith(deps, "octo", "c")).toEqual({ kind: "hidden", login: "Octo" });
+    expect(await loadPublicRecapWith(deps, "octo", "c", true)).toEqual({
+      kind: "hidden",
+      login: "Octo",
+    });
     expect(calls.year).toBe(0);
   });
 
   test("a first fetch builds a public UTC recap, keeps last year and logs one lookup", async () => {
-    const result = await loadPublicRecapWith(deps, "octo", "client-a");
+    const result = await loadPublicRecapWith(deps, "octo", "client-a", true);
     if (result.kind !== "recap") throw new Error(`expected a recap, got ${result.kind}`);
     expect(result.login).toBe("Octo");
     expect(result.data.meta.scope).toBe("public");
@@ -242,7 +245,7 @@ describe("loadPublicRecapWith", () => {
     await seed();
     clock += 11 * HOUR;
     account = { kind: "missing", remaining: 0, resetAt: "" };
-    expect(await loadPublicRecapWith(deps, "OCTO", "client-b")).toMatchObject({
+    expect(await loadPublicRecapWith(deps, "OCTO", "client-b", true)).toMatchObject({
       kind: "recap",
       login: "Octo",
     });
@@ -253,14 +256,17 @@ describe("loadPublicRecapWith", () => {
   test("a fresh stored recap of a hidden account is hidden, by its stored id", async () => {
     await seed();
     hidden = true;
-    expect(await loadPublicRecapWith(deps, "octo", "c")).toEqual({ kind: "hidden", login: "Octo" });
+    expect(await loadPublicRecapWith(deps, "octo", "c", true)).toEqual({
+      kind: "hidden",
+      login: "Octo",
+    });
     expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
   });
 
   test("a stale stored recap asks GitHub who the login is first", async () => {
     await seed();
     clock += 13 * HOUR;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
     expect(calls).toEqual({ lookup: 1, year: 1, previous: 1 });
   });
 
@@ -268,14 +274,14 @@ describe("loadPublicRecapWith", () => {
     clock = Date.parse("2026-11-11T00:30:00Z");
     await seed();
     clock += 13 * HOUR;
-    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "client-b", true)).kind).toBe("recap");
     expect(calls).toEqual({ lookup: 1, year: 1, previous: 0 });
   });
 
   test("during the year, a lagging last year is fetched again up to today's span end", async () => {
     await seed();
     clock += 13 * HOUR;
-    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "client-b", true)).kind).toBe("recap");
     expect(calls).toEqual({ lookup: 1, year: 1, previous: 1 });
     expect(row?.previous?.span.through).toBe("2025-11-12");
   });
@@ -283,12 +289,12 @@ describe("loadPublicRecapWith", () => {
   test("after the year, a mid-year span is refetched once, then kept at 31 December", async () => {
     await seed();
     clock = Date.parse("2027-01-05T00:00:00Z");
-    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "client-b", true)).kind).toBe("recap");
     expect(calls).toEqual({ lookup: 1, year: 1, previous: 1 });
     expect(row?.previous?.span.through).toBe("2025-12-31");
 
     clock += 13 * HOUR;
-    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "client-b", true)).kind).toBe("recap");
     expect(calls).toEqual({ lookup: 2, year: 2, previous: 1 });
     expect(row?.previous?.span.through).toBe("2025-12-31");
   });
@@ -297,7 +303,7 @@ describe("loadPublicRecapWith", () => {
     await seed();
     clock += 13 * HOUR;
     failPrevious = true;
-    expect((await loadPublicRecapWith(deps, "octo", "client-b")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "client-b", true)).kind).toBe("recap");
     expect(row?.previous?.span.through).toBe("2025-11-11");
   });
 
@@ -305,7 +311,7 @@ describe("loadPublicRecapWith", () => {
     await seed();
     clock += HOUR;
     account = { kind: "user", id: ID, login: "Octocat", remaining: 5000, resetAt: "" };
-    const result = await loadPublicRecapWith(deps, "octocat", "c");
+    const result = await loadPublicRecapWith(deps, "octocat", "c", true);
     if (result.kind !== "recap") throw new Error(`expected a recap, got ${result.kind}`);
     expect(result.login).toBe("Octocat");
     expect(result.data.profile.login).toBe("Octocat");
@@ -321,7 +327,7 @@ describe("loadPublicRecapWith", () => {
     beforeClaim = () => {
       if (row) row = { ...row, data: fresh, fetchedAt: new Date(clock), fetchingSince: null };
     };
-    const result = await loadPublicRecapWith(deps, "octo", "c");
+    const result = await loadPublicRecapWith(deps, "octo", "c", true);
     expect(result.kind === "recap" && result.data).toBe(fresh);
     expect(calls).toEqual({ lookup: 1, year: 0, previous: 0 });
     expect(row?.fetchingSince).toBeNull();
@@ -329,7 +335,7 @@ describe("loadPublicRecapWith", () => {
 
   test("a client at the limit gets limited without GitHub being asked", async () => {
     lookups = 20;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("limited");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("limited");
     expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
     expect(recorded).toEqual([]);
   });
@@ -338,28 +344,28 @@ describe("loadPublicRecapWith", () => {
     await seed();
     clock += 13 * HOUR;
     lookups = 20;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
     expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
     hidden = true;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("hidden");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("hidden");
   });
 
   test("at the limit, a recap older than the stale cap is not served: limited", async () => {
     await seed();
     clock += 8 * DAY;
     lookups = 20;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("limited");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("limited");
     expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
   });
 
   test("a lookup that ends without a fetch is still counted", async () => {
     account = { kind: "missing", remaining: 5000, resetAt: "" };
-    expect((await loadPublicRecapWith(deps, "nobody", "client-a")).kind).toBe("missing");
+    expect((await loadPublicRecapWith(deps, "nobody", "client-a", true)).kind).toBe("missing");
     expect(recorded).toEqual(["client-a"]);
   });
 
   test("a fetch is counted once, with its lookup", async () => {
-    await loadPublicRecapWith(deps, "octo", "client-a");
+    await loadPublicRecapWith(deps, "octo", "client-a", true);
     expect(recorded).toEqual(["client-a"]);
   });
 
@@ -367,7 +373,7 @@ describe("loadPublicRecapWith", () => {
     await seed();
     clock += 13 * HOUR;
     failRecord = true;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("error");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("error");
     expect(row?.fetchingSince).toBeNull();
     expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
   });
@@ -381,13 +387,13 @@ describe("loadPublicRecapWith", () => {
       resetAt: "",
       restRemaining: 12,
     };
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
     expect(calls.year).toBe(0);
   });
 
   test("under the quota floor: busy when nothing is stored", async () => {
     account = { kind: "user", id: ID, login: "Octo", remaining: 299, resetAt: "" };
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
     expect(calls.year).toBe(0);
     expect(recorded).toEqual(["c"]);
   });
@@ -396,26 +402,26 @@ describe("loadPublicRecapWith", () => {
     await seed();
     account = { kind: "user", id: ID, login: "Octo", remaining: 299, resetAt: "" };
     clock += 13 * HOUR;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
     clock += 8 * DAY;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
     expect(calls.year).toBe(0);
   });
 
   test("GitHub out of quota on the lookup says busy, not error", async () => {
     githubError.lookup = new GitHubApiError("limit", 200, [{ type: "RATE_LIMITED" }]);
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
   });
 
   test("GitHub out of quota on the fetch: busy, or the stored recap, and the claim released", async () => {
     githubError.year = new GitHubApiError("limit", 403);
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
     expect(row?.fetchingSince).toBeNull();
     githubError = {};
     await seed();
     clock += 13 * HOUR;
     githubError.year = new GitHubApiError("limit", 429);
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
     expect(row?.fetchingSince).toBeNull();
   });
 
@@ -423,13 +429,13 @@ describe("loadPublicRecapWith", () => {
     await seed();
     clock += 8 * DAY;
     githubError.year = new GitHubApiError("limit", 429);
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
     expect(row?.fetchingSince).toBeNull();
   });
 
   test("a failed fetch stores nothing, releases the claim and says error", async () => {
     failYear = true;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("error");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("error");
     expect(row?.data).toBeNull();
     expect(row?.fetchingSince).toBeNull();
   });
@@ -456,7 +462,7 @@ describe("loadPublicRecapWith", () => {
         });
       }
     };
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
     expect(polls).toBe(3);
     expect(calls.year).toBe(0);
     expect(recorded).toEqual(["c"]);
@@ -475,7 +481,7 @@ describe("loadPublicRecapWith", () => {
     onSleep = () => {
       polls++;
     };
-    const result = await loadPublicRecapWith(deps, "octo", "c");
+    const result = await loadPublicRecapWith(deps, "octo", "c", true);
     // The new recap, not the stale one this request read before its claim.
     expect(result.kind === "recap" && result.data).toBe(fresh);
     expect(polls).toBe(0);
@@ -493,7 +499,7 @@ describe("loadPublicRecapWith", () => {
       fetchingSince: new Date(clock - 119_000),
     };
     const start = clock;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
     expect(clock - start).toBe(2_000);
   });
 
@@ -502,13 +508,13 @@ describe("loadPublicRecapWith", () => {
     duringFetch = () => {
       if (row) row = { ...row, fetchingSince: takeover };
     };
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
     expect(row?.data).toBeNull();
     expect(row?.fetchingSince).toEqual(takeover);
 
     failYear = true;
     row = row && { ...row, fetchingSince: null };
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("error");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("error");
     expect(row?.fetchingSince).toEqual(takeover);
   });
 
@@ -516,7 +522,10 @@ describe("loadPublicRecapWith", () => {
     duringFetch = () => {
       hidden = true;
     };
-    expect(await loadPublicRecapWith(deps, "octo", "c")).toEqual({ kind: "hidden", login: "Octo" });
+    expect(await loadPublicRecapWith(deps, "octo", "c", true)).toEqual({
+      kind: "hidden",
+      login: "Octo",
+    });
     expect(row?.data).toBeNull();
     expect(row?.fetchingSince).toBeNull();
   });
@@ -532,7 +541,7 @@ describe("loadPublicRecapWith", () => {
       fetchingSince: new Date(clock),
     };
     const start = clock;
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
     expect(clock - start).toBe(60_000);
     expect(calls.year).toBe(0);
   });
@@ -542,11 +551,11 @@ describe("loadPublicRecapWith", () => {
     clock += 13 * HOUR;
     othersClaim = true;
     if (row) row = { ...row, fetchingSince: new Date(clock) };
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("recap");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
 
     clock += 8 * DAY;
     if (row) row = { ...row, fetchingSince: new Date(clock) };
-    expect((await loadPublicRecapWith(deps, "octo", "c")).kind).toBe("busy");
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("busy");
     expect(calls.year).toBe(0);
   });
 
@@ -558,7 +567,64 @@ describe("loadPublicRecapWith", () => {
     onSleep = () => {
       hidden = true;
     };
-    expect(await loadPublicRecapWith(deps, "octo", "c")).toEqual({ kind: "hidden", login: "Octo" });
+    expect(await loadPublicRecapWith(deps, "octo", "c", true)).toEqual({
+      kind: "hidden",
+      login: "Octo",
+    });
+  });
+});
+
+describe("a request no person is known to be behind", () => {
+  test("starts nothing: no lookup, no fetch, no row against the client's limit", async () => {
+    expect(await loadPublicRecapWith(deps, "octo", "client-a", false)).toEqual({
+      kind: "verify",
+      login: "octo",
+    });
+    expect(calls).toEqual({ lookup: 0, year: 0, previous: 0 });
+    expect(recorded).toEqual([]);
+  });
+
+  test("still plays a fresh stored recap, without asking GitHub", async () => {
+    await seed();
+    const before = { ...calls };
+    const result = await loadPublicRecapWith(deps, "octo", "crawler", false);
+    expect(result.kind).toBe("recap");
+    expect(calls).toEqual(before);
+    expect(recorded).not.toContain("crawler");
+  });
+
+  test("plays a stored recap past 12 hours while it may stand in, then is asked to check", async () => {
+    await seed();
+    const before = { ...calls };
+    clock += 13 * HOUR;
+    expect((await loadPublicRecapWith(deps, "octo", "crawler", false)).kind).toBe("recap");
+    clock += 7 * DAY;
+    expect(await loadPublicRecapWith(deps, "octo", "crawler", false)).toEqual({
+      kind: "verify",
+      login: "octo",
+    });
+    expect(calls).toEqual(before);
+  });
+
+  test("a hidden recap stays hidden", async () => {
+    await seed();
+    hidden = true;
+    expect((await loadPublicRecapWith(deps, "octo", "crawler", false)).kind).toBe("hidden");
+  });
+
+  test("a name GitHub just said is missing is answered as missing, with no check", async () => {
+    misses.set("nobody", new Date(clock));
+    expect(await loadPublicRecapWith(deps, "nobody", "crawler", false)).toEqual({
+      kind: "missing",
+      login: "nobody",
+    });
+  });
+
+  test("the same request from a person fetches", async () => {
+    expect((await loadPublicRecapWith(deps, "octo", "client-a", false)).kind).toBe("verify");
+    expect((await loadPublicRecapWith(deps, "octo", "client-a", true)).kind).toBe("recap");
+    expect(calls.lookup).toBe(1);
+    expect(recorded).toEqual(["client-a"]);
   });
 });
 

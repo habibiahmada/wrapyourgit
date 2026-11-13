@@ -9,6 +9,7 @@ import { button } from "@/components/ui";
 import { UsernameForm } from "@/components/username-form";
 import { CLIENT_LIMIT } from "@/server/public-policy";
 import { recapPath } from "@/server/routes";
+import { VerifyGate } from "./verify-gate";
 
 /*
  * What /<username> shows when there is no story to play. Same frame as the 404 page: what
@@ -120,6 +121,27 @@ export function LimitedPage({ login }: { login: string }) {
     >
       So the server's GitHub quota lasts for everyone, each visitor opens up to {CLIENT_LIMIT} new
       usernames an hour. Recaps you've already opened still play.
+    </ResultPage>
+  );
+}
+
+/**
+ * Before the server asks GitHub about a name nobody has fetched yet (ADR-0026). The address is
+ * the recap's own, so once the check passes the same page loads as the recap.
+ */
+export function VerifyPage({ login, siteKey }: { login: string; siteKey: string }) {
+  return (
+    <ResultPage
+      title={`One quick check before @${login}'s recap`}
+      art="cutout-cell-think"
+      action={<VerifyGate siteKey={siteKey} />}
+    >
+      Nobody has opened this recap lately, so it has to be read from GitHub, on a quota every
+      visitor shares. This check, by Cloudflare Turnstile, keeps scripts from using it up.{" "}
+      <a href="/privacy" className="font-semibold text-blue hover:underline">
+        What it collects
+      </a>
+      .
     </ResultPage>
   );
 }
