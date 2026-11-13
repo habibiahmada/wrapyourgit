@@ -103,6 +103,13 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           that are deleted, for every address, with the next lookup anyone makes.
         </li>
         <li>
+          <strong>A check that you are a person</strong>: before we read a recap from GitHub that
+          nobody has opened lately, a visitor who is not signed in passes Cloudflare Turnstile. On
+          that page Cloudflare sees your IP address and details of your browser, and we send it your
+          address with the result to confirm. We keep none of it: you get a cookie that lasts an
+          hour and says only that the check was passed.
+        </li>
+        <li>
           <strong>Page views</strong>: Vercel Web Analytics counts which page was opened and when,
           the site that linked to it, the country and region, and the browser, operating system and
           device type. We remove the address's query string first. It sets no cookies: visits are
@@ -185,6 +192,11 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           <strong>wyg_oauth</strong>: protects the GitHub sign-in against forgery. It lasts 10
           minutes and is removed after sign-in.
         </li>
+        <li>
+          <strong>wyg_human</strong>: set when you pass the check that you are a person. It holds an
+          expiry time and a signature, nothing that identifies you, and lasts one hour. HttpOnly,
+          sent only to this site.
+        </li>
       </ul>
     ),
   },
@@ -194,9 +206,10 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
     body: (
       <p>
         GitHub, whose API we read your activity from under its own privacy statement. Vercel, which
-        counts page views (Web Analytics) under its own privacy policy. The service runs on cloud
-        infrastructure; the hosting and database providers will be named here before the public
-        launch.
+        counts page views (Web Analytics) under its own privacy policy. Cloudflare, whose Turnstile
+        widget runs the check that you are a person, under its own privacy policy. The service runs
+        on cloud infrastructure; the hosting and database providers will be named here before the
+        public launch.
       </p>
     ),
   },
@@ -220,6 +233,7 @@ const SECTIONS: { id: string; title: string; body: ReactNode }[] = [
           public recap stays hidden.
         </li>
         <li>Sessions: 30 days, or until you sign out.</li>
+        <li>The check that you are a person: one hour, in a cookie in your browser only.</li>
         <li>
           Page-view counts: kept by Vercel as totals. The request hash that tells visits apart is
           discarded after 24 hours.

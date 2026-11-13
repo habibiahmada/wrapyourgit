@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { type CurrentUser, getCurrentUser, ReauthorizeError } from "@/server/auth";
+import { requestIsHuman } from "@/server/human";
+import { turnstileConfig } from "@/server/human-check";
 import { errorSummary } from "@/server/log";
 import { getPrivateNamesChoice, showFilesReminder, storyData } from "@/server/privacy";
 import { isFresh } from "@/server/public-policy";
@@ -23,6 +25,7 @@ import {
   MissingPage,
   OrganizationPage,
   OwnerErrorPage,
+  VerifyPage,
 } from "./result-pages";
 import { VisitorStory } from "./visitor-story";
 
@@ -60,7 +63,7 @@ async function Recap({ name }: { name: string }) {
   const user = await getCurrentUser();
   if (user && viewerKind(user.login, name) === "owner")
     return <OwnerRecap user={user} name={name} />;
-  return <VisitorRecap name={name} />;
+  return <VisitorRecap name={name} signedIn={user !== null} />;
 }
 
 /**
@@ -110,10 +113,14 @@ async function freshRecap(
 }
 
 /** Anyone else: the public recap, fetched as an outsider sees it (never the owner's own). */
-async function VisitorRecap({ name }: { name: string }) {
+async function VisitorRecap({ name, signedIn }: { name: string; signedIn: boolean }) {
   // Covers /<username> and /u/<reserved name> alike (ruling R11): no lookup, no client-limit row.
   if (!isValidLogin(name)) return <MissingPage login={name} />;
-  const result = await loadPublicRecap(name, clientKey(await headers()));
+  const result = await loadPublicRecap(
+    name,
+    clientKey(await headers()),
+    await requestIsHuman(signedIn),
+  );
   switch (result.kind) {
     case "recap":
       // Only a played recap moves to GitHub's casing: the next request is then a stored read,
@@ -130,6 +137,15 @@ async function VisitorRecap({ name }: { name: string }) {
       return <BusyPage login={result.login} />;
     case "limited":
       return <LimitedPage login={result.login} />;
+    case "verify": {
+      // Only reached with the keys set: without them every request counts as a person's.
+      const siteKey = turnstileConfig()?.siteKey;
+      return siteKey ? (
+        <VerifyPage login={result.login} siteKey={siteKey} />
+      ) : (
+        <ErrorPage login={result.login} />
+      );
+    }
     case "error":
       return <ErrorPage login={result.login} />;
   }

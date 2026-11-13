@@ -29,6 +29,8 @@ The template is [`.env.example`](../../.env.example). The web app reads these; s
 | `GITHUB_APP_SLUG`                                  | no       | The app's URL slug; enables the optional install for private repositories (ADR-0008).                                                                         |
 | `GITHUB_PUBLIC_TOKEN`                              | yes      | Fine-grained PAT on the machine account, **Public repositories (read-only)**. Fetches the public recap at `/<username>`; see [Public token](#public-token).   |
 
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | no | Cloudflare Turnstile keys for the check before a new public fetch (ADR-0026). Both or neither: with either missing the check is off. See [The human check](#the-human-check). |
+
 `GITHUB_TOKEN` in `.env.example` is for local spikes only; don't set it on a server.
 
 ### Public token
@@ -108,7 +110,7 @@ Not set up yet (M6). The checklist:
 
 Three layers, and only one of them sees a request: **Vercel's firewall**. Cloudflare answers DNS and nothing else, and the app sends a few headers of its own.
 
-> **Status (2026-11-13):** the rate limit rule has been live since 2026-11-05 and the headers ship with the app. Everything else in this section is **written down but not applied yet**: tick it off here as it is done.
+> **Status (2026-11-13):** the headers ship with the app, and the human check ships switched off until its keys are set. The rate limit rule is live for `/api` only: a test that day got 429 after 60 requests on `/api/card`, while 75 requests to `/privacy` (which has the shape of a recap page) all passed, so its third condition was never published. Everything else in this section is **written down but not applied yet**: tick it off here as it is done.
 
 #### Why Cloudflare stays DNS-only
 
@@ -126,7 +128,7 @@ Hobby allows **three custom rules**, one of which may be a rate limit, plus ten 
 
 From a terminal, once: `npx vercel@latest login`, then `cd apps/web && npx vercel@latest link` (`.vercel/` is gitignored). Rule changes are staged as a draft; `npx vercel@latest firewall diff` shows the draft and `npx vercel@latest firewall publish` puts it live. `npx vercel@latest firewall status` lists what is live, in the order it runs.
 
-- [x] **Rule 1, the rate limit** (item 4 above). To make it again:
+- [ ] **Rule 1, the rate limit** (item 4 above). It exists, but without the condition for the recap pages. In the dashboard: Firewall → the rule → add an **OR** condition, Request Path, "matches expression", `^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$`, then Review Changes → Publish. Or make the whole rule again:
 
   ```bash
   npx vercel@latest firewall rules add "Rate limit /api, /u/ and recap pages" \
@@ -136,7 +138,7 @@ From a terminal, once: `npx vercel@latest login`, then `cd apps/web && npx verce
     --action rate_limit --rate-limit-window 60 --rate-limit-requests 60 --rate-limit-keys ip --yes
   ```
 
-  Check that the third condition is there: `npx vercel@latest firewall rules list --expand`. Without it the recap pages are only covered by the app's own limit.
+  Then check it from outside: `seq 1 75 | xargs -P 15 -I{} curl -s -o /dev/null -w "%{http_code}\n" https://wrapyourgit.com/privacy | sort | uniq -c` should show 60 answers and 15 times 429. `/privacy` has a recap page's shape and starts no GitHub fetch.
 
 - [ ] **Rule 2, deny probes.** Scanners ask every site for `/.env`, `/wp-login.php`, `/.git/config` and the like. Here each of those would wake the `/<username>` function, since any single segment is a possible username. None of them can be a page of this app: a GitHub username has no dot, nothing the app serves starts with a dot except `/.well-known/`, and the app only handles `GET`, `HEAD` and `POST`.
 
@@ -177,7 +179,17 @@ From a terminal, once: `npx vercel@latest login`, then `cd apps/web && npx verce
 - [ ] **Bot Protection: log, not challenge.** `npx vercel@latest firewall rules update bot-protection --action log --yes`, then `publish`. A recap is made to be shared, and a shared link is fetched by a bot. Vercel lets its verified bots through (X, Facebook, LinkedIn, Google and others are on its list), but on 2026-11-13 that list had no entry for Slack, Discord, WhatsApp or Telegram, so **challenge** would risk blank cards exactly where developers paste links. Log shows who comes without stopping anyone. Read it for a while before deciding more.
 - [ ] **AI Bots: allow.** The site publishes `llms.txt` and wants to be found. Nothing to change; this is here so it is a decision and not an oversight.
 
-What these rules do not stop: a probe for a name that _could_ be a username (`/admin`, `/login`, `/wp-admin`). It reaches the app and may start one public fetch. That is bounded three ways: the fetch is cached for 12 hours whoever asks, a client gets 20 new lookups an hour, and rule 1 allows 60 requests a minute.
+What these rules do not stop: a probe for a name that _could_ be a username (`/admin`, `/login`, `/wp-admin`). It reaches the app. With [the human check](#the-human-check) on it starts nothing, since a scanner holds no pass; without it, it may start one public fetch, bounded by the 12-hour cache, the 20 new lookups an hour per client, and rule 1 once it covers the recap pages.
+
+#### The human check
+
+The edge rules count requests per address. They cannot tell a person from a script, and a script with many addresses can still drain the one GitHub token every visitor shares. So before the server reads a recap nobody has fetched lately, a visitor who is not signed in passes Cloudflare Turnstile once an hour ([ADR-0026](../architecture/decisions/0026-a-human-check-before-a-new-public-fetch.md)). Stored recaps, and their link previews, are never checked. Turnstile is a widget on the page, so it works with the proxy off.
+
+- [ ] **Create the widget.** Cloudflare dashboard → Turnstile → Add widget: any name, hostname `wrapyourgit.com`, mode **Managed**. Copy the site key and the secret key.
+- [ ] **Set both in Vercel** → Settings → Environment Variables, Production: `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` (the secret marked Sensitive), then redeploy. With either missing the check is off and the site behaves as before, which is also how to switch it off in a hurry.
+- [ ] **Check it** in a private window: open `/<a username nobody has opened today>`. The page "One quick check before @…'s recap" appears, passes, and the recap loads. Open it again: no check. Then `curl -s https://wrapyourgit.com/<another new name> | grep -c "One quick check"` prints 1, and nothing in Vercel's logs shows a GitHub fetch for it.
+
+Locally, Cloudflare's published test keys go in `apps/web/.env.local`: site `1x00000000000000000000AA` with secret `1x0000000000000000000000000000000AA` always passes, `2x00000000000000000000AB` with `2x0000000000000000000000000000000AA` always fails, and site `3x00000000000000000000FF` shows the tick box.
 
 #### Cloudflare (zone `wrapyourgit.com`)
 
