@@ -135,14 +135,14 @@ async function Dashboard() {
                 <Languages data={data} />
                 <Starred data={data} />
               </div>
-              <Files
-                data={storyData(data, showNames)}
-                privateNames={showFilesReminder(choice, data)}
-              />
             </div>
             <aside aria-label="Your profile" className="grid min-w-0 gap-6">
               <Archetype data={data} />
               <InstallPrivate />
+              <Files
+                data={storyData(data, showNames)}
+                privateNames={showFilesReminder(choice, data)}
+              />
             </aside>
           </div>
         </main>
@@ -172,13 +172,13 @@ function PageHead({
         <Image
           src={avatarUrl}
           alt=""
-          width={48}
-          height={48}
+          width={96}
+          height={96}
           preload
-          className="size-12 shrink-0 rounded-full border border-line"
+          className="size-16 shrink-0 rounded-full border border-line sm:size-24"
         />
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold">
+          <h1 className="truncate text-2xl font-semibold">
             {profile.name ?? login}
             <span className="font-normal text-muted"> · {meta.year}</span>
           </h1>
@@ -271,7 +271,8 @@ function Calendar({ data }: { data: RecapData }) {
           <>
             <CellField
               levels={calendarLevels(contributions.calendar)}
-              className="block aspect-[53/7] w-full"
+              fit
+              className="block h-auto w-full"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
               <p className="tabular-nums">
@@ -434,18 +435,18 @@ function Starred({ data }: { data: RecapData }) {
 
 /**
  * The story's files, made in this browser. Every file leaves the site, so `data` is the owner's
- * story projection: private names only when they chose to show them (ADR-0017). The panel is drawn
- * ink on paper, the letter's language, so its body is a paper sheet.
+ * story projection: private names only when they chose to show them (ADR-0017). Kept small in the
+ * sidebar: a size and four buttons.
  */
 function Files({ data, privateNames }: { data: RecapData; privateNames: boolean }) {
   return (
-    <Panel
-      id="files-title"
-      title="Files"
-      meta={`Made in this browser${privateNames ? "" : ", private repositories never named"}`}
-    >
-      <div className="on-light rounded-b-md bg-paper p-4 text-ink sm:p-6">
+    <Panel id="files-title" title="Download your story">
+      <div className="px-4 py-4">
         <ExportPanel data={data} privateNames={privateNames} card={OWNER_CARD} />
+        <p className="mt-3 text-sm text-muted">
+          MP4, PNG slides or PDF, made in this browser
+          {privateNames ? "." : ", without private repository names."}
+        </p>
       </div>
     </Panel>
   );
