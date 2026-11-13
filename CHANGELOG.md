@@ -6,12 +6,18 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 The 2026 edition, before its first release.
 
-### Changed
-
-- Production moved to [wrapyourgit.com](https://wrapyourgit.com); the old domain redirects there (ADR-0025). Titles, descriptions, keywords, JSON-LD, the FAQ and `llms.txt` describe the site as a GitHub Wrapped, and a NOTICE file and a README section ask forks to keep the credit ([#98](https://github.com/habibiahmada/wrapyourgit/issues/98)).
-
 ### Added
 
+- The story is a train ride through your year as a city. Cell drives an engine along a rail lined with one square per day, through a gate for each month that counts the year so far, and stops at fourteen stations: hello, your first day, private work, the whole city from above, your busiest day, your rhythm, languages, projects, community, engineering, your archetype, against last year, a letter from Cell and a closing party. Every number is printed on something in the scene. It is drawn on one 2D canvas, with no WebGL (ADR-0023) ([#86](https://github.com/habibiahmada/wrapyourgit/issues/86), [#88](https://github.com/habibiahmada/wrapyourgit/issues/88), [#92](https://github.com/habibiahmada/wrapyourgit/issues/92)).
+- At the letter the train stops, the camera comes in to a writing desk, the envelope there opens and the letter comes out before it fills the screen. Each later page slides in from the side ([#88](https://github.com/habibiahmada/wrapyourgit/issues/88), [#94](https://github.com/habibiahmada/wrapyourgit/issues/94)).
+- The web story fills the window instead of sitting between bands, and after five seconds at a stop it shows where to tap (ADR-0024) ([#94](https://github.com/habibiahmada/wrapyourgit/issues/94), [#96](https://github.com/habibiahmada/wrapyourgit/issues/96)).
+- The sound of wheels on the rails for as long as each move lasts ([#92](https://github.com/habibiahmada/wrapyourgit/issues/92)).
+- An MP4 in four shapes (9:16, 4:5, 1:1, 16:9), a PNG slide for every stop, a ZIP of them and one PDF, all made in your browser with no render server (ADR-0016) ([#56](https://github.com/habibiahmada/wrapyourgit/issues/56)).
+- A recap for every GitHub username at `/<username>`, built from public activity only. The signed-in owner sees their full recap at the same address, and Settings has a switch to hide the public one (ADR-0019) ([#67](https://github.com/habibiahmada/wrapyourgit/issues/67)).
+- Stars gained this year on public recaps, read from GitHub's star history, and a time budget on the first public fetch so a heavy account cannot run past the limit (ADR-0020) ([#71](https://github.com/habibiahmada/wrapyourgit/issues/71)).
+- Page views counted with Vercel Web Analytics: no cookies, and query strings are removed before a view leaves the browser. The privacy page says what is collected ([#75](https://github.com/habibiahmada/wrapyourgit/issues/75)).
+- "Sign out on all devices" in Settings ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
+- GitHub's mark in the header links to the repository, and the sample reel on the landing page has a visible Pause button ([#90](https://github.com/habibiahmada/wrapyourgit/issues/90)).
 - Preview deployments get their own Neon database branch, and a per-IP rate limit (60 per minute, then 429) covers `/api` and `/u/` ([#36](https://github.com/habibiahmada/wrapyourgit/issues/36)).
 - Production is live on Vercel + Neon at wrapyourgit.habibiahmada.dev (ADR-0015) ([#34](https://github.com/habibiahmada/wrapyourgit/issues/34)).
 - A deployment guide: staging on Vercel + Neon, production on an AWS VPS (systemd, Caddy, Postgres), updates, rollback, backups and the pre-launch checklist ([docs/deployment/guide.md](docs/deployment/guide.md)).
@@ -29,6 +35,13 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- Production moved to [wrapyourgit.com](https://wrapyourgit.com); the old domain redirects there (ADR-0025). Titles, descriptions, keywords, JSON-LD, the FAQ and `llms.txt` describe the site as a GitHub Wrapped, and a NOTICE file and a README section ask forks to keep the credit ([#98](https://github.com/habibiahmada/wrapyourgit/issues/98)).
+- The ride replaces the earlier stories: the story world with a moving camera, its scenes and its cut transitions are gone, on the web and in every file ([#92](https://github.com/habibiahmada/wrapyourgit/issues/92)).
+- The landing page is one isometric world. The hero is a quarter of a sample year as a city; each archetype, the letter, privacy and the closing are city blocks with Cell in the middle (ADR-0021, ADR-0022); and every section holds one to three things: the story in three acts, twelve frames of the ride, three measures with their definitions, archetypes in two rows of three, three privacy promises and the FAQ in two groups ([#80](https://github.com/habibiahmada/wrapyourgit/issues/80), [#84](https://github.com/habibiahmada/wrapyourgit/issues/84), [#88](https://github.com/habibiahmada/wrapyourgit/issues/88), [#90](https://github.com/habibiahmada/wrapyourgit/issues/90)).
+- Cell is a contribution cell: one block with pixel eyes, bar brows and a crest of three cells, dressed in blocky gear for each archetype (ADR-0021) ([#84](https://github.com/habibiahmada/wrapyourgit/issues/84)).
+- The landing page speaks to "you": "Type your GitHub username", "Play your year" and "Open your recap" ([#90](https://github.com/habibiahmada/wrapyourgit/issues/90)).
+- Public recap lookups are faster and stop before GitHub's REST quota runs out ([#73](https://github.com/habibiahmada/wrapyourgit/issues/73)).
+- Images and illustrations cannot be dragged, selected or saved from a right-click. Alt text is unchanged ([#26](https://github.com/habibiahmada/wrapyourgit/issues/26)).
 - The footer, README and third-party notices describe WrapYourGit as an independent project instead of disclaiming an affiliation.
 - Cell moves everywhere as baked 3D loops instead of live WebGL: animated WebP on the pages (a still under reduced motion) and sprite sheets in the story; the web app no longer ships three.js (ADR-0013) ([#24](https://github.com/habibiahmada/wrapyourgit/issues/24)).
 - The Projects chapter shows the year's commits as a 10 × 10 waffle coloured by repository, with names, commits and shares ([#24](https://github.com/habibiahmada/wrapyourgit/issues/24)).
@@ -42,7 +55,13 @@ The 2026 edition, before its first release.
 
 ### Fixed
 
+- A tap during a move is dropped instead of queued, and the tap zones no longer draw a focus box round a third of the story after a tap ([#94](https://github.com/habibiahmada/wrapyourgit/issues/94), [#96](https://github.com/habibiahmada/wrapyourgit/issues/96)).
+- The site's share card no longer draws its art over the headline ([#69](https://github.com/habibiahmada/wrapyourgit/issues/69)).
 - A sync that cannot reach GitHub says so instead of "Something went wrong" ([#8](https://github.com/habibiahmada/wrapyourgit/pull/8)).
 - Fact chips in the Community scene wrap instead of running off the 9:16 frame ([#14](https://github.com/habibiahmada/wrapyourgit/pull/14)).
+
+### Security
+
+- The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
 
 [Unreleased]: https://github.com/habibiahmada/wrapyourgit/commits/main
