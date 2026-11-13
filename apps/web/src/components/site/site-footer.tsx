@@ -13,7 +13,7 @@ export function SiteFooter({ base = "" }: { base?: "" | "/" }) {
             WrapYourGit {EDITION_YEAR}
           </Link>
           <p className="max-w-md text-sm text-muted">
-            An independent project, built on the GitHub API.
+            An independent side project, built on the GitHub API. Not affiliated with GitHub.
           </p>
         </div>
         <nav aria-label="Footer">
@@ -34,6 +34,14 @@ export function SiteFooter({ base = "" }: { base?: "" | "/" }) {
                 className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-blue hover:underline"
               >
                 Privacy policy
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/terms"
+                className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-blue hover:underline"
+              >
+                Terms of use
               </Link>
             </li>
           </ul>
