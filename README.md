@@ -85,7 +85,7 @@ Your year becomes a city, one building per day. The camera stops at 14 places an
   <tr>
     <td align="center"><img src="apps/web/public/landing/ride-community.webp" alt="Community: an observatory under a sky of stars, 128 stars earned and 12 forks" width="240"><br><b>9. Community</b><br><sub>Stars and forks</sub></td>
     <td align="center"><img src="apps/web/public/landing/ride-archetype.webp" alt="Your archetype: Builder, Cell in a hard hat in a city block where a building goes up" width="240"><br><b>11. Your archetype</b><br><sub>And why</sub></td>
-    <td align="center"><img src="apps/web/public/landing/ride-closing.webp" alt="The year in one frame: 2026, 1,284 contributions, 186 active days, Builder" width="240"><br><b>14. The year in one frame</b><br><sub>Fireworks over the city</sub></td>
+    <td align="center"><img src="apps/web/public/landing/ride-closing.webp" alt="The year in one frame: a party at the last stop, with 1,284 contributions, Builder beside a gold trophy and 186 active days" width="240"><br><b>14. The year in one frame</b><br><sub>Fireworks over the city</sub></td>
   </tr>
 </table>
 

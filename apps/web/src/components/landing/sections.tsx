@@ -108,7 +108,7 @@ const FRAMES = [
   },
   {
     file: "closing",
-    alt: "The year in one frame: a board reading 2026, 1,284 contributions, 186 active days, Builder",
+    alt: "The year in one frame: a party at the last stop, under a gate reading Dec 31, that was your 2026, with a podium for 1,284 contributions, Builder beside a gold trophy and 186 active days, among balloons and gifts",
   },
 ] as const;
 
