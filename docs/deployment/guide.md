@@ -78,12 +78,11 @@ What is set up, and how to set it up again:
    - Every push to `main` deploys production. Other branches are skipped (Settings → Build and Deployment → Ignored Build Step: "Only build production", ADR-0018).
 2. **Neon** through Vercel → Storage → Create Database → Neon: region Singapore, free plan, Neon Auth off, connected to the project with the variable prefix `DATABASE` (so the pooled string is `DATABASE_URL`).
 3. **Environment variables** as in the table and scopes above.
-4. **Rate limit:** Vercel → Firewall → Rules → "Rate limit /api, /u/ and recap pages": fixed window of 60 seconds, 60 requests per IP, then **429**, published to production, matching any of three Request Path conditions (OR):
+4. **Rate limit:** Vercel → Firewall → Rules → "Rate limit /api and /u/ endpoints": fixed window of 60 seconds, 60 requests per IP, then **429**, published to production, matching either of two Request Path conditions (OR):
    - starts with `/api`;
-   - starts with `/u/` (these redirect to `/<username>`, but `/u/<reserved name>` serves a recap itself);
-   - matches the expression `^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$`: the recap pages `/<username>` and their preview images. Each one can start a GitHub fetch held open for up to `maxDuration` (120 s), so they need the same per-IP ceiling as the API.
+   - starts with `/u/` (these redirect to `/<username>`, but `/u/<reserved name>` serves a recap itself).
 
-   The expression only matches one or two path segments with no dot, so static assets (`/_next/…`, `/art/…`, `/robots.txt`, `/icon.svg`) are never limited. It also matches site pages such as `/settings` and `/privacy`, which is harmless at 60 a minute. This edge limit sits in front of the app's own one (20 new lookups per client per hour, `server/public-policy.ts`), which only counts requests that reach GitHub; if the plan's rule editor ever lacks expression matching, keep the first two conditions and rely on that in-app limit for `/<username>`. Firewall changes apply without a redeploy; after a change, use Review Changes → Publish. The other rules, Cloudflare's part and the headers are in [Firewall, DNS and headers](#firewall-dns-and-headers).
+   The recap pages `/<username>` are **not** in this rule, and on the Hobby plan they cannot be added: see [Firewall, DNS and headers](#firewall-dns-and-headers), which also has the other rules, Cloudflare's part and the headers. **Do not delete or disable this rule:** the plan would not let it be made again. This edge limit sits in front of the app's own one (20 new lookups per client per hour, `server/public-policy.ts`), which only counts requests that reach GitHub.
 5. **Domain:** Vercel → Domains → add `wrapyourgit.com` (connected to Production, with "redirect apex to www" unticked) and `www.wrapyourgit.com` (308 redirect to `wrapyourgit.com`); Vercel shows a project-specific CNAME target. In Cloudflare (zone `wrapyourgit.com`): `CNAME @ → <that target>` and `CNAME www → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate. The first domain, `wrapyourgit.habibiahmada.dev`, stays on the project as a 308 redirect to `wrapyourgit.com` ([ADR-0025](../architecture/decisions/0025-production-at-wrapyourgit-com.md)).
 
 Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, `/lang`; `/sprites` was removed later, #63), `robots.txt`, `sitemap.xml`, the Open Graph image, HSTS (sent by Vercel), sign-in with the GitHub App, a full sync (about 20 seconds) into Neon, and the dashboard, with no console errors.
@@ -110,7 +109,7 @@ Not set up yet (M6). The checklist:
 
 Three layers, and only one of them sees a request: **Vercel's firewall**. Cloudflare answers DNS and nothing else, and the app sends a few headers of its own.
 
-> **Status (2026-11-13):** the headers ship with the app, and the human check has been on in production since its keys were set that day. The rate limit rule is live for `/api` only: a test that day got 429 after 60 requests on `/api/card`, while 75 requests to `/privacy` (which has the shape of a recap page) all passed, so its third condition was never published. Everything else in this section is **written down but not applied yet**: tick it off here as it is done.
+> **Status (2026-11-13):** the headers ship with the app, and the human check has been on in production since its keys were set that day. The rate limit rule is live for `/api` and `/u/` only, and on this plan it stays that way (rule 1 below). The other steps in this section are **written down but not applied yet**: tick them off here as they are done.
 
 #### Why Cloudflare stays DNS-only
 
@@ -128,17 +127,19 @@ Hobby allows **three custom rules**, one of which may be a rate limit, plus ten 
 
 From a terminal, once: `npx vercel@latest login`, then `cd apps/web && npx vercel@latest link` (`.vercel/` is gitignored). Rule changes are staged as a draft; `npx vercel@latest firewall diff` shows the draft and `npx vercel@latest firewall publish` puts it live. `npx vercel@latest firewall status` lists what is live, in the order it runs.
 
-- [ ] **Rule 1, the rate limit** (item 4 above). It exists, but without the condition for the recap pages. In the dashboard: Firewall → the rule → add an **OR** condition, Request Path, "matches expression", `^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$`, then Review Changes → Publish. Or make the whole rule again:
+- **Rule 1, the rate limit, as it is** (item 4 above): `/api` and `/u/`, 60 requests a minute per IP. It was meant to cover the recap pages too, and never did: on 2026-11-13, 75 requests to `/privacy` (which has a recap page's shape) all passed, while `/api/card` answered 429 after 60. Adding the condition was then refused when saving the rule, with **"Rate limiting is not available for this plan (402)"**. The rule that exists keeps running, but Hobby no longer lets a rate limit be changed, so:
+  - **Leave the rule alone.** Deleted or disabled, it could not be made again without Pro.
+  - **What covers the recap pages instead:** [the human check](#the-human-check) (a request with no person behind it starts no GitHub fetch), the app's own limit (20 new lookups per client an hour), the 12-hour store, and Vercel's own DDoS mitigation, which needs no rule. What none of them does is cap one address hammering a recap that is already stored; each of those requests is a database read and a render, not a GitHub call.
+  - **On Pro**, the full rule is the one below, and the check after it should show 60 answers and 15 times 429 (`/privacy` starts no GitHub fetch):
 
   ```bash
-  npx vercel@latest firewall rules add "Rate limit /api, /u/ and recap pages" \
+  npx vercel@latest firewall rules update "Rate limit /api and /u/ endpoints" \
     --condition '{"type":"path","op":"pre","value":"/api"}' --or \
     --condition '{"type":"path","op":"pre","value":"/u/"}' --or \
-    --condition '{"type":"path","op":"re","value":"^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$"}' \
-    --action rate_limit --rate-limit-window 60 --rate-limit-requests 60 --rate-limit-keys ip --yes
+    --condition '{"type":"path","op":"re","value":"^/[A-Za-z0-9-]{1,39}(/opengraph-image)?$"}' --yes
+  npx vercel@latest firewall publish
+  seq 1 75 | xargs -P 15 -I{} curl -s -o /dev/null -w "%{http_code}\n" https://wrapyourgit.com/privacy | sort | uniq -c
   ```
-
-  Then check it from outside: `seq 1 75 | xargs -P 15 -I{} curl -s -o /dev/null -w "%{http_code}\n" https://wrapyourgit.com/privacy | sort | uniq -c` should show 60 answers and 15 times 429. `/privacy` has a recap page's shape and starts no GitHub fetch.
 
 - [ ] **Rule 2, deny probes.** Scanners ask every site for `/.env`, `/wp-login.php`, `/.git/config` and the like. Here each of those would wake the `/<username>` function, since any single segment is a possible username. None of them can be a page of this app: a GitHub username has no dot, nothing the app serves starts with a dot except `/.well-known/`, and the app only handles `GET`, `HEAD` and `POST`.
 
@@ -179,7 +180,7 @@ From a terminal, once: `npx vercel@latest login`, then `cd apps/web && npx verce
 - [ ] **Bot Protection: log, not challenge.** `npx vercel@latest firewall rules update bot-protection --action log --yes`, then `publish`. A recap is made to be shared, and a shared link is fetched by a bot. Vercel lets its verified bots through (X, Facebook, LinkedIn, Google and others are on its list), but on 2026-11-13 that list had no entry for Slack, Discord, WhatsApp or Telegram, so **challenge** would risk blank cards exactly where developers paste links. Log shows who comes without stopping anyone. Read it for a while before deciding more.
 - [ ] **AI Bots: allow.** The site publishes `llms.txt` and wants to be found. Nothing to change; this is here so it is a decision and not an oversight.
 
-What these rules do not stop: a probe for a name that _could_ be a username (`/admin`, `/login`, `/wp-admin`). It reaches the app. With [the human check](#the-human-check) on it starts nothing, since a scanner holds no pass; without it, it may start one public fetch, bounded by the 12-hour cache, the 20 new lookups an hour per client, and rule 1 once it covers the recap pages.
+What these rules do not stop: a probe for a name that _could_ be a username (`/admin`, `/login`, `/wp-admin`). It reaches the app. With [the human check](#the-human-check) on it starts nothing, since a scanner holds no pass; without it, it may start one public fetch, bounded by the 12-hour cache and the 20 new lookups an hour per client.
 
 #### The human check
 
