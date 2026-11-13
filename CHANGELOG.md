@@ -54,6 +54,10 @@ The 2026 edition, before its first release.
 - Illustrations use a matte, studio-lit finish ([#10](https://github.com/habibiahmada/wrapyourgit/pull/10)).
 - The landing hero fills 90% of the viewport with the contribution graph at its base ([#10](https://github.com/habibiahmada/wrapyourgit/pull/10)).
 
+### Removed
+
+- Vercel Web Analytics: the site loads no analytics script, and the privacy policy says it runs no analytics. An AWS service may take its place later ([#130](https://github.com/habibiahmada/wrapyourgit/issues/130)).
+
 ### Fixed
 
 - A tap during a move is dropped instead of queued, and the tap zones no longer draw a focus box round a third of the story after a tap ([#94](https://github.com/habibiahmada/wrapyourgit/issues/94), [#96](https://github.com/habibiahmada/wrapyourgit/issues/96)).

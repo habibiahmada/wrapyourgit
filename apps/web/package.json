@@ -13,7 +13,6 @@
   "dependencies": {
     "@remotion/player": "4.0.541",
     "@remotion/web-renderer": "4.0.541",
-    "@vercel/analytics": "^2.0.1",
     "@wyg/analytics": "workspace:*",
     "@wyg/github": "workspace:*",
     "@wyg/schema": "workspace:*",
