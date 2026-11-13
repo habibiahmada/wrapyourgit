@@ -1,4 +1,4 @@
-import type { RecapData } from "@wyg/schema";
+import type { ArchetypeId, RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS, NO_ARCHETYPE } from "@wyg/video/copy";
 import { runnerUps } from "@wyg/video/present";
 import type { Metadata } from "next";
@@ -30,8 +30,10 @@ import { InstallPrivate } from "./install-private";
 import { SyncForm } from "./sync-form";
 
 /*
- * The signed-in home, laid out like a GitHub profile (DESIGN.md web): avatar and handle on the
- * left, the year's contribution graph, then boxes with hairline borders on the dark canvas.
+ * The signed-in home is a tool, not a page that sells (#113): a short page head with the two
+ * things to do, then dense panels on the canvas, the main column for the year's numbers and a
+ * sidebar for who the year made you. No landing bands, scroll reveals or scenery here, so the
+ * dashboard never reads as the landing. Every figure is from the recap.
  */
 
 /** Signed-in only: nothing here for search engines. */
@@ -56,8 +58,39 @@ export default function DashboardPage() {
 }
 
 const n = (value: number) => value.toLocaleString("en-US");
-const box = "rounded-xl border border-line bg-surface";
-const sectionTitle = "text-2xl font-bold sm:text-3xl";
+
+/** "Jan 3", from a recap's ISO date (UTC, as GitHub files the day). */
+const shortDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+
+/** One bordered box with a titled strip on top: the dashboard's only container. */
+function Panel({
+  id,
+  title,
+  meta,
+  children,
+}: {
+  id: string;
+  title: string;
+  meta?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section aria-labelledby={id} className="min-w-0 rounded-md border border-line bg-surface">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-3">
+        <h2 id={id} className="text-sm font-semibold">
+          {title}
+        </h2>
+        {meta && <p className="text-sm text-muted">{meta}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 async function Dashboard() {
   // Request-time render: the sync cooldown below depends on the current time.
@@ -71,50 +104,55 @@ async function Dashboard() {
   // Unanswered counts as hidden: the files never name a private repository before the owner says so.
   const choice = await getPrivateNamesChoice(user.id);
   const showNames = choice ?? false;
+  const { data } = recap;
+  const { meta } = data;
 
   return (
     <>
       <SiteHeader variant="app" current="dashboard" />
 
       <PageTransition>
-        <main id="main" className="flex flex-1 flex-col">
-          <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 sm:px-8 lg:grid-cols-[18rem_1fr]">
-            <Profile
-              data={recap.data}
-              avatarUrl={user.avatarUrl}
-              login={user.login}
-              syncedAt={recap.syncedAt}
-              retryAt={retryAt}
-            />
-            <div className="flex min-w-0 flex-col gap-10">
-              <Overview data={recap.data} />
-              <Highlights data={recap.data} />
-              <StarredSection data={recap.data} />
-              <section aria-labelledby="compare-title">
-                <h2 id="compare-title" className={sectionTitle}>
-                  {recap.data.meta.year} vs {recap.data.meta.year - 1}
-                </h2>
-                <p className="mt-2 mb-6 max-w-2xl text-muted">
-                  The same stretch of both years, side by side, so the comparison is fair while{" "}
-                  {recap.data.meta.year} is still running.
-                </p>
-                <YearComparison data={recap.data} />
-              </section>
-              <DownloadSection
-                data={storyData(recap.data, showNames)}
-                privateNames={showFilesReminder(choice, recap.data)}
+        <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-8">
+          <PageHead
+            data={data}
+            avatarUrl={user.avatarUrl}
+            login={user.login}
+            syncedAt={recap.syncedAt}
+            retryAt={retryAt}
+          />
+          <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="grid min-w-0 gap-6">
+              <Overview data={data} />
+              <Calendar data={data} />
+              <Panel
+                id="compare-title"
+                title={`${meta.year} against ${meta.year - 1}`}
+                meta="Same stretch of both years"
+              >
+                <YearComparison data={data} />
+              </Panel>
+              <div className="grid gap-6 md:grid-cols-2">
+                <Languages data={data} />
+                <Starred data={data} />
+              </div>
+              <Files
+                data={storyData(data, showNames)}
+                privateNames={showFilesReminder(choice, data)}
               />
             </div>
+            <aside aria-label="Your profile" className="grid min-w-0 gap-6">
+              <Archetype data={data} />
+              <InstallPrivate />
+            </aside>
           </div>
-          <InstallPrivate />
         </main>
       </PageTransition>
     </>
   );
 }
 
-/** The left column, like a GitHub profile sidebar. */
-function Profile({
+/** Who and which year, the two actions, and how fresh the numbers are. */
+function PageHead({
   data,
   avatarUrl,
   login,
@@ -127,274 +165,288 @@ function Profile({
   syncedAt: Date;
   retryAt: Date | null;
 }) {
-  const { identity, profile } = data;
-  const art = identity.archetype ? `skin-${identity.archetype}` : "cutout-cell-proud";
+  const { meta, profile } = data;
   return (
-    <aside className="flex flex-col gap-5">
-      <Image
-        src={avatarUrl}
-        alt=""
-        width={296}
-        height={296}
-        preload
-        className="hidden size-56 rounded-full border border-line lg:block lg:size-72"
-      />
-      <div>
-        {profile.name && <p className="text-2xl font-bold">{profile.name}</p>}
-        <p className="text-xl text-muted">@{login}</p>
-      </div>
-      <Link
-        href={recapPath(login)}
-        transitionTypes={["nav-forward"]}
-        className={`${button.primary} w-full`}
-      >
-        Play your story
-      </Link>
-      <div>
-        <SyncForm label="Sync again" retryAt={retryAt?.toISOString() ?? null} variant="secondary" />
-        <p className="text-sm text-muted">
-          Last synced{" "}
-          {syncedAt.toLocaleString("en-US", {
-            dateStyle: "medium",
-            timeStyle: "short",
-            timeZone: "UTC",
-          })}{" "}
-          UTC
-        </p>
-      </div>
-      <div className={`overflow-hidden ${box}`}>
-        <div className="border-b border-line bg-canvas px-3 pt-3">
-          <Art
-            id={art}
-            alt={
-              identity.archetype
-                ? `Cell dressed as the ${ARCHETYPE_LABELS[identity.archetype]}`
-                : "Cell, proud of your year"
-            }
-            className="h-auto w-full"
-          />
-        </div>
-        <p className="px-4 py-3 text-sm text-muted">
-          Your archetype:{" "}
-          <span className="font-semibold text-fg">
-            {identity.archetype ? ARCHETYPE_LABELS[identity.archetype] : NO_ARCHETYPE}
-          </span>
-        </p>
-      </div>
-    </aside>
-  );
-}
-
-function Overview({ data }: { data: RecapData }) {
-  const { contributions, meta } = data;
-  return (
-    <section aria-labelledby="dash-title">
-      <h1 id="dash-title" className="text-xl font-semibold">
-        <span className="text-4xl font-bold tabular-nums sm:text-5xl">
-          {n(contributions.total)}
-        </span>{" "}
-        contributions in {meta.year}
-        {!meta.isFinal && <span className="text-muted"> so far, up to {meta.periodEnd}</span>}
-      </h1>
-      {contributions.privateCount.status === "ok" && contributions.privateCount.value > 0 && (
-        <p className="mt-2 text-muted">
-          {n(contributions.privateCount.value)} of them went to private repositories, yours and your
-          organisations'. They count, and their names stay private.
-        </p>
-      )}
-      {/* The year as GitHub draws it on your profile. */}
-      <div className={`mt-4 p-4 ${box}`}>
-        <CellField
-          levels={calendarLevels(contributions.calendar)}
-          className="block aspect-[53/7] w-full"
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <Image
+          src={avatarUrl}
+          alt=""
+          width={48}
+          height={48}
+          preload
+          className="size-12 shrink-0 rounded-full border border-line"
         />
-        <div className="mt-3 flex items-center justify-end gap-1 text-xs text-muted" aria-hidden>
-          Less
-          {["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"].map((c) => (
-            <span
-              key={c}
-              className="size-2.5 rounded-[2px] ring-1 ring-white/10"
-              style={{ background: c }}
-            />
-          ))}
-          More
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold">
+            {profile.name ?? login}
+            <span className="font-normal text-muted"> · {meta.year}</span>
+          </h1>
+          <p className="truncate text-sm text-muted">
+            @{login} · synced{" "}
+            {syncedAt.toLocaleString("en-US", {
+              dateStyle: "medium",
+              timeStyle: "short",
+              timeZone: "UTC",
+            })}{" "}
+            UTC{!meta.isFinal && `, counts up to ${shortDate(meta.periodEnd)}`}
+          </p>
         </div>
       </div>
-    </section>
+      <div className="flex flex-wrap items-start gap-2">
+        <SyncForm label="Sync again" retryAt={retryAt?.toISOString() ?? null} variant="secondary" />
+        <Link href={recapPath(login)} transitionTypes={["nav-forward"]} className={button.primary}>
+          Play your story
+        </Link>
+      </div>
+    </div>
   );
 }
 
-function Highlights({ data }: { data: RecapData }) {
-  const { contributions, languages, identity, engineering } = data;
-  const also = identity.archetype ? runnerUps(identity) : [];
+/** The year's headline numbers in one grid, contributions first and in green. */
+function Overview({ data }: { data: RecapData }) {
+  const { contributions, engineering, meta } = data;
+  const streak = contributions.longestStreak;
+  const privateCount =
+    contributions.privateCount.status === "ok" ? contributions.privateCount.value : 0;
   const stats = [
-    { label: "Active days", value: n(contributions.activeDays) },
-    { label: "Longest streak", value: `${contributions.longestStreak.days} days` },
-    { label: "Commits", value: n(contributions.commits) },
-    { label: "Pull requests", value: n(engineering.prsOpened) },
-    { label: "Reviews", value: n(engineering.reviews) },
+    {
+      label: "Contributions",
+      value: n(contributions.total),
+      note: privateCount > 0 ? `${n(privateCount)} private` : meta.isFinal ? "" : "So far",
+      lead: true,
+    },
+    { label: "Active days", value: n(contributions.activeDays), note: "" },
+    {
+      label: "Longest streak",
+      value: `${n(streak.days)} ${streak.days === 1 ? "day" : "days"}`,
+      note:
+        streak.days > 1 && streak.start && streak.end
+          ? `${shortDate(streak.start)} to ${shortDate(streak.end)}`
+          : "",
+    },
+    { label: "Commits", value: n(contributions.commits), note: "" },
+    { label: "Pull requests", value: n(engineering.prsOpened), note: "Opened" },
+    { label: "Reviews", value: n(engineering.reviews), note: "For others" },
   ];
   return (
-    <section aria-labelledby="highlights-title" className="flex flex-col gap-6">
-      <h2 id="highlights-title" className="sr-only">
-        Highlights
-      </h2>
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+    <Panel id="overview-title" title="Overview">
+      {/* A one-pixel gap over the line colour draws the grid's inner rules. */}
+      <dl className="grid grid-cols-2 gap-px bg-line sm:grid-cols-3">
         {stats.map((stat) => (
-          <div key={stat.label} className={`reveal p-4 ${box}`}>
+          <div key={stat.label} className="bg-surface px-4 py-4">
             <dt className="text-sm text-muted">{stat.label}</dt>
-            <dd className="mt-1 text-2xl font-bold tabular-nums">{stat.value}</dd>
+            <dd
+              className={`mt-1 text-2xl font-semibold tabular-nums ${stat.lead ? "text-green" : ""}`}
+            >
+              {stat.value}
+            </dd>
+            {stat.note && <dd className="text-sm text-muted tabular-nums">{stat.note}</dd>}
           </div>
         ))}
       </dl>
-      <div className="grid gap-6 xl:grid-cols-2">
-        <div className={`reveal p-5 ${box}`}>
-          <h3 className="text-sm font-semibold text-muted">Your archetype</h3>
-          <p className="mt-1 text-3xl font-bold">
-            {identity.archetype ? ARCHETYPE_LABELS[identity.archetype] : NO_ARCHETYPE}
-          </p>
-          {also.length > 0 && (
-            <p className="mt-1 text-muted">
-              also part {also.map((id) => ARCHETYPE_LABELS[id]).join(" and part ")}
-            </p>
-          )}
-          {identity.reasons.length > 0 && (
-            <ul className="mt-4 space-y-2">
-              {identity.reasons.map((reason) => (
-                <li key={reason} className="flex gap-3">
+      {privateCount > 0 && (
+        <p className="border-t border-line px-4 py-3 text-sm text-muted">
+          Private contributions count in your total. Their repository names stay private.
+        </p>
+      )}
+    </Panel>
+  );
+}
+
+/** Every day of the year as a square, with the busiest one named. */
+function Calendar({ data }: { data: RecapData }) {
+  const { contributions, meta } = data;
+  const days = contributions.calendar.length;
+  const share = days > 0 ? Math.round((contributions.activeDays / days) * 100) : 0;
+  const busiest = contributions.busiestDay;
+  return (
+    <Panel
+      id="calendar-title"
+      title="Contribution calendar"
+      meta={`Active on ${n(contributions.activeDays)} of ${n(days)} days, ${share}%`}
+    >
+      <div className="px-4 py-4">
+        {contributions.total > 0 ? (
+          <>
+            <CellField
+              levels={calendarLevels(contributions.calendar)}
+              className="block aspect-[53/7] w-full"
+            />
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
+              <p className="tabular-nums">
+                {busiest
+                  ? `Busiest day: ${shortDate(busiest.date)}, ${n(busiest.count)} contributions`
+                  : ""}
+              </p>
+              <div className="flex items-center gap-1 text-xs" aria-hidden>
+                Less
+                {["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"].map((c) => (
                   <span
-                    aria-hidden
-                    className="mt-1.5 size-2.5 shrink-0 rounded-[2px] bg-[#26a641]"
+                    key={c}
+                    className="size-2.5 rounded-[2px] ring-1 ring-white/10"
+                    style={{ background: c }}
                   />
-                  {reason}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className={`reveal p-5 ${box}`}>
-          <h3 className="text-sm font-semibold text-muted">Languages you lived in</h3>
-          {languages.top.length > 0 ? (
-            <ul className="mt-3 space-y-3">
-              {languages.top.map((language) => (
-                <li key={language.name} className="flex items-center gap-3">
-                  <LanguageBadge name={language.name} color={language.color} size={28} />
-                  <span className="flex-1 font-semibold">{language.name}</span>
-                  <span className="text-muted tabular-nums">
-                    {Math.round(language.share * 100)}%
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-muted">Not enough data yet. Sync again after a few commits.</p>
-          )}
-        </div>
+                ))}
+                More
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-muted">
+            No contributions in {meta.year} yet. Push a commit, then sync again.
+          </p>
+        )}
       </div>
-    </section>
+    </Panel>
+  );
+}
+
+/** What each archetype's block shows, for its alt text. */
+const BLOCK_ALT: Record<ArchetypeId, string> = {
+  builder: "Cell in a hard hat in a city block where a building goes up under a crane",
+  consistent: "Cell in a sweatband on a running track, with a podium and a clock tower",
+  explorer: "Cell with a backpack in a block with a snowy mountain, a lake, tents and a lighthouse",
+  collaborator: "Cell in a headset on an office campus where a team talks round café tables",
+  "night-owl": "Cell in glasses in a city block late at night, most windows lit, an owl on a roof",
+  "open-sourcer": "Cell cheering in a town square with a stage, a crowd, stalls and a fountain",
+};
+
+/** The archetype with what earned it, as a profile card in the sidebar. */
+function Archetype({ data }: { data: RecapData }) {
+  const { identity } = data;
+  const id = identity.archetype;
+  const also = id ? runnerUps(identity) : [];
+  return (
+    <Panel id="archetype-title" title="Your archetype">
+      <div className="px-4 py-4">
+        <Art
+          id={id ? `skin-${id}` : "cutout-cell-proud"}
+          alt={id ? BLOCK_ALT[id] : "Cell, proud of your year"}
+          className="mx-auto h-auto w-full max-w-64"
+        />
+        <p className="mt-3 text-xl font-semibold">{id ? ARCHETYPE_LABELS[id] : NO_ARCHETYPE}</p>
+        {also.length > 0 && (
+          <p className="text-sm text-muted">
+            Also part {also.map((other) => ARCHETYPE_LABELS[other]).join(" and part ")}
+          </p>
+        )}
+        {identity.reasons.length > 0 ? (
+          <ul className="mt-3 space-y-2 border-t border-line pt-3 text-sm">
+            {identity.reasons.map((reason) => (
+              <li key={reason} className="flex gap-2">
+                <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-[2px] bg-[#26a641]" />
+                {reason}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 border-t border-line pt-3 text-sm text-muted">
+            None of the archetypes' rules is met yet. A few more weeks of work usually settle it.
+          </p>
+        )}
+      </div>
+    </Panel>
   );
 }
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
+/** Share of their own commits per language, as bars. */
+function Languages({ data }: { data: RecapData }) {
+  const { languages } = data;
+  return (
+    <Panel id="languages-title" title="Languages" meta="By your commits">
+      {languages.top.length > 0 ? (
+        <ul className="space-y-3 px-4 py-4">
+          {languages.top.map((language) => (
+            <li key={language.name}>
+              <div className="flex items-center gap-2 text-sm">
+                <LanguageBadge name={language.name} color={language.color} size={20} />
+                <span className="flex-1 font-semibold">{language.name}</span>
+                <span className="text-muted tabular-nums">{Math.round(language.share * 100)}%</span>
+              </div>
+              <div aria-hidden className="mt-1.5 h-1.5 rounded-full bg-overlay">
+                <div
+                  className="h-full rounded-full bg-[#26a641]"
+                  style={{ width: `${Math.max(2, language.share * 100)}%` }}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="px-4 py-4 text-sm text-muted">
+          Not enough commits to tell yet. Sync again after a few.
+        </p>
+      )}
+    </Panel>
+  );
+}
+
 /**
- * What caught your eye: repositories you starred this year (metrics.md, "Starred by you"). The
+ * The most popular repositories they starred this year (metrics.md, "Starred by you"). The
  * dashboard is private, so private repositories are named here; public surfaces drop them.
  */
-function StarredSection({ data }: { data: RecapData }) {
-  const { starred, languages, meta } = data;
-  if (starred.status !== "ok" || starred.value.count === 0) return null;
-  const { count, top, languages: starredLanguages } = starred.value;
-  const wrote = languages.top[0]?.name;
-  const eyed = starredLanguages[0]?.name;
+function Starred({ data }: { data: RecapData }) {
+  const { starred, meta } = data;
+  const hasStars = starred.status === "ok" && starred.value.count > 0;
   return (
-    <section aria-labelledby="starred-title">
-      <h2 id="starred-title" className={sectionTitle}>
-        What caught your eye
-      </h2>
-      <p className="mt-2 mb-6 max-w-2xl text-muted">
-        You starred{" "}
-        <span className="font-semibold text-fg tabular-nums">
-          {starred.estimated ? "~" : ""}
-          {n(count)}
-        </span>{" "}
-        {count === 1 ? "repository" : "repositories"} in {meta.year}
-        {!meta.isFinal && " so far"}.
-        {wrote && eyed && wrote !== eyed && (
-          <>
-            {" "}
-            You wrote mostly {wrote}, but starred mostly {eyed}.
-          </>
-        )}
-      </p>
-      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <div className={`reveal p-5 ${box}`}>
-          <h3 className="text-sm font-semibold text-muted">The most popular ones you starred</h3>
-          <ol className="mt-3 divide-y divide-line">
-            {top.map((repo) => (
-              <li key={repo.nameWithOwner} className="flex items-center gap-3 py-2.5">
-                <a
-                  href={`https://github.com/${repo.nameWithOwner}`}
-                  className="min-w-0 flex-1 truncate font-semibold text-blue hover:underline"
-                >
-                  {repo.nameWithOwner}
-                </a>
-                {repo.primaryLanguage && (
-                  <span className="hidden text-sm text-muted sm:inline">
-                    {repo.primaryLanguage}
-                  </span>
-                )}
-                <span className="flex items-center gap-1 text-muted tabular-nums">
-                  <svg aria-hidden viewBox="0 0 16 16" className="size-4 fill-current">
-                    <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
-                  </svg>
-                  <span className="sr-only">Stars:</span>
-                  {compact.format(repo.stars)}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
-        {starredLanguages.length > 0 && (
-          <div className={`reveal p-5 ${box}`}>
-            <h3 className="text-sm font-semibold text-muted">Languages you starred</h3>
-            <ul className="mt-3 space-y-3">
-              {starredLanguages.map((language) => (
-                <li key={language.name} className="flex items-center gap-3">
-                  <LanguageBadge name={language.name} color={null} size={28} />
-                  <span className="flex-1 font-semibold">{language.name}</span>
-                  <span className="text-muted tabular-nums">
-                    {n(language.count)} {language.count === 1 ? "repo" : "repos"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </section>
+    <Panel
+      id="starred-title"
+      title="Starred"
+      meta={
+        hasStars
+          ? `${starred.estimated ? "About " : ""}${n(starred.value.count)} in ${meta.year}`
+          : undefined
+      }
+    >
+      {hasStars ? (
+        <ol className="divide-y divide-line px-4">
+          {starred.value.top.map((repo) => (
+            <li key={repo.nameWithOwner} className="flex items-center gap-3 text-sm">
+              <a
+                href={`https://github.com/${repo.nameWithOwner}`}
+                className="min-h-11 min-w-0 flex-1 truncate py-3 font-semibold text-blue hover:underline"
+              >
+                {repo.nameWithOwner}
+              </a>
+              <span className="flex items-center gap-1 text-muted tabular-nums">
+                <svg aria-hidden viewBox="0 0 16 16" className="size-4 fill-current">
+                  <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
+                </svg>
+                <span className="sr-only">Stars:</span>
+                {compact.format(repo.stars)}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="px-4 py-4 text-sm text-muted">
+          {starred.status === "ok"
+            ? `You haven't starred a repository in ${meta.year} yet.`
+            : "Your stars couldn't be read from GitHub this time. Sync again later."}
+        </p>
+      )}
+    </Panel>
   );
 }
 
 /**
  * The story's files, made in this browser. Every file leaves the site, so `data` is the owner's
  * story projection: private names only when they chose to show them (ADR-0017). The panel is drawn
- * ink on paper, the letter's language, so it sits on a paper sheet here rather than on the dark
- * canvas.
+ * ink on paper, the letter's language, so its body is a paper sheet.
  */
-function DownloadSection({ data, privateNames }: { data: RecapData; privateNames: boolean }) {
+function Files({ data, privateNames }: { data: RecapData; privateNames: boolean }) {
   return (
-    <section aria-labelledby="download-title">
-      <h2 id="download-title" className={sectionTitle}>
-        Download your story
-      </h2>
-      <p className="mt-2 mb-6 max-w-2xl text-muted">
-        Your story as a video, slides or a PDF, made in this browser.
-        {privateNames ? "" : " Private repositories are never named."}
-      </p>
-      <div className="on-light rounded-xl border border-line bg-paper p-5 text-ink sm:p-8">
+    <Panel
+      id="files-title"
+      title="Files"
+      meta={`Made in this browser${privateNames ? "" : ", private repositories never named"}`}
+    >
+      <div className="on-light rounded-b-md bg-paper p-4 text-ink sm:p-6">
         <ExportPanel data={data} privateNames={privateNames} card={OWNER_CARD} />
       </div>
-    </section>
+    </Panel>
   );
 }

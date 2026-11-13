@@ -1,10 +1,11 @@
 import { EDITION_YEAR } from "@wyg/schema";
-import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
+import { recapPath } from "@/server/routes";
 import { SITE } from "@/site";
+import { AccountMenu } from "./account-menu";
 import { LogoMark } from "./logo-mark";
 import { SiteNav } from "./site-nav";
 
@@ -110,35 +111,11 @@ async function AccountNav({ current }: { current: AppPage }) {
   const user = await getCurrentUser();
   if (!user) return null;
   return (
-    <nav aria-label="Account" className="flex items-center gap-1 sm:gap-3">
-      <Link
-        href="/dashboard"
-        transitionTypes={["nav-back"]}
-        aria-current={current === "dashboard" ? "page" : undefined}
-        className="hidden min-h-11 items-center gap-2 rounded-[var(--radius-control)] px-2 font-semibold hover:bg-overlay sm:inline-flex"
-      >
-        <Image
-          src={user.avatarUrl}
-          alt=""
-          width={32}
-          height={32}
-          className="rounded-full border border-line"
-        />
-        @{user.login}
-      </Link>
-      <Link
-        href="/settings"
-        transitionTypes={["nav-forward"]}
-        aria-current={current === "settings" ? "page" : undefined}
-        className={`${button.quiet} whitespace-nowrap max-sm:px-3 aria-[current=page]:border-muted`}
-      >
-        Settings
-      </Link>
-      <form action="/api/auth/signout" method="post">
-        <button type="submit" className={`${button.quiet} whitespace-nowrap max-sm:px-3`}>
-          Sign out
-        </button>
-      </form>
-    </nav>
+    <AccountMenu
+      login={user.login}
+      avatarUrl={user.avatarUrl}
+      current={current}
+      storyHref={recapPath(user.login)}
+    />
   );
 }
