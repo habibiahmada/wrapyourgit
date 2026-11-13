@@ -28,6 +28,17 @@
   --radius-control: 6px;
 }
 
+/* The story's cue to tap on: "»" leans toward the right edge and back (world-player.tsx). */
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
 /* Loading illustrations bob in place (motion-safe only, see loading-cell.tsx). */
 @keyframes bob {
   0%,
