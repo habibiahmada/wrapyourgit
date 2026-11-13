@@ -53,7 +53,9 @@ function structuredData() {
         "@id": `${url}/#website`,
         url,
         name: SITE.name,
+        alternateName: [...SITE.alternateNames],
         description: SITE.description,
+        keywords: SITE.keywords.join(", "),
         inLanguage: "en",
         publisher: { "@id": `${url}/#author` },
       },
@@ -69,7 +71,10 @@ function structuredData() {
         "@type": "WebApplication",
         "@id": `${url}/#app`,
         name: SITE.name,
+        alternateName: [...SITE.alternateNames],
         url,
+        keywords: SITE.keywords.join(", "),
+        sameAs: [SITE.repository],
         description: SITE.description,
         image: `${url}/opengraph-image`,
         applicationCategory: "DeveloperApplication",
@@ -78,6 +83,7 @@ function structuredData() {
         isAccessibleForFree: true,
         offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
         author: { "@id": `${url}/#author` },
+        isBasedOn: { "@id": `${url}/#source` },
         featureList: [
           `Your ${EDITION_YEAR} GitHub contributions, active days and longest streak`,
           "Languages weighted by what you actually committed",
@@ -85,8 +91,19 @@ function structuredData() {
           "Pull requests, reviews and issues",
           "A developer archetype with the facts behind it",
           "Comparison with the same span of last year",
-          "Slides as PNG, a PDF and a public page for every GitHub username",
+          "An MP4 video, slides as PNG and a PDF in four shapes, and a share card",
+          "A public page for every GitHub username",
         ],
+      },
+      {
+        "@type": "SoftwareSourceCode",
+        "@id": `${url}/#source`,
+        name: SITE.name,
+        codeRepository: SITE.repository,
+        programmingLanguage: "TypeScript",
+        license: "https://opensource.org/licenses/MIT",
+        author: { "@id": `${url}/#author` },
+        copyrightHolder: { "@id": `${url}/#author` },
       },
       {
         "@type": "FAQPage",
@@ -130,8 +147,8 @@ export default function Home({ searchParams }: PageProps<"/">) {
                     Every <span className="text-green">green square</span> has a story.
                   </h1>
                   <p className="mt-6 max-w-md text-lg text-muted">
-                    Type your GitHub username and watch your {EDITION_YEAR} play back as a short
-                    animated story. Sign in to include your private work.
+                    Your GitHub Wrapped for {EDITION_YEAR}. Type your GitHub username and watch the
+                    year play back as a short animated story. Sign in to include your private work.
                   </p>
                   <div className="mt-8">
                     <Suspense fallback={<HeroForm />}>

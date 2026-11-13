@@ -3,7 +3,7 @@ import { siteUrl } from "@/site";
 
 // Bump when a page's content changes. A fixed date, not new Date(): a build-time clock would tell
 // crawlers every page changed on every deploy.
-const UPDATED = new Date("2026-11-04");
+const UPDATED = new Date("2026-11-13");
 
 /**
  * Static public pages. Every GitHub account has a recap at /<username>, and those pages ask not to
