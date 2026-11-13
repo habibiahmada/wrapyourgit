@@ -110,7 +110,7 @@ export function StorySection() {
     <section
       id="story"
       aria-labelledby="story-title"
-      className="band tone-dark motif-lattice reach-left relative overflow-hidden py-24 sm:py-32"
+      className="band tone-dark motif-lattice reach-left relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
@@ -130,7 +130,7 @@ export function StorySection() {
               className="reveal glass-card glass-card-interactive flex flex-col justify-between rounded-xl p-3"
             >
               <div>
-                <div className="overflow-hidden rounded-lg border border-line bg-canvas">
+                <div className="overflow-clip rounded-lg border border-line bg-canvas">
                   <Image
                     src={item.image}
                     alt={item.imageAlt}
@@ -163,7 +163,7 @@ export function SampleReelSection() {
   return (
     <section
       aria-labelledby="reel-title"
-      className="band tone-green motif-dots reach-center relative overflow-hidden py-16 sm:py-20"
+      className="band tone-green motif-dots reach-center relative overflow-clip py-16 sm:py-20"
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <h2 id="reel-title" className="sr-only">
@@ -203,7 +203,7 @@ export function MetricsTrioSection() {
   return (
     <section
       aria-labelledby="metrics-title"
-      className="band tone-light motif-hatch reach-right relative overflow-hidden py-24 sm:py-32"
+      className="band tone-light motif-hatch reach-right relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr] lg:items-end">
@@ -281,7 +281,7 @@ export function ArchetypesSection() {
     <section
       id="archetypes"
       aria-labelledby="archetypes-title"
-      className="band tone-dark motif-dots reach-full relative overflow-hidden py-24 sm:py-32"
+      className="band tone-dark motif-dots reach-full relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
@@ -299,7 +299,7 @@ export function ArchetypesSection() {
           {ARCHETYPES_CRAFT.map(({ id, rule }) => (
             <li
               key={id}
-              className="reveal glass-card glass-card-interactive flex flex-col overflow-hidden rounded-xl"
+              className="reveal glass-card glass-card-interactive flex flex-col overflow-clip rounded-xl"
             >
               <div className="relative flex items-center justify-center border-b border-line bg-canvas/70 px-6 py-8">
                 <Art id={`skin-${id}`} alt="" className="reveal-float w-full max-w-[250px]" />
@@ -320,7 +320,7 @@ export function ArchetypesCommunitySection() {
   return (
     <section
       aria-labelledby="archetypes-community-title"
-      className="band tone-green motif-lattice reach-bottom relative overflow-hidden py-24 sm:py-32"
+      className="band tone-green motif-lattice reach-bottom relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
@@ -338,7 +338,7 @@ export function ArchetypesCommunitySection() {
           {ARCHETYPES_COMMUNITY.map(({ id, rule }) => (
             <li
               key={id}
-              className="reveal glass-card glass-card-interactive flex flex-col overflow-hidden rounded-xl"
+              className="reveal glass-card glass-card-interactive flex flex-col overflow-clip rounded-xl"
             >
               <div className="relative flex items-center justify-center border-b border-line bg-canvas/70 px-6 py-8">
                 <Art id={`skin-${id}`} alt="" className="reveal-float w-full max-w-[250px]" />
@@ -371,7 +371,7 @@ export function LetterSection() {
   return (
     <section
       aria-labelledby="letter-title"
-      className="band tone-light motif-dots reach-left relative overflow-hidden py-24 sm:py-32"
+      className="band tone-light motif-dots reach-left relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-8 lg:grid-cols-12">
         <div className="lg:col-span-5">
@@ -392,7 +392,7 @@ export function LetterSection() {
           {LETTERS.map(({ id, line }, i) => (
             <figure
               key={id}
-              className={`reveal glass-card glass-card-interactive overflow-hidden rounded-xl ${
+              className={`reveal glass-card glass-card-interactive overflow-clip rounded-xl ${
                 i === 1 ? "lg:ml-8" : i === 2 ? "lg:ml-16" : ""
               }`}
             >
@@ -434,7 +434,7 @@ export function VideoExportSection() {
     <section
       id="keep"
       aria-labelledby="keep-title"
-      className="band tone-dark motif-hatch reach-right relative overflow-hidden py-24 sm:py-32"
+      className="band tone-dark motif-hatch reach-right relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
@@ -477,7 +477,7 @@ export function KeepSection() {
   return (
     <section
       aria-labelledby="take-title"
-      className="band tone-green motif-lattice reach-left relative overflow-hidden py-24 sm:py-32"
+      className="band tone-green motif-lattice reach-left relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-8 lg:grid-cols-12">
         {/*
@@ -494,7 +494,7 @@ export function KeepSection() {
                   boxShadow:
                     "-8px 8px 0 #161b22, -9px 9px 0 #30363d, -18px 22px 30px rgba(1,4,9,0.7)",
                 }}
-                className="absolute top-1/2 left-1/2 w-48 overflow-hidden border border-green/40 bg-surface sm:w-64"
+                className="absolute top-1/2 left-1/2 w-48 overflow-clip border border-green/40 bg-surface sm:w-64"
               >
                 <Image
                   src={RIDE_IMAGES[file]}
@@ -552,7 +552,7 @@ export function PrivacySection() {
     <section
       id="privacy"
       aria-labelledby="privacy-title"
-      className="band tone-light motif-dots reach-right relative overflow-hidden py-24 sm:py-32"
+      className="band tone-light motif-dots reach-right relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-8 lg:grid-cols-12">
         <div className="lg:col-span-7">
@@ -623,7 +623,7 @@ export function FaqSection() {
     <section
       id="faq"
       aria-labelledby="faq-title"
-      className="band tone-dark motif-hatch reach-sides relative overflow-hidden py-24 sm:py-32"
+      className="band tone-dark motif-hatch reach-sides relative overflow-clip py-24 sm:py-32"
     >
       {/* One centred column: the heading over the list, nothing beside them. */}
       <div className="relative z-10 mx-auto max-w-3xl px-4 sm:px-8">
@@ -657,7 +657,7 @@ export function ClosingSection({ action }: { action: ReactNode }) {
   return (
     <section
       aria-labelledby="closing-title"
-      className="band tone-green motif-dots reach-center relative overflow-hidden py-24 sm:py-32"
+      className="band tone-green motif-dots reach-center relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-8 lg:grid-cols-[1fr_1.15fr]">
         <div className="reveal-left">
