@@ -438,3 +438,127 @@ html {
     outline-color: var(--color-ink);
   }
 }
+
+/*
+ * The landing's floor. Under every section runs one layer that never breaks: wall lines every
+ * 128px, the same x on every band, so they read as one place from top to bottom. Each section
+ * then lays its own tone and motif over it (`.band`), and a border marks where one ends.
+ */
+.iso-field {
+  background-color: var(--color-canvas);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='8'%3E%3Cpath d='M0 0V8' stroke='%2330363d' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 128px 8px;
+}
+
+.band {
+  isolation: isolate;
+  /* The tone fades out at both edges, so neighbouring sections meet on the bare floor. */
+  background-image: linear-gradient(
+    to bottom,
+    transparent,
+    var(--tone, transparent) 18%,
+    var(--tone, transparent) 82%,
+    transparent
+  );
+}
+/*
+ * The motif sits on its own layer, cut by a soft mask: a section may show it on one side, in the
+ * middle or across, but it always fades to nothing before an edge.
+ */
+.band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--motif, none);
+  background-size: var(--motif-size, auto);
+  mask-image: var(
+    --reach,
+    linear-gradient(to bottom, transparent, black 25%, black 75%, transparent)
+  );
+}
+/* The border between sections, fading out at both ends instead of cutting across. */
+.band::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-line) 20%,
+    var(--color-line) 80%,
+    transparent
+  );
+}
+.band-open::after {
+  display: none;
+}
+.reach-full {
+  --reach: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+}
+.reach-left {
+  --reach: radial-gradient(ellipse 60% 70% at 0% 50%, black, transparent);
+}
+.reach-right {
+  --reach: radial-gradient(ellipse 60% 70% at 100% 50%, black, transparent);
+}
+.reach-center {
+  --reach: radial-gradient(ellipse 50% 60% at 50% 50%, black, transparent);
+}
+.reach-top {
+  --reach: radial-gradient(ellipse 80% 55% at 50% 0%, black, transparent);
+}
+.reach-bottom {
+  --reach: radial-gradient(ellipse 80% 55% at 50% 100%, black, transparent);
+}
+.tone-dark {
+  --tone: rgb(1 4 9 / 0.6);
+}
+.tone-light {
+  --tone: rgb(22 27 34 / 0.55);
+}
+.tone-green {
+  --tone: rgb(35 134 54 / 0.07);
+}
+/* 2:1 isometric diamonds. */
+.motif-lattice {
+  --motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Cpath d='M0 0L64 32M0 32L64 0' stroke='%2330363d' stroke-width='1' opacity='.5'/%3E%3C/svg%3E");
+  --motif-size: 64px 32px;
+}
+/* A dot where the lattice's lines would cross. */
+.motif-dots {
+  --motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='16'%3E%3Ccircle cx='16' cy='8' r='1.2' fill='%2330363d'/%3E%3C/svg%3E");
+  --motif-size: 32px 16px;
+}
+/* One direction of the lattice only: the floor's slope without the grid. */
+.motif-hatch {
+  --motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Cpath d='M0 32L64 0' stroke='%2330363d' stroke-width='1' opacity='.5'/%3E%3C/svg%3E");
+  --motif-size: 64px 32px;
+}
+
+/* FAQ answers open and close smoothly where the browser can animate to auto height. */
+@supports selector(::details-content) {
+  @media (prefers-reduced-motion: no-preference) {
+    .faq-item {
+      interpolate-size: allow-keywords;
+    }
+    .faq-item::details-content {
+      height: 0;
+      opacity: 0;
+      overflow: clip;
+      transition:
+        height 0.25s ease,
+        opacity 0.25s ease,
+        content-visibility 0.25s allow-discrete;
+    }
+    .faq-item[open]::details-content {
+      height: auto;
+      opacity: 1;
+    }
+  }
+}

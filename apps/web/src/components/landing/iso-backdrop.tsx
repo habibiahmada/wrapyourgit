@@ -1,254 +1,195 @@
-import { useId } from "react";
-import { type Box, iso, TONES, type Vec, viewBoxOf } from "./iso";
+import { type Box, type Pane, TONES, type Tone, viewBoxOf } from "./iso";
 import { IsoArt } from "./iso-art";
 
-/**
- * Isometric room backdrop: draws a 2:1 isometric floor grid that meets back-left and back-right
- * vertical walls with climbing z-lines, a few points where lines meet, and dashed traces.
- * Purpose (R-07, R-31): extends the story city's 2:1 isometric projection from the floor up into
- * the section walls so every band reads as a room inside the same isometric world.
- */
-export function IsoBackdrop({
-  variant = "green",
-  density = "normal",
-  corner = 0.5,
-  className = "",
-}: {
-  variant?: "green" | "blue";
-  density?: "sparse" | "normal" | "dense";
-  /** Where across the band the room's corner stands, 0 (left) to 1 (right): keep its upright
-   * line off the section's heading. */
-  corner?: number;
-  className?: string;
-}) {
-  // Two rooms on one page must not share gradient and mask ids.
-  const id = useId();
-  const accent = variant === "blue" ? "#4493f8" : "#39d353";
-  const span = density === "dense" ? 18 : density === "sparse" ? 12 : 15;
-  const left = -32 * corner;
-  const wallHeight = 10;
+const LANG_TS: Tone = { top: "#58a6ff", left: "#3178c6", right: "#1f538f" };
+const LANG_JS: Tone = { top: "#f8e3a1", left: "#d29922", right: "#9e6a03" };
+const LANG_PY: Tone = { top: "#79c0ff", left: "#3572a5", right: "#244f75" };
+const LANG_RS: Tone = { top: "#ffa657", left: "#bd561d", right: "#87380d" };
+const RAIL_STEEL: Tone = { top: "#8b949e", left: "#484f58", right: "#30363d" };
+const GOLD_WINDOW = "#f2cc60";
+const GREEN_WINDOW = "#56d364";
 
-  const floorX: string[] = [];
-  const floorY: string[] = [];
-  const wallLeftVert: string[] = [];
-  const wallLeftHoriz: string[] = [];
-  const wallRightVert: string[] = [];
-  const wallRightHoriz: string[] = [];
-
-  const seg = (a: Vec, b: Vec) => {
-    const [ax, ay] = iso(a);
-    const [bx, by] = iso(b);
-    return `M${ax.toFixed(2)} ${ay.toFixed(2)}L${bx.toFixed(2)} ${by.toFixed(2)}`;
-  };
-
-  for (let i = 0; i <= span; i++) {
-    floorX.push(seg([i, 0, 0], [i, span, 0]));
-    floorY.push(seg([0, i, 0], [span, i, 0]));
-    wallLeftVert.push(seg([i, 0, 0], [i, 0, wallHeight]));
-    wallRightVert.push(seg([0, i, 0], [0, i, wallHeight]));
+function towerWindows(tall: number, cols = 2): Pane[] {
+  const panes: Pane[] = [];
+  for (let z = 0.25; z + 0.18 < tall - 0.1; z += 0.34) {
+    for (const face of ["left", "right"] as const) {
+      for (let c = 0; c < cols; c++) {
+        const u0 = cols === 1 ? 0.25 : 0.14 + c * 0.44;
+        const u1 = cols === 1 ? 0.75 : u0 + 0.26;
+        panes.push({
+          face,
+          u: [u0, u1],
+          z: [z, z + 0.16],
+          fill: (Math.round(z * 10) + c) % 3 === 0 ? GREEN_WINDOW : GOLD_WINDOW,
+        });
+      }
+    }
   }
-
-  for (let z = 0; z <= wallHeight; z += 1.5) {
-    wallLeftHoriz.push(seg([0, 0, z], [span, 0, z]));
-    wallRightHoriz.push(seg([0, 0, z], [0, span, z]));
-  }
-
-  const spine = seg([0, 0, 0], [0, 0, wallHeight]);
-  const seamLeft = seg([0, 0, 0], [span, 0, 0]);
-  const seamRight = seg([0, 0, 0], [0, span, 0]);
-
-  const nodes: { pt: [number, number]; lit: boolean }[] = [
-    { pt: iso([3, 0, 4.5]), lit: true },
-    { pt: iso([7, 0, 3]), lit: false },
-    { pt: iso([11, 0, 6]), lit: true },
-    { pt: iso([0, 4, 3]), lit: true },
-    { pt: iso([0, 9, 6]), lit: false },
-    { pt: iso([0, 12, 4.5]), lit: true },
-    { pt: iso([4, 4, 0]), lit: true },
-    { pt: iso([9, 3, 0]), lit: false },
-    { pt: iso([3, 10, 0]), lit: true },
-    { pt: iso([11, 9, 0]), lit: true },
-  ];
-
-  const traces = [
-    `M${iso([10, 6, 0]).join(" ")}L${iso([4, 6, 0]).join(" ")}L${iso([4, 0, 0]).join(" ")}L${iso([4, 0, 6]).join(" ")}`,
-    `M${iso([7, 11, 0]).join(" ")}L${iso([0, 11, 0]).join(" ")}L${iso([0, 11, 4.5]).join(" ")}`,
-    `M${iso([12, 3, 0]).join(" ")}L${iso([12, 0, 0]).join(" ")}L${iso([12, 0, 4.5]).join(" ")}`,
-  ];
-
-  return (
-    <div
-      aria-hidden
-      className={`pointer-events-none absolute inset-0 overflow-hidden select-none ${className}`}
-    >
-      <svg
-        aria-hidden
-        viewBox={`${left} -11 32 24`}
-        preserveAspectRatio="xMidYMid slice"
-        className="h-full w-full opacity-45"
-      >
-        <defs>
-          <radialGradient id={`room-fade-${id}`} cx="50%" cy="48%" r="54%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-            <stop offset="65%" stopColor="#ffffff" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-          </radialGradient>
-          <mask id={`room-mask-${id}`}>
-            <rect x={left - 4} y="-16" width="40" height="32" fill={`url(#room-fade-${id})`} />
-          </mask>
-        </defs>
-
-        <g mask={`url(#room-mask-${id})`}>
-          {/* Back-left wall grid */}
-          <g stroke="#30363d" strokeWidth="0.04" opacity="0.65">
-            {wallLeftVert.map((d) => (
-              <path key={d} d={d} fill="none" />
-            ))}
-            {wallLeftHoriz.map((d) => (
-              <path key={d} d={d} fill="none" />
-            ))}
-          </g>
-
-          {/* Back-right wall grid */}
-          <g stroke="#30363d" strokeWidth="0.04" opacity="0.55">
-            {wallRightVert.map((d) => (
-              <path key={d} d={d} fill="none" />
-            ))}
-            {wallRightHoriz.map((d) => (
-              <path key={d} d={d} fill="none" />
-            ))}
-          </g>
-
-          {/* Floor isometric grid */}
-          <g stroke="#30363d" strokeWidth="0.045" opacity="0.75">
-            {floorX.map((d) => (
-              <path key={d} d={d} fill="none" />
-            ))}
-            {floorY.map((d) => (
-              <path key={d} d={d} fill="none" />
-            ))}
-          </g>
-
-          {/* Structural wall seams and vertical corner spine */}
-          <path d={spine} stroke={accent} strokeWidth="0.08" opacity="0.5" fill="none" />
-          <path d={seamLeft} stroke={accent} strokeWidth="0.07" opacity="0.4" fill="none" />
-          <path d={seamRight} stroke="#4493f8" strokeWidth="0.07" opacity="0.35" fill="none" />
-
-          {/* Glowing energy circuit traces */}
-          {traces.map((d) => (
-            <path
-              key={d}
-              d={d}
-              fill="none"
-              stroke={accent}
-              strokeWidth="0.06"
-              strokeDasharray="0.4 0.3"
-              opacity="0.4"
-            />
-          ))}
-
-          {/* Intersection nodes */}
-          {nodes.map(({ pt: [cx, cy], lit }, i) => (
-            <g
-              // biome-ignore lint/suspicious/noArrayIndexKey: static decorative points
-              key={i}
-            >
-              <circle
-                cx={cx}
-                cy={cy}
-                r={lit ? "0.1" : "0.08"}
-                fill={lit ? accent : "#8b949e"}
-                opacity={lit ? "0.7" : "0.45"}
-              />
-            </g>
-          ))}
-        </g>
-      </svg>
-    </div>
-  );
+  return panes;
 }
 
+export type IsoClusterKind =
+  | "calendar"
+  | "languages"
+  | "compare"
+  | "video"
+  | "act-city"
+  | "act-craft"
+  | "act-finale";
+
 /**
- * Mini isometric diorama clusters rendered as server-side SVG in the 2:1 projection (`iso.ts`).
- * Each cluster stands on a floor slab with two wall ledges behind it, a corner of the same room
- * the bands stand in: the calendar as a city, languages as bars, the year comparison as two
- * towers, and the video's four shapes as screens (R-22).
+ * Detailed isometric dioramas rendered as server-side SVG in the 2:1 projection (`iso.ts`).
+ * Each `kind` has its own distinct architecture, silhouette, and panes so no two illustrations
+ * on the landing page look alike (R-22).
  */
 export function MiniIsoCluster({
   kind,
   className = "",
 }: {
-  kind: "calendar" | "languages" | "compare" | "video";
+  kind: IsoClusterKind;
   className?: string;
 }) {
   const boxes: Box[] = [];
-  // Base slab with isometric back-left (y = -0.25) and back-right (x = -0.25) walls
-  // The screens stand in a row, so their room is shallow: a deep one would be mostly floor.
-  const deep = kind === "video" ? 2.2 : 5.4;
-  const tall = kind === "video" ? 2.7 : 3.2;
-  boxes.push({ at: [0, 0, -0.4], size: [5.4, deep, 0.4], tone: TONES.deep });
-  boxes.push({ at: [0, -0.25, -0.4], size: [5.4, 0.25, tall], tone: TONES.dark });
-  boxes.push({ at: [-0.25, 0, -0.4], size: [0.25, deep, tall], tone: TONES.dark });
 
   if (kind === "calendar") {
-    const heights = [
-      [0.4, 0.9, 1.8, 0.6],
-      [0.7, 2.5, 1.3, 1.0],
-      [1.2, 1.6, 3.1, 0.8],
-      [0.5, 1.1, 0.9, 1.5],
+    // A 5x4 city block on a plaza slab, with a front street, lit windows, and a beacon on the tallest tower.
+    boxes.push({ at: [-0.4, -0.4, -0.35], size: [6.4, 5.4, 0.35], tone: TONES.deep });
+    boxes.push({ at: [-0.4, 4.3, 0], size: [6.4, 0.7, 0.04], tone: TONES.dark });
+    const grid = [
+      [0.35, 0.9, 1.5, 0.55],
+      [0.7, 2.2, 1.2, 0.85],
+      [1.1, 1.7, 3.3, 1.0],
+      [0.5, 1.9, 1.3, 2.4],
+      [0.8, 0.6, 1.6, 0.95],
     ];
-    heights.forEach((row, x) => {
-      row.forEach((h, y) => {
-        const tone = h > 2.6 ? TONES.lit : h > 1.5 ? TONES.mid : h > 0.8 ? TONES.low : TONES.faint;
+    grid.forEach((col, cx) => {
+      col.forEach((h, cy) => {
+        const busiest = cx === 2 && cy === 2;
+        const tone = busiest ? TONES.lit : h > 2.0 ? TONES.mid : h > 1.1 ? TONES.low : TONES.faint;
         boxes.push({
-          at: [0.6 + x * 1.1, 0.6 + y * 1.1, 0],
-          size: [0.82, 0.82, h],
+          at: [cx * 1.12, cy * 1.02, 0],
+          size: [0.86, 0.86, h],
           tone,
+          panes: busiest ? undefined : towerWindows(h, 2),
         });
+        if (busiest) {
+          boxes.push({
+            at: [cx * 1.12 + 0.23, cy * 1.02 + 0.23, h],
+            size: [0.4, 0.4, 0.45],
+            tone: TONES.lit,
+          });
+        }
       });
     });
   } else if (kind === "languages") {
-    const bars: { x: number; y: number; h: number; tone: (typeof TONES)[keyof typeof TONES] }[] = [
-      { x: 0.8, y: 1.0, h: 2.9, tone: TONES.lit },
-      { x: 2.2, y: 1.0, h: 2.1, tone: TONES.mid },
-      { x: 3.6, y: 1.0, h: 1.4, tone: TONES.low },
-      { x: 1.4, y: 2.8, h: 1.1, tone: TONES.faint },
-      { x: 2.9, y: 2.8, h: 0.75, tone: TONES.dark },
+    // Stepped language monuments in their language colours (TypeScript blue, JS gold, Python cyan, Rust orange, Shell green).
+    boxes.push({ at: [-0.3, -0.3, -0.3], size: [5.8, 4.4, 0.3], tone: TONES.deep });
+    const langs: { x: number; y: number; w: number; h: number; tone: Tone }[] = [
+      { x: 0.3, y: 0.5, w: 1.15, h: 3.1, tone: LANG_TS },
+      { x: 1.75, y: 0.7, w: 1.05, h: 2.35, tone: LANG_JS },
+      { x: 3.1, y: 0.9, w: 1.0, h: 1.75, tone: LANG_PY },
+      { x: 1.1, y: 2.2, w: 0.95, h: 1.3, tone: LANG_RS },
+      { x: 2.4, y: 2.35, w: 0.95, h: 0.95, tone: TONES.mid },
+      { x: 3.7, y: 2.45, w: 0.9, h: 0.65, tone: TONES.low },
     ];
-    for (const b of bars) {
-      boxes.push({ at: [b.x, b.y, 0], size: [0.95, 0.95, b.h], tone: b.tone });
-    }
-  } else if (kind === "video") {
-    // The video's four shapes as screens standing in a row, each to its own proportions:
-    // 9:16, 4:5, 1:1 and 16:9.
-    const screens: [wide: number, tall: number][] = [
-      [1, 1.78],
-      [1, 1.25],
-      [1, 1],
-      [1.7, 0.96],
-    ];
-    boxes.push({ at: [0, 0.95, 0], size: [5.4, 0.5, 0.1], tone: TONES.dark });
-    let x = 0.08;
-    for (const [wide, tall] of screens) {
+    for (const l of langs) {
       boxes.push({
-        at: [x, 1.13, 0.1],
-        size: [wide, 0.14, tall],
+        at: [l.x, l.y, 0],
+        size: [l.w, l.w, 0.18],
         tone: TONES.dark,
-        panes: [{ face: "left", u: [0.08, 0.92], z: [0.08, tall - 0.08], fill: "#26a641" }],
       });
-      x += wide + 0.18;
+      boxes.push({
+        at: [l.x + 0.08, l.y + 0.08, 0.18],
+        size: [l.w - 0.16, l.w - 0.16, l.h],
+        tone: l.tone,
+        panes: [
+          { face: "left", u: [0.2, 0.8], z: [0.2, Math.max(0.35, l.h - 0.25)], fill: "#0d1117" },
+        ],
+      });
     }
+  } else if (kind === "compare") {
+    // Year-over-year twin towers joined by a skybridge and stepped delta terraces.
+    boxes.push({ at: [-0.3, -0.3, -0.3], size: [5.6, 4.2, 0.3], tone: TONES.deep });
+    // Previous year tower (left)
+    boxes.push({
+      at: [0.5, 1.0, 0],
+      size: [1.45, 1.45, 1.85],
+      tone: TONES.low,
+      panes: towerWindows(1.85, 2),
+    });
+    // Skybridge connecting 2025 to 2026
+    boxes.push({
+      at: [1.95, 1.4, 1.2],
+      size: [1.05, 0.65, 0.28],
+      tone: RAIL_STEEL,
+    });
+    // Current year tower (right, taller and bright green)
+    boxes.push({
+      at: [3.0, 1.0, 0],
+      size: [1.45, 1.45, 3.2],
+      tone: TONES.lit,
+      panes: towerWindows(3.2, 2),
+    });
+    // Crown on the current year tower
+    boxes.push({
+      at: [3.35, 1.35, 3.2],
+      size: [0.75, 0.75, 0.45],
+      tone: TONES.mid,
+    });
+    // Foreground comparison baseline bar
+    boxes.push({ at: [0.5, 2.85, 0], size: [3.95, 0.55, 0.22], tone: TONES.dark });
+  } else if (kind === "video") {
+    // Four aspect-ratio display frames (9:16 vertical, 4:5 portrait, 1:1 square, 16:9 widescreen)
+    // standing on a broadcast stage without enclosing room walls.
+    boxes.push({ at: [-0.2, 0.4, -0.25], size: [6.2, 2.2, 0.25], tone: TONES.deep });
+    boxes.push({ at: [0.0, 0.7, 0], size: [5.8, 1.6, 0.12], tone: TONES.dark });
+    const screens: { w: number; h: number; tone: Tone; screenFill: string }[] = [
+      { w: 0.95, h: 1.95, tone: TONES.lit, screenFill: "#39d353" },
+      { w: 1.08, h: 1.42, tone: TONES.mid, screenFill: "#26a641" },
+      { w: 1.15, h: 1.15, tone: TONES.low, screenFill: "#006d32" },
+      { w: 1.85, h: 1.05, tone: LANG_TS, screenFill: "#4493f8" },
+    ];
+    let x = 0.22;
+    for (const s of screens) {
+      boxes.push({
+        at: [x, 1.15, 0.12],
+        size: [s.w, 0.22, s.h],
+        tone: s.tone,
+        panes: [
+          { face: "left", u: [0.08, 0.92], z: [0.1, s.h - 0.1], fill: "#0d1117" },
+          { face: "left", u: [0.18, 0.82], z: [0.22, s.h * 0.55], fill: s.screenFill },
+        ],
+      });
+      x += s.w + 0.22;
+    }
+  } else if (kind === "act-city") {
+    // Act 1: Station arrival gate and rising city blocks
+    boxes.push({ at: [0, 0, -0.25], size: [4.6, 4.0, 0.25], tone: TONES.deep });
+    boxes.push({ at: [0.3, 2.8, 0], size: [4.0, 0.6, 0.1], tone: RAIL_STEEL });
+    boxes.push({ at: [0.6, 0.6, 0], size: [0.9, 0.9, 1.1], tone: TONES.faint });
+    boxes.push({ at: [1.8, 0.6, 0], size: [0.9, 0.9, 1.9], tone: TONES.mid });
+    boxes.push({ at: [3.0, 0.6, 0], size: [1.0, 1.0, 2.8], tone: TONES.lit });
+    boxes.push({ at: [1.2, 1.7, 0], size: [0.85, 0.85, 1.4], tone: TONES.low });
+  } else if (kind === "act-craft") {
+    // Act 2: Train wagons carrying weekday & language cargo along a track
+    boxes.push({ at: [0, 0, -0.25], size: [4.8, 3.6, 0.25], tone: TONES.deep });
+    boxes.push({ at: [0.2, 1.4, 0], size: [4.4, 0.8, 0.08], tone: RAIL_STEEL });
+    boxes.push({ at: [0.4, 1.5, 0.08], size: [1.1, 0.6, 0.75], tone: TONES.lit });
+    boxes.push({ at: [1.75, 1.5, 0.08], size: [1.1, 0.6, 1.15], tone: LANG_TS });
+    boxes.push({ at: [3.1, 1.5, 0.08], size: [1.1, 0.6, 0.9], tone: LANG_JS });
   } else {
-    // Compare: two twin towers side by side (last year vs this year)
-    boxes.push({ at: [1.0, 1.5, 0], size: [1.3, 1.3, 1.6], tone: TONES.low });
-    boxes.push({ at: [2.8, 1.5, 0], size: [1.3, 1.3, 2.8], tone: TONES.lit });
-    boxes.push({ at: [1.0, 3.2, 0], size: [3.1, 0.9, 0.4], tone: TONES.mid });
+    // Act 3: Podium stage with spotlight tower & letter monument
+    boxes.push({ at: [0, 0, -0.25], size: [4.6, 4.0, 0.25], tone: TONES.deep });
+    boxes.push({ at: [1.1, 1.1, 0], size: [2.4, 2.0, 0.45], tone: TONES.dark });
+    boxes.push({ at: [1.75, 1.5, 0.45], size: [1.1, 1.1, 2.3], tone: TONES.lit });
+    boxes.push({ at: [0.4, 0.5, 0], size: [0.8, 0.8, 1.4], tone: LANG_TS });
+    boxes.push({ at: [3.4, 0.5, 0], size: [0.8, 0.8, 1.4], tone: TONES.mid });
   }
 
   return (
     <IsoArt
       boxes={boxes}
-      viewBox={viewBoxOf(boxes, [], 0.5)}
+      viewBox={viewBoxOf(boxes, [], 0.45)}
       className={`block h-auto w-full ${className}`}
     />
   );
