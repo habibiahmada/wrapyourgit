@@ -46,12 +46,18 @@ export function CellField({
   levels,
   surface = "ink",
   animate = true,
+  fit = false,
   className = "",
 }: {
   /** One level per day, column by column (7 per week); -1 leaves the slot empty. */
   levels: readonly number[];
   surface?: "ink" | "paper";
   animate?: boolean;
+  /**
+   * True draws every cell, sized by the field's own width (a real calendar to read). False, the
+   * default, fills the box and crops the overflow, which suits a background.
+   */
+  fit?: boolean;
   className?: string;
 }) {
   const colors = surface === "ink" ? ON_INK : ON_PAPER;
@@ -61,7 +67,7 @@ export function CellField({
     <svg
       aria-hidden
       viewBox={`0 0 ${weeks * step} ${7 * step}`}
-      preserveAspectRatio="xMidYMid slice"
+      preserveAspectRatio={fit ? "xMidYMid meet" : "xMidYMid slice"}
       className={className}
     >
       {levels.map((level, i) => {

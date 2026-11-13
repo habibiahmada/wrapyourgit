@@ -1,12 +1,13 @@
 "use client";
 
-import { type RecapData, VIDEO_FORMATS } from "@wyg/schema";
+import type { RecapData } from "@wyg/schema";
 import type { ExportFormat } from "@wyg/video/export";
 import { useEffect, useId, useRef, useState } from "react";
+import { button } from "@/components/ui";
 import type { ShareCard } from "./end-screen";
 import { announcement, type ExportJob, NOUN, percent } from "./export-state";
-import { PAPER_BUTTON } from "./paper-button";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
+import { SizePicker } from "./size-picker";
 import { useExport } from "./use-export";
 
 const FORMATS = ["9x16", "4x5", "1x1", "16x9"] as const satisfies readonly ExportFormat[];
@@ -15,8 +16,6 @@ const KEEP_OPEN: Record<ExportJob, string> = {
   zip: "Keep this tab open while your slides render.",
   pdf: "Keep this tab open while your PDF renders.",
 };
-
-const ratio = (format: ExportFormat) => format.replace("x", ":");
 
 /**
  * The files of the story, made in this browser. `data` must already be a projection: the owner's
@@ -62,41 +61,22 @@ export function ExportPanel({
   const reason = checking ? "Checking what this browser can make." : support.reason;
   const describe = (off: boolean) => (off && !busy && reason ? reasonId : undefined);
 
+  // Compact: the dashboard keeps these in its sidebar, so the buttons drop to text size.
+  const fileButton = `${button.secondary} w-full px-3 text-sm`;
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3 text-sm">
       {/* One size for the video, the slides and the PDF; the card keeps the link preview's. */}
-      <fieldset disabled={mp4Off && stillsOff} className="flex flex-col gap-3">
-        <legend className="mb-3 text-base font-semibold">Size</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {FORMATS.map((key) => (
-            <label
-              key={key}
-              className={`flex min-h-11 flex-col justify-center gap-0.5 rounded-[var(--radius-control)] border px-3 py-2 ${
-                format === key ? "border-ink bg-ink/[0.07]" : "border-ink/60"
-              } ${mp4Off && stillsOff ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-ink/[0.05]"}`}
-            >
-              <span className="flex items-center gap-2 font-semibold">
-                <input
-                  type="radio"
-                  name={`${ids}-format`}
-                  value={key}
-                  checked={format === key}
-                  onChange={() => setFormat(key)}
-                  className="size-4 accent-ink"
-                />
-                {ratio(key)}
-              </span>
-              <span className="text-sm text-ink-soft">{VIDEO_FORMATS[key].label}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <SizePicker
+        formats={FORMATS}
+        value={format}
+        onChange={setFormat}
+        disabled={mp4Off && stillsOff}
+      />
 
-      {showReminder(privateNames) && (
-        <p className="text-base font-semibold">{PRIVATE_NAMES_REMINDER}</p>
-      )}
+      {showReminder(privateNames) && <p className="font-semibold">{PRIVATE_NAMES_REMINDER}</p>}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <div className="grid grid-cols-2 gap-2">
         <button
           ref={(node) => {
             buttons.current.mp4 = node;
@@ -105,9 +85,9 @@ export function ExportPanel({
           disabled={mp4Off}
           aria-describedby={describe(mp4Off)}
           onClick={() => run("mp4")}
-          className={PAPER_BUTTON.primary}
+          className={fileButton}
         >
-          Video (MP4)
+          Video
         </button>
         <button
           ref={(node) => {
@@ -117,9 +97,9 @@ export function ExportPanel({
           disabled={stillsOff}
           aria-describedby={describe(stillsOff)}
           onClick={() => run("zip")}
-          className={PAPER_BUTTON.secondary}
+          className={fileButton}
         >
-          Slides (PNG, ZIP)
+          Slides
         </button>
         <button
           ref={(node) => {
@@ -129,39 +109,39 @@ export function ExportPanel({
           disabled={stillsOff}
           aria-describedby={describe(stillsOff)}
           onClick={() => run("pdf")}
-          className={PAPER_BUTTON.secondary}
+          className={fileButton}
         >
           PDF
         </button>
         {"href" in card && !busy ? (
-          <a href={card.href} download={card.filename ?? true} className={PAPER_BUTTON.secondary}>
-            Share card (PNG)
+          <a href={card.href} download={card.filename ?? true} className={fileButton}>
+            Share card
           </a>
         ) : (
           <button
             type="button"
             disabled
             aria-describedby={"reason" in card ? `${ids}-card` : undefined}
-            className={PAPER_BUTTON.secondary}
+            className={fileButton}
           >
-            Share card (PNG)
+            Share card
           </button>
         )}
       </div>
 
       {!busy && reason && (
-        <p id={reasonId} className="text-base text-ink-soft">
+        <p id={reasonId} className="text-muted">
           {reason}
         </p>
       )}
       {"reason" in card && (
-        <p id={`${ids}-card`} className="text-base text-ink-soft">
+        <p id={`${ids}-card`} className="text-muted">
           {card.reason}
         </p>
       )}
 
       {state.status === "rendering" && (
-        <div className="flex flex-col gap-3 rounded-[var(--radius-control)] border border-ink/40 p-4">
+        <div className="flex flex-col gap-2 rounded-[var(--radius-control)] border border-line p-3">
           <div className="flex items-baseline justify-between gap-4 font-semibold">
             <span>Making your {NOUN[state.job]}</span>
             <span className="tabular-nums">{percent(state)}%</span>
@@ -172,15 +152,15 @@ export function ExportPanel({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent(state)}
-            className="h-3 overflow-hidden rounded-full border border-ink"
+            className="h-2 overflow-hidden rounded-full bg-overlay"
           >
             <div
-              className="h-full bg-ink motion-safe:transition-[width] motion-safe:duration-200"
+              className="h-full bg-[#26a641] motion-safe:transition-[width] motion-safe:duration-200"
               style={{ width: `${percent(state)}%` }}
             />
           </div>
-          <p className="text-base">{KEEP_OPEN[state.job]}</p>
-          <button type="button" onClick={cancel} className={PAPER_BUTTON.secondary}>
+          <p className="text-muted">{KEEP_OPEN[state.job]}</p>
+          <button type="button" onClick={cancel} className={fileButton}>
             Cancel
           </button>
         </div>
@@ -188,7 +168,7 @@ export function ExportPanel({
 
       {(state.status === "done" || state.status === "error" || state.status === "cancelled") && (
         // The live region below says the same to screen readers.
-        <p aria-hidden="true" className="text-base font-semibold">
+        <p aria-hidden="true" className="font-semibold">
           {announcement(state)}
         </p>
       )}
