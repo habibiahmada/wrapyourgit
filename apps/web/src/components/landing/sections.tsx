@@ -114,7 +114,7 @@ export function StorySection() {
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
-          <h2 id="story-title" className={`reveal-left ${heading}`}>
+          <h2 id="story-title" className={`reveal-heading ${heading}`}>
             Your year as a city, <span className="text-green">in three acts.</span>
           </h2>
           <p className={`reveal-right ${lead}`}>
@@ -123,7 +123,7 @@ export function StorySection() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-6 lg:grid-cols-3">
+        <div className="stagger mt-14 grid gap-6 lg:grid-cols-3">
           {STORY_ACTS.map((item) => (
             <article
               key={item.act}
@@ -208,7 +208,7 @@ export function MetricsTrioSection() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr] lg:items-end">
           <div>
-            <h2 id="metrics-title" className={`reveal-left ${heading}`}>
+            <h2 id="metrics-title" className={`reveal-heading ${heading}`}>
               Every number is <span className="text-green">explainable.</span>
             </h2>
           </div>
@@ -218,7 +218,7 @@ export function MetricsTrioSection() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-6 lg:grid-cols-3">
+        <div className="stagger mt-14 grid gap-6 lg:grid-cols-3">
           {items.map((item) => (
             <div
               key={item.title}
@@ -286,7 +286,7 @@ export function ArchetypesSection() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
-            <h2 id="archetypes-title" className={`reveal-left ${heading}`}>
+            <h2 id="archetypes-title" className={`reveal-heading ${heading}`}>
               What kind of builder were you?
             </h2>
           </div>
@@ -295,7 +295,7 @@ export function ArchetypesSection() {
           </p>
         </div>
 
-        <ul className="mt-14 grid gap-6 lg:grid-cols-3">
+        <ul className="stagger mt-14 grid gap-6 lg:grid-cols-3">
           {ARCHETYPES_CRAFT.map(({ id, rule }) => (
             <li
               key={id}
@@ -325,7 +325,7 @@ export function ArchetypesCommunitySection() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
-            <h2 id="archetypes-community-title" className={`reveal-left ${heading}`}>
+            <h2 id="archetypes-community-title" className={`reveal-heading ${heading}`}>
               Or known by your hours &amp; reach.
             </h2>
           </div>
@@ -334,7 +334,7 @@ export function ArchetypesCommunitySection() {
           </p>
         </div>
 
-        <ul className="mt-14 grid gap-6 lg:grid-cols-3">
+        <ul className="stagger mt-14 grid gap-6 lg:grid-cols-3">
           {ARCHETYPES_COMMUNITY.map(({ id, rule }) => (
             <li
               key={id}
@@ -375,7 +375,7 @@ export function LetterSection() {
     >
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-8 lg:grid-cols-12">
         <div className="lg:col-span-5">
-          <h2 id="letter-title" className={`reveal-left ${heading}`}>
+          <h2 id="letter-title" className={`reveal-heading ${heading}`}>
             Then Cell writes you a letter.
           </h2>
           <p className={`reveal mt-6 ${lead}`}>
@@ -388,7 +388,7 @@ export function LetterSection() {
         </div>
 
         {/* Three GitHub-style comment boxes on an isometric staircase */}
-        <div className="space-y-5 lg:col-span-7">
+        <div className="stagger space-y-5 lg:col-span-7">
           {LETTERS.map(({ id, line }, i) => (
             <figure
               key={id}
@@ -439,7 +439,7 @@ export function VideoExportSection() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
-            <h2 id="keep-title" className={`reveal-left ${heading}`}>
+            <h2 id="keep-title" className={`reveal-heading ${heading}`}>
               Watch it play, or export <span className="text-green">four video shapes.</span>
             </h2>
             <p className={`reveal mt-4 ${lead}`}>
@@ -451,7 +451,7 @@ export function VideoExportSection() {
           </div>
         </div>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-3">
+        <div className="stagger mt-12 grid gap-6 lg:grid-cols-3">
           {specs.map((spec) => (
             <div
               key={spec.title}
@@ -508,14 +508,14 @@ export function KeepSection() {
         </div>
 
         <div className="lg:col-span-7">
-          <h2 id="take-title" className={`reveal-right ${heading}`}>
+          <h2 id="take-title" className={`reveal-heading ${heading}`}>
             Take your year with you.
           </h2>
           <p className={`reveal mt-6 ${lead}`}>
             Besides the video: every stop as an image, one PDF, and a card for your links.
           </p>
 
-          <dl className="mt-10 space-y-6">
+          <dl className="stagger mt-10 space-y-6">
             {KEEP.map(({ name, detail }) => (
               <div key={name} className="reveal">
                 <dt className="text-lg font-bold text-fg">{name}</dt>
@@ -556,14 +556,14 @@ export function PrivacySection() {
     >
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-8 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <h2 id="privacy-title" className={`reveal-left ${heading}`}>
+          <h2 id="privacy-title" className={`reveal-heading ${heading}`}>
             Read-only, and <span className="text-green">yours to delete.</span>
           </h2>
           <p className={`reveal mt-6 ${lead}`}>
             Public pages only show what is already public on GitHub.
           </p>
 
-          <dl className="mt-10 space-y-6">
+          <dl className="stagger mt-10 space-y-6">
             {PRIVACY.map(({ title, detail }) => (
               <div key={title} className="reveal">
                 <dt className="text-lg font-bold text-fg">{title}</dt>
@@ -627,7 +627,7 @@ export function FaqSection() {
     >
       {/* One centred column: the heading over the list, nothing beside them. */}
       <div className="relative z-10 mx-auto max-w-3xl px-4 sm:px-8">
-        <h2 id="faq-title" className={`reveal text-center ${heading}`}>
+        <h2 id="faq-title" className={`reveal-heading text-center ${heading}`}>
           Questions people ask.
         </h2>
 

@@ -112,9 +112,11 @@
     animation: light 520ms ease-out both;
   }
 
-  /* Scroll motion, CSS only: elements fade, rise, slide, float in isometric depth, or tilt as they
-     enter the viewport and fade out as they leave, so the page breathes while scrolling (MOTION 3).
-     Browsers without scroll timelines, and reduced motion, simply show the content.
+  /* Scroll motion, CSS only (MOTION 3). Everything moves on the way in and then holds: nothing
+     fades while it is still on screen. Each role has its own move: a heading is uncovered from
+     below, text rises, a card grid arrives one card after another, an illustration irises open or
+     tilts up, and an archetype block drifts against the scroll as parallax. Browsers without
+     scroll timelines, and reduced motion, simply show the content.
      view() follows the nearest scroll container, and `overflow: hidden` makes one even though it
      never scrolls: a reveal inside it stops part way, faded and shifted. Anything that wraps a
      reveal clips with `overflow-clip` instead, which makes no scroll container. */
@@ -122,123 +124,107 @@
     .reveal,
     .reveal-left,
     .reveal-right,
+    .reveal-heading,
     .reveal-zoom,
-    .reveal-float,
     .reveal-tilt {
-      animation-timing-function: linear;
+      animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
       animation-fill-mode: both;
       animation-timeline: view();
-      animation-range: entry 0% exit 100%;
+      animation-range: entry 10% cover 30%;
     }
     .reveal {
-      animation-name: in-out-rise;
+      animation-name: enter-rise;
     }
     .reveal-left {
-      animation-name: in-out-left;
+      animation-name: enter-left;
     }
     .reveal-right {
-      animation-name: in-out-right;
+      animation-name: enter-right;
+    }
+    .reveal-heading {
+      animation-name: enter-uncover;
+      animation-range: entry 20% cover 32%;
     }
     .reveal-zoom {
-      animation-name: in-out-zoom;
-    }
-    .reveal-float {
-      animation-name: in-out-float;
+      animation-name: enter-iris;
+      animation-range: entry 0% cover 35%;
     }
     .reveal-tilt {
-      animation-name: in-out-tilt;
+      animation-name: enter-tilt;
+      animation-range: entry 0% cover 40%;
+    }
+    /* A grid's cards arrive one after another, each a little further into the scroll. */
+    .stagger > .reveal:nth-child(2) {
+      animation-range: entry 22% cover 36%;
+    }
+    .stagger > .reveal:nth-child(3) {
+      animation-range: entry 34% cover 42%;
+    }
+    /* Parallax: the block rises slower than the page for as long as it is on screen. It never
+       touches opacity, so it can never look faded. */
+    .reveal-float {
+      animation: drift linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
     }
   }
 }
 
-@keyframes in-out-rise {
-  0% {
+@keyframes enter-rise {
+  from {
     opacity: 0;
-    transform: translateY(56px) scale(0.96);
+    transform: translateY(32px);
   }
-  20%,
-  80% {
-    opacity: 1;
+}
+@keyframes enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-56px);
+  }
+}
+@keyframes enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(56px);
+  }
+}
+/* Uncovered from the bottom up, rising a little as it shows. The negative insets at the end keep
+   descenders and the green word's glyphs from being cut. */
+@keyframes enter-uncover {
+  from {
+    clip-path: inset(0 -4% 100% -4%);
+    transform: translateY(0.35em);
+  }
+  to {
+    clip-path: inset(-20% -4% -20% -4%);
     transform: none;
   }
-  100% {
-    opacity: 0;
-    transform: translateY(-40px) scale(0.97);
-  }
 }
-@keyframes in-out-left {
-  0% {
-    opacity: 0;
-    transform: translateX(-72px) translateY(24px) rotate(-2.5deg);
+/* Opens from a rounded window in its middle, so it does not just appear. */
+@keyframes enter-iris {
+  from {
+    opacity: 0.2;
+    clip-path: inset(18% 14% round 24px);
+    transform: scale(0.94);
   }
-  22%,
-  80% {
+  to {
     opacity: 1;
+    clip-path: inset(0 round 0);
     transform: none;
   }
-  100% {
+}
+@keyframes enter-tilt {
+  from {
     opacity: 0;
-    transform: translateX(-32px) translateY(-24px);
+    transform: perspective(1000px) rotateX(28deg) translateY(64px);
   }
 }
-@keyframes in-out-right {
-  0% {
-    opacity: 0;
-    transform: translateX(72px) translateY(24px) rotate(2.5deg);
+@keyframes drift {
+  from {
+    transform: translateY(28px);
   }
-  22%,
-  80% {
-    opacity: 1;
-    transform: none;
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(32px) translateY(-24px);
-  }
-}
-@keyframes in-out-zoom {
-  0% {
-    opacity: 0;
-    transform: scale(0.84) translateY(36px) rotate(-2deg);
-  }
-  24%,
-  78% {
-    opacity: 1;
-    transform: none;
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.06) translateY(-24px);
-  }
-}
-@keyframes in-out-float {
-  0% {
-    opacity: 0;
-    transform: translateY(76px) scale(0.91);
-  }
-  24%,
-  76% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-60px) scale(1.03);
-  }
-}
-@keyframes in-out-tilt {
-  0% {
-    opacity: 0;
-    transform: perspective(900px) rotateX(14deg) translateY(48px);
-  }
-  24%,
-  78% {
-    opacity: 1;
-    transform: perspective(900px) rotateX(0deg) translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: perspective(900px) rotateX(-10deg) translateY(-36px);
+  to {
+    transform: translateY(-28px);
   }
 }
 
