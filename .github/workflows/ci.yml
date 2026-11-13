@@ -137,4 +137,4 @@ jobs:
         run: bun run build
         env:
           # Canonical URLs, robots.txt and the sitemap are prerendered with this origin.
-          APP_URL: https://wrapyourgit.habibiahmada.dev
+          APP_URL: https://wrapyourgit.com

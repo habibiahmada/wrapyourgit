@@ -5,9 +5,9 @@ describe("stripUrl", () => {
   test("keeps the page and drops its query string and fragment", () => {
     const event = stripUrl({
       type: "pageview",
-      url: "https://wrapyourgit.habibiahmada.dev/settings?delete=unconfirmed#danger",
+      url: "https://wrapyourgit.com/settings?delete=unconfirmed#danger",
     });
-    expect(event.url).toBe("https://wrapyourgit.habibiahmada.dev/settings");
+    expect(event.url).toBe("https://wrapyourgit.com/settings");
     expect(event.type).toBe("pageview");
   });
 
