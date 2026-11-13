@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Mona_Sans } from "next/font/google";
+import { CloudflareAnalytics } from "@/components/site/cloudflare-analytics";
 import { OPEN_GRAPH, SITE, siteUrl } from "@/site";
 import "./globals.css";
 
@@ -52,7 +53,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       data-scroll-behavior="smooth"
       className={`${bricolage.variable} ${mona.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <CloudflareAnalytics />
+      </body>
     </html>
   );
 }

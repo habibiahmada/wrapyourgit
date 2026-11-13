@@ -102,7 +102,8 @@ Not set up yet (M6). The checklist:
     - `GITHUB_PUBLIC_TOKEN expires`.
   - **Vercel → Usage.** Function duration and invocations: a first public fetch takes about 20–55 s, so they dominate.
   - **Neon → Monitoring.** Compute hours and storage against the free plan's limits.
-  - **Page views.** The site runs no analytics (Vercel Web Analytics was removed, #130). An AWS service is planned; when it lands, the privacy page must describe what it collects in the same change.
+  - **Page views.** Cloudflare Web Analytics, read in the Cloudflare dashboard under Observability → Web analytics → wrapyourgit.com (#132). The zone is DNS only, so Cloudflare cannot inject the beacon: `components/site/cloudflare-analytics.tsx` loads it, and only when `VERCEL_ENV` is `production`. A deployment off Vercel (the AWS VPS) must set `VERCEL_ENV=production` or the beacon stays off. Any change to what it collects changes the privacy page in the same PR.
+  - **Search.** Google Search Console holds the domain property `sc-domain:wrapyourgit.com` (verified by a DNS TXT record at Cloudflare) with `https://wrapyourgit.com/sitemap.xml` submitted. Keep the TXT record.
 - **Quota.** `bun --env-file=apps/web/.env.local` with a short script against `https://api.github.com/rate_limit` shows the public token's GraphQL and REST quota left. That call costs nothing.
 
 ### Firewall, DNS and headers

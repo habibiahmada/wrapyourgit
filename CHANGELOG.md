@@ -8,6 +8,7 @@ The 2026 edition, before its first release.
 
 ### Added
 
+- Page views and Core Web Vitals counted with Cloudflare Web Analytics on production only: no cookies, nothing stored in the browser. The privacy page says what is collected ([#132](https://github.com/habibiahmada/wrapyourgit/issues/132)).
 - A check that a person is asking before the server reads a new public recap from GitHub: a visitor who is not signed in passes Cloudflare Turnstile once an hour, stored recaps and their link previews are never checked, and it stays off until its two keys are set (ADR-0026) ([#107](https://github.com/habibiahmada/wrapyourgit/issues/107)).
 - The story is a train ride through your year as a city. Cell drives an engine along a rail lined with one square per day, through a gate for each month that counts the year so far, and stops at fourteen stations: hello, your first day, private work, the whole city from above, your busiest day, your rhythm, languages, projects, community, engineering, your archetype, against last year, a letter from Cell and a closing party. Every number is printed on something in the scene. It is drawn on one 2D canvas, with no WebGL (ADR-0023) ([#86](https://github.com/habibiahmada/wrapyourgit/issues/86), [#88](https://github.com/habibiahmada/wrapyourgit/issues/88), [#92](https://github.com/habibiahmada/wrapyourgit/issues/92)).
 - At the letter the train stops, the camera comes in to a writing desk, the envelope there opens and the letter comes out before it fills the screen. Each later page slides in from the side ([#88](https://github.com/habibiahmada/wrapyourgit/issues/88), [#94](https://github.com/habibiahmada/wrapyourgit/issues/94)).
@@ -56,7 +57,7 @@ The 2026 edition, before its first release.
 
 ### Removed
 
-- Vercel Web Analytics: the site loads no analytics script, and the privacy policy says it runs no analytics. An AWS service may take its place later ([#130](https://github.com/habibiahmada/wrapyourgit/issues/130)).
+- Vercel Web Analytics, replaced by Cloudflare Web Analytics in [#132](https://github.com/habibiahmada/wrapyourgit/issues/132) ([#130](https://github.com/habibiahmada/wrapyourgit/issues/130)).
 
 ### Fixed
 

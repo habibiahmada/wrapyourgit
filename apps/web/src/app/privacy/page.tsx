@@ -27,7 +27,8 @@ const UPDATED = "14 November 2026";
 
 /*
  * Every statement here describes what the code does today (server/auth.ts, server/recaps.ts,
- * server/public-recaps.ts, analytics/public.ts, app/layout.tsx). Change this
+ * server/public-recaps.ts, analytics/public.ts, app/layout.tsx,
+ * components/site/cloudflare-analytics.tsx). Change this
  * page in the same change that changes the behaviour.
  */
 
@@ -106,6 +107,13 @@ const SECTIONS: LegalSection[] = [
           hour and says only that the check was passed.
         </li>
         <li>
+          <strong>Page views</strong>: Cloudflare Web Analytics counts visits to each page and how
+          fast it loaded. Your browser sends the page's address, the page you came from, and its
+          load timings; Cloudflare adds your country and browser type. It sets no cookies, stores
+          nothing in your browser and does not fingerprint you, so a visit is never tied to you or
+          your GitHub account.
+        </li>
+        <li>
           <strong>Your hide choice</strong>: if you hide your public recap, we keep your numeric
           GitHub id on a list, so the recap stays hidden even if you rename your account.
         </li>
@@ -123,8 +131,8 @@ const SECTIONS: LegalSection[] = [
         </li>
         <li>Your email address, your followers or anything outside your year's activity.</li>
         <li>
-          Advertising data, or anything that follows you to other sites. The site runs no analytics
-          or tracking scripts and sets no tracking cookies.
+          Advertising data, or anything that follows you to other sites. The only analytics are the
+          cookieless page views above, and the site sets no tracking cookies.
         </li>
       </ul>
     ),
@@ -195,10 +203,11 @@ const SECTIONS: LegalSection[] = [
     body: (
       <p>
         GitHub, whose API we read your activity from under its own privacy statement. Cloudflare,
-        whose Turnstile widget runs the check that you are a person, under its own privacy policy.
-        Vercel also hosts the site, and its server code runs in Singapore. Your account, recap,
-        tokens and sessions are stored in a Postgres database at Neon, also in Singapore. Cloudflare
-        answers the site's DNS and sees no recap data. Each works under its own privacy policy.
+        whose Turnstile widget runs the check that you are a person and whose Web Analytics counts
+        page views, under its own privacy policy. Vercel also hosts the site, and its server code
+        runs in Singapore. Your account, recap, tokens and sessions are stored in a Postgres
+        database at Neon, also in Singapore. Cloudflare answers the site's DNS and sees no recap
+        data. Each works under its own privacy policy.
       </p>
     ),
   },
@@ -223,6 +232,10 @@ const SECTIONS: LegalSection[] = [
         </li>
         <li>Sessions: 30 days, or until you sign out.</li>
         <li>The check that you are a person: one hour, in a cookie in your browser only.</li>
+        <li>
+          Page views: as counts in Cloudflare's dashboard, for as long as Cloudflare keeps them,
+          with nothing that identifies a visitor.
+        </li>
         <li>Server logs: error summaries only, without tokens or recap content.</li>
       </ul>
     ),
