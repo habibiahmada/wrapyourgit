@@ -23,11 +23,11 @@ export const metadata: Metadata = {
   },
 };
 
-const UPDATED = "13 November 2026";
+const UPDATED = "14 November 2026";
 
 /*
  * Every statement here describes what the code does today (server/auth.ts, server/recaps.ts,
- * server/public-recaps.ts, analytics/public.ts, components/site/page-analytics.tsx). Change this
+ * server/public-recaps.ts, analytics/public.ts, app/layout.tsx). Change this
  * page in the same change that changes the behaviour.
  */
 
@@ -106,13 +106,6 @@ const SECTIONS: LegalSection[] = [
           hour and says only that the check was passed.
         </li>
         <li>
-          <strong>Page views</strong>: Vercel Web Analytics counts which page was opened and when,
-          the site that linked to it, the country and region, and the browser, operating system and
-          device type. We remove the address's query string first. It sets no cookies: visits are
-          told apart by a hash of the request that is discarded after 24 hours, and we see totals,
-          not people.
-        </li>
-        <li>
           <strong>Your hide choice</strong>: if you hide your public recap, we keep your numeric
           GitHub id on a list, so the recap stays hidden even if you rename your account.
         </li>
@@ -130,8 +123,8 @@ const SECTIONS: LegalSection[] = [
         </li>
         <li>Your email address, your followers or anything outside your year's activity.</li>
         <li>
-          Advertising data, or anything that follows you to other sites. The page-view counts above
-          are the only analytics, and they set no cookies.
+          Advertising data, or anything that follows you to other sites. The site runs no analytics
+          or tracking scripts and sets no tracking cookies.
         </li>
       </ul>
     ),
@@ -201,12 +194,11 @@ const SECTIONS: LegalSection[] = [
     title: "Who else is involved",
     body: (
       <p>
-        GitHub, whose API we read your activity from under its own privacy statement. Vercel, which
-        counts page views (Web Analytics) under its own privacy policy. Cloudflare, whose Turnstile
-        widget runs the check that you are a person, under its own privacy policy. Vercel also hosts
-        the site, and its server code runs in Singapore. Your account, recap, tokens and sessions
-        are stored in a Postgres database at Neon, also in Singapore. Cloudflare answers the site's
-        DNS and sees no recap data. Each works under its own privacy policy.
+        GitHub, whose API we read your activity from under its own privacy statement. Cloudflare,
+        whose Turnstile widget runs the check that you are a person, under its own privacy policy.
+        Vercel also hosts the site, and its server code runs in Singapore. Your account, recap,
+        tokens and sessions are stored in a Postgres database at Neon, also in Singapore. Cloudflare
+        answers the site's DNS and sees no recap data. Each works under its own privacy policy.
       </p>
     ),
   },
@@ -231,10 +223,6 @@ const SECTIONS: LegalSection[] = [
         </li>
         <li>Sessions: 30 days, or until you sign out.</li>
         <li>The check that you are a person: one hour, in a cookie in your browser only.</li>
-        <li>
-          Page-view counts: kept by Vercel as totals. The request hash that tells visits apart is
-          discarded after 24 hours.
-        </li>
         <li>Server logs: error summaries only, without tokens or recap content.</li>
       </ul>
     ),
