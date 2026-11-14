@@ -205,7 +205,8 @@ function next(worker: Worker): Promise<FromWorker> {
 
 async function loadImage(url: string): Promise<HTMLImageElement> {
   let src = url;
-  if (/\.svg($|\?)/.test(url) || url.startsWith("data:image/svg")) {
+  // A data: URL is already sized by the self-contained build (and a sandbox may refuse to fetch it).
+  if (/\.svg($|\?)/.test(url) && !url.startsWith("data:")) {
     const text = await (await fetch(url)).text();
     const tag = text.match(/<svg[^>]*>/)?.[0] ?? "";
     const sized = /\swidth=/.test(tag)

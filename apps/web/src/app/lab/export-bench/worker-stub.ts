@@ -5,3 +5,5 @@
  */
 const scope = globalThis as unknown as { document?: unknown; fonts?: unknown };
 if (typeof scope.document === "undefined") scope.document = { fonts: scope.fonts };
+
+export {};

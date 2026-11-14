@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bench } from "./Bench";
+import { Bench } from "./BenchView";
 
 /* Spike (#147, never merged): a hidden page to measure a faster export on a phone. */
 export const metadata: Metadata = {

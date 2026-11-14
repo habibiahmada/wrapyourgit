@@ -1,0 +1,69 @@
+<title>WrapYourGit Export Bench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: one column of controls over a two-column results table; a lab instrument, nothing more. */
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --fg: #15181e;
+    --muted: #5a6170;
+    --line: #d9dde4;
+    --accent: #2b39c8;
+    --on-accent: #ffffff;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1218; --panel: #171b23; --fg: #e8ebf1; --muted: #9aa2b2; --line: #2a303b;
+      --accent: #8f99ff; --on-accent: #0f1218; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1218; --panel: #171b23; --fg: #e8ebf1; --muted: #9aa2b2; --line: #2a303b;
+    --accent: #8f99ff; --on-accent: #0f1218; color-scheme: dark;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.45 var(--sans);
+    padding-block: 16px 32px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main { display: grid; gap: 14px; max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0; text-wrap: balance; }
+  p { margin: 0; max-width: 65ch; color: var(--muted); }
+  .spec { font-family: var(--mono); font-size: 13px; color: var(--fg); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+  button {
+    font: 600 16px var(--sans); min-height: 44px; padding: 0 18px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #status { font-family: var(--mono); font-size: 13px; color: var(--fg); }
+  .table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th { text-align: left; padding: 12px 10px 4px; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+  td { padding: 6px 10px; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+  td:first-child { width: 38%; }
+  td:last-child { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  textarea { width: 100%; min-height: 160px; font: 12px var(--mono); background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; box-sizing: border-box; }
+</style>
+<main>
+  <h1>Export bench</h1>
+  <p class="spec">H.264 · 1080×1920 · 30 fps · 3.2 Mbps · sample recap</p>
+  <p>Keep this tab in the foreground and the screen on until the status says Done (about 1 to 3 minutes). Then tap Copy results and paste them in the chat.</p>
+  <div class="controls">
+    <button id="run" class="primary" type="button">Run</button>
+    <button id="copy" type="button" disabled>Copy results</button>
+    <button id="whole" type="button" disabled>Optional: whole video</button>
+  </div>
+  <div id="status" aria-live="polite">Idle</div>
+  <div class="table-wrap"><table><tbody id="rows"></tbody></table></div>
+  <textarea id="copy-text" hidden readonly aria-label="Results as text"></textarea>
+</main>
+<script>/*BENCH*/</script>
+<script>/*PAGE*/</script>
