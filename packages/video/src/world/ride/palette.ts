@@ -6,14 +6,34 @@
 
 export type Tone = { top: string; left: string; right: string };
 
+/** Each colour's channels, parsed once: the fog mixes every face of every frame (issue #141). */
+const CHANNELS = new Map<string, readonly [number, number, number]>();
+const HEX_BYTE = Array.from({ length: 256 }, (_, v) => v.toString(16).padStart(2, "0"));
+
+function channels(hex: string): readonly [number, number, number] {
+  let rgb = CHANNELS.get(hex);
+  if (!rgb) {
+    const at = (i: number) => Number.parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16);
+    rgb = [at(0), at(1), at(2)];
+    // Fogged colours are mixed again (an edge lighter than its face), so the keys keep coming;
+    // starting over now and then keeps the cache small without losing the palette for long.
+    if (CHANNELS.size >= 4096) CHANNELS.clear();
+    CHANNELS.set(hex, rgb);
+  }
+  return rgb;
+}
+
+/** Two hex digits for a channel; anything outside 0..255 (a NaN) is written as before. */
+const byte = (v: number) => HEX_BYTE[v] ?? v.toString(16).padStart(2, "0");
+
 /** `t` of the way from `a` to `b`, clamped to 0..1. Both are #RRGGBB. */
 export function mixHex(a: string, b: string, t: number): string {
-  const channel = (hex: string, i: number) => Number.parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16);
   const k = Math.max(0, Math.min(1, t));
-  return `#${[0, 1, 2]
-    .map((i) => Math.round(channel(a, i) + (channel(b, i) - channel(a, i)) * k))
-    .map((v) => v.toString(16).padStart(2, "0"))
-    .join("")}`;
+  const [ar, ag, ab] = channels(a);
+  const [br, bg, bb] = channels(b);
+  return `#${byte(Math.round(ar + (br - ar) * k))}${byte(Math.round(ag + (bg - ag) * k))}${byte(
+    Math.round(ab + (bb - ab) * k),
+  )}`;
 }
 
 /** A tone from one colour: the top a little lighter, the right face darker. */
