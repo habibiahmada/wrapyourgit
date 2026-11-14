@@ -98,6 +98,8 @@ export type WorldPlayerProps =
        */
       variant: "public";
       data: RecapData;
+      /** Signed in as someone else: the end screen sends them to their own recap, not to sign in. */
+      signedIn: boolean;
       onExit: () => void;
       title: string;
     };
@@ -185,7 +187,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
   // A visitor keeps someone else's year: "your" would name the wrong person.
   const keepLabel = owner ? "Keep your year" : `Keep @${login}'s year`;
   const lastStopNote = `. ${keepLabel}: the files are on screen.`;
-  const endScreen = endScreenFor(props.variant);
+  const endScreen = endScreenFor(props.variant, { signedIn: !owner && props.signedIn });
   const card = shareCardFor(props.variant, data);
 
   const commit = useCallback((next: ControllerState) => {
