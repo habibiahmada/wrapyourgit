@@ -38,6 +38,7 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- The web pages wear a warm dark palette of their own instead of GitHub's exact colours, the header links to the source with a code icon instead of GitHub's mark, and the sign-in says the site is not affiliated with GitHub. Chrome had flagged the site as a deceptive copy of GitHub (ADR-0029) ([#139](https://github.com/habibiahmada/wrapyourgit/issues/139)).
 - Production moved to [wrapyourgit.com](https://wrapyourgit.com); the old domain redirects there (ADR-0025). Titles, descriptions, keywords, JSON-LD, the FAQ and `llms.txt` describe the site as a GitHub Wrapped, and a NOTICE file and a README section ask forks to keep the credit ([#98](https://github.com/habibiahmada/wrapyourgit/issues/98)).
 - The ride replaces the earlier stories: the story world with a moving camera, its scenes and its cut transitions are gone, on the web and in every file ([#92](https://github.com/habibiahmada/wrapyourgit/issues/92)).
 - The landing page is one isometric world. The hero is a quarter of a sample year as a city; each archetype, the letter, privacy and the closing are city blocks with Cell in the middle (ADR-0021, ADR-0022); and every section holds one to three things: the story in three acts, twelve frames of the ride, three measures with their definitions, archetypes in two rows of three, three privacy promises and the FAQ in two groups ([#80](https://github.com/habibiahmada/wrapyourgit/issues/80), [#84](https://github.com/habibiahmada/wrapyourgit/issues/84), [#88](https://github.com/habibiahmada/wrapyourgit/issues/88), [#90](https://github.com/habibiahmada/wrapyourgit/issues/90)).
@@ -62,6 +63,7 @@ The 2026 edition, before its first release.
 
 ### Fixed
 
+- On Chrome for Android the story no longer crops its sides after the username form, which had hidden the Sound button: the player measures the box it fills instead of the window ([#137](https://github.com/habibiahmada/wrapyourgit/issues/137)).
 - A tap during a move is dropped instead of queued, and the tap zones no longer draw a focus box round a third of the story after a tap ([#94](https://github.com/habibiahmada/wrapyourgit/issues/94), [#96](https://github.com/habibiahmada/wrapyourgit/issues/96)).
 - The site's share card no longer draws its art over the headline ([#69](https://github.com/habibiahmada/wrapyourgit/issues/69)).
 - A sync that cannot reach GitHub says so instead of "Something went wrong" ([#8](https://github.com/habibiahmada/wrapyourgit/pull/8)).
