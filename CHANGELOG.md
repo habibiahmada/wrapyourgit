@@ -64,6 +64,7 @@ The 2026 edition, before its first release.
 
 ### Fixed
 
+- The story ride shows both rails again (the rail bed was painted over the far one), and the train's wheels read as round, with light tyres on the dark skirt ([#143](https://github.com/habibiahmada/wrapyourgit/issues/143)).
 - On Chrome for Android the story no longer crops its sides after the username form, which had hidden the Sound button: the player measures the box it fills instead of the window ([#137](https://github.com/habibiahmada/wrapyourgit/issues/137)).
 - A tap during a move is dropped instead of queued, and the tap zones no longer draw a focus box round a third of the story after a tap ([#94](https://github.com/habibiahmada/wrapyourgit/issues/94), [#96](https://github.com/habibiahmada/wrapyourgit/issues/96)).
 - The site's share card no longer draws its art over the headline ([#69](https://github.com/habibiahmada/wrapyourgit/issues/69)).
