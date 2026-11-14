@@ -34,7 +34,8 @@ describe("world sounds", () => {
     }
     expect([...played].sort()).toEqual(Object.keys(SFX).sort());
     const shipped = (await readdir(join(PUBLIC, "audio/sfx"))).filter((f) => f.endsWith(".wav"));
-    expect(shipped.sort()).toEqual(Object.values(SFX).map((s) => s.file.split("/").pop()).sort());
+    const registered = Object.values(SFX).map((s) => s.file.replace("audio/sfx/", ""));
+    expect(shipped.sort()).toEqual(registered.sort());
   });
 
   test("a tap has its own file", () => {
