@@ -17,6 +17,11 @@ describe("WORLD_TRACK", () => {
     expect(WORLD_TRACK.seconds - endFrame / LOOP_FPS).toBeGreaterThanOrEqual(1);
   });
 
+  test("plays a little below the file's level, the same on the web and in the video", () => {
+    expect(WORLD_TRACK.volume).toBeGreaterThan(0.5);
+    expect(WORLD_TRACK.volume).toBeLessThan(1);
+  });
+
   test("converts loop points to seconds of the file", () => {
     expect(worldLoopSeconds()).toEqual({ start: startFrame / 30, end: endFrame / 30 });
   });

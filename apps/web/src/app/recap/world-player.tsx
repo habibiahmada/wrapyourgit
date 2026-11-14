@@ -121,7 +121,7 @@ export function WorldPlayer(props: WorldPlayerProps) {
   );
   const router = useRouter();
   const player = useRef<PlayerRef>(null);
-  const music = useMusic(MUSIC_SRC, MUSIC_LOOP);
+  const music = useMusic(MUSIC_SRC, MUSIC_LOOP, WORLD_TRACK.volume);
   const sfx = useSfx();
   const reduced = useReducedMotion();
 

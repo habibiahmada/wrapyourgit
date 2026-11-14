@@ -17,6 +17,11 @@ export const WORLD_TRACK = {
   seconds: 180,
   /** Loop region, in frames at LOOP_FPS: 1:46.4 to 2:59.0, the source's bars 38 to 64. */
   loop: { startFrame: 3193, endFrame: 5370 },
+  /**
+   * Gain the music plays at, on the web and in the video (0.8 is about -2 dB): the maintainer
+   * found the file at full level a little loud under the effects.
+   */
+  volume: 0.8,
   /** The video fades the music out over its last this many seconds. */
   fadeSeconds: 1.5,
 } as const;

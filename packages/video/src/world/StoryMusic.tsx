@@ -17,7 +17,7 @@ import { WORLD_TRACK, worldLoopFrames } from "../audio/world-track";
 export function StoryMusic({ end, fps }: { end: number; fps: number }) {
   const { start: loopStart, end: loopEnd } = worldLoopFrames(fps);
   const fade = (frame: number) =>
-    interpolate(frame, [end - Math.round(WORLD_TRACK.fadeSeconds * fps), end], [1, 0], {
+    interpolate(frame, [end - Math.round(WORLD_TRACK.fadeSeconds * fps), end], [WORLD_TRACK.volume, 0], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
