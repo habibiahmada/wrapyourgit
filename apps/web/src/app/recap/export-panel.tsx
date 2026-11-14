@@ -9,6 +9,7 @@ import { announcement, type ExportJob, NOUN, percent } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { SizePicker } from "./size-picker";
 import { useExport } from "./use-export";
+import { useTimeLeft } from "./use-time-left";
 
 const FORMATS = ["9x16", "4x5", "1x1", "16x9"] as const satisfies readonly ExportFormat[];
 const KEEP_OPEN: Record<ExportJob, string> = {
@@ -40,6 +41,7 @@ export function ExportPanel({
   onBusyChange?: (busy: boolean) => void;
 }) {
   const { state, support, busy, run: start, cancel } = useExport(data, { letter, onBusyChange });
+  const left = useTimeLeft(state);
   const [format, setFormat] = useState<ExportFormat>("9x16");
   const buttons = useRef<Partial<Record<ExportJob, HTMLButtonElement | null>>>({});
   const ids = useId();
@@ -152,6 +154,9 @@ export function ExportPanel({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent(state)}
+            aria-valuetext={
+              left ? `${percent(state)}%, ${left.toLowerCase()}` : `${percent(state)}%`
+            }
             className="h-2 overflow-hidden rounded-full bg-overlay"
           >
             <div
@@ -159,6 +164,7 @@ export function ExportPanel({
               style={{ width: `${percent(state)}%` }}
             />
           </div>
+          {left && <p className="text-muted tabular-nums">{left}</p>}
           <p className="text-muted">{KEEP_OPEN[state.job]}</p>
           <button type="button" onClick={cancel} className={fileButton}>
             Cancel
