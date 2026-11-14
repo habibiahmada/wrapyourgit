@@ -6,7 +6,7 @@ import Link from "next/link";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Art } from "@/components/art";
 import type { EndLink, ShareCard } from "./end-screen";
-import { announcement, type ExportJob, NOUN, percent } from "./export-state";
+import { announcement, type ExportJob, percent, renderingTitle } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { useExport } from "./use-export";
 import { useTimeLeft } from "./use-time-left";
@@ -274,8 +274,8 @@ export function ExportShelf({
       )}
 
       {state.status === "rendering" && (
-        <Downloading
-          noun={NOUN[state.job]}
+        <Rendering
+          title={renderingTitle(state.job)}
           value={percent(state)}
           left={left}
           reminder={showReminder(privateNames)}
@@ -286,14 +286,14 @@ export function ExportShelf({
   );
 }
 
-function Downloading({
-  noun,
+function Rendering({
+  title,
   value,
   left,
   reminder,
   onCancel,
 }: {
-  noun: string;
+  title: string;
   value: number;
   /** "About 2 min left", once the speed so far means something. */
   left: string | null;
@@ -348,7 +348,7 @@ function Downloading({
           ))}
         </div>
         <p id={titleId} className="text-lg font-semibold">
-          Downloading your {noun}…
+          {title}
         </p>
         <div
           role="progressbar"
