@@ -10,7 +10,7 @@
 
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { BLIP_STEPS, SFX, type SfxName, sfxFile } from "../packages/video/src/audio/sfx";
+import { SFX, type SfxName, sfxFile } from "../packages/video/src/audio/sfx";
 
 const SAMPLE_RATE = 44_100;
 const A5 = 880;
@@ -43,108 +43,8 @@ function highPass(cutoff: number) {
 }
 
 /** Builds a voice per sound: a function of time in seconds, called once per sample in order. */
-const VOICES: Record<SfxName, (step: number) => (t: number, length: number) => number> = {
-  whoosh: () => {
-    const filter = lowPass((t) => 300 + 5000 * Math.sin(Math.PI * Math.min(1, t / 0.45)));
-    return (t, length) => filter(noise(), t) * Math.sin(Math.PI * (t / length)) ** 1.5 * 2.2;
-  },
-  cells: () => {
-    // A quick patter of tiny clicks, like cells landing one after another.
-    const hits = Array.from({ length: 12 }, (_, i) => ({
-      at: i * 0.024 + Math.abs(noise()) * 0.01,
-      pitch: A5 * (1 + Math.abs(noise())),
-    }));
-    return (t) => {
-      let sum = 0;
-      for (const hit of hits) {
-        const local = t - hit.at;
-        if (local >= 0 && local < 0.04) sum += sine(hit.pitch, local) * Math.exp(-local * 140);
-      }
-      return sum * 0.6;
-    };
-  },
-  pop: () => (t) => {
-    // Pitch drops a little as it lands, which reads as "pop" rather than "beep".
-    const frequency = A5 * (1 + 0.6 * Math.exp(-t * 60));
-    return sine(frequency, t) * Math.exp(-t * 32);
-  },
-  tick: () => (t) => (0.6 * sine(A5 * 4, t) + 0.4 * noise()) * Math.exp(-t * 220),
-  land: () => {
-    const filter = lowPass(() => 1800);
-    return (t) => {
-      const thump =
-        Math.sin(2 * Math.PI * (55 * t + 6 * (1 - Math.exp(-t * 30)))) * Math.exp(-t * 14);
-      return thump + 0.35 * filter(noise(), t) * Math.exp(-t * 30);
-    };
-  },
-  blip: (step) => {
-    const frequency = A5 * (BLIP_STEPS[step] ?? 1);
-    return (t) => (0.8 * sine(frequency, t) + 0.2 * sine(frequency * 2, t)) * Math.exp(-t * 28);
-  },
-  shimmer: () => (t, length) => {
-    // Bell partials of an A major-ish arpeggio rising across the sweep.
-    const partials = [1, 1.25, 1.5, 2, 2.5, 3];
-    let sum = 0;
-    partials.forEach((ratio, i) => {
-      const start = (i / partials.length) * length * 0.6;
-      const local = t - start;
-      if (local >= 0) sum += sine(A5 * ratio, local) * Math.exp(-local * 4) * 0.3;
-    });
-    return sum * Math.min(1, (length - t) * 8);
-  },
-  impact: () => {
-    const filter = lowPass((t) => 4000 * Math.exp(-t * 3) + 200);
-    return (t) => {
-      const sub = Math.sin(2 * Math.PI * (40 * t + 25 * (1 - Math.exp(-t * 8)))) * Math.exp(-t * 3);
-      return sub + 0.5 * filter(noise(), t) * Math.exp(-t * 2.5);
-    };
-  },
+const VOICES: Record<SfxName, () => (t: number, length: number) => number> = {
   tap: () => (t) => (0.7 * sine(1200 * (1 - 0.4 * t * 16), t) + 0.3 * noise()) * Math.exp(-t * 90),
-  wind: () => {
-    const filter = lowPass((t) => 350 + 500 * Math.sin(Math.PI * Math.min(1, t / 1.6)));
-    return (t, length) => filter(noise(), t) * Math.sin(Math.PI * (t / length)) ** 2 * 3;
-  },
-  leaves: () => {
-    // Rustle bursts at fixed offsets: band-passed noise, each with a quick attack and fall.
-    const band = lowPass(() => 5500);
-    const highs = highPass(1800);
-    const bursts = Array.from({ length: 9 }, (_, i) => ({
-      at: i * 0.14 + Math.abs(noise()) * 0.06,
-      length: 0.08 + Math.abs(noise()) * 0.08,
-    }));
-    return (t, length) => {
-      let envelope = 0;
-      for (const burst of bursts) {
-        const local = t - burst.at;
-        if (local >= 0 && local < burst.length) {
-          envelope = Math.max(envelope, Math.sin(Math.PI * (local / burst.length)));
-        }
-      }
-      return band(highs(noise(), t), t) * envelope * Math.sin(Math.PI * (t / length)) ** 0.5 * 2;
-    };
-  },
-  crickets: () => {
-    // Pairs of short chirps near 4.5 kHz, with a slow wobble so the pairs don't line up.
-    const pairs = Array.from({ length: 6 }, (_, i) => 0.1 + i * 0.26 + Math.abs(noise()) * 0.05);
-    return (t, length) => {
-      let sum = 0;
-      for (const start of pairs) {
-        for (const offset of [0, 0.06]) {
-          const local = t - start - offset;
-          if (local >= 0 && local < 0.03) {
-            sum +=
-              sine(4500 + 120 * Math.sin(local * 400), local) *
-              Math.sin(Math.PI * (local / 0.03) ** 2);
-          }
-        }
-      }
-      return sum * Math.min(1, t * 10, (length - t) * 6);
-    };
-  },
-  dive: () => {
-    const filter = lowPass((t) => 2200 * Math.exp(-t * 2.4) + 180);
-    return (t, length) => filter(noise(), t) * Math.sin(Math.PI * (t / length)) ** 0.8 * 2.4;
-  },
   sprout: () => (t) => {
     // A soft pluck whose pitch climbs a fifth as it grows.
     const frequency = A5 * 0.5 * (1 + 0.5 * (1 - Math.exp(-t * 14)));
@@ -359,10 +259,10 @@ function wav(samples: Float32Array): ArrayBuffer {
 const publicDir = resolve(import.meta.dir, "../packages/video/public");
 await mkdir(join(publicDir, "audio/sfx"), { recursive: true });
 
-async function render(name: SfxName, step: number) {
+async function render(name: SfxName) {
   const { seconds } = SFX[name];
-  const file = sfxFile(name, step);
-  const voice = VOICES[name](step);
+  const file = sfxFile(name);
+  const voice = VOICES[name]();
   const samples = new Float32Array(Math.round(seconds * SAMPLE_RATE));
   // A 2 ms fade at both ends so no effect starts or stops with a click.
   const edge = 0.002 * SAMPLE_RATE;
@@ -374,10 +274,4 @@ async function render(name: SfxName, step: number) {
   console.log(`Wrote ${file} (${seconds}s)`);
 }
 
-for (const name of Object.keys(SFX) as SfxName[]) {
-  if (name === "blip") {
-    for (let step = 0; step < BLIP_STEPS.length; step++) await render(name, step);
-  } else {
-    await render(name, 0);
-  }
-}
+for (const name of Object.keys(SFX) as SfxName[]) await render(name);

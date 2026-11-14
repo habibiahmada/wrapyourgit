@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { BLIP_STEPS, SFX, sfxFile } from "./sfx";
+import { SFX } from "./sfx";
 
 const PUBLIC = join(import.meta.dir, "../../public");
 
@@ -17,12 +17,4 @@ describe("SFX", () => {
       expect(sound.volume).toBeLessThanOrEqual(0.8);
     });
   }
-
-  test("every blip pitch has a file, and steps past the top clamp to it", async () => {
-    for (let step = 0; step < BLIP_STEPS.length; step++) {
-      expect(await Bun.file(join(PUBLIC, sfxFile("blip", step))).exists()).toBe(true);
-    }
-    expect(sfxFile("blip", 99)).toBe(sfxFile("blip", BLIP_STEPS.length - 1));
-    expect(sfxFile("pop", 3)).toBe(SFX.pop.file);
-  });
 });
