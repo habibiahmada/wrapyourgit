@@ -28,8 +28,12 @@ const PUBLIC_END: EndScreen = {
   ],
 };
 
-export function endScreenFor(variant: "owner" | "public"): EndScreen {
-  return variant === "owner" ? OWNER_END : PUBLIC_END;
+/** A signed-in visitor already has a recap of their own, so they are sent to it, not to sign in. */
+export function endScreenFor(
+  variant: "owner" | "public",
+  { signedIn = false }: { signedIn?: boolean } = {},
+): EndScreen {
+  return variant === "owner" || signedIn ? OWNER_END : PUBLIC_END;
 }
 
 /** The share card's download link, or why there is none. */

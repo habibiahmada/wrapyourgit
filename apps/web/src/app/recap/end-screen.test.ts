@@ -17,6 +17,12 @@ describe("endScreenFor", () => {
     ]);
   });
 
+  test("a signed-in visitor already has a recap: Go to dashboard, no sign-in", () => {
+    const screen = endScreenFor("public", { signedIn: true });
+    expect(screen.exports).toBe(true);
+    expect(screen.links).toEqual([{ label: "Go to dashboard", href: "/dashboard", route: false }]);
+  });
+
   test("the owner keeps the files and Go to dashboard", () => {
     const screen = endScreenFor("owner");
     expect(screen.exports).toBe(true);

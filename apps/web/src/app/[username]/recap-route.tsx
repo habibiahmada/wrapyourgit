@@ -126,7 +126,7 @@ async function VisitorRecap({ name, signedIn }: { name: string; signedIn: boolea
       // Only a played recap moves to GitHub's casing: the next request is then a stored read,
       // while the other outcomes would ask GitHub again.
       if (result.login !== name) redirect(recapPath(result.login));
-      return <VisitorStory data={result.data} />;
+      return <VisitorStory data={result.data} signedIn={signedIn} />;
     case "missing":
       return <MissingPage login={result.login} />;
     case "organization":

@@ -11,7 +11,7 @@ import { WorldPlayer } from "../recap/world-player";
  * `data` is the public recap (loadPublicRecap); the player projects it again (`publicWorld`).
  * Leaving the story lands on a short page to play it again or make your own.
  */
-export function VisitorStory({ data }: { data: RecapData }) {
+export function VisitorStory({ data, signedIn }: { data: RecapData; signedIn: boolean }) {
   const [playing, setPlaying] = useState(true);
   const again = useRef<HTMLButtonElement>(null);
   const { login } = data.profile;
@@ -29,6 +29,7 @@ export function VisitorStory({ data }: { data: RecapData }) {
           variant="public"
           title={`@${login}'s year as a city`}
           data={data}
+          signedIn={signedIn}
           onExit={() => setPlaying(false)}
         />
       </main>
@@ -55,9 +56,15 @@ export function VisitorStory({ data }: { data: RecapData }) {
             >
               Play @{login}'s year again
             </button>
-            <a href="/" className={button.secondary}>
-              Make your own recap
-            </a>
+            {signedIn ? (
+              <a href="/dashboard" className={button.secondary}>
+                Go to dashboard
+              </a>
+            ) : (
+              <a href="/" className={button.secondary}>
+                Make your own recap
+              </a>
+            )}
           </div>
         </div>
         {/* Cell's head (HEAD_ART_ID in packages/video art.ts): the face the story opens on. */}
