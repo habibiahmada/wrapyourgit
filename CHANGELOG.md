@@ -39,6 +39,7 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- The story's music is "Traveling in your mind" by Loyalty Freak Music, a CC0 track from the Free Music Archive, in place of the synthesised one. It plays about three minutes before it repeats, and the repeat joins without a seam (ADR-0030) ([#155](https://github.com/habibiahmada/wrapyourgit/issues/155)).
 - The site is titled after itself: "WrapYourGit 2026: your year of code as an animated story". Page titles, the description and the search metadata no longer call it a GitHub Wrapped, and the description says it is not affiliated with GitHub, after Safe Browsing listed the domain as deceptive ([#153](https://github.com/habibiahmada/wrapyourgit/issues/153)).
 - The MP4 export does less repeated work per frame, with the same picture: fog colours are parsed once and the painter sets a colour or font only when it changes. Measured in Chrome, the scene is about 30% faster to build and the whole export about 5% faster; most of a frame is the canvas fill and the H.264 encode ([#141](https://github.com/habibiahmada/wrapyourgit/issues/141)).
 - The web pages wear a warm dark palette of their own instead of GitHub's exact colours, the header links to the source with a code icon instead of GitHub's mark, and the sign-in says the site is not affiliated with GitHub. Chrome had flagged the site as a deceptive copy of GitHub (ADR-0029) ([#139](https://github.com/habibiahmada/wrapyourgit/issues/139)).

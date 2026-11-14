@@ -1,6 +1,6 @@
 # 0007. Soundtrack: CC0 / royalty-free tracks first, generated later
 
-- Status: Accepted for MVP (2026-11-04): original synthesised track, see Outcome
+- Status: Accepted for MVP (2026-11-04): original synthesised track, see Outcome. The Outcome is superseded by [0030](0030-a-human-made-cc0-soundtrack.md) (2026-11-14): a human-made CC0 track.
 - Date: 2026-11-04
 - Note (#63): the 120 BPM track and `scripts/synth-track.ts` were removed with the old story. The story world's 90 BPM track follows the same approach: synthesised CC0, from `scripts/synth-world-track.ts` and `packages/video/src/audio/world-track.ts`.
 
