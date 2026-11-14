@@ -16,17 +16,14 @@ export function siteUrl(): string {
 export const SITE = {
   name: "WrapYourGit",
   /**
-   * Other names people search for, for JSON-LD `alternateName`. "GitHub Wrapped" is the generic
-   * name for a yearly GitHub recap, the way people say "Spotify Wrapped" for music.
+   * Other names for JSON-LD `alternateName`. Never GitHub's brand as the product's name: a new
+   * domain titled after GitHub next to "Sign in with GitHub" reads as a look-alike to Safe Browsing
+   * (issue #153). GitHub is named only as where the data comes from.
    */
-  alternateNames: [
-    "Wrap Your Git",
-    "GitHub Wrapped by WrapYourGit",
-    `GitHub Wrapped ${EDITION_YEAR}`,
-  ],
-  title: `WrapYourGit: your GitHub Wrapped ${EDITION_YEAR}, as an animated story`,
+  alternateNames: ["Wrap Your Git", `WrapYourGit ${EDITION_YEAR}`],
+  title: `WrapYourGit ${EDITION_YEAR}: your year of code as an animated story`,
   tagline: "Every green square has a story. Here's yours, in motion.",
-  description: `Your GitHub Wrapped for ${EDITION_YEAR}. Type any GitHub username or sign in, and watch the year play back as an animated train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype. Free, read-only, and yours to delete.`,
+  description: `WrapYourGit turns your ${EDITION_YEAR} on GitHub into an animated story. Type any GitHub username or sign in, and watch the year play back as a train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype. Free, read-only, yours to delete, and not affiliated with GitHub.`,
   author: {
     name: "Habibi Ahmad Aziz",
     handle: "habibiahmada",
