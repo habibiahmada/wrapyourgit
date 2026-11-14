@@ -1,37 +1,33 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { $ } from "bun";
-import { WORLD_TRACK, worldBeats, worldLoopSeconds } from "./world-track";
+import { LOOP_FPS, WORLD_TRACK, worldLoopFrames, worldLoopSeconds } from "./world-track";
 
 const PACKAGE = join(import.meta.dir, "../..");
 
 describe("WORLD_TRACK", () => {
-  const { startBeat, endBeat } = WORLD_TRACK.loop;
+  const { startFrame, endFrame } = WORLD_TRACK.loop;
 
-  test("loops on bar lines, for at least 64 beats, inside the track", () => {
-    expect(startBeat % 4).toBe(0);
-    expect(endBeat % 4).toBe(0);
-    expect(endBeat - startBeat).toBeGreaterThanOrEqual(64);
-    expect(startBeat).toBeGreaterThan(0);
-    expect(endBeat).toBeLessThan(WORLD_TRACK.beats);
+  test("loops on whole frames, for over a minute, inside the file", () => {
+    expect(Number.isInteger(startFrame)).toBe(true);
+    expect(Number.isInteger(endFrame)).toBe(true);
+    expect(startFrame).toBeGreaterThan(0);
+    expect((endFrame - startFrame) / LOOP_FPS).toBeGreaterThan(60);
+    // The file holds a copy of the loop's start after the loop end, for players that read past it.
+    expect(WORLD_TRACK.seconds - endFrame / LOOP_FPS).toBeGreaterThanOrEqual(1);
   });
 
   test("converts loop points to seconds of the file", () => {
-    const beat = 60 / WORLD_TRACK.bpm;
-    expect(worldLoopSeconds()).toEqual({
-      start: WORLD_TRACK.offsetMs / 1000 + startBeat * beat,
-      end: WORLD_TRACK.offsetMs / 1000 + endBeat * beat,
-    });
+    expect(worldLoopSeconds()).toEqual({ start: startFrame / 30, end: endFrame / 30 });
   });
 
-  test("beats land on whole frames at 30 fps", () => {
-    expect(worldBeats(1)).toBe(20);
-    expect(worldBeats(startBeat)).toBe(640);
-    expect(worldBeats(endBeat)).toBe(3200);
+  test("gives the loop in frames at the video's rate", () => {
+    expect(worldLoopFrames(30)).toEqual({ start: startFrame, end: endFrame });
+    expect(worldLoopFrames(60)).toEqual({ start: startFrame * 2, end: endFrame * 2 });
   });
 
   test(
-    "the file exists and lasts exactly its beats",
+    "the file exists and lasts exactly its length",
     async () => {
       const file = join(PACKAGE, "public", WORLD_TRACK.file);
       expect(await Bun.file(file).exists()).toBe(true);
@@ -41,7 +37,7 @@ describe("WORLD_TRACK", () => {
           .quiet()
           .text();
       const seconds = Number.parseFloat(probe.trim().split("\n").pop() ?? "");
-      expect(Math.abs(seconds - (WORLD_TRACK.beats * 60) / WORLD_TRACK.bpm)).toBeLessThan(0.05);
+      expect(Math.abs(seconds - WORLD_TRACK.seconds)).toBeLessThan(0.05);
     },
     { timeout: 60_000 },
   );
