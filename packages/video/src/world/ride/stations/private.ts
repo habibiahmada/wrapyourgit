@@ -59,7 +59,9 @@ export const privateVault: Station = (ctx) => {
       ? "private contributions, counted"
       : model.kind === "none"
         ? "Nothing private this year"
-        : "Private contributions couldn't be read";
+        : model.kind === "not-shared"
+          ? "Private work isn't shown publicly"
+          : "Private contributions couldn't be read";
   out.push(...nameBoard(ctx, [sign], { deep: PLAZA.deep, fit: true }));
   const landed = easeOut(build / 0.7);
   if (landed <= 0) return out;

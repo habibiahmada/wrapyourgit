@@ -5,6 +5,7 @@ import {
   exportReducer,
   IDLE,
   percent,
+  renderingTitle,
   timeLeft,
 } from "./export-state";
 
@@ -133,5 +134,13 @@ describe("timeLeft", () => {
   test("the last few seconds are not counted down", () => {
     expect(timeLeft(0.95, 60_000)).toBe("A few seconds left");
     expect(timeLeft(1, 60_000)).toBe("A few seconds left");
+  });
+});
+
+describe("renderingTitle", () => {
+  test("says the file is being made, not downloaded: nothing downloads until it is done", () => {
+    expect(renderingTitle("mp4")).toBe("Making your video…");
+    expect(renderingTitle("zip")).toBe("Making your slides…");
+    expect(renderingTitle("pdf")).toBe("Making your PDF…");
   });
 });

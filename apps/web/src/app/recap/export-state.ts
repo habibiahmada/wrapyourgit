@@ -20,6 +20,9 @@ export const IDLE: ExportState = { status: "idle" };
 /** How the panel and its announcements name each job. */
 export const NOUN: Record<ExportJob, string> = { mp4: "video", zip: "slides", pdf: "PDF" };
 
+/** The export dialog's title while a file renders: it downloads only once it is done. */
+export const renderingTitle = (job: ExportJob): string => `Making your ${NOUN[job]}…`;
+
 export function exportReducer(state: ExportState, action: ExportAction): ExportState {
   if (action.type === "start") {
     // The web renderer is single-threaded and shares the tab: one render at a time.

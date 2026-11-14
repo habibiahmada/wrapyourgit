@@ -21,6 +21,13 @@ export type Metric<T> =
   | { status: "ok"; value: T; estimated: boolean }
   | { status: "unavailable"; reason: string };
 
+/**
+ * The reason a public recap gives for what GitHub, or the projection, keeps from other viewers. A
+ * private count read with another account's token is 0 unless its owner shares it on their profile,
+ * so on a public surface a 0 means "not shared", never "none".
+ */
+export const NOT_SHARED_PUBLICLY = "Not shared publicly";
+
 const isoDate = z.iso.date();
 
 export const calendarDaySchema = z.object({

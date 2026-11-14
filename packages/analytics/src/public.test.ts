@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { type RecapData, type RepoRef, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
+import {
+  NOT_SHARED_PUBLICLY,
+  type RecapData,
+  type RepoRef,
+  recapDataSchema,
+  SCHEMA_VERSION,
+} from "@wyg/schema";
 import { PRIVATE_REPO_NAME, toPublicRecap, withoutPrivateNames } from "./public";
 
 const repo = (nameWithOwner: string, isPrivate: boolean): RepoRef => ({
@@ -107,6 +113,15 @@ describe("toPublicRecap", () => {
       estimated: false,
     });
     expect(published.repositories.ownedTotal).toBe(4);
+  });
+
+  test("a private count of zero is not shared, not none: GitHub withholds it from other viewers", () => {
+    const input = recap();
+    input.contributions.privateCount = { status: "ok", value: 0, estimated: false };
+    expect(toPublicRecap(input).contributions.privateCount).toEqual({
+      status: "unavailable",
+      reason: NOT_SHARED_PUBLICLY,
+    });
   });
 
   test("the result is still valid RecapData, so the story renders it unchanged", () => {
