@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { announcement, type ExportState, exportReducer, IDLE, percent } from "./export-state";
+import {
+  announcement,
+  type ExportState,
+  exportReducer,
+  IDLE,
+  percent,
+  timeLeft,
+} from "./export-state";
 
 const rendering = (progress = 0): ExportState => ({ status: "rendering", job: "mp4", progress });
 
@@ -93,5 +100,32 @@ describe("announcement", () => {
       "The PDF couldn't be made in this browser. Try Chrome on a computer.",
     );
     expect(announcement({ status: "cancelled", job: "zip" })).toBe("Cancelled. Nothing was saved.");
+  });
+});
+
+describe("timeLeft", () => {
+  test("says nothing until the speed so far means something", () => {
+    expect(timeLeft(0, 30_000)).toBeNull();
+    expect(timeLeft(0.02, 30_000)).toBeNull();
+    expect(timeLeft(0.5, 1_000)).toBeNull();
+  });
+
+  test("estimates from the speed so far, in whole minutes past a minute", () => {
+    // 25% in 40 s: 120 s more.
+    expect(timeLeft(0.25, 40_000)).toBe("About 2 min left");
+    // 10% in 9 s: 81 s more, rounds to one minute.
+    expect(timeLeft(0.1, 9_000)).toBe("About 1 min left");
+  });
+
+  test("under a minute it counts in steps of 5 seconds", () => {
+    // 50% in 42 s: 42 s more.
+    expect(timeLeft(0.5, 42_000)).toBe("About 40 s left");
+    // 80% in 40 s: 10 s more.
+    expect(timeLeft(0.8, 40_000)).toBe("About 10 s left");
+  });
+
+  test("the last few seconds are not counted down", () => {
+    expect(timeLeft(0.95, 60_000)).toBe("A few seconds left");
+    expect(timeLeft(1, 60_000)).toBe("A few seconds left");
   });
 });

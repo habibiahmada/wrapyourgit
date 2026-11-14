@@ -48,6 +48,24 @@ export function percent(state: ExportState): number {
   return state.status === "rendering" ? Math.floor(state.progress * 100) : 0;
 }
 
+/** Below this share, or this soon after the start, the speed so far says little about the rest. */
+const ESTIMATE_FROM = 0.03;
+const ESTIMATE_AFTER_MS = 3_000;
+
+/**
+ * The time a render still needs, from its speed so far: "About 2 min left". A phone takes minutes
+ * over a video, and a bar alone doesn't say whether it is worth the wait (issue #144). Null until
+ * the estimate means something. Minutes past a minute, steps of 5 seconds below it, and no
+ * countdown over the last few seconds, where the file is being written out.
+ */
+export function timeLeft(progress: number, elapsedMs: number): string | null {
+  if (!(progress >= ESTIMATE_FROM) || elapsedMs < ESTIMATE_AFTER_MS) return null;
+  const seconds = (elapsedMs / 1000) * ((1 - Math.min(1, progress)) / progress);
+  if (seconds < 7.5) return "A few seconds left";
+  if (seconds < 60) return `About ${Math.max(10, Math.round(seconds / 5) * 5)} s left`;
+  return `About ${Math.round(seconds / 60)} min left`;
+}
+
 /** What the live region says. Steps of 10% while rendering keep screen readers from chattering. */
 export function announcement(state: ExportState): string {
   switch (state.status) {
