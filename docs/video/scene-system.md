@@ -17,7 +17,7 @@ How the story and the exported files are built. Code: `packages/video/src/world/
 | Drawing       | `ride/project.ts`, `prims.ts`, `paint.ts` | A pinhole camera projects boxes to flat polygons sorted far to near (`under` floors first); `RideCanvas` paints them on one `<canvas>`                             |
 | Layout family | `layoutForSize()`                         | `portrait` / `compact` / `landscape` ([ADR-0003](../architecture/decisions/0003-layout-families.md)); a station lays its hero out by family                        |
 | Fixtures      | `src/fixtures/`                           | `sampleRecap` for Studio; `emptyRecap`, `busyRecap` and `provisionalRecap` for edge checks                                                                         |
-| Track (music) | `src/audio/world-track.ts`                | `WORLD_TRACK`: 90 BPM, intro, a seamless loop region and an outro; `worldBeats(n)`                                                                                 |
+| Track (music) | `src/audio/world-track.ts`                | `WORLD_TRACK`: the file, its length and a seamless loop region in whole frames; `worldLoopFrames(fps)`                                                             |
 | Sound effects | `world/sound.ts`, `WorldSfx`              | The rails for every move, an arrival sound per stop; `WorldSfx` plays them in video mode on `@remotion/media`'s `<Audio>`                                          |
 
 ## Rules
@@ -63,9 +63,9 @@ Privacy: stations name repositories only through `repoLabel()` (`src/present.ts`
 
 See [ADR-0009](../architecture/decisions/0009-sound-design.md). Files in `packages/video/public/audio/`, licences in `LICENSES.md` there.
 
-- **Track:** `world-90bpm-v1.m4a`, synthesised by `bun scripts/synth-world-track.ts` from `WORLD_TRACK`. Beats 0–32 are the intro, 32–160 the loop region (rendered circular), 160–192 the outro.
+- **Track:** `world-traveling-v1.m4a`, "Traveling in your mind" by Loyalty Freak Music (CC0, [ADR-0030](../architecture/decisions/0030-a-human-made-cc0-soundtrack.md)), prepared by `bun scripts/prepare-world-track.ts` from the published MP3. It plays from the top to the loop end (2:59), then repeats 1:46–2:59; the jump back is crossfaded and both points are whole frames.
 - **Effects:** `SFX` in `src/audio/sfx.ts`, WAV files in `audio/sfx/`, synthesised by `bun scripts/synth-sfx.ts`. Every move that is not a page turn plays `rails`, the wheels on the rails: a short loop played for as long as the move, rolling in as the train pulls away and fading as it pulls in. Each stop has its arrival sound (`world/sound.ts`).
-- **Video:** `RideStory` in `video` mode mixes the track in (`StoryMusic`: once to the loop end, then the loop region, fading over the last two beats) and places every sound with `WorldSfx`.
+- **Video:** `RideStory` in `video` mode mixes the track in (`StoryMusic`: once to the loop end, then the loop region, fading over the last 1.5 s) and places every sound with `WorldSfx`.
 - **Web:** the player passes `music: false` and `mode: "interactive"`, so the composition plays no audio. The music runs on Web Audio (`apps/web/src/app/recap/use-music.ts`); the effects play on the tap that moves (`use-sfx.ts`), the rails cut to the move's length. Both follow the sound toggle.
 
 ## Export

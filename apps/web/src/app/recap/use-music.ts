@@ -30,7 +30,12 @@ export type Music = {
  * through `loop.end`, then the loop region repeats for as long as the chapters last.
  * Fades run on the audio clock, so they finish in background tabs too.
  */
-export function useMusic(src: string, loop: { start: number; end: number }): Music {
+export function useMusic(
+  src: string,
+  loop: { start: number; end: number },
+  /** Fixed gain under the mute and the fades (WORLD_TRACK.volume). */
+  volume = 1,
+): Music {
   const engine = useRef<Engine | null>(null);
   const muted = useRef(false);
 
@@ -39,13 +44,15 @@ export function useMusic(src: string, loop: { start: number; end: number }): Mus
     const context = new AudioContext();
     const mute = context.createGain();
     mute.gain.value = muted.current ? 0 : 1;
-    mute.connect(context.destination);
+    const level = context.createGain();
+    level.gain.value = volume;
+    mute.connect(level).connect(context.destination);
     const buffer = fetch(src)
       .then((response) => response.arrayBuffer())
       .then((data) => context.decodeAudioData(data));
     engine.current = { context, buffer, mute };
     return engine.current;
-  }, [src]);
+  }, [src, volume]);
 
   const stop = useCallback(() => {
     const e = engine.current;

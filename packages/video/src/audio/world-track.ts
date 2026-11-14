@@ -1,34 +1,46 @@
+import { VIDEO_FPS } from "@wyg/schema";
+
 /**
- * The story world's soundtrack (ADR-0007: original, CC0), synthesised by
- * scripts/synth-world-track.ts from these same numbers. Calm and in A minor, like the effects, so
- * a stop can rest on it for minutes and the arrival sounds sit in key.
+ * The story world's soundtrack (ADR-0030): "Traveling in your mind" by Loyalty Freak Music, CC0,
+ * prepared from the published MP3 by scripts/prepare-world-track.ts, which also checks the file
+ * against these numbers.
  *
- * Intro (beats 0-32) has no drums; the loop region (32-160) is the full, level arrangement and is
- * rendered circular, so it repeats without a seam; the outro (160-192) thins out and fades.
+ * The file plays from the top once, then repeats its loop region for as long as the story lasts.
+ * The script stretches the track by a few hundredths of a percent and pads its start so both loop
+ * points fall on whole frames at 30 fps: the MP4's loop then has no rounding, and the web's
+ * loopStart/loopEnd are the same instants. The last moments before the loop end are crossfaded
+ * into what precedes the loop start, so the jump back joins without a seam.
  */
 export const WORLD_TRACK = {
-  file: "audio/world-90bpm-v1.m4a",
-  bpm: 90,
+  file: "audio/world-traveling-v1.m4a",
+  /** Length of the file. Past the loop end it holds a copy of the loop's first second. */
+  seconds: 180,
+  /** Loop region, in frames at LOOP_FPS: 1:46.4 to 2:59.0, the source's bars 38 to 64. */
+  loop: { startFrame: 3193, endFrame: 5370 },
   /**
-   * Time of beat 0 in the file. FFmpeg's MP4 muxer writes an edit list over the AAC priming
-   * samples, and decoders that honour it (browsers' decodeAudioData, FFmpeg) start on beat 0;
-   * the synth script measures the decoded offset and fails if it isn't zero.
+   * Gain the music plays at, on the web and in the video (0.8 is about -2 dB): the maintainer
+   * found the file at full level a little loud under the effects.
    */
-  offsetMs: 0,
-  beats: 192,
-  loop: { startBeat: 32, endBeat: 160 },
+  volume: 0.8,
+  /** The video fades the music out over its last this many seconds. */
+  fadeSeconds: 1.5,
 } as const;
+
+/** The frame rate the loop points are whole frames at: the video's. */
+export const LOOP_FPS = VIDEO_FPS;
 
 /** Loop points in seconds of the file, for Web Audio's loopStart/loopEnd. */
 export function worldLoopSeconds(): { start: number; end: number } {
-  const beat = 60 / WORLD_TRACK.bpm;
   return {
-    start: WORLD_TRACK.offsetMs / 1000 + WORLD_TRACK.loop.startBeat * beat,
-    end: WORLD_TRACK.offsetMs / 1000 + WORLD_TRACK.loop.endBeat * beat,
+    start: WORLD_TRACK.loop.startFrame / LOOP_FPS,
+    end: WORLD_TRACK.loop.endFrame / LOOP_FPS,
   };
 }
 
-/** Frames for `count` beats of this track at `fps` (20 frames per beat at 30 fps). */
-export function worldBeats(count: number, fps = 30): number {
-  return Math.round((count * 60 * fps) / WORLD_TRACK.bpm);
+/** The loop region in frames at `fps`. */
+export function worldLoopFrames(fps = LOOP_FPS): { start: number; end: number } {
+  return {
+    start: (WORLD_TRACK.loop.startFrame * fps) / LOOP_FPS,
+    end: (WORLD_TRACK.loop.endFrame * fps) / LOOP_FPS,
+  };
 }
