@@ -1,28 +1,27 @@
 /**
  * Synthesises the story's sound effects (ADR-0009): original, deterministic, CC0. Pitched sounds
- * sit on A so they agree with the soundtrack (A minor). Lengths and names come from SFX, so the
- * registry and the files can't disagree.
+ * sit on A so they agree with the soundtrack. Lengths and names come from SFX, so the registry and
+ * the files can't disagree.
  *
- *   bun scripts/synth-sfx.ts
+ *   bun scripts/synth-sfx.ts [outDir]
  *
- * Writes packages/video/public/audio/sfx/<name>.wav (16-bit mono, 44.1 kHz, peak -3 dBFS).
+ * Writes <outDir or packages/video/public>/audio/sfx/<name>.wav (16-bit mono, 44.1 kHz, peak
+ * -3 dBFS). Each sound draws noise from its own seed, so changing one never changes another.
+ *
+ * Two kinds of voice: VOICES are per-sample functions (small chimes and clicks); DESIGNED build a
+ * whole buffer from layers (struck modes, filtered noise bursts, thumps) and a small room, for the
+ * sounds that need body: the steam, the firework and the objects.
  */
 
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { SFX, type SfxName, sfxFile } from "../packages/video/src/audio/sfx";
+import { biquad, burst, mix, rng, room, SAMPLE_RATE, seedOf, strike, thump } from "./lib/sfx-dsp";
 
-const SAMPLE_RATE = 44_100;
 const A5 = 880;
 
-// Seeded PRNG: the same noise on every run.
-let seed = 0x5f3;
-const noise = () => {
-  seed = (seed + 0x6d2b79f5) | 0;
-  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 2 ** 31 - 1;
-};
+/** Noise for the voice being rendered; reseeded per sound in render(). */
+let noise = rng(0);
 const sine = (frequency: number, t: number) => Math.sin(2 * Math.PI * frequency * t);
 
 /** One-pole low-pass, for noise that should sound like air rather than hiss. */
@@ -42,8 +41,10 @@ function highPass(cutoff: number) {
   return (input: number, t: number) => input - low(input, t);
 }
 
+type Designed = "chug" | "firework" | "flag" | "page" | "crate" | "seesaw";
+
 /** Builds a voice per sound: a function of time in seconds, called once per sample in order. */
-const VOICES: Record<SfxName, () => (t: number, length: number) => number> = {
+const VOICES: Record<Exclude<SfxName, Designed>, () => (t: number, length: number) => number> = {
   tap: () => (t) => (0.7 * sine(1200 * (1 - 0.4 * t * 16), t) + 0.3 * noise()) * Math.exp(-t * 90),
   sprout: () => (t) => {
     // A soft pluck whose pitch climbs a fifth as it grows.
@@ -65,32 +66,6 @@ const VOICES: Record<SfxName, () => (t: number, length: number) => number> = {
       return sum;
     };
   },
-  flag: () => {
-    // Cloth flap: band-limited noise gated by a fast flutter that slows as it dies.
-    const band = highPass(500);
-    const smooth = lowPass(() => 3500);
-    return (t, length) => {
-      const flutter = 0.55 + 0.45 * Math.sin(2 * Math.PI * (22 - 10 * (t / length)) * t);
-      const envelope = Math.min(1, t * 60) * Math.exp(-t * 6);
-      return smooth(band(noise(), t), t) * flutter * envelope * 2.5;
-    };
-  },
-  chug: () => {
-    // Two soft train chugs: low-passed noise puffs over a low thud.
-    const air = lowPass(() => 900);
-    return (t) => {
-      let sum = 0;
-      for (const at of [0.04, 0.42]) {
-        const local = t - at;
-        if (local < 0) continue;
-        sum +=
-          (air(noise(), t) * 1.6 + 0.6 * sine(70, local)) *
-          Math.min(1, local * 120) *
-          Math.exp(-local * 11);
-      }
-      return sum;
-    };
-  },
   bloom: () => (t, length) => {
     // Airy chime: soft sines stepping up A minor pentatonic, each with a slow tail, plus breath.
     const air = highPass(3000);
@@ -102,14 +77,6 @@ const VOICES: Record<SfxName, () => (t: number, length: number) => number> = {
           sine(A5 * 0.75 * ratio, local) * Math.min(1, local * 150) * Math.exp(-local * 17) * 0.5;
     });
     return sum + air(noise(), t) * 0.05 * Math.sin(Math.PI * (t / length));
-  },
-  crate: () => (t) => {
-    // A wooden knock: a short, damped hollow tone with a click of noise.
-    const frequency = 190 * (1 + 0.25 * Math.exp(-t * 60));
-    return (
-      (sine(frequency, t) + 0.5 * sine(frequency * 2.4, t) + 0.3 * noise() * Math.exp(-t * 200)) *
-      Math.exp(-t * 28)
-    );
   },
   twinkle: () => (t) => {
     // Bell partials at high pitches, struck at staggered times so it sparkles.
@@ -143,69 +110,11 @@ const VOICES: Record<SfxName, () => (t: number, length: number) => number> = {
     });
     return thump + shimmer * Math.min(1, (length - t) * 6);
   },
-  seesaw: () => {
-    // A wooden creak: a sawtooth-ish tone gliding one way and back, softened by a low-pass.
-    const soft = lowPass(() => 1200);
-    let phase = 0;
-    return (t, length) => {
-      const frequency = 210 + 90 * Math.sin(Math.PI * (t / length)) ** 2 + 8 * sine(31, t);
-      phase = (phase + frequency / SAMPLE_RATE) % 1;
-      const saw = 2 * phase - 1;
-      return (
-        soft(saw + 0.3 * noise(), t) *
-        Math.sin(Math.PI * (t / length)) ** 4 *
-        (0.2 + 0.8 * Math.abs(sine(7, t)))
-      );
-    };
-  },
-  page: () => {
-    // A paper swish: high band of noise that rises and falls once.
-    const band = highPass(1500);
-    const smooth = lowPass((t) => 3000 + 3000 * Math.sin(Math.PI * Math.min(1, t / 0.3)));
-    return (t, length) => smooth(band(noise(), t), t) * Math.sin(Math.PI * (t / length)) ** 3 * 3;
-  },
-  firework: () => {
-    // A pop, then a crackle tail of random sparse ticks.
-    const filter = lowPass(() => 2500);
-    const ticks = Array.from({ length: 36 }, () => ({
-      at: 0.08 + Math.abs(noise()) * 1.05,
-      pitch: 2500 + Math.abs(noise()) * 3000,
-      gain: 0.15 + Math.abs(noise()) * 0.2,
-    }));
-    return (t) => {
-      let sum =
-        (sine(150 * (1 + 2 * Math.exp(-t * 50)), t) + 0.6 * filter(noise(), t)) * Math.exp(-t * 24);
-      for (const tick of ticks) {
-        const local = t - tick.at;
-        if (local >= 0 && local < 0.02) {
-          sum +=
-            sine(tick.pitch, local) *
-            Math.exp(-local * 200) *
-            tick.gain *
-            (1 - (tick.at / 1.2) * 0.8);
-        }
-      }
-      return sum;
-    };
-  },
-  hello: () => (t) => {
-    // A friendly two-note chime: A5 then the E above it.
-    let sum = 0;
-    [0, 0.14].forEach((at, i) => {
-      const local = t - at;
-      if (local < 0) return;
-      const frequency = A5 * (i === 0 ? 1 : 1.498);
-      sum +=
-        (sine(frequency, local) + 0.25 * sine(frequency * 2, local)) *
-        Math.min(1, local * 300) *
-        Math.exp(-local * 24);
-    });
-    return sum;
-  },
   rails: () => {
     // The wheels on the rails: at each of four joints the front and back axles clack, "da-dum".
     // Played as a loop (SFX.rails.loop), so the last clack has died away before the file ends
-    // and the loop joins on silence.
+    // and the loop joins on silence. (A layered steel version was tried and sounded like a spoon
+    // on a glass; this one stays.)
     const hits = [0, 0.42, 0.84, 1.26].flatMap((at) => [
       { at: at + 0.02, weight: 1 },
       { at: at + 0.135, weight: 0.8 },
@@ -226,6 +135,20 @@ const VOICES: Record<SfxName, () => (t: number, length: number) => number> = {
       }
       return sum;
     };
+  },
+  hello: () => (t) => {
+    // A friendly two-note chime: A5 then the E above it.
+    let sum = 0;
+    [0, 0.14].forEach((at, i) => {
+      const local = t - at;
+      if (local < 0) return;
+      const frequency = A5 * (i === 0 ? 1 : 1.498);
+      sum +=
+        (sine(frequency, local) + 0.25 * sine(frequency * 2, local)) *
+        Math.min(1, local * 300) *
+        Math.exp(-local * 24);
+    });
+    return sum;
   },
 };
 
@@ -256,19 +179,182 @@ function wav(samples: Float32Array): ArrayBuffer {
   return data.buffer;
 }
 
-const publicDir = resolve(import.meta.dir, "../packages/video/public");
+const at = (seconds: number) => Math.round(seconds * SAMPLE_RATE);
+/** Raw noise of `n` samples from the current voice's seed. */
+const noiseOf = (n: number) => Float32Array.from({ length: n }, () => noise());
+/** Multiplies `x` by `env(t)` in place and returns it. */
+const shaped = (x: Float32Array, env: (t: number) => number) => {
+  for (let i = 0; i < x.length; i++) x[i] = (x[i] ?? 0) * env(i / SAMPLE_RATE);
+  return x;
+};
+
+/**
+ * Sounds built from layers over a whole buffer of `n` samples. The room is applied inside each, so
+ * the reverb tail is part of the sound's length.
+ */
+const DESIGNED: Record<Designed, (n: number) => Float32Array> = {
+  chug: (n) => {
+    // Two puffs of steam: a breathy band of noise with a low push under it, then a hiss tail.
+    const out = new Float32Array(n);
+    [
+      { t: 0.02, gain: 1 },
+      { t: 0.4, gain: 0.8 },
+    ].forEach(({ t, gain }) => {
+      burst(out, noise, t, { attack: 0.012, decay: 9, seconds: 0.45, gain: 1.4 * gain }, (x) =>
+        biquad(biquad(x, "bandpass", 520, 0.9), "lowpass", 2200),
+      );
+      burst(
+        out,
+        noise,
+        t + 0.02,
+        { attack: 0.03, decay: 12, seconds: 0.35, gain: 0.25 * gain },
+        (x) => biquad(x, "bandpass", 2600, 1.2),
+      );
+      thump(out, t, { from: 90, to: 62, drop: 25, decay: 18, gain: 0.55 * gain });
+    });
+    return room(out, { size: 0.55, damp: 0.5, mix: 0.18 });
+  },
+  firework: (n) => {
+    // The burst: a crack, a deep boom with a falling pitch, then crackling sparks that thin out,
+    // all in a wide open-air room.
+    const out = new Float32Array(n);
+    burst(out, noise, 0.005, { attack: 0.0005, decay: 70, seconds: 0.08, gain: 0.6 }, (x) =>
+      biquad(x, "highpass", 900),
+    );
+    thump(out, 0.005, { from: 95, to: 42, drop: 9, decay: 4.5, gain: 0.9 });
+    burst(out, noise, 0.005, { attack: 0.002, decay: 6, seconds: 0.6, gain: 0.9 }, (x) =>
+      biquad(biquad(x, "lowpass", 380), "lowpass", 380),
+    );
+    for (let i = 0; i < 70; i++) {
+      // Sparks: more early, fewer late; each a tiny tick of band-passed noise.
+      const u = (noise() + 1) / 2;
+      const t = 0.1 + 0.95 * u ** 1.7;
+      const hz = 2200 + ((noise() + 1) / 2) * 4200;
+      const level = (0.12 + 0.22 * ((noise() + 1) / 2)) * (1 - 0.65 * ((t - 0.1) / 0.95));
+      burst(out, noise, t, { attack: 0.0003, decay: 450, seconds: 0.012, gain: level * 2.2 }, (x) =>
+        biquad(x, "bandpass", hz, 2.5),
+      );
+    }
+    return room(out, { size: 0.85, damp: 0.35, mix: 0.3 });
+  },
+  flag: (n) => {
+    // Cloth caught by the wind: three snaps of fabric, each softer, over a short gust.
+    const out = new Float32Array(n);
+    [
+      { t: 0.015, gain: 1 },
+      { t: 0.135, gain: 0.72 },
+      { t: 0.235, gain: 0.5 },
+    ].forEach(({ t, gain }) => {
+      burst(out, noise, t, { attack: 0.003, decay: 32, seconds: 0.16, gain: 1.6 * gain }, (x) =>
+        biquad(biquad(x, "bandpass", 1500, 0.7), "lowpass", 5200),
+      );
+      thump(out, t, { from: 110, to: 80, drop: 30, decay: 40, gain: 0.18 * gain });
+    });
+    const gust = biquad(biquad(noiseOf(n), "lowpass", 650), "highpass", 120);
+    mix(
+      out,
+      shaped(gust, (t) => Math.sin(Math.PI * Math.min(1, t / (n / SAMPLE_RATE))) ** 2),
+      0.5,
+    );
+    return room(out, { size: 0.3, damp: 0.5, mix: 0.1 });
+  },
+  page: (n) => {
+    // A page turned: the paper's swish rising and falling, a little crinkle, then it settles.
+    const out = new Float32Array(n);
+    const swish = biquad(biquad(noiseOf(n), "bandpass", 3600, 0.6), "highpass", 1200);
+    const length = 0.34;
+    mix(
+      out,
+      shaped(swish, (t) => (t < length ? Math.sin(Math.PI * (t / length)) ** 2 : 0)),
+      1.1,
+    );
+    for (let i = 0; i < 14; i++) {
+      const t = 0.05 + 0.25 * ((noise() + 1) / 2);
+      burst(out, noise, t, { attack: 0.0002, decay: 900, seconds: 0.006, gain: 0.28 }, (x) =>
+        biquad(x, "highpass", 3000),
+      );
+    }
+    burst(out, noise, 0.33, { attack: 0.004, decay: 35, seconds: 0.12, gain: 0.5 }, (x) =>
+      biquad(x, "lowpass", 900),
+    );
+    return room(out, { size: 0.25, damp: 0.55, mix: 0.08 });
+  },
+  crate: (n) => {
+    // A knock on a hollow wooden box: wood modes, the box's air resonating, a click of contact,
+    // and a smaller second knock as the lid settles.
+    const out = new Float32Array(n);
+    const wood = [
+      { hz: 205, decay: 24, gain: 0.55 },
+      { hz: 530, decay: 36, gain: 0.32 },
+      { hz: 850, decay: 52, gain: 0.18 },
+      { hz: 1210, decay: 75, gain: 0.1 },
+    ];
+    strike(out, 0.005, wood);
+    thump(out, 0.005, { from: 170, to: 135, drop: 40, decay: 16, gain: 0.35 });
+    burst(out, noise, 0.005, { attack: 0.0003, decay: 220, seconds: 0.03, gain: 0.4 }, (x) =>
+      biquad(x, "bandpass", 2100, 0.9),
+    );
+    strike(out, 0.115, wood, 0.42);
+    return room(out, { size: 0.3, damp: 0.55, mix: 0.12 });
+  },
+  seesaw: (n) => {
+    // A wooden board creaking as it tips: stick-slip pulses whose rate rises and falls, rung
+    // through the board's resonances, then a soft bump as it lands.
+    const out = new Float32Array(n);
+    const pulses = new Float32Array(n);
+    const creak = 0.62;
+    let phase = 0;
+    for (let i = 0; i < at(creak); i++) {
+      const t = i / SAMPLE_RATE;
+      const rate = 38 + 55 * Math.sin(Math.PI * (t / creak)) + 6 * noise();
+      phase += rate / SAMPLE_RATE;
+      if (phase >= 1) {
+        phase -= 1;
+        pulses[i] = 0.6 + 0.4 * ((noise() + 1) / 2);
+      }
+    }
+    const env = (t: number) => (t < creak ? Math.sin(Math.PI * (t / creak)) ** 1.5 : 0);
+    const body = new Float32Array(n);
+    mix(body, biquad(pulses, "bandpass", 430, 9), 1);
+    mix(body, biquad(pulses, "bandpass", 960, 7), 0.7);
+    mix(body, biquad(pulses, "bandpass", 1720, 6), 0.4);
+    mix(out, shaped(biquad(body, "lowpass", 4200), env), 6);
+    thump(out, creak + 0.02, { from: 120, to: 85, drop: 30, decay: 22, gain: 0.45 });
+    strike(out, creak + 0.02, [
+      { hz: 240, decay: 30, gain: 0.2 },
+      { hz: 610, decay: 45, gain: 0.1 },
+    ]);
+    return room(out, { size: 0.35, damp: 0.55, mix: 0.12 });
+  },
+};
+
+const isDesigned = (name: SfxName): name is Designed => name in DESIGNED;
+
+const publicDir = resolve(Bun.argv[2] ?? resolve(import.meta.dir, "../packages/video/public"));
 await mkdir(join(publicDir, "audio/sfx"), { recursive: true });
 
 async function render(name: SfxName) {
   const { seconds } = SFX[name];
   const file = sfxFile(name);
-  const voice = VOICES[name]();
-  const samples = new Float32Array(Math.round(seconds * SAMPLE_RATE));
-  // A 2 ms fade at both ends so no effect starts or stops with a click.
+  noise = rng(seedOf(name));
+  const n = Math.round(seconds * SAMPLE_RATE);
+  let samples: Float32Array;
+  if (isDesigned(name)) {
+    samples = DESIGNED[name](n);
+  } else {
+    const voice = VOICES[name]();
+    samples = new Float32Array(n);
+    for (let i = 0; i < n; i++) samples[i] = voice(i / SAMPLE_RATE, seconds);
+  }
+  // A 2 ms fade at both ends so no effect starts or stops with a click (the rails loop joins on
+  // silence), and a designed sound fades its last 15 % so a reverb tail never stops short.
   const edge = 0.002 * SAMPLE_RATE;
-  for (let i = 0; i < samples.length; i++) {
-    const fade = Math.min(1, i / edge, (samples.length - 1 - i) / edge);
-    samples[i] = voice(i / SAMPLE_RATE, seconds) * fade;
+  const tail = isDesigned(name) ? Math.round(n * 0.15) : 0;
+  for (let i = 0; i < n; i++) {
+    const fromEnd = n - 1 - i;
+    let w = Math.min(1, i / edge, fromEnd / edge);
+    if (tail > 0 && fromEnd < tail) w *= 0.5 - 0.5 * Math.cos((Math.PI * fromEnd) / tail);
+    samples[i] = (samples[i] ?? 0) * w;
   }
   await Bun.write(join(publicDir, file), wav(samples));
   console.log(`Wrote ${file} (${seconds}s)`);
