@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { biquad, circular, rng, room, SAMPLE_RATE, seedOf, strike } from "./sfx-dsp";
+import { biquad, circular, equalize, rng, room, SAMPLE_RATE, seedOf, strike } from "./sfx-dsp";
 
 const rms = (x: Float32Array, from = 0, to = x.length) => {
   let s = 0;
@@ -26,6 +26,18 @@ describe("sfx dsp", () => {
     const high = rms(biquad(sine(10_000, 0.5), "lowpass", 1000), 2000);
     expect(low).toBeGreaterThan(0.6);
     expect(high).toBeLessThan(0.02);
+  });
+
+  test("shelves and a peak lift or cut their own band and leave the others", () => {
+    const level = (hz: number, band: Parameters<typeof equalize>[1]) =>
+      20 * Math.log10(rms(equalize(sine(hz, 0.5), band), 4000));
+    const flat = 20 * Math.log10(Math.SQRT1_2);
+    expect(level(60, { kind: "lowshelf", hz: 160, db: -4 }) - flat).toBeCloseTo(-4, 0);
+    expect(level(5000, { kind: "lowshelf", hz: 160, db: -4 }) - flat).toBeCloseTo(0, 0);
+    expect(level(12_000, { kind: "highshelf", hz: 4000, db: 5 }) - flat).toBeCloseTo(5, 0);
+    expect(level(200, { kind: "highshelf", hz: 4000, db: 5 }) - flat).toBeCloseTo(0, 0);
+    expect(level(2500, { kind: "peak", hz: 2500, db: 2, q: 0.8 }) - flat).toBeCloseTo(2, 0);
+    expect(level(100, { kind: "peak", hz: 2500, db: 2, q: 0.8 }) - flat).toBeCloseTo(0, 0);
   });
 
   test("a struck object rings and dies away", () => {
