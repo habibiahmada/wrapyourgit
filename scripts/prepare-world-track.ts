@@ -75,7 +75,19 @@ async function readStereo(file: string): Promise<[Float32Array, Float32Array]> {
 }
 
 const sourceWav = join(workDir, "source.wav");
-await ffmpeg("-i", sourceMp3, "-ac", "2", "-ar", String(SAMPLE_RATE), "-c:a", "pcm_s16le", "-f", "wav", sourceWav);
+await ffmpeg(
+  "-i",
+  sourceMp3,
+  "-ac",
+  "2",
+  "-ar",
+  String(SAMPLE_RATE),
+  "-c:a",
+  "pcm_s16le",
+  "-f",
+  "wav",
+  sourceWav,
+);
 const source = await readStereo(sourceWav);
 
 // --- Stretch so the loop is whole frames --------------------------------------------------------

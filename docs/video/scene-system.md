@@ -17,7 +17,7 @@ How the story and the exported files are built. Code: `packages/video/src/world/
 | Drawing       | `ride/project.ts`, `prims.ts`, `paint.ts` | A pinhole camera projects boxes to flat polygons sorted far to near (`under` floors first); `RideCanvas` paints them on one `<canvas>`                             |
 | Layout family | `layoutForSize()`                         | `portrait` / `compact` / `landscape` ([ADR-0003](../architecture/decisions/0003-layout-families.md)); a station lays its hero out by family                        |
 | Fixtures      | `src/fixtures/`                           | `sampleRecap` for Studio; `emptyRecap`, `busyRecap` and `provisionalRecap` for edge checks                                                                         |
-| Track (music) | `src/audio/world-track.ts`                | `WORLD_TRACK`: the file, its length and a seamless loop region in whole frames; `worldLoopFrames(fps)`                                                              |
+| Track (music) | `src/audio/world-track.ts`                | `WORLD_TRACK`: the file, its length and a seamless loop region in whole frames; `worldLoopFrames(fps)`                                                             |
 | Sound effects | `world/sound.ts`, `WorldSfx`              | The rails for every move, an arrival sound per stop; `WorldSfx` plays them in video mode on `@remotion/media`'s `<Audio>`                                          |
 
 ## Rules
