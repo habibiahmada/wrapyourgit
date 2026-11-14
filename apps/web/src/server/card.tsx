@@ -226,8 +226,8 @@ export async function renderSiteCard(): Promise<ImageResponse> {
         width: "100%",
         height: "100%",
         display: "flex",
-        background: "#0d1117",
-        color: "#e6edf3",
+        background: "#12110e",
+        color: "#eeeae0",
         fontFamily: "Bricolage",
         padding: 64,
         position: "relative",
@@ -247,7 +247,7 @@ export async function renderSiteCard(): Promise<ImageResponse> {
         <span style={{ fontSize: 84, fontWeight: 800, lineHeight: 0.95, marginTop: 40 }}>
           Every green square has a story.
         </span>
-        <span style={{ fontSize: 34, fontWeight: 700, color: "#3fb950", marginTop: 24 }}>
+        <span style={{ fontSize: 34, fontWeight: 700, color: "#4cc764", marginTop: 24 }}>
           Here is yours, in motion.
         </span>
       </div>

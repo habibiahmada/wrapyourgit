@@ -112,7 +112,7 @@ async function Settings({
                   aria-hidden="true"
                   className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border motion-safe:transition-colors ${
                     hidden
-                      ? "border-green bg-green-button group-hover:bg-[#2ea043] group-active:bg-[#1f7a30]"
+                      ? "border-green bg-green-button group-hover:bg-[#1a6f35] group-active:bg-[#186a32]"
                       : "border-muted bg-overlay group-hover:bg-line group-active:bg-[#282e33]"
                   }`}
                 >

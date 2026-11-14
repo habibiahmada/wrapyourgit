@@ -62,7 +62,7 @@ export const SITE = {
     "developer archetype",
     "GitHub video recap",
   ],
-  themeColor: "#0d1117",
+  themeColor: "#12110e",
 } as const;
 
 /**

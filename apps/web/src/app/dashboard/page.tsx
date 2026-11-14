@@ -282,7 +282,7 @@ function Calendar({ data }: { data: RecapData }) {
               </p>
               <div className="flex items-center gap-1 text-xs" aria-hidden>
                 Less
-                {["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"].map((c) => (
+                {["#1b1a16", "#0e4429", "#006d32", "#26a641", "#39d353"].map((c) => (
                   <span
                     key={c}
                     className="size-2.5 rounded-[2px] ring-1 ring-white/10"

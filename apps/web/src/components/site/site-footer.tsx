@@ -6,7 +6,7 @@ import { NAV_LINKS } from "./nav-links";
 /** One row of the same links as the header: the site has one page of sections, not four groups. */
 export function SiteFooter({ base = "" }: { base?: "" | "/" }) {
   return (
-    <footer className="border-t border-line bg-[#010409]">
+    <footer className="border-t border-line bg-head">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <Link href="/" className="inline-flex min-h-11 items-center text-xl font-bold">

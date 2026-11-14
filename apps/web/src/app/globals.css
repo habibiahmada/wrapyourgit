@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
 /* Tokens from DESIGN.md. Text pairings are limited to the measured ones listed there.
-   Web pages use the GitHub-dark set (canvas ... blue); the brand set (ink ... heat) belongs to
-   the story, the video, the letter and the exports. */
+   Web pages use the warm dark set (canvas ... head, ADR-0029): dark like the tool people come
+   from, but in WrapYourGit's own ink, not GitHub's exact colours, which made the pages read as a
+   copy of GitHub's (issue #139). The brand set (ink ... heat) belongs to the story, the video,
+   the letter and the exports. */
 @theme {
-  --color-canvas: #0d1117;
-  --color-surface: #161b22;
-  --color-overlay: #21262d;
-  --color-line: #30363d;
-  --color-fg: #e6edf3;
-  --color-muted: #8b949e;
-  --color-green: #3fb950;
-  --color-green-button: #238636;
-  --color-blue: #4493f8;
+  --color-canvas: #12110e;
+  --color-surface: #1b1a16;
+  --color-overlay: #26241f;
+  --color-line: #3a372f;
+  --color-fg: #eeeae0;
+  --color-muted: #a29d90;
+  --color-green: #4cc764;
+  --color-green-button: #1d7a3a;
+  --color-blue: #7f93ff;
+  --color-head: #0b0a08;
   --color-ink: #14130f;
   --color-paper: #f4efe3;
   --color-ink-soft: #5c584e;
@@ -379,8 +382,8 @@ html {
 
   /* Glass (DESIGN.md "Web"): only for what stands in front of an isometric room or the hero's
      city, where there is something to see through it. The base stays near-opaque
-     (#161b22 / #0d1117 at 84% and up), so text keeps its contrast whatever is behind:
-     fg #e6edf3 is over 13:1 and muted #8b949e over 5:1 on it. */
+     (#1b1a16 / #12110e at 84% and up), so text keeps its contrast whatever is behind:
+     fg #eeeae0 is over 14:1 and muted #a29d90 over 6:1 on it. */
   .glass-card,
   .glass-pill {
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -388,14 +391,14 @@ html {
     backdrop-filter: blur(16px);
   }
   .glass-card {
-    background: linear-gradient(145deg, rgba(22, 27, 34, 0.84) 0%, rgba(13, 17, 23, 0.92) 100%);
+    background: linear-gradient(145deg, rgba(27, 26, 22, 0.84) 0%, rgba(18, 17, 14, 0.92) 100%);
     /* A lit top edge and a soft drop: the card stands off the room behind it (R-12). */
     box-shadow:
       0 20px 48px rgba(1, 4, 9, 0.65),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
   }
   .glass-pill {
-    background: rgba(22, 27, 34, 0.86);
+    background: rgba(27, 26, 22, 0.86);
     box-shadow:
       0 10px 28px rgba(1, 4, 9, 0.55),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.14);

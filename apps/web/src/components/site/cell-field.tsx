@@ -9,7 +9,7 @@ import type { CalendarDay } from "@wyg/schema";
 import { calendarGrid, heatLevels } from "@wyg/video/heat";
 
 // GitHub's own dark-mode contribution colours, empty to busiest.
-const ON_INK = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"];
+const ON_INK = ["#1b1a16", "#0e4429", "#006d32", "#26a641", "#39d353"];
 const ON_PAPER = ["#e6dfcf", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
 
 /** A plausible-looking year for decoration only: activity rises across the weeks. */

@@ -9,7 +9,7 @@ import type { RecapData } from "@wyg/schema";
  */
 
 const THIS = "#26a641";
-const LAST = "#4493f8";
+const LAST = "#7f93ff";
 
 const n = (value: number) => value.toLocaleString("en-US");
 
@@ -52,7 +52,7 @@ function headlines(rows: Row[], lastYear: number): string[] {
 function Change({ now, before }: { now: number; before: number }) {
   const tone =
     now > before
-      ? { cls: "bg-[#3fb950]/15 text-[#3fb950]", arrow: "▲" }
+      ? { cls: "bg-green/15 text-green", arrow: "▲" }
       : now < before
         ? { cls: "bg-[#d29922]/15 text-[#d29922]", arrow: "▼" }
         : { cls: "bg-overlay text-muted", arrow: "" };
