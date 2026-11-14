@@ -11,7 +11,7 @@
 
 ### Every green square has a story. Here's yours, in motion.
 
-Your GitHub Wrapped: your GitHub year, played back as a short animated story with its own soundtrack:<br>
+Your year of code: your GitHub year, played back as a short animated story with its own soundtrack:<br>
 contributions, streaks, the languages you lived in, the projects you built, and the kind of developer you turned out to be.
 
 [![CI](https://github.com/habibiahmada/wrapyourgit/actions/workflows/ci.yml/badge.svg)](https://github.com/habibiahmada/wrapyourgit/actions/workflows/ci.yml)

@@ -1,6 +1,6 @@
 # WrapYourGit: full description
 
-> WrapYourGit is a GitHub Wrapped for 2026: it turns a developer's GitHub activity for one year into an animated, shareable story. Free and open source (MIT), read-only GitHub sign-in, no access to source code. Edition: 2026. Site: https://wrapyourgit.com
+> WrapYourGit is an independent year in review for 2026, not affiliated with GitHub: it turns a developer's GitHub activity for one year into an animated, shareable story. Free and open source (MIT), read-only GitHub sign-in, no access to source code. Edition: 2026. Site: https://wrapyourgit.com
 
 ## What it is
 
@@ -59,7 +59,7 @@ Files are made in your browser, so keep the tab open while a video renders.
 
 ## FAQ
 
-**What is WrapYourGit?** A GitHub Wrapped for 2026: it turns a year of GitHub activity into a short animated story, a train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype. It is free and open source, and works for any GitHub username.
+**What is WrapYourGit?** An independent year in review for 2026, not affiliated with GitHub: it turns a year of GitHub activity into a short animated story, a train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype. It is free and open source, and works for any GitHub username.
 
 **Does WrapYourGit read my code?** No. Signing in asks GitHub for no repository permissions, and it only reads the counts GitHub keeps about your activity.
 

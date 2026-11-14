@@ -150,7 +150,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
                     Every <span className="text-green">green square</span> has a story.
                   </h1>
                   <p className="mt-6 max-w-md text-lg text-muted">
-                    Your GitHub Wrapped for {EDITION_YEAR}. Type your GitHub username and watch the
+                    Your {EDITION_YEAR} in code, as a story. Type your GitHub username and watch the
                     year play back as a short animated story. Sign in to include your private work.
                   </p>
                   <div className="mt-8">
