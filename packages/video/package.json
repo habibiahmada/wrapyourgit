@@ -13,6 +13,7 @@
     "./present": "./src/present.ts",
     "./world": "./src/world/model.ts",
     "./ride": "./src/world/ride/model.ts",
+    "./ride-bench": "./src/world/ride/bench-kit.ts",
     "./export": "./src/world/export.ts",
     "./city": "./src/world/city.ts",
     "./sample": "./src/fixtures/sample-recap.ts"

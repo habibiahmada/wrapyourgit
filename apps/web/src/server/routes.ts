@@ -14,6 +14,8 @@ export const RESERVED: ReadonlySet<string> = new Set([
   "api",
   "dashboard",
   "go",
+  // Spike #147 only (the export bench); never merged.
+  "lab",
   "opengraph-image",
   "privacy",
   "recap",

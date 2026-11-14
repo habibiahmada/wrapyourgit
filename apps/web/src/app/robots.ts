@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { siteUrl } from "@/site";
 
 /** Signed-in pages and redirects: nothing in them for crawlers. */
-const PAGES = ["/dashboard", "/go", "/recap", "/settings"];
+const PAGES = ["/dashboard", "/go", "/lab", "/recap", "/settings"];
 
 /**
  * Public pages are indexable; signed-in pages and the API are not. Recaps at /<username> stay
