@@ -63,6 +63,7 @@ The 2026 edition, before its first release.
 
 ### Removed
 
+- Twelve sound effects left from the old story that the ride never played. The story fetched them on the first tap anyway; each visitor now downloads about 800 KB less ([#157](https://github.com/habibiahmada/wrapyourgit/issues/157)).
 - Vercel Web Analytics, replaced by Cloudflare Web Analytics in [#132](https://github.com/habibiahmada/wrapyourgit/issues/132) ([#130](https://github.com/habibiahmada/wrapyourgit/issues/130)).
 
 ### Fixed
