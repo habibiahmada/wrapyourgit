@@ -50,23 +50,25 @@ Why these colors: the green is the color of the user's own contribution graph, s
 
 ## Web (landing, dashboard, story page)
 
-Decided by the maintainer on 2026-11-04: the web pages should feel like GitHub ("GitHub-able"). The brand fields above (ink, paper, persimmon, cobalt) stay with the story, the video, the letter and the exports; the pages around them use a GitHub-dark set. Dark is the reason here, not a trend: it is the look of the product people are coming from (R-21).
+Decided by the maintainer on 2026-11-04: the web pages should feel like GitHub ("GitHub-able"). The brand fields above (ink, paper, persimmon, cobalt) stay with the story, the video, the letter and the exports; the pages around them use a warm dark set. Dark is the reason here, not a trend: it is the look of the product people are coming from (R-21).
+
+**Changed on 2026-11-14 ([ADR-0029](docs/architecture/decisions/0029-a-look-of-our-own.md)):** the set was GitHub's own Primer colours, and with GitHub's mark in the header Chrome flagged the site as a deceptive copy of GitHub (#139). The pages keep GitHub's structure (dark, boxes, one green button) in WrapYourGit's own warm ink. No GitHub logo in the site chrome, and "Not affiliated with GitHub" sits beside the main sign-in.
 
 | Token        | Hex       | Use                                | Contrast                    |
 | ------------ | --------- | ---------------------------------- | --------------------------- |
-| canvas       | `#0d1117` | page background                    |                             |
-| header       | `#010409` | header, footer, alternate sections |                             |
-| surface      | `#161b22` | boxes and cards                    |                             |
-| overlay      | `#21262d` | buttons, comment headers, hover    |                             |
-| line         | `#30363d` | hairline borders and dividers      |                             |
-| fg           | `#e6edf3` | text                               | 16.0:1 on canvas            |
-| muted        | `#8b949e` | secondary text                     | 6.2:1 canvas, 5.6:1 surface |
-| green        | `#3fb950` | accent text and checks             | 7.5:1 on canvas             |
-| green-button | `#238636` | the one primary button, white text | 4.63:1                      |
-| blue         | `#4493f8` | links and the focus ring           | 6.1:1 on canvas             |
+| canvas       | `#12110e` | page background                    |                             |
+| head         | `#0b0a08` | header, footer, alternate sections |                             |
+| surface      | `#1b1a16` | boxes and cards                    |                             |
+| overlay      | `#26241f` | buttons, comment headers, hover    |                             |
+| line         | `#3a372f` | hairline borders and dividers      |                             |
+| fg           | `#eeeae0` | text                               | 15.7:1 on canvas            |
+| muted        | `#a29d90` | secondary text                     | 7.0:1 canvas, 6.4:1 surface |
+| green        | `#4cc764` | accent text and checks             | 8.7:1 on canvas             |
+| green-button | `#1d7a3a` | the one primary button, white text | 5.39:1                      |
+| blue         | `#7f93ff` | links and the focus ring           | 6.8:1 on canvas             |
 
 - Type is **Mona Sans** (GitHub's open-source face, `next/font`): headlines 700 with tight tracking, body 400.
-- The contribution greens (`#0e4429 #006d32 #26a641 #39d353`, empty `#161b22`) are the one accent, used where they mean activity.
+- The contribution greens (`#0e4429 #006d32 #26a641 #39d353`, empty `#1b1a16`) are the one accent, used where they mean activity.
 - Boxes are GitHub boxes: `surface`, 1px `line` border, 12px radius, dividers between rows. **Glass is for what stands in front of an isometric room** (maintainer's call, 2026-11-12): the archetype cards and the privacy cards, which sit over an `IsoBackdrop`, and the hero's three callouts over its city, are `glass-card` / `glass-pill` (a near-opaque dark base, `backdrop-filter: blur(16px)`, a lit top edge and a soft drop), because there is something to see through them. A card on a plain band stays a solid box: glass over nothing only costs the GPU. The page has two glows and no more: the green under the hero's busiest day and the one behind the closing city.
 - Focus is GitHub's: a 2px blue ring with 2px offset (ink inside the light letter).
 - The page keeps its scrollbar, thin and in the canvas's colours (`#30363d` on `#0d1117`). Only the sample reel hides its sideways bar, since it drifts and is dragged.
@@ -81,7 +83,7 @@ Decided by the maintainer on 2026-11-04: the web pages should feel like GitHub (
 - **The sample reel** drifts on its own to the end and back, loops, and can be dragged with a mouse or swiped. It has a visible Pause button (R-39; the maintainer's earlier call to remove it was reversed on 2026-11-12), and also stops while hovered, focused or held, resuming a moment after. Reduced motion never starts it. Its frames are stills of the story ride from the public sample (`scripts/ride-stills.ts --fixture public-sample --format 4x5`), as are the three acts' pictures (16:9). They are imported (`components/landing/frames.ts`), so each has an address named from its contents: rendering a frame again can never leave the old picture in a cache.
 - **The dashboard** (`app/dashboard`, #113) is a tool, not a page that sells, and must never read as the landing: no bands, scroll reveals, glass, isometric rooms or city scenery. A short page head (avatar, name and year, when it was synced, Sync again and the one green Play your story), then panels on the canvas, each a bordered box with a titled strip. The main column holds the overview grid (contributions first, in green), the contribution calendar with the busiest day, this year against last as one table with its two largest changes in words (a measure last year had fewer than ten of is never the headline), each change a chip: green with an up arrow for more, amber (not red, a slower year is something to beat) with a down arrow for less, and languages and starred repositories. The calendar fits every cell (`CellField fit`), since a year still running has fewer than 53 weeks. The sidebar holds the archetype card with its reasons, the private-repositories install, and the downloads kept small: one size dropdown drawn by the page (`SizePicker`, an ARIA listbox, since a native select's open list keeps the system's colours) and four buttons. The signed-in header folds the account into one avatar button that opens a short menu (Your dashboard, Your story, Settings, Sign out), as GitHub does: a disclosure, closed by Escape or a click outside.
 - **Headline**: "Every green square has a story." (two lines on desktop, with a two-sentence lead). The longer "Here's yours, in motion." was dropped on 2026-11-11: the maintainer found the large, long hero text hard on the eye. "Your year in code" stays retired. **The page speaks to "you"** (maintainer's call, 2026-11-12): the lead says "Type your GitHub username", the field's button is "Play your year", and a signed-in visitor's button is the short "Open your recap" with no username in it. Where the name may be someone else's (the retry field on a recap that could not be shown) the button is the neutral "Open the recap".
-- **Navigation**: one `SiteHeader` for every page (`components/site/site-header.tsx`): a solid ink sticky header (no blur), the six-cell `LogoMark`, a skip link, GitHub's mark linked to the repository (the project is open source; hidden on a phone in the app header, where the account's buttons need the room), then either the section links with Sign in / Your dashboard (`variant="public"`) or the account (avatar to the dashboard, Settings, Sign out; `variant="app"`). Small screens get a disclosure menu that closes on Escape; on the narrowest phones the edition badge hides so the account buttons fit.
+- **Navigation**: one `SiteHeader` for every page (`components/site/site-header.tsx`): a solid ink sticky header (no blur), the six-cell `LogoMark`, a skip link, a Source link to the repository (the project is open source; a code icon, never GitHub's mark, ADR-0029; hidden on a phone in the app header, where the account's buttons need the room), then either the section links with Sign in / Your dashboard (`variant="public"`) or the account (avatar to the dashboard, Settings, Sign out; `variant="app"`). Small screens get a disclosure menu that closes on Escape; on the narrowest phones the edition badge hides so the account buttons fit.
 - **Icons**: the favicon (`app/icon.svg`, `favicon.ico`), the Apple touch icon and the PWA icons are the same six-cell mark as the header, on the canvas colour.
 
 ## Illustration (3D)

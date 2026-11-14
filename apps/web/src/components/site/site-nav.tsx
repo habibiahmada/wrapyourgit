@@ -78,7 +78,7 @@ export function SiteNav({
         id={menuId}
         aria-label="Main"
         hidden={!open}
-        className="absolute inset-x-0 top-full border-b border-line bg-[#010409] px-4 pt-2 pb-6 lg:hidden"
+        className="absolute inset-x-0 top-full border-b border-line bg-head px-4 pt-2 pb-6 lg:hidden"
       >
         <ul className="flex flex-col">
           {NAV_LINKS.map(({ id, label }) => (

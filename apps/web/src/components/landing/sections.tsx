@@ -4,6 +4,7 @@ import { OPENINGS } from "@wyg/video/letter";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { Art } from "@/components/art";
+import { SignInNote } from "@/components/site/sign-in-note";
 import { FrameReel } from "./frame-reel";
 import { ACT_IMAGES, RIDE_IMAGES } from "./frames";
 import { MiniIsoCluster } from "./iso-backdrop";
@@ -492,7 +493,7 @@ export function KeepSection() {
                 style={{
                   transform: `translate(-50%, -50%) translateY(${(1 - i) * 3.5}rem) rotateX(55deg) rotateZ(-45deg)`,
                   boxShadow:
-                    "-8px 8px 0 #161b22, -9px 9px 0 #30363d, -18px 22px 30px rgba(1,4,9,0.7)",
+                    "-8px 8px 0 #1b1a16, -9px 9px 0 #3a372f, -18px 22px 30px rgba(1,4,9,0.7)",
                 }}
                 className="absolute top-1/2 left-1/2 w-48 overflow-clip border border-green/40 bg-surface sm:w-64"
               >
@@ -668,6 +669,7 @@ export function ClosingSection({ action }: { action: ReactNode }) {
             One sign-in, a short wait while we read your year, and the story is ready.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">{action}</div>
+          <SignInNote />
         </div>
         <div className="reveal-zoom">
           <Art id="iso-closing" alt="" className="w-full" />

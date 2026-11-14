@@ -18,6 +18,7 @@ import {
   VideoExportSection,
 } from "@/components/landing/sections";
 import { PageTransition } from "@/components/site/page-transition";
+import { SignInNote } from "@/components/site/sign-in-note";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SignInButton, SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
@@ -164,6 +165,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
                         See the city
                       </a>
                     </div>
+                    <SignInNote />
                   </div>
                 </div>
                 {/* A quarter of a year as a city, linked to what the story does with it. */}
