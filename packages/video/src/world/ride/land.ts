@@ -120,15 +120,25 @@ export function land(
 
   // The rail on its ballast. Near the train it has sleepers; further off, and from far away, it
   // is long strips. The rail doubles back, so a run the train is not on can be in the picture:
-  // it is always drawn, only plainer.
+  // it is always drawn, only plainer. The ballast and the sleepers are wider than the gauge, so
+  // their middles are nearer the camera than the far rail: sorted by them they were painted over
+  // it and only one rail showed (issue #143). Like a plaza, the bed is painted before what is on it.
   const strip = (s: number, piece: number, sleepers: boolean) => {
     const mid = s + piece / 2;
     ground.push(
-      railBox(mid, 0, 0, [piece + 0.02, 2.3, 0.02], TONE.gravel, { edge: false, tag: "ballast" }),
+      railBox(mid, 0, 0, [piece + 0.02, 2.3, 0.02], TONE.gravel, {
+        edge: false,
+        tag: "ballast",
+        under: 2,
+      }),
     );
     if (sleepers)
       ground.push(
-        railBox(s, 0, 0.02, [0.22, 1.5, 0.05], TONE.soil, { edge: false, tag: "sleeper" }),
+        railBox(s, 0, 0.02, [0.22, 1.5, 0.05], TONE.soil, {
+          edge: false,
+          tag: "sleeper",
+          under: 1,
+        }),
       );
     for (const lateral of [-0.5, 0.5]) {
       ground.push(

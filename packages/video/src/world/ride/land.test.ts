@@ -4,7 +4,9 @@ import { sampleRecap } from "../../fixtures/sample-recap";
 import { buildCity, type City } from "../city";
 import { gates } from "./gates.model";
 import { land, SIGN_LATERAL, SIGN_ZONE, type View } from "./land";
-import type { Box, Solid } from "./prims";
+import { TONE } from "./palette";
+import { type Box, type Solid, scenePrims } from "./prims";
+import type { RideCamera } from "./project";
 import { rideStops } from "./stops";
 import { at, dayPlace, PLAZA_AHEAD, turning, weekS } from "./track";
 
@@ -213,4 +215,31 @@ test("the avenue is one road: both sides the rail's whole length, round every tu
   // A street across each end of the rail joins the two sides into one loop.
   const across = pieces.filter((piece) => piece.size[1] > 24);
   expect(across).toHaveLength(2);
+});
+
+test("both rails paint over their bed, seen from either side", () => {
+  // The ballast and the sleepers are wider than the gauge, so their middles lie nearer the camera
+  // than the far rail. Sorted by those middles alone they were painted over it (issue #143).
+  const ground = land(city, gates(sampleRecap, city), stops, ride).ground.filter(
+    (s): s is Box => s.kind === "box" && ["ballast", "sleeper", "rail"].includes(s.tag ?? ""),
+  );
+  const fillTag = new Map<string, string>();
+  for (const [tag, tone] of [
+    ["ballast", TONE.gravel],
+    ["sleeper", TONE.soil],
+    ["rail", TONE.rail],
+  ] as const) {
+    for (const fill of Object.values(tone)) fillTag.set(fill, tag);
+  }
+  const s = 30;
+  const fog = { color: "#000000", near: 1e3, far: 2e3 };
+  for (const side of [-1, 1]) {
+    const cam: RideCamera = { pos: at(s, side * 6, 3), look: at(s + 2), fov: 50 };
+    const prims = scenePrims(ground, cam, { width: 400, height: 400 }, fog);
+    const tags = prims.map((p) => (p.kind === "poly" ? fillTag.get(p.fill ?? "") : undefined));
+    const lastBed = Math.max(tags.lastIndexOf("ballast"), tags.lastIndexOf("sleeper"));
+    const firstRail = tags.indexOf("rail");
+    expect(firstRail).toBeGreaterThan(-1);
+    expect(firstRail).toBeGreaterThan(lastBed);
+  }
 });
