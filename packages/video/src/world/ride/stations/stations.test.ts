@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { withoutPrivateNames } from "@wyg/analytics";
-import type { RecapData } from "@wyg/schema";
+import { NOT_SHARED_PUBLICLY, type RecapData } from "@wyg/schema";
 import { busyRecap, emptyRecap } from "../../../fixtures/edge-recaps";
 import { sampleRecap } from "../../../fixtures/sample-recap";
 import { formatCount } from "../../../theme";
@@ -540,6 +540,15 @@ test("private: none and unavailable print their own words and no figure, never a
   );
   expect(unread.join(" ")).toContain("Private contributions couldn't be read");
   for (const text of [...none, ...unread]) expect(text).not.toMatch(/\d/);
+});
+
+test("private: a count not shared publicly says so, never that there was nothing", () => {
+  const text = printed(
+    build("private", withPrivate({ status: "unavailable", reason: NOT_SHARED_PUBLICLY })),
+  ).join(" ");
+  expect(text).toContain("Private work isn't shown publicly");
+  expect(text).not.toContain("Nothing private");
+  expect(text).not.toContain("couldn't be read");
 });
 
 test("private: the count rises as the vault lands and never reads zero", () => {

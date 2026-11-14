@@ -1,4 +1,4 @@
-import { PRIVATE_REPO_NAME, type RecapData, type RepoRef } from "@wyg/schema";
+import { NOT_SHARED_PUBLICLY, PRIVATE_REPO_NAME, type RecapData, type RepoRef } from "@wyg/schema";
 
 export { PRIVATE_REPO_NAME };
 
@@ -70,7 +70,13 @@ export function toPublicRecap(recap: RecapData): RecapData {
     meta: { ...named.meta, timezone: "UTC" },
     contributions: {
       ...named.contributions,
-      hourly: { status: "unavailable", reason: "Not shared publicly" },
+      hourly: { status: "unavailable", reason: NOT_SHARED_PUBLICLY },
+      // Another viewer's token reads 0 unless the owner shares the count, so 0 is not "none".
+      privateCount:
+        named.contributions.privateCount.status === "ok" &&
+        named.contributions.privateCount.value === 0
+          ? { status: "unavailable", reason: NOT_SHARED_PUBLICLY }
+          : named.contributions.privateCount,
     },
     identity: {
       ...named.identity,
