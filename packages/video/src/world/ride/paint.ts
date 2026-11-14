@@ -49,6 +49,15 @@ export function paintPrims(brush: Brush, prims: readonly Prim[], extras: PaintEx
   brush.lineJoin = "round";
   brush.textAlign = "center";
   brush.textBaseline = "middle";
+  // A canvas parses every colour and font it is given, even the one it already holds; a frame has
+  // about 1,400 shapes, most in a run of the same colour (issue #141). These remember what was
+  // last set outside a save/restore, so it is set only when it changes.
+  let fill: string | null = null;
+  let stroke: string | null = null;
+  let font: string | null = null;
+  const fillWith = (colour: string) => {
+    if (colour !== fill) brush.fillStyle = fill = colour;
+  };
   for (const p of prims) {
     switch (p.kind) {
       case "poly": {
@@ -59,18 +68,18 @@ export function paintPrims(brush: Brush, prims: readonly Prim[], extras: PaintEx
         });
         brush.closePath();
         if (p.fill) {
-          brush.fillStyle = p.fill;
+          fillWith(p.fill);
           brush.fill();
         }
         if (p.stroke) {
-          brush.strokeStyle = p.stroke;
+          if (p.stroke !== stroke) brush.strokeStyle = stroke = p.stroke;
           brush.stroke();
         }
         break;
       }
       case "circle": {
         brush.globalAlpha = p.opacity;
-        brush.fillStyle = p.fill;
+        fillWith(p.fill);
         brush.beginPath();
         brush.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         brush.fill();
@@ -88,11 +97,13 @@ export function paintPrims(brush: Brush, prims: readonly Prim[], extras: PaintEx
       }
       case "text": {
         const scale = p.size / FONT_PX;
+        // Set before save, so restore keeps them and the next text in the same face skips it.
+        const face = `${p.weight} ${FONT_PX}px ${extras.fontFamily}, sans-serif`;
+        if (face !== font) brush.font = font = face;
+        fillWith(p.fill);
         brush.save();
         brush.transform(...p.matrix);
         brush.transform(scale, 0, 0, scale, 0, 0);
-        brush.font = `${p.weight} ${FONT_PX}px ${extras.fontFamily}, sans-serif`;
-        brush.fillStyle = p.fill;
         brush.fillText(p.text, (p.x * FONT_PX) / p.size, (p.y * FONT_PX) / p.size);
         brush.restore();
         break;

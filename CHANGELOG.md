@@ -38,6 +38,7 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- The MP4 export does less repeated work per frame, with the same picture: fog colours are parsed once and the painter sets a colour or font only when it changes. Measured in Chrome, the scene is about 30% faster to build and the whole export about 5% faster; most of a frame is the canvas fill and the H.264 encode ([#141](https://github.com/habibiahmada/wrapyourgit/issues/141)).
 - The web pages wear a warm dark palette of their own instead of GitHub's exact colours, the header links to the source with a code icon instead of GitHub's mark, and the sign-in says the site is not affiliated with GitHub. Chrome had flagged the site as a deceptive copy of GitHub (ADR-0029) ([#139](https://github.com/habibiahmada/wrapyourgit/issues/139)).
 - Production moved to [wrapyourgit.com](https://wrapyourgit.com); the old domain redirects there (ADR-0025). Titles, descriptions, keywords, JSON-LD, the FAQ and `llms.txt` describe the site as a GitHub Wrapped, and a NOTICE file and a README section ask forks to keep the credit ([#98](https://github.com/habibiahmada/wrapyourgit/issues/98)).
 - The ride replaces the earlier stories: the story world with a moving camera, its scenes and its cut transitions are gone, on the web and in every file ([#92](https://github.com/habibiahmada/wrapyourgit/issues/92)).
