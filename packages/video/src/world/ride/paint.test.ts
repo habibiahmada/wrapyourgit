@@ -119,3 +119,35 @@ test("an image is drawn as a unit square under its matrix, once it has loaded", 
   expect(loaded.log).toContain("transform 2 0 0 2 1 1");
   expect(loaded.log).toContain("image LOGO 0,0,1,1");
 });
+
+/** A brush that counts how often each style is set, the work a canvas does to parse it. */
+function counter() {
+  const sets = { fillStyle: 0, strokeStyle: 0, font: 0 };
+  const values: Record<string, unknown> = {};
+  const noop = () => {};
+  const brush = new Proxy(
+    {},
+    {
+      get: (_t, key) => (typeof key === "string" && key in values ? values[key] : noop),
+      set: (_t, key, value) => {
+        if (key in sets) sets[key as keyof typeof sets]++;
+        values[key as string] = value;
+        return true;
+      },
+    },
+  );
+  return { brush: brush as unknown as Brush, sets };
+}
+
+test("a style the brush already holds is not set again", () => {
+  const { brush, sets } = counter();
+  const same = (fill: string): Prim => ({ ...poly, fill, stroke: fill });
+  paintPrims(brush, [same("#222222"), same("#222222"), same("#333333"), text, text], {
+    fontFamily: "Test",
+    images: new Map(),
+  });
+  // Two colours for the polygons and one for the text; one font for both texts.
+  expect(sets.fillStyle).toBe(3);
+  expect(sets.strokeStyle).toBe(2);
+  expect(sets.font).toBe(1);
+});
