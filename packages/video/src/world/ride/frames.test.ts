@@ -43,9 +43,9 @@ function framesHash(format: keyof typeof VIDEO_FORMATS): string {
 
 describe("the ride's frames", () => {
   test("draw the same primitives in portrait", () => {
-    expect(framesHash("9x16")).toBe("ebcbda442a5af955");
+    expect(framesHash("9x16")).toBe("4ac8718aa99cb919");
   });
   test("draw the same primitives in landscape", () => {
-    expect(framesHash("16x9")).toBe("f16ca9101ccbf9fe");
+    expect(framesHash("16x9")).toBe("f7b35df62d8bfcdc");
   });
 });

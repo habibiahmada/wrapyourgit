@@ -3,7 +3,7 @@
  * piece of rail so the train bends with the line. Detail is painted on the faces (a stripe, a
  * headlamp, tail lamps, the wheels), not added as more boxes.
  */
-import { heat, INK, TONE } from "./palette";
+import { heat, TONE } from "./palette";
 import { type BoxExtra, part } from "./place";
 import type { Decal, Solid } from "./prims";
 import type { V3 } from "./project";
@@ -17,7 +17,12 @@ const CHIMNEY = 0.62;
 /** A wheel's size, the same on the engine and the wagons, and the skirt it is painted on. */
 const WHEEL = 0.36;
 const SKIRT = 0.38;
-const SKIRT_FILL = "#161b22";
+export const SKIRT_FILL = "#161b22";
+/**
+ * A wheel's tyre, light on the dark skirt. In INK it vanished into the skirt, and the small rim
+ * left was no bigger than the sleeper ends under the train, which then read as square wheels.
+ */
+export const TYRE = "#8b949e";
 
 /**
  * The lower side of a body `long` by `tall` that stands on the rail: a dark skirt with a wheel
@@ -42,7 +47,7 @@ function running(long: number, tall: number, axles: readonly number[]): Decal[] 
       fill,
       round: true,
     });
-    out.push(disc(1, INK), disc(0.78, "#8b949e"), disc(0.3, INK));
+    out.push(disc(1, TYRE), disc(0.64, "#30363d"), disc(0.26, TYRE));
   }
   return out;
 }

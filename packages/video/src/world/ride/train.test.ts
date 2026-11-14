@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Box, Solid } from "./prims";
 import { at, heading } from "./track";
-import { smoke, train } from "./train";
+import { SKIRT_FILL, smoke, TYRE, train } from "./train";
 
 const tagged = (solids: Solid[], tag: string) =>
   solids.filter((s): s is Box => s.kind === "box" && s.tag === tag);
@@ -33,7 +33,7 @@ test("every wheel is the same size, painted on both sides of its body: three axl
   const wheels = (box: Box | undefined) => {
     if (!box) throw new Error("no body");
     // A wheel is its tyre, its rim and its hub: the tyre is the widest round decal.
-    const tyres = (box.decals ?? []).filter((d) => d.round && d.fill === "#0d1117");
+    const tyres = (box.decals ?? []).filter((d) => d.round && d.fill === TYRE);
     const widths = tyres.map((d) => (d.rect[2] - d.rect[0]) * box.size[0]);
     const tall = tyres.map((d) => (d.rect[3] - d.rect[1]) * box.size[2]);
     expect(tyres.every((d) => d.on === "sides")).toBe(true);
@@ -49,6 +49,20 @@ test("every wheel is the same size, painted on both sides of its body: three axl
   }
   // Round on screen: as wide as it is tall.
   expect(engine.size).toBeCloseTo(engine.height);
+});
+
+test("a wheel's tyre stands out from the skirt it is painted on", () => {
+  // In INK on the near-black skirt the tyre vanished, and what was left of a wheel was no bigger
+  // than the sleeper ends under the train, which then read as square wheels (issue #143).
+  const luminance = (hex: string) => {
+    const c = (i: number) => {
+      const v = Number.parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * c(0) + 0.7152 * c(1) + 0.0722 * c(2);
+  };
+  const [hi, lo] = [luminance(TYRE), luminance(SKIRT_FILL)].sort((a, b) => b - a);
+  expect(((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05)).toBeGreaterThanOrEqual(3);
 });
 
 test("smoke repeats every five frames while the train rests", () => {
