@@ -62,7 +62,8 @@ export function timeLeft(progress: number, elapsedMs: number): string | null {
   if (!(progress >= ESTIMATE_FROM) || elapsedMs < ESTIMATE_AFTER_MS) return null;
   const seconds = (elapsedMs / 1000) * ((1 - Math.min(1, progress)) / progress);
   if (seconds < 7.5) return "A few seconds left";
-  if (seconds < 60) return `About ${Math.max(10, Math.round(seconds / 5) * 5)} s left`;
+  // Below 57.5 s, so a wait that rounds to 60 s reads "About 1 min left", not "About 60 s left".
+  if (seconds < 57.5) return `About ${Math.max(10, Math.round(seconds / 5) * 5)} s left`;
   return `About ${Math.round(seconds / 60)} min left`;
 }
 

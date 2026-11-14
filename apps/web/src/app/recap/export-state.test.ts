@@ -124,6 +124,12 @@ describe("timeLeft", () => {
     expect(timeLeft(0.8, 40_000)).toBe("About 10 s left");
   });
 
+  test("a wait that rounds to 60 seconds reads as a minute", () => {
+    // 50% in 58 s: 58 s more.
+    expect(timeLeft(0.5, 58_000)).toBe("About 1 min left");
+    expect(timeLeft(0.5, 57_000)).toBe("About 55 s left");
+  });
+
   test("the last few seconds are not counted down", () => {
     expect(timeLeft(0.95, 60_000)).toBe("A few seconds left");
     expect(timeLeft(1, 60_000)).toBe("A few seconds left");
