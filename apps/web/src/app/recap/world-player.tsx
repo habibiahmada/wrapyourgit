@@ -21,7 +21,7 @@ import {
 import { endScreenFor, shareCardFor } from "./end-screen";
 import { ExportShelf } from "./export-shelf";
 import { publicWorld } from "./public-world";
-import { stageSize } from "./stage-size";
+import { stageBox, stageSize } from "./stage-size";
 import { useMusic } from "./use-music";
 import { useSfx } from "./use-sfx";
 
@@ -123,23 +123,36 @@ export function WorldPlayer(props: WorldPlayerProps) {
   const sfx = useSfx();
   const reduced = useReducedMotion();
 
-  // The composition takes the window's own shape, so the story fills the screen edge to edge.
+  // The composition takes the shape of the box the story fills, so it covers the screen edge to
+  // edge. The box is measured, not the window: Chrome on Android shrinks innerHeight for the
+  // keyboard without resizing the page or firing a resize, so a shape read from the window right
+  // after the username form came out too wide and cropped the Sound button off (issue #137).
+  const screen = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState(() => stageSize(1080, 1920));
+  const [view, setView] = useState<{ width: number; height: number } | null>(null);
   useEffect(() => {
+    const el = screen.current;
+    if (!el) return;
     let timer = 0;
-    const pick = () => {
-      const next = stageSize(window.innerWidth, window.innerHeight);
+    let first = true;
+    const pick = (width: number, height: number) => {
+      const next = stageSize(width, height);
       setSize((now) => (now.width === next.width && now.height === next.height ? now : next));
     };
-    const later = () => {
+    const observer = new ResizeObserver(() => {
+      const { width, height } = el.getBoundingClientRect();
+      // The stage follows the box at once; the ride is rebuilt only once the size settles.
+      setView((now) => (now?.width === width && now.height === height ? now : { width, height }));
       window.clearTimeout(timer);
-      timer = window.setTimeout(pick, RESIZE_SETTLE_MS);
-    };
-    pick();
-    window.addEventListener("resize", later);
+      if (first) {
+        first = false;
+        pick(width, height);
+      } else timer = window.setTimeout(() => pick(width, height), RESIZE_SETTLE_MS);
+    });
+    observer.observe(el);
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener("resize", later);
+      observer.disconnect();
     };
   }, []);
   const { width, height } = size;
@@ -324,17 +337,23 @@ export function WorldPlayer(props: WorldPlayerProps) {
     sfx.setMuted(next);
   };
 
-  // The composition has the window's shape, so covering the screen crops at most a sliver (a
+  // The composition has the box's shape, so covering the screen crops at most a sliver (a
   // shape past 21:9, or a resize still settling). The chrome sits on a copy of the same box.
-  const stage = {
-    width: `max(100dvw, calc(100dvh * ${width} / ${height}))`,
-    aspectRatio: `${width} / ${height}`,
-  };
+  // Until the box is measured (the server's render), viewport units stand in.
+  const stage = view
+    ? stageBox(view, size)
+    : {
+        width: `max(100dvw, calc(100dvh * ${width} / ${height}))`,
+        aspectRatio: `${width} / ${height}`,
+      };
   // Scene units kept clear of the progress bar (Sound sits under it) and of the copyright line.
   const { top: topClear, bottom: footerClear } = safeArea({ width, height });
 
   return (
-    <div className="fixed inset-0 grid place-items-center overflow-hidden bg-ink text-ink">
+    <div
+      ref={screen}
+      className="fixed inset-0 grid place-items-center overflow-hidden bg-ink text-ink"
+    >
       <h1 ref={titleRef} tabIndex={-1} className="sr-only">
         {props.title}
       </h1>

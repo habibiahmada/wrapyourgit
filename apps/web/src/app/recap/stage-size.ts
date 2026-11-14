@@ -21,3 +21,19 @@ export function stageSize(
   const long = Math.max(SHORT, Math.round((SHORT * ratio) / STEP) * STEP);
   return viewWidth >= viewHeight ? { width: long, height: SHORT } : { width: SHORT, height: long };
 }
+
+/**
+ * The stage in CSS pixels for a measured box: the composition scaled to cover it, centred, so a
+ * shape that is off by a rounding step crops a sliver rather than leaving bands. The box and the
+ * composition's shape must come from the same measurement: a shape taken from the window while
+ * the stage is sized in viewport units crops whatever the two disagree on, and the controls
+ * anchored to the stage's edges go with it (issue #137).
+ */
+export function stageBox(
+  box: { width: number; height: number },
+  composition: { width: number; height: number },
+): { width: number; height: number } {
+  const ratio = composition.width / composition.height;
+  const width = Math.max(box.width, box.height * ratio);
+  return { width, height: width / ratio };
+}
