@@ -8,6 +8,7 @@ The 2026 edition, before its first release.
 
 ### Added
 
+- The export dialog in the story shows the percentage beside its bar, and both export screens estimate the time left once the speed so far means something ("About 2 min left") ([#144](https://github.com/habibiahmada/wrapyourgit/issues/144)).
 - A nightly backup of the production database: a `pg_dump` uploaded to a private, encrypted S3 bucket in Singapore with short-lived OIDC credentials, kept 14 days. The privacy policy names it and its retention ([#134](https://github.com/habibiahmada/wrapyourgit/issues/134)).
 - Page views and Core Web Vitals counted with Cloudflare Web Analytics on production only: no cookies, nothing stored in the browser. The privacy page says what is collected ([#132](https://github.com/habibiahmada/wrapyourgit/issues/132)).
 - A check that a person is asking before the server reads a new public recap from GitHub: a visitor who is not signed in passes Cloudflare Turnstile once an hour, stored recaps and their link previews are never checked, and it stays off until its two keys are set (ADR-0026) ([#107](https://github.com/habibiahmada/wrapyourgit/issues/107)).

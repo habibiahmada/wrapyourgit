@@ -9,6 +9,7 @@ import type { EndLink, ShareCard } from "./end-screen";
 import { announcement, type ExportJob, NOUN, percent } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { useExport } from "./use-export";
+import { useTimeLeft } from "./use-time-left";
 
 const FORMATS = ["9x16", "4x5", "1x1", "16x9"] as const satisfies readonly ExportFormat[];
 /** Cell's poses, one after another while a file is made: the one picture that changes. */
@@ -71,6 +72,7 @@ export function ExportShelf({
   onBusyChange: (busy: boolean) => void;
 }) {
   const { state, support, busy, run, cancel } = useExport(data, { letter, onBusyChange });
+  const left = useTimeLeft(state);
   // Which file's shapes are open, if any; and each file's ticket, to take focus back.
   const [open, setOpen] = useState<ExportJob | null>(null);
   const tickets = useRef<Partial<Record<ExportJob, HTMLButtonElement | null>>>({});
@@ -275,6 +277,7 @@ export function ExportShelf({
         <Downloading
           noun={NOUN[state.job]}
           value={percent(state)}
+          left={left}
           reminder={showReminder(privateNames)}
           onCancel={cancel}
         />
@@ -286,11 +289,14 @@ export function ExportShelf({
 function Downloading({
   noun,
   value,
+  left,
   reminder,
   onCancel,
 }: {
   noun: string;
   value: number;
+  /** "About 2 min left", once the speed so far means something. */
+  left: string | null;
   reminder: boolean;
   onCancel: () => void;
 }) {
@@ -350,6 +356,7 @@ function Downloading({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={value}
+          aria-valuetext={left ? `${value}%, ${left.toLowerCase()}` : `${value}%`}
           className="h-3 w-full overflow-hidden rounded-full border border-ink"
         >
           <div
@@ -357,6 +364,11 @@ function Downloading({
             style={{ width: `${value}%` }}
           />
         </div>
+        {/* A phone takes minutes over a video: the figure says it is moving and how long is left. */}
+        <p className="flex justify-between gap-4 text-sm text-ink-soft tabular-nums" aria-hidden>
+          <span className="font-semibold text-ink">{value}%</span>
+          {left && <span>{left}</span>}
+        </p>
         {reminder && <p className="text-sm text-ink-soft">{PRIVATE_NAMES_REMINDER}</p>}
         <button
           type="button"
