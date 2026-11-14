@@ -16,17 +16,7 @@
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { SFX, type SfxName, sfxFile } from "../packages/video/src/audio/sfx";
-import {
-  biquad,
-  burst,
-  mix,
-  rng,
-  room,
-  SAMPLE_RATE,
-  seedOf,
-  strike,
-  thump,
-} from "./lib/sfx-dsp";
+import { biquad, burst, mix, rng, room, SAMPLE_RATE, seedOf, strike, thump } from "./lib/sfx-dsp";
 
 const A5 = 880;
 
@@ -54,10 +44,7 @@ function highPass(cutoff: number) {
 type Designed = "chug" | "firework" | "flag" | "page" | "crate" | "seesaw";
 
 /** Builds a voice per sound: a function of time in seconds, called once per sample in order. */
-const VOICES: Record<
-  Exclude<SfxName, Designed>,
-  () => (t: number, length: number) => number
-> = {
+const VOICES: Record<Exclude<SfxName, Designed>, () => (t: number, length: number) => number> = {
   tap: () => (t) => (0.7 * sine(1200 * (1 - 0.4 * t * 16), t) + 0.3 * noise()) * Math.exp(-t * 90),
   sprout: () => (t) => {
     // A soft pluck whose pitch climbs a fifth as it grows.
@@ -216,8 +203,12 @@ const DESIGNED: Record<Designed, (n: number) => Float32Array> = {
       burst(out, noise, t, { attack: 0.012, decay: 9, seconds: 0.45, gain: 1.4 * gain }, (x) =>
         biquad(biquad(x, "bandpass", 520, 0.9), "lowpass", 2200),
       );
-      burst(out, noise, t + 0.02, { attack: 0.03, decay: 12, seconds: 0.35, gain: 0.25 * gain }, (x) =>
-        biquad(x, "bandpass", 2600, 1.2),
+      burst(
+        out,
+        noise,
+        t + 0.02,
+        { attack: 0.03, decay: 12, seconds: 0.35, gain: 0.25 * gain },
+        (x) => biquad(x, "bandpass", 2600, 1.2),
       );
       thump(out, t, { from: 90, to: 62, drop: 25, decay: 18, gain: 0.55 * gain });
     });
@@ -260,7 +251,11 @@ const DESIGNED: Record<Designed, (n: number) => Float32Array> = {
       thump(out, t, { from: 110, to: 80, drop: 30, decay: 40, gain: 0.18 * gain });
     });
     const gust = biquad(biquad(noiseOf(n), "lowpass", 650), "highpass", 120);
-    mix(out, shaped(gust, (t) => Math.sin(Math.PI * Math.min(1, t / (n / SAMPLE_RATE))) ** 2), 0.5);
+    mix(
+      out,
+      shaped(gust, (t) => Math.sin(Math.PI * Math.min(1, t / (n / SAMPLE_RATE))) ** 2),
+      0.5,
+    );
     return room(out, { size: 0.3, damp: 0.5, mix: 0.1 });
   },
   page: (n) => {

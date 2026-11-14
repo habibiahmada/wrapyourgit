@@ -27,7 +27,12 @@ export function seedOf(name: string): number {
 type BiquadKind = "lowpass" | "highpass" | "bandpass";
 
 /** An RBJ biquad over a whole buffer (a new buffer is returned). */
-export function biquad(x: Float32Array, kind: BiquadKind, hz: number, q = 0.707): Float32Array {
+export function biquad(
+  x: Float32Array,
+  kind: BiquadKind,
+  hz: number,
+  q = Math.SQRT1_2,
+): Float32Array {
   const w = (2 * Math.PI * hz) / SAMPLE_RATE;
   const cos = Math.cos(w);
   const alpha = Math.sin(w) / (2 * q);
@@ -102,7 +107,13 @@ export function strike(
 export function thump(
   out: Float32Array,
   at: number,
-  { from, to, drop, decay, gain }: { from: number; to: number; drop: number; decay: number; gain: number },
+  {
+    from,
+    to,
+    drop,
+    decay,
+    gain,
+  }: { from: number; to: number; drop: number; decay: number; gain: number },
 ): void {
   const start = Math.round(at * SAMPLE_RATE);
   let phase = 0;
@@ -123,7 +134,12 @@ export function burst(
   out: Float32Array,
   noise: () => number,
   at: number,
-  { attack, decay, seconds, gain }: { attack: number; decay: number; seconds: number; gain: number },
+  {
+    attack,
+    decay,
+    seconds,
+    gain,
+  }: { attack: number; decay: number; seconds: number; gain: number },
   shape: (x: Float32Array) => Float32Array = (x) => x,
 ): void {
   const n = Math.round(seconds * SAMPLE_RATE);
