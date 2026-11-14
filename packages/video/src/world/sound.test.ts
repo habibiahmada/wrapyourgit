@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { SFX, sfxFile } from "../audio/sfx";
 import {
@@ -21,6 +22,20 @@ describe("world sounds", () => {
     for (const kind of STOP_KINDS) expect(travelSound(kind, false)).toBe("rails");
     expect(SFX.rails.loop).toBe(true);
     expect(SFX.rails.seconds).toBeLessThanOrEqual(2);
+  });
+
+  test("the registry holds exactly the sounds the ride plays, and nothing else is shipped", async () => {
+    // The web player fetches every registered sound on the first tap, so a sound that is never
+    // played costs every visitor a download.
+    const played = new Set<string>([TAP_SOUND, TRAVEL_SOUND]);
+    for (const kind of STOP_KINDS) {
+      const name = arrivalSound(kind);
+      if (name !== null) played.add(name);
+    }
+    expect([...played].sort()).toEqual(Object.keys(SFX).sort());
+    const shipped = (await readdir(join(PUBLIC, "audio/sfx"))).filter((f) => f.endsWith(".wav"));
+    const registered = Object.values(SFX).map((s) => s.file.replace("audio/sfx/", ""));
+    expect(shipped.sort()).toEqual(registered.sort());
   });
 
   test("a tap has its own file", () => {

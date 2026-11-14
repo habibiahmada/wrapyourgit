@@ -15,7 +15,7 @@ export function travelSound(_to: StopKind, inPlace: boolean): SfxName | null {
   return inPlace ? null : TRAVEL_SOUND;
 }
 
-/** The sound of the camera settling at a stop; the city is already covered by the wind. */
+/** The sound of the camera settling at a stop; the city view has none. */
 export function arrivalSound(kind: StopKind): SfxName | null {
   switch (kind) {
     case "hello":
