@@ -39,6 +39,7 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- The soundtrack is brighter: a little EQ when it is prepared (less boom under 160 Hz, a touch of presence at 2.5 kHz, more air above 4 kHz), because the lo-fi mix sounded muffled on phone and laptop speakers. It plays at the same loudness as before ([#161](https://github.com/habibiahmada/wrapyourgit/issues/161)).
 - Six of the ride's sound effects have more body: the closing's firework, the steam at the rhythm scene, the flag, a page turned, the wooden box and the seesaw are built from layers (struck modes, shaped noise, a falling thump) with a little room around them. Still synthesised and CC0; each sound now draws its own noise, so changing one never changes another ([#159](https://github.com/habibiahmada/wrapyourgit/issues/159)).
 - The story's music is "Traveling in your mind" by Loyalty Freak Music, a CC0 track from the Free Music Archive, in place of the synthesised one. It plays about three minutes before it repeats, and the repeat joins without a seam (ADR-0030) ([#155](https://github.com/habibiahmada/wrapyourgit/issues/155)).
 - The site is titled after itself: "WrapYourGit 2026: your year of code as an animated story". Page titles, the description and the search metadata no longer call it a GitHub Wrapped, and the description says it is not affiliated with GitHub, after Safe Browsing listed the domain as deceptive ([#153](https://github.com/habibiahmada/wrapyourgit/issues/153)).

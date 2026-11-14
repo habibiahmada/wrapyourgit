@@ -20,7 +20,10 @@
  *   loop start, so jumping back continues the waveform it was already playing.
  * - After the loop end, the file holds a copy of the loop's first TAIL seconds, so a player that
  *   reads a little past the end still hears the loop's start.
- * - The source's level is kept; only the peak is brought to -1 dBFS.
+ * - A little EQ (EQ below) brightens the mix: it is lo-fi, with the lows about 9 dB over the mids
+ *   and the highs falling off above 6 kHz, which sounds muffled on phone and laptop speakers. The
+ *   maintainer chose it by ear from four loudness-matched variants (#161).
+ * - Otherwise the source's level is kept; only the peak is brought to -1 dBFS.
  */
 
 import { createHash } from "node:crypto";
@@ -29,6 +32,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { $ } from "bun";
 import { LOOP_FPS, WORLD_TRACK } from "../packages/video/src/audio/world-track";
+import { type EqBand, equalize } from "./lib/sfx-dsp";
 
 const SOURCE = {
   url: "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Loyalty_Freak_Music/TO_CHILL_AND_STAY_AWAKE/Loyalty_Freak_Music_-_05_-_Traveling_in_your_mind.mp3",
@@ -41,6 +45,12 @@ const TAIL = 1;
 const SAMPLE_RATE = 44_100;
 const SAMPLES_PER_FRAME = SAMPLE_RATE / LOOP_FPS; // 1470, a whole number
 const PEAK = 10 ** (-1 / 20);
+/** Less boom, a touch of presence, more air. */
+const EQ: readonly EqBand[] = [
+  { kind: "lowshelf", hz: 160, db: -4 },
+  { kind: "peak", hz: 2500, db: 2, q: 0.8 },
+  { kind: "highshelf", hz: 4000, db: 5 },
+];
 
 const packageDir = resolve(import.meta.dir, "../packages/video");
 const workDir = await mkdtemp(join(tmpdir(), "wyg-world-track-"));
@@ -111,7 +121,8 @@ function resample(input: Float32Array): Float32Array {
   }
   return output;
 }
-const stretched = source.map(resample) as [Float32Array, Float32Array];
+const brightened = source.map((channel) => EQ.reduce((x, band) => equalize(x, band), channel));
+const stretched = brightened.map(resample) as [Float32Array, Float32Array];
 
 // Pad the start so the loop end falls on a frame; the loop start is then one too.
 const endFrame = Math.ceil(SOURCE_LOOP.end * scale * LOOP_FPS);

@@ -205,3 +205,70 @@ export function circular(x: Float32Array, n: number, fade: number): Float32Array
   }
   return y;
 }
+
+/** One EQ band: a shelf below or above `hz`, or a bell around it. */
+export type EqBand = {
+  kind: "lowshelf" | "highshelf" | "peak";
+  hz: number;
+  db: number;
+  /** Width of a peak; shelves use a slope of 1. */
+  q?: number;
+};
+
+/** An RBJ shelf or peaking filter over a whole buffer (a new buffer is returned). */
+export function equalize(
+  x: Float32Array,
+  { kind, hz, db, q = Math.SQRT1_2 }: EqBand,
+): Float32Array {
+  const A = 10 ** (db / 40);
+  const w = (2 * Math.PI * hz) / SAMPLE_RATE;
+  const cos = Math.cos(w);
+  const sin = Math.sin(w);
+  let b0: number;
+  let b1: number;
+  let b2: number;
+  let a0: number;
+  let a1: number;
+  let a2: number;
+  if (kind === "peak") {
+    const alpha = sin / (2 * q);
+    b0 = 1 + alpha * A;
+    b1 = -2 * cos;
+    b2 = 1 - alpha * A;
+    a0 = 1 + alpha / A;
+    a1 = -2 * cos;
+    a2 = 1 - alpha / A;
+  } else {
+    const s = 2 * Math.sqrt(A) * (sin / 2) * Math.SQRT2;
+    if (kind === "lowshelf") {
+      b0 = A * (A + 1 - (A - 1) * cos + s);
+      b1 = 2 * A * (A - 1 - (A + 1) * cos);
+      b2 = A * (A + 1 - (A - 1) * cos - s);
+      a0 = A + 1 + (A - 1) * cos + s;
+      a1 = -2 * (A - 1 + (A + 1) * cos);
+      a2 = A + 1 + (A - 1) * cos - s;
+    } else {
+      b0 = A * (A + 1 + (A - 1) * cos + s);
+      b1 = -2 * A * (A - 1 + (A + 1) * cos);
+      b2 = A * (A + 1 + (A - 1) * cos - s);
+      a0 = A + 1 - (A - 1) * cos + s;
+      a1 = 2 * (A - 1 - (A + 1) * cos);
+      a2 = A + 1 - (A - 1) * cos - s;
+    }
+  }
+  const y = new Float32Array(x.length);
+  let x1 = 0;
+  let x2 = 0;
+  let y1 = 0;
+  let y2 = 0;
+  for (let i = 0; i < x.length; i++) {
+    const x0 = x[i] ?? 0;
+    const y0 = (b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+    y[i] = y0;
+    x2 = x1;
+    x1 = x0;
+    y2 = y1;
+    y1 = y0;
+  }
+  return y;
+}
