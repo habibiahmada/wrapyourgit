@@ -92,7 +92,7 @@ export function SizePicker({
             show();
           }
         }}
-        className="flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-control)] border border-line bg-overlay px-3 text-left hover:border-muted hover:bg-line active:bg-[#282e33] disabled:opacity-60"
+        className="flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-control)] border border-line bg-overlay px-3 text-left hover:border-muted hover:bg-line active:bg-[#2f2c26] disabled:opacity-60"
       >
         <span id={`${ids}-value`} className="min-w-0 flex-1 truncate">
           <span className="font-semibold">{ratio(value)}</span>

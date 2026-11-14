@@ -113,7 +113,7 @@ async function Settings({
                   className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border motion-safe:transition-colors ${
                     hidden
                       ? "border-green bg-green-button group-hover:bg-[#1a6f35] group-active:bg-[#186a32]"
-                      : "border-muted bg-overlay group-hover:bg-line group-active:bg-[#282e33]"
+                      : "border-muted bg-overlay group-hover:bg-line group-active:bg-[#2f2c26]"
                   }`}
                 >
                   <span
