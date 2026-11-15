@@ -3,8 +3,11 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { NAV_LINKS } from "./nav-links";
 
-const link =
-  "inline-flex min-h-11 items-center rounded-[var(--radius-control)] px-3 font-semibold text-fg hover:bg-overlay active:bg-line";
+/**
+ * Section links read as links, not buttons (#167): no hover fill; an underline draws in under the
+ * words (`.link-slide`, globals.css) and a press dims the text.
+ */
+const link = "inline-flex min-h-11 items-center px-3 font-semibold text-fg active:text-muted";
 
 /**
  * The site header's navigation. On the landing page links are in-page anchors; elsewhere they go
@@ -43,7 +46,7 @@ export function SiteNav({
           {NAV_LINKS.map(({ id, label }) => (
             <li key={id}>
               <a href={`${base}#${id}`} className={link}>
-                {label}
+                <span className="link-slide">{label}</span>
               </a>
             </li>
           ))}
@@ -88,12 +91,13 @@ export function SiteNav({
                 onClick={() => setOpen(false)}
                 className={`${link} w-full text-xl`}
               >
-                {label}
+                <span className="link-slide">{label}</span>
               </a>
             </li>
           ))}
         </ul>
-        <div className="mt-4 sm:hidden">{action}</div>
+        {/* On a phone the sign-in (or dashboard) button spans the menu, a full-width tap target. */}
+        <div className="mt-4 sm:hidden [&>a]:w-full">{action}</div>
       </nav>
     </>
   );
