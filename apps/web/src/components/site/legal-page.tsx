@@ -45,10 +45,7 @@ export function LegalPage({
               <ul className="space-y-1">
                 {sections.map(({ id, title: label }) => (
                   <li key={id}>
-                    <a
-                      href={`#${id}`}
-                      className="inline-flex min-h-11 items-center font-bold"
-                    >
+                    <a href={`#${id}`} className="inline-flex min-h-11 items-center font-bold">
                       <span className="link-slide">{label}</span>
                     </a>
                   </li>
