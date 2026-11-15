@@ -1,6 +1,6 @@
 # 0029. The web pages wear their own colours, not GitHub's
 
-- Status: Accepted
+- Status: Accepted. Point 2 (no GitHub logo in the site chrome) is superseded by [0031](0031-github-mark-back-in-the-header.md) (2026-11-15): the mark is back beside a plain "Sign in".
 - Date: 2026-11-14
 - Supersedes: the GitHub-dark palette and the header's GitHub mark in DESIGN.md "Web" (decided 2026-11-04)
 
