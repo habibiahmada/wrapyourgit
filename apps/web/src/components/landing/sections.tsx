@@ -561,7 +561,7 @@ export function KeepSection() {
                 {/* The icon only echoes the name beside it, so screen readers skip it. */}
                 <span
                   aria-hidden
-                  className="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-green/40 bg-surface text-green"
+                  className="flex size-12 shrink-0 items-center justify-center rounded-full border border-green/40 bg-surface text-green"
                 >
                   <svg
                     aria-hidden

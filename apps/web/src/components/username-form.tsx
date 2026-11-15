@@ -2,7 +2,8 @@
  * The one field that opens anyone's recap. A plain GET form, so it works before (or without)
  * JavaScript: /go cleans up the name and redirects to /<username> (ruling R4).
  *
- * The field and its button share one bordered surface on every screen size (#167). The button is
+ * The field and its button share one pill-shaped surface on every screen size (#167); the
+ * maintainer chose the pill so the one field on the page reads as a search. The button is
  * a search icon whose accessible name is `submit` ("Play your year" on the landing). The border
  * is #7a7468 (4.07:1 on the canvas, 3.75:1 on the surface, over the 3:1 a control's edge needs),
  * lighter on hover, and green with a second pixel of green when the text box has focus (8:1). An
@@ -27,7 +28,7 @@ export function UsernameForm({
         {label}
       </label>
       <div
-        className={`flex items-center gap-1 rounded-[calc(var(--radius-control)+4px)] border border-[#7a7468] bg-surface p-1 pl-3 hover:border-muted has-[input:focus-visible]:border-green has-[input:focus-visible]:shadow-[0_0_0_1px_var(--color-green)] has-[input[aria-invalid=true]]:border-[#ff7b72] ${EASE}`}
+        className={`flex items-center gap-1 rounded-full border border-[#7a7468] bg-surface p-1 pl-4 hover:border-muted has-[input:focus-visible]:border-green has-[input:focus-visible]:shadow-[0_0_0_1px_var(--color-green)] has-[input[aria-invalid=true]]:border-[#ff7b72] ${EASE}`}
       >
         <span aria-hidden className="text-lg text-muted select-none">
           @
@@ -53,7 +54,7 @@ export function UsernameForm({
           type="submit"
           aria-label={submit}
           title={submit}
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-white/10 bg-green-button text-white hover:bg-[#1a6f35] active:bg-[#186a32] motion-safe:transition-colors"
+          className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-green-button text-white hover:bg-[#1a6f35] active:bg-[#186a32] motion-safe:transition-colors"
         >
           <svg
             aria-hidden
