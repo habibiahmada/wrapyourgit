@@ -39,6 +39,7 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- The header links to the source with GitHub's mark again, and its sign-in button reads "Sign in" so the mark never sits beside "Sign in with GitHub". The landing page keeps "Sign in with GitHub" with the note that the site is not affiliated with GitHub (ADR-0031) ([#163](https://github.com/habibiahmada/wrapyourgit/issues/163)).
 - The soundtrack is brighter: a little EQ when it is prepared (less boom under 160 Hz, a touch of presence at 2.5 kHz, more air above 4 kHz), because the lo-fi mix sounded muffled on phone and laptop speakers. It plays at the same loudness as before ([#161](https://github.com/habibiahmada/wrapyourgit/issues/161)).
 - Six of the ride's sound effects have more body: the closing's firework, the steam at the rhythm scene, the flag, a page turned, the wooden box and the seesaw are built from layers (struck modes, shaped noise, a falling thump) with a little room around them. Still synthesised and CC0; each sound now draws its own noise, so changing one never changes another ([#159](https://github.com/habibiahmada/wrapyourgit/issues/159)).
 - The story's music is "Traveling in your mind" by Loyalty Freak Music, a CC0 track from the Free Music Archive, in place of the synthesised one. It plays about three minutes before it repeats, and the repeat joins without a seam (ADR-0030) ([#155](https://github.com/habibiahmada/wrapyourgit/issues/155)).
