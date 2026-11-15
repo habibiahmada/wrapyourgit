@@ -15,16 +15,22 @@ export function UsernameForm({
   label = "GitHub username",
   submit = "Open the recap",
   error,
+  hideLabel = false,
 }: {
   id: string;
   label?: string;
   submit?: string;
   error?: string;
+  /**
+   * The hero's field (#167): the label stays for screen readers and the placeholder shows it
+   * instead, since the lead right above already asks for a username.
+   */
+  hideLabel?: boolean;
 }) {
   const errorId = `${id}-error`;
   return (
     <form action="/go" method="get" className="flex w-full max-w-lg flex-col gap-2">
-      <label htmlFor={id} className="text-base font-semibold">
+      <label htmlFor={id} className={hideLabel ? "sr-only" : "text-base font-semibold"}>
         {label}
       </label>
       <div
@@ -39,7 +45,7 @@ export function UsernameForm({
           type="text"
           required
           maxLength={100}
-          placeholder="your-username"
+          placeholder={hideLabel ? label : "your-username"}
           autoComplete="off"
           autoCapitalize="none"
           autoCorrect="off"
