@@ -408,9 +408,9 @@ function Starred({ data }: { data: RecapData }) {
             <li key={repo.nameWithOwner} className="flex items-center gap-3 text-sm">
               <a
                 href={`https://github.com/${repo.nameWithOwner}`}
-                className="min-h-11 min-w-0 flex-1 truncate py-3 font-semibold text-blue hover:underline"
+                className="min-h-11 min-w-0 flex-1 truncate py-3 font-semibold text-blue"
               >
-                {repo.nameWithOwner}
+                <span className="link-slide">{repo.nameWithOwner}</span>
               </a>
               <span className="flex items-center gap-1 text-muted tabular-nums">
                 <svg aria-hidden viewBox="0 0 16 16" className="size-4 fill-current">

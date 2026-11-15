@@ -138,7 +138,7 @@ export function VerifyPage({ login, siteKey }: { login: string; siteKey: string 
     >
       Nobody has opened this recap lately, so it has to be read from GitHub, on a quota every
       visitor shares. This check, by Cloudflare Turnstile, keeps scripts from using it up.{" "}
-      <a href="/privacy" className="font-semibold text-blue hover:underline">
+      <a href="/privacy" className="link-slide font-semibold text-blue">
         What it collects
       </a>
       .

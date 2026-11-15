@@ -47,9 +47,9 @@ export function LegalPage({
                   <li key={id}>
                     <a
                       href={`#${id}`}
-                      className="inline-flex min-h-11 items-center font-bold underline-offset-4 hover:underline"
+                      className="inline-flex min-h-11 items-center font-bold"
                     >
-                      {label}
+                      <span className="link-slide">{label}</span>
                     </a>
                   </li>
                 ))}
