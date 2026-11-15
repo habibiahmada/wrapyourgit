@@ -564,6 +564,7 @@ export function KeepSection() {
                   className="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-green/40 bg-surface text-green"
                 >
                   <svg
+                    aria-hidden
                     viewBox="0 0 24 24"
                     className="size-6"
                     fill="none"
