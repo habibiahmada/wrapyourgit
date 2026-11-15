@@ -140,7 +140,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
               <Suspense fallback={null}>
                 <Notice searchParams={searchParams} />
               </Suspense>
-              <div className="grid flex-1 items-center gap-12 pt-12 pb-16 sm:pt-16 lg:grid-cols-[0.88fr_1.12fr]">
+              <div className="grid flex-1 items-center gap-12 pt-20 pb-16 sm:pt-16 lg:grid-cols-[0.88fr_1.12fr]">
                 <div>
                   <h1
                     id="hero-title"
