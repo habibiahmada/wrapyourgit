@@ -22,26 +22,26 @@ export function SiteFooter({ base = "" }: { base?: "" | "/" }) {
               <li key={id}>
                 <a
                   href={`${base}#${id}`}
-                  className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-blue hover:underline"
+                  className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-blue"
                 >
-                  {label}
+                  <span className="link-slide">{label}</span>
                 </a>
               </li>
             ))}
             <li>
               <Link
                 href="/privacy"
-                className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-blue hover:underline"
+                className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-blue"
               >
-                Privacy policy
+                <span className="link-slide">Privacy policy</span>
               </Link>
             </li>
             <li>
               <Link
                 href="/terms"
-                className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-blue hover:underline"
+                className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-blue"
               >
-                Terms of use
+                <span className="link-slide">Terms of use</span>
               </Link>
             </li>
           </ul>

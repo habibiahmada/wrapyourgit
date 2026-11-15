@@ -446,6 +446,25 @@ html {
   .on-light :focus-visible {
     outline-color: var(--color-ink);
   }
+
+  /* A link's hover underline draws in from the left instead of appearing at once (maintainer's
+     call, #167). It sits on the text itself, an inline span or an inline link, so it follows the
+     words and not a 44px tap box. The line is the text's own colour, 0.1em thick, so it scales
+     with the type. Without motion it simply appears. Links underlined at rest in prose keep their
+     plain underline: there the line says "link" without relying on colour. */
+  .link-slide {
+    padding-bottom: 0.08em;
+    background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 0.1em;
+  }
+  a:is(:hover, :focus-visible) .link-slide,
+  a.link-slide:is(:hover, :focus-visible) {
+    background-size: 100% 0.1em;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .link-slide {
+      transition: background-size 280ms cubic-bezier(0.25, 1, 0.5, 1);
+    }
+  }
 }
 
 /*

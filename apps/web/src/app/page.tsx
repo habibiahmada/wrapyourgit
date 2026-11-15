@@ -18,7 +18,6 @@ import {
   VideoExportSection,
 } from "@/components/landing/sections";
 import { PageTransition } from "@/components/site/page-transition";
-import { SignInNote } from "@/components/site/sign-in-note";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SignInButton, SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
@@ -150,26 +149,25 @@ export default function Home({ searchParams }: PageProps<"/">) {
                     Every <span className="text-green">green square</span> has a story.
                   </h1>
                   <p className="mt-6 max-w-md text-lg text-muted">
-                    Your {EDITION_YEAR} in code, as a story. Type your GitHub username and watch the
-                    year play back as a short animated story. Sign in to include your private work.
+                    Type a GitHub username and watch {EDITION_YEAR} play back as a short story. Sign
+                    in to add your private work.
                   </p>
                   <div className="mt-8">
                     <Suspense fallback={<HeroForm />}>
                       <HeroFormWithError searchParams={searchParams} />
                     </Suspense>
-                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                    {/* The header's "The story" link already leads to the city, and the note about
+                        who runs the site sits under the closing section's sign-in and in the
+                        footer: the hero keeps one field and one button (#167). */}
+                    <div className="mt-6">
                       <Suspense fallback={<SignInButton variant="secondary" />}>
                         <PrimaryAction variant="secondary" />
                       </Suspense>
-                      <a href="#story" className={button.quiet}>
-                        See the city
-                      </a>
                     </div>
-                    <SignInNote />
                   </div>
                 </div>
                 {/* A quarter of a year as a city, linked to what the story does with it. */}
-                <HeroArt className="min-w-0" />
+                <HeroArt className="min-w-0 lg:translate-x-10 xl:translate-x-16" />
               </div>
             </div>
           </section>
@@ -216,7 +214,7 @@ const INVALID_USERNAME =
   "That isn't a GitHub username. Use letters, numbers and hyphens, 39 at most, with no hyphen at either end.";
 
 function HeroForm({ error }: { error?: string }) {
-  return <UsernameForm id="hero-username" submit="Play your year" error={error} />;
+  return <UsernameForm id="hero-username" submit="Play your year" error={error} hideLabel />;
 }
 
 /** /go sends a name GitHub couldn't issue back here as ?u=invalid; the field says why. */

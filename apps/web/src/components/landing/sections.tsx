@@ -468,10 +468,45 @@ export function VideoExportSection() {
   );
 }
 
+/** Each keepsake's icon: 24px grid, 2px square-capped strokes, drawn here so they share one hand. */
 const KEEP = [
-  { name: "Slides", detail: "Every stop as a PNG, one by one or in a ZIP." },
-  { name: "PDF", detail: "The whole story in one document." },
-  { name: "Share card", detail: "A card for your links, and a public page at your username." },
+  {
+    name: "Slides",
+    detail: "Every stop as a PNG, one by one or in a ZIP.",
+    // A stack of prints: the front one framed, with a sun and a hill on it.
+    icon: (
+      <>
+        <path d="M7 3h14v14" />
+        <rect x="3" y="7" width="14" height="14" />
+        <circle cx="8" cy="12" r="1.5" />
+        <path d="m3 19 5-4 3 2 3-3 3 3" />
+      </>
+    ),
+  },
+  {
+    name: "PDF",
+    detail: "The whole story in one document.",
+    // A page with its corner folded and three lines of text.
+    icon: (
+      <>
+        <path d="M14 3H5v18h14V8z" />
+        <path d="M14 3v5h5M8.5 12.5h7M8.5 16h7M8.5 9h3" />
+      </>
+    ),
+  },
+  {
+    name: "Share card",
+    detail: "A card for your links, and a public page at your username.",
+    // Three linked nodes, the usual sign for sharing.
+    icon: (
+      <>
+        <circle cx="18" cy="5.5" r="2.5" />
+        <circle cx="6" cy="12" r="2.5" />
+        <circle cx="18" cy="18.5" r="2.5" />
+        <path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1" />
+      </>
+    ),
+  },
 ] as const;
 
 export function KeepSection() {
@@ -517,10 +552,29 @@ export function KeepSection() {
           </p>
 
           <dl className="stagger mt-10 space-y-6">
-            {KEEP.map(({ name, detail }) => (
-              <div key={name} className="reveal">
-                <dt className="text-lg font-bold text-fg">{name}</dt>
-                <dd className="mt-1 max-w-xl text-muted">{detail}</dd>
+            {KEEP.map(({ name, detail, icon }) => (
+              <div key={name} className="reveal flex max-w-xl items-start justify-between gap-6">
+                <div>
+                  <dt className="text-lg font-bold text-fg">{name}</dt>
+                  <dd className="mt-1 text-muted">{detail}</dd>
+                </div>
+                {/* The icon only echoes the name beside it, so screen readers skip it. */}
+                <span
+                  aria-hidden
+                  className="flex size-12 shrink-0 items-center justify-center rounded-full border border-green/40 bg-surface text-green"
+                >
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 24 24"
+                    className="size-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="square"
+                  >
+                    {icon}
+                  </svg>
+                </span>
               </div>
             ))}
           </dl>

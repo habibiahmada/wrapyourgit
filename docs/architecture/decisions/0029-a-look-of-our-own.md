@@ -20,7 +20,7 @@ A week-old domain with GitHub's exact colours, its logo and a button to GitHub's
 
 1. **The site chrome uses a warm dark set of its own**, close to the story's ink and paper: canvas `#12110e`, head `#0b0a08`, surface `#1b1a16`, overlay `#26241f`, line `#3a372f`, fg `#eeeae0`, muted `#a29d90`, green `#4cc764`, green button `#1d7a3a`, blue `#7f93ff`. The structure stays GitHub-like (dark, boxes, one green button) because that is still the product people come from. Every text pairing meets WCAG 2.2 AA; the measured values are in DESIGN.md.
 2. **No GitHub logo in the site chrome.** The header's link to the repository is a code icon named "Source code".
-3. **The sign-in says who runs the site.** "An independent project, not affiliated with GitHub. Signing in happens on github.com and gives read-only access." sits under the landing page's sign-in, in the hero and the closing section.
+3. **The sign-in says who runs the site.** "An independent project, not affiliated with GitHub. Signing in happens on github.com and gives read-only access." sits under the landing page's sign-in, in the hero and the closing section. Since 2026-11-15 (#167) it is in the closing section and the footer only: the maintainer trimmed the hero to one field and one button, and the header no longer pairs GitHub's mark with "Sign in with GitHub" (ADR-0031). If Chrome's warning returns, the note goes back under the hero's sign-in first.
 4. **Mona Sans stays for now.** It is open source and a weak signal on its own; it can change if the warning returns.
 5. **Out of scope:** the isometric illustrations, the story and the video keep their colours. They are art drawn on a canvas or in images, not the page's controls, and the contribution greens are data.
 
