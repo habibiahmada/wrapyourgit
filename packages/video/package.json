@@ -33,7 +33,7 @@
     "three": "^0.187.0"
   },
   "devDependencies": {
-    "@remotion/cli": "4.0.541",
+    "@remotion/cli": "4.0.543",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.187.0",
