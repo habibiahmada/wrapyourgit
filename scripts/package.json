@@ -6,8 +6,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@remotion/bundler": "4.0.541",
-    "@remotion/renderer": "4.0.541",
+    "@remotion/bundler": "4.0.543",
+    "@remotion/renderer": "4.0.543",
     "@wyg/analytics": "workspace:*",
     "@wyg/github": "workspace:*",
     "@wyg/schema": "workspace:*"
