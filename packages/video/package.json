@@ -25,15 +25,15 @@
   "dependencies": {
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
-    "@remotion/google-fonts": "4.0.541",
-    "@remotion/media": "4.0.541",
-    "@remotion/three": "4.0.541",
+    "@remotion/google-fonts": "4.0.543",
+    "@remotion/media": "4.0.543",
+    "@remotion/three": "4.0.543",
     "@wyg/schema": "workspace:*",
-    "remotion": "4.0.541",
+    "remotion": "4.0.543",
     "three": "^0.187.0"
   },
   "devDependencies": {
-    "@remotion/cli": "4.0.541",
+    "@remotion/cli": "4.0.543",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.187.0",
