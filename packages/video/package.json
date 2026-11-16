@@ -29,7 +29,7 @@
     "@remotion/media": "4.0.541",
     "@remotion/three": "4.0.541",
     "@wyg/schema": "workspace:*",
-    "remotion": "4.0.541",
+    "remotion": "4.0.543",
     "three": "^0.187.0"
   },
   "devDependencies": {
