@@ -73,6 +73,7 @@ The 2026 edition, before its first release.
 
 ### Fixed
 
+- A GitHub login that was renamed and then taken by someone else no longer shows the previous holder's public recap under the new holder's name: a lookup or a sign-in moves the old recap off that login ([#186](https://github.com/habibiahmada/wrapyourgit/issues/186)).
 - A signed-in visitor on someone else's recap is sent to their dashboard after the story, instead of being asked to sign in or make their own ([#151](https://github.com/habibiahmada/wrapyourgit/issues/151)).
 - A public recap no longer says "Nothing private this year" when GitHub only keeps the count from other viewers: a private count of 0 there reads "Private work isn't shown publicly" ([#149](https://github.com/habibiahmada/wrapyourgit/issues/149)).
 - The story ride shows both rails again (the rail bed was painted over the far one), and the train's wheels read as round, with light tyres on the dark skirt ([#143](https://github.com/habibiahmada/wrapyourgit/issues/143)).
