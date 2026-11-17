@@ -32,6 +32,8 @@ const fakeDb = {
     },
   }),
 };
+// The cookie names depend on the origin (cookie-names.ts).
+process.env.APP_URL ??= "https://app.test";
 mock.module("./db", () => ({ ...schema, db: fakeDb }));
 mock.module("next/headers", () => ({
   cookies: async () => ({ delete: () => calls.push("delete cookie") }),

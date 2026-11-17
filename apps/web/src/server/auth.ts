@@ -3,6 +3,7 @@ import { fetchViewer } from "@wyg/github";
 import { and, eq, gt, lt, ne, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { cache } from "react";
+import { cookieName, secureOrigin } from "./cookie-names";
 import { decrypt, encrypt, hashToken, parseKey, randomToken } from "./crypto";
 import { db, githubTokens, sessions, users } from "./db";
 import { requireEnv } from "./env";
@@ -14,9 +15,6 @@ import { setPublicRecapHidden } from "./public-recaps";
  * route handler and server action re-checks the session here; nothing trusts the client.
  */
 
-export const SESSION_COOKIE = "wyg_session";
-/** Holds `<state>.<pkce verifier>` for the 10 minutes between sign-in start and callback. */
-export const OAUTH_COOKIE = "wyg_oauth";
 const SESSION_DAYS = 30;
 
 export interface CurrentUser {
@@ -38,7 +36,11 @@ export class ReauthorizeError extends Error {
 
 const encryptionKey = () => parseKey(requireEnv("TOKEN_ENCRYPTION_KEY"));
 export const appUrl = () => requireEnv("APP_URL");
-export const secureCookies = () => appUrl().startsWith("https://");
+export const secureCookies = () => secureOrigin(appUrl(), process.env.NODE_ENV);
+/** The session cookie's name (`__Host-` on a secure origin, cookie-names.ts). */
+export const sessionCookie = () => cookieName("wyg_session", secureCookies());
+/** Holds `<state>.<pkce verifier>` for the 10 minutes between sign-in start and callback. */
+export const oauthCookie = () => cookieName("wyg_oauth", secureCookies());
 /** Public client ID: enough to start sign-in. */
 export const githubClientId = () => requireEnv("GITHUB_APP_CLIENT_ID");
 /** ID + secret: needed to exchange codes, refresh and revoke. */
@@ -109,6 +111,11 @@ async function saveTokens(
 
 /** Sets the session cookie. Call only from a route handler or server action. */
 export async function startSession(userId: string): Promise<void> {
+  const store = await cookies();
+  // A browser signing in again (perhaps as another account) gives up the session it had: the
+  // cookie is about to be overwritten, so the old row would only linger until it expired.
+  const previous = store.get(sessionCookie())?.value;
+  if (previous) await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(previous)));
   const token = randomToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
   // Expired rows are useless and only grow the table; clear this user's on every sign-in.
@@ -116,7 +123,7 @@ export async function startSession(userId: string): Promise<void> {
     .delete(sessions)
     .where(and(eq(sessions.userId, userId), lt(sessions.expiresAt, sql`now()`)));
   await db.insert(sessions).values({ tokenHash: hashToken(token), userId, expiresAt });
-  (await cookies()).set(SESSION_COOKIE, token, {
+  store.set(sessionCookie(), token, {
     httpOnly: true,
     secure: secureCookies(),
     sameSite: "lax",
@@ -130,7 +137,7 @@ export async function startSession(userId: string): Promise<void> {
  * per request: the header and the page both ask, and that should be one query, not two.
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const token = (await cookies()).get(sessionCookie())?.value;
   if (!token) return null;
   const [row] = await db
     .select({
@@ -151,9 +158,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 /** Deletes the session row and cookie. Call only from a route handler or server action. */
 export async function endSession(): Promise<void> {
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
+  const token = store.get(sessionCookie())?.value;
   if (token) await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(token)));
-  store.delete(SESSION_COOKIE);
+  store.delete(sessionCookie());
 }
 
 /**
@@ -163,7 +170,7 @@ export async function endSession(): Promise<void> {
  */
 export async function endAllSessions(): Promise<void> {
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
+  const token = store.get(sessionCookie())?.value;
   if (token) {
     const [own] = await db
       .select({ userId: sessions.userId })
@@ -171,7 +178,7 @@ export async function endAllSessions(): Promise<void> {
       .where(eq(sessions.tokenHash, hashToken(token)));
     if (own) await db.delete(sessions).where(eq(sessions.userId, own.userId));
   }
-  store.delete(SESSION_COOKIE);
+  store.delete(sessionCookie());
 }
 
 /** A usable GitHub access token for the user, refreshing it first when it is about to expire. */
@@ -227,6 +234,6 @@ export async function deleteAccount(userId: string): Promise<{ revoked: boolean 
     .where(eq(users.id, userId));
   if (account) await setPublicRecapHidden(account.githubId, true);
   await db.delete(users).where(eq(users.id, userId));
-  (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).delete(sessionCookie());
   return { revoked };
 }

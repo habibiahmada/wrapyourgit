@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { secureCookies } from "@/server/auth";
 import { requireEnv } from "@/server/env";
 import {
-  PASS_COOKIE,
   PASS_MS,
+  passCookie,
   passKey,
   signPass,
   turnstileConfig,
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   const expires = new Date(Date.now() + PASS_MS);
   const response = new NextResponse(null, { status: 204 });
   response.cookies.set(
-    PASS_COOKIE,
+    passCookie(secureCookies()),
     signPass(clientKey(request.headers), expires, passKey(requireEnv("TOKEN_ENCRYPTION_KEY"))),
     { httpOnly: true, secure: secureCookies(), sameSite: "lax", path: "/", expires },
   );

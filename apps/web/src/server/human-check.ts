@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { cookieName } from "./cookie-names";
 
 /*
  * The check that a person, not a script, is asking for a recap nobody has fetched yet
@@ -8,8 +9,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * for this client", signed by the server. Nothing is stored for it.
  */
 
-/** The pass. HttpOnly: the page never needs to read it. */
-export const PASS_COOKIE = "wyg_human";
+/** The pass's name (`__Host-` on a secure origin, cookie-names.ts). HttpOnly: the page never reads it. */
+export const passCookie = (secure: boolean) => cookieName("wyg_human", secure);
 /** How long one check lasts. The client's lookup limit (public-policy.ts) still applies. */
 export const PASS_MS = 60 * 60 * 1000;
 

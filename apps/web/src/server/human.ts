@@ -1,8 +1,9 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
 import { connection } from "next/server";
+import { secureCookies } from "./auth";
 import { requireEnv } from "./env";
-import { PASS_COOKIE, passIsValid, passKey, turnstileConfig } from "./human-check";
+import { passCookie, passIsValid, passKey, turnstileConfig } from "./human-check";
 import { clientKey } from "./public-recaps";
 
 /**
@@ -20,7 +21,7 @@ import { clientKey } from "./public-recaps";
 export async function requestIsHuman(signedIn: boolean): Promise<boolean> {
   if (!turnstileConfig()) return true;
   if (signedIn) return true;
-  const pass = (await cookies()).get(PASS_COOKIE)?.value;
+  const pass = (await cookies()).get(passCookie(secureCookies()))?.value;
   // Reading a cookie is not enough for Next to allow the clock: the pass is checked against now,
   // so this waits for the request itself (cacheComponents).
   await connection();

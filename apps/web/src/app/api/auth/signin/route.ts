@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { appUrl, githubClientId, OAUTH_COOKIE, secureCookies } from "@/server/auth";
+import { appUrl, githubClientId, oauthCookie, secureCookies } from "@/server/auth";
 import { pkceChallenge, randomToken } from "@/server/crypto";
 import { authorizeUrl } from "@/server/oauth";
 
@@ -8,11 +8,12 @@ import { authorizeUrl } from "@/server/oauth";
 export async function GET() {
   const state = randomToken();
   const verifier = randomToken();
-  (await cookies()).set(OAUTH_COOKIE, `${state}.${verifier}`, {
+  (await cookies()).set(oauthCookie(), `${state}.${verifier}`, {
     httpOnly: true,
     secure: secureCookies(),
     sameSite: "lax",
-    path: "/api/auth",
+    // "/" because a __Host- cookie must have it; it is HttpOnly and lives 10 minutes.
+    path: "/",
     maxAge: 600,
   });
   return NextResponse.redirect(
