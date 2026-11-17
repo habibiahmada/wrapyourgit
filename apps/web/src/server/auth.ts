@@ -8,7 +8,7 @@ import { decrypt, encrypt, hashToken, parseKey, randomToken } from "./crypto";
 import { db, githubTokens, sessions, users } from "./db";
 import { requireEnv } from "./env";
 import { refreshTokens, revokeGrant, type TokenSet, tokenState } from "./oauth";
-import { setPublicRecapHidden } from "./public-recaps";
+import { releaseLogin, setPublicRecapHidden } from "./public-recaps";
 
 /*
  * Data access layer for identity: sessions, the current user and their GitHub token. Every
@@ -68,6 +68,9 @@ export async function signInWithTokens(tokens: TokenSet): Promise<{ id: string; 
           ne(users.githubId, viewer.databaseId),
         ),
       );
+    // The same for public recaps: another account's recap filed under this login stops showing
+    // at /<login> now that GitHub has said whose it is.
+    await releaseLogin(tx, viewer.login, viewer.databaseId);
     const [row] = await tx
       .insert(users)
       .values({
