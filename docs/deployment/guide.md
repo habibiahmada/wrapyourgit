@@ -95,6 +95,11 @@ Verified on 2026-11-05: the site, the copied static folders (`/art`, `/photos`, 
   - **Where things live.** The bucket blocks public access, encrypts with SSE-S3, refuses non-TLS requests, and its lifecycle rule `expire-dumps-after-14-days` deletes dumps under `neon/` after 14 days; the privacy page promises that window, so change both together. The job signs in with GitHub OIDC to the IAM role `wrapyourgit-db-backup`, which may only `s3:PutObject` under `neon/` and only from this repository's `backup` environment. That environment accepts only `main`, holds the variables `AWS_BACKUP_ROLE_ARN` and `BACKUP_BUCKET`, and the secret `NEON_DIRECT_URL`: Neon's **direct** (unpooled) string, the `DATABASE_URL_UNPOOLED` value from the Vercel integration, because `pg_dump` cannot run through the pooler. If the database password is rotated, update that secret.
   - **The role's trust policy.** This repository uses GitHub's immutable OIDC subject (`gh api repos/habibiahmada/wrapyourgit/actions/oidc/customization/sub` shows `use_immutable_subject: true`), so the token's `sub` carries numeric ids: `repo:habibiahmada@150598241/wrapyourgit@1444948017:environment:backup`. The trust policy matches that string exactly. A policy written as `repo:habibiahmada/wrapyourgit:...` fails with "Not authorized to perform sts:AssumeRoleWithWebIdentity", and so would any new role trusted by this repository's workflows. The ids also mean a repository recreated under the same name is not trusted.
   - **Restore.** With an AWS identity that can read the bucket (the role cannot): `aws s3 cp s3://wrapyourgit-db-backups/neon/<file>.dump db.dump --region ap-southeast-1`, then into an empty database, `pg_restore --no-owner --no-privileges --dbname "<target string>" db.dump` with a Postgres 18 client. Restore into a new Neon branch or a local container first and check row counts before pointing anything at it. Verified on 2026-11-14: the first dump (40 KB, 9 tables with data) restored into an empty `postgres:18-alpine` container with `--exit-on-error`, and every table's row count read back.
+  - **Before a restored database serves production.** A snapshot predates everything people did after it: sign-outs, "Sign out on all devices", deleted accounts and hidden recaps. Restoring it as is would bring those sessions, tokens and recaps back and lift those hides. So before switching production to it:
+    1. Sign everyone out: `DELETE FROM sessions;` (people sign in again; nothing else is lost).
+    2. Re-apply deletions made since the dump: for every account deleted after the snapshot (from the logs, or by comparing `users.github_id` with the live database if it still answers), `DELETE FROM users WHERE github_id = <id>;` (tokens and recaps cascade) and insert its `hidden_accounts` row.
+    3. Re-apply hides made since the dump: copy `hidden_accounts` rows newer than the snapshot from the live database, if it still answers, and delete the matching `public_recaps` rows.
+    4. Only then point the app at the restored database.
   - Scheduled workflows stop after 60 days without activity in a **public** repository; GitHub emails before it disables them. Re-enable under Actions → Backup.
 - **What to watch:**
   - **Vercel → Logs.** Search for:
@@ -349,7 +354,7 @@ docker exec wyg-postgres pg_dump -U wyg -Fc wrapyourgit > /var/backups/wyg-$(dat
 find /var/backups -name 'wyg-*.dump' -mtime +14 -delete
 ```
 
-Restore with `pg_restore -U wyg -d wrapyourgit --clean <file>` inside the container. Test a restore before launch.
+Restore with `pg_restore -U wyg -d wrapyourgit --clean <file>` inside the container. Test a restore before launch. Before the app uses a restored database, follow [Before a restored database serves production](#backups-and-monitoring) above.
 
 ## Before launch
 

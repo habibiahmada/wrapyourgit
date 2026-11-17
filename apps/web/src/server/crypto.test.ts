@@ -42,6 +42,16 @@ describe("parseKey", () => {
     expect(parseKey(key.toString("base64")).length).toBe(32);
     expect(() => parseKey(randomBytes(16).toString("base64"))).toThrow();
   });
+
+  test("rejects a key that is not canonical base64, instead of decoding around the typo", () => {
+    const good = key.toString("base64");
+    // Buffer.from skips characters outside base64, so these used to decode to some 32 bytes.
+    expect(() => parseKey(`${good.slice(0, 10)}!${good.slice(10)}`)).toThrow();
+    expect(() => parseKey(`${good.slice(0, 20)} ${good.slice(20)}`)).toThrow();
+    expect(() => parseKey(`${good}AAAA`)).toThrow();
+    // Surrounding whitespace from an env file is fine.
+    expect(parseKey(` ${good}\n`).equals(key)).toBe(true);
+  });
 });
 
 describe("tokens", () => {
