@@ -27,5 +27,12 @@ export default async function Image({ params }: { params: Promise<{ username: st
     ? await loadPublicRecap(username, clientKey(await headers()), await requestIsHuman(false))
     : null;
   const png = result?.kind === "recap" ? await publicCardPng(result.data) : await siteCardPng();
-  return new Response(png, { headers: { "Content-Type": "image/png" } });
+  return new Response(png, {
+    headers: {
+      "Content-Type": "image/png",
+      // Said out loud rather than left to the platform: browsers and crawlers may keep a card five
+      // minutes, and no shared cache keeps it at all, so a hide reaches new previews within that.
+      "Cache-Control": "public, max-age=300, s-maxage=0",
+    },
+  });
 }
