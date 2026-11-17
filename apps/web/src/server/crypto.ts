@@ -9,10 +9,17 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 const VERSION = "v1";
 const TAG_BYTES = 16;
 
-/** Decodes TOKEN_ENCRYPTION_KEY (`openssl rand -base64 32`) and checks it is 32 bytes. */
+/**
+ * Decodes TOKEN_ENCRYPTION_KEY (`openssl rand -base64 32`) and checks it is 32 bytes. The key must
+ * be canonical base64: Buffer.from skips characters that aren't, so a typo could otherwise decode
+ * to a different key and make every stored token unreadable without saying why.
+ */
 export function parseKey(base64: string): Buffer {
-  const key = Buffer.from(base64, "base64");
-  if (key.length !== 32) throw new Error("TOKEN_ENCRYPTION_KEY must be 32 bytes, base64-encoded");
+  const text = base64.trim();
+  const key = Buffer.from(text, "base64");
+  if (key.length !== 32 || key.toString("base64") !== text) {
+    throw new Error("TOKEN_ENCRYPTION_KEY must be 32 bytes, base64-encoded");
+  }
   return key;
 }
 
