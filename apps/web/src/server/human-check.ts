@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { cookieName } from "./cookie-names";
 
 /*
  * The check that a person, not a script, is asking for a recap nobody has fetched yet
@@ -8,8 +9,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * for this client", signed by the server. Nothing is stored for it.
  */
 
-/** The pass. HttpOnly: the page never needs to read it. */
-export const PASS_COOKIE = "wyg_human";
+/** The pass's name (`__Host-` on a secure origin, cookie-names.ts). HttpOnly: the page never reads it. */
+export const passCookie = (secure: boolean) => cookieName("wyg_human", secure);
 /** How long one check lasts. The client's lookup limit (public-policy.ts) still applies. */
 export const PASS_MS = 60 * 60 * 1000;
 
@@ -73,13 +74,17 @@ export function passIsValid(
 /**
  * Asks Cloudflare whether `token` came from a visitor who passed the widget. False for anything
  * else, a network failure and a timeout included: a check that cannot be made is not passed.
- * `address` is the visitor's, or "unknown".
+ * `address` is the visitor's, or "unknown". With `hostname`, the token must also have been solved
+ * on that site, as Cloudflare advises: a widget's secret only proves the token is ours, not that a
+ * person solved it on our page. Development leaves it out, since Cloudflare's test keys answer
+ * with a hostname of their own.
  */
 export async function verifyTurnstile(
   token: string,
   address: string,
   secretKey: string,
   fetcher: typeof fetch = fetch,
+  expect: { hostname?: string } = {},
 ): Promise<boolean> {
   if (!token || token.length > TOKEN_MAX) return false;
   try {
@@ -95,9 +100,10 @@ export async function verifyTurnstile(
     });
     if (!response.ok) return false;
     const result: unknown = await response.json();
-    return typeof result === "object" && result !== null && "success" in result
-      ? result.success === true
-      : false;
+    if (typeof result !== "object" || result === null) return false;
+    if (!("success" in result) || result.success !== true) return false;
+    if (expect.hostname === undefined) return true;
+    return "hostname" in result && result.hostname === expect.hostname;
   } catch {
     return false;
   }
