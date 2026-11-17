@@ -35,6 +35,6 @@ The site sits behind Vercel, with Cloudflare as DNS only (deployment guide, "Why
 - A visitor who is not signed in and opens a recap nobody has opened in the last 12 hours sees one extra page. Turnstile usually passes without interaction; when it asks, it is one tick.
 - A shared link to a name nobody has opened previews with the site's card until a person opens it once. This is the price of point 5, and the reason the check sits before the fetch rather than in front of the page.
 - A visitor whose address changes inside the hour (a phone moving between networks) is checked again.
-- The check page loads a script and a frame from `challenges.cloudflare.com`. The site's Content-Security-Policy only restricts who may frame the site, so nothing else changes; a full policy, when it is written, must allow that origin.
+- The check page loads a script and a frame from `challenges.cloudflare.com`. The site's Content-Security-Policy allows that origin for scripts and frames ([ADR-0034](0034-an-allowlist-content-security-policy.md)).
 - Cloudflare becomes a third party that sees the visitor's address and browser on the check page. The privacy page says so.
 - The check stops scripts that cannot pass Turnstile. It does not stop a person, or a paid solving service, from starting 20 lookups an hour per address. The edge rate limit and the token's floor remain.
