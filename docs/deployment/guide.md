@@ -224,13 +224,13 @@ With the proxy off, what Cloudflare can protect is the domain itself.
 
 Set in `apps/web/next.config.ts` for every response; `Strict-Transport-Security` is Vercel's.
 
-| Header                    | Value                                                          | Why                                                                                                                                         |
-| ------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `X-Content-Type-Options`  | `nosniff`                                                      | A response is never read as another type than it says.                                                                                      |
-| `Referrer-Policy`         | `strict-origin-when-cross-origin`                              | A link out names the site, not the page: a recap's address has a username in it.                                                            |
-| `X-Frame-Options`         | `DENY`                                                         | No page is drawn inside another site's frame (clickjacking), for older browsers.                                                            |
-| `Content-Security-Policy` | an allowlist, built by `apps/web/src/csp.ts`                   | Scripts, frames, connections and forms only to this site and the listed services (ADR-0034); `frame-ancestors 'none'` for current browsers. |
-| `Permissions-Policy`      | `camera=(), microphone=(), geolocation=(), browsing-topics=()` | The site asks for none of them, so nothing loaded into it may.                                                                              |
+| Header                    | Value                                        | Why                                                                                                                                         |
+| ------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `X-Content-Type-Options`  | `nosniff`                                    | A response is never read as another type than it says.                                                                                      |
+| `Referrer-Policy`         | `strict-origin-when-cross-origin`            | A link out names the site, not the page: a recap's address has a username in it.                                                            |
+| `X-Frame-Options`         | `DENY`                                       | No page is drawn inside another site's frame (clickjacking), for older browsers.                                                            |
+| `Content-Security-Policy` | an allowlist, built by `apps/web/src/csp.ts` | Scripts, frames, connections and forms only to this site and the listed services (ADR-0034); `frame-ancestors 'none'` for current browsers. |
+| `Permissions-Policy`      | `camera=(), microphone=(), geolocation=()`   | The site asks for none of them, so nothing loaded into it may.                                                                              |
 
 The policy is an allowlist, not nonces ([ADR-0034](../architecture/decisions/0034-an-allowlist-content-security-policy.md)): Next's nonces need every page rendered per request, which `cacheComponents` rules out. It was checked locally against the landing page, a public recap, the story player, Turnstile and a slides export with no violation, except Remotion's usage ping to `www.remotion.pro`, which the policy blocks on purpose. Adding a third-party script, frame or API means adding its origin in `csp.ts`.
 
