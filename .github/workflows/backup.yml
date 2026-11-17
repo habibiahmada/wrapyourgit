@@ -33,7 +33,10 @@ jobs:
       id-token: write
     env:
       # pg_dump must be at least the server's major version; 18 reads every Neon version.
-      PG_IMAGE: postgres:18-alpine
+      # Pinned by digest: this container receives the production database URL, so a changed tag
+      # must not reach it unreviewed. To update, read the digest of postgres:18-alpine (for
+      # example `docker buildx imagetools inspect postgres:18-alpine`) and change it here in a PR.
+      PG_IMAGE: postgres:18-alpine@sha256:b6972e1115a4ff8eba5d7f7d19184926d1e16d7d1136ae1e1a7ebf286da0f015
       AWS_REGION: ap-southeast-1
     steps:
       - name: Dump the database
