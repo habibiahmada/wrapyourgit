@@ -2,7 +2,13 @@ import { expect, test } from "bun:test";
 import { VIDEO_FORMATS } from "@wyg/schema";
 import { busyRecap, emptyRecap } from "../fixtures/edge-recaps";
 import { sampleRecap } from "../fixtures/sample-recap";
-import { type ExportFormat, exportFileName, slideFrames, worldExportComposition } from "./export";
+import {
+  cardFileName,
+  type ExportFormat,
+  exportFileName,
+  slideFrames,
+  worldExportComposition,
+} from "./export";
 import { videoSounds } from "./model";
 import { buildRide, rideDuration } from "./ride/model";
 
@@ -87,6 +93,12 @@ test("file names for each kind, zero-padded index, login sanitised", () => {
   );
   expect(exportFileName("zip", data)).toBe(`${base}-slides.zip`);
   expect(exportFileName("pdf", data)).toBe(`${base}.pdf`);
+});
+
+test("the summary card's file name uses the same sanitised login", () => {
+  expect(cardFileName(2026, "Octo_Cat.X")).toBe("wrapyourgit-2026-octo-cat-x.png");
+  // Nothing a login could carry reaches the Content-Disposition header unescaped.
+  expect(cardFileName(2026, 'a"b\r\n;c')).toMatch(/^wrapyourgit-2026-[a-z0-9-]+\.png$/);
 });
 
 test("slides follow the chosen shape: one per stop of that shape's ride, on its rest frame", () => {
