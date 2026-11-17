@@ -182,17 +182,17 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ul>
         <li>
-          <strong>__Host-wyg_session</strong>: keeps you signed in for up to 30 days. HttpOnly, sent only
-          to this site.
+          <strong>__Host-wyg_session</strong>: keeps you signed in for up to 30 days. HttpOnly, sent
+          only to this site.
         </li>
         <li>
-          <strong>__Host-wyg_oauth</strong>: protects the GitHub sign-in against forgery. It lasts 10
-          minutes and is removed after sign-in.
+          <strong>__Host-wyg_oauth</strong>: protects the GitHub sign-in against forgery. It lasts
+          10 minutes and is removed after sign-in.
         </li>
         <li>
-          <strong>__Host-wyg_human</strong>: set when you pass the check that you are a person. It holds an
-          expiry time and a signature, nothing that identifies you, and lasts one hour. HttpOnly,
-          sent only to this site.
+          <strong>__Host-wyg_human</strong>: set when you pass the check that you are a person. It
+          holds an expiry time and a signature, nothing that identifies you, and lasts one hour.
+          HttpOnly, sent only to this site.
         </li>
         <li>
           The <strong>__Host-</strong> prefix tells your browser to accept these cookies only from
