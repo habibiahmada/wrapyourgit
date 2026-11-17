@@ -22,6 +22,8 @@ Two projections in `packages/analytics/src/public.ts`, scenes that draw what the
 
 ### Rule 1: every public surface uses the public projection
 
+> Amended by [ADR-0033](0033-the-owner-has-a-share-card-and-a-private-card.md): the owner now has two cards: the share card (`/api/card`) is the public recap's card, and a second card (`?with=private`) counts private work and says so.
+>
 > Amended by [ADR-0019](0019-every-username-has-a-recap.md): the public page is now `/<username>`, built from a public fetch of the account rather than from the owner's recap, and visitors can export its files. The rule that every public surface renders the public projection still holds.
 
 The public page `/u/<login>`, the story played on it (the public player, which renders `toPublicRecap(data)` without the letter: `publicWorld` in `apps/web/src/app/recap/public-world.ts`), its card (`/api/card`, the PNG also offered in the owner's files) and its OG image always render `toPublicRecap(data)`, whatever the owner chose. Visitors cannot export.
