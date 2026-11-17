@@ -84,6 +84,7 @@ The 2026 edition, before its first release.
 
 ### Security
 
+- The downloadable summary card no longer counts private work by default: the share card is the public recap's card, the same as the link preview. A second card counts private work, says so on the card, and only downloads from its own button. Card file names are sanitised like the other exports (ADR-0033) ([#178](https://github.com/habibiahmada/wrapyourgit/issues/178)).
 - The session, sign-in and human-check cookies are `__Host-` prefixed on HTTPS, so no other subdomain can plant or replace them, and always `Secure` in production. Signing in again ends the browser's previous session, and in production a Turnstile answer must come from this site's hostname. Everyone is signed out once by the rename ([#180](https://github.com/habibiahmada/wrapyourgit/issues/180)).
 - A signed-in visitor's new public lookups count against their account instead of their address, so one session sent from many addresses no longer gets 20 lookups an hour at each and drains the shared public token (ADR-0032).
 - The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
