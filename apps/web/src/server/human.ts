@@ -10,7 +10,8 @@ import { clientKey } from "./public-recaps";
  * GitHub for a recap nobody has fetched yet (ADR-0026):
  *
  * - with no Turnstile keys set the check is off, and every request counts;
- * - someone signed in has already proved more than the check asks;
+ * - someone signed in has already proved more than the check asks, but a session is not bound
+ *   to an address, so their lookups count against them, not the address (lookupKey);
  * - anyone else needs a pass (human-check.ts) from the check at /api/verify.
  *
  * A link preview's crawler has neither a session nor a pass: it gets what is stored, or the

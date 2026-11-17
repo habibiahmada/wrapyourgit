@@ -9,6 +9,7 @@ import {
   isFresh,
   isRateLimited,
   lookupSalt,
+  lookupSubject,
   missIsFresh,
   previousIsCurrent,
   tokenExpiresSoon,
@@ -92,6 +93,22 @@ describe("client key", () => {
     expect(firstForwardedAddress(" 203.0.113.7 , 10.0.0.1")).toBe("203.0.113.7");
     expect(firstForwardedAddress(null)).toBe("unknown");
     expect(firstForwardedAddress("  ")).toBe("unknown");
+  });
+
+  test("a signed-in visitor is counted as themself, from any address", () => {
+    const user = "6f1c2a4e-0000-4000-8000-000000000001";
+    expect(lookupSubject("203.0.113.7", user)).toBe(lookupSubject("198.51.100.9", user));
+    expect(lookupSubject("203.0.113.7", user)).not.toBe(lookupSubject("203.0.113.7", "other"));
+    // Nobody signed in: each address is its own client.
+    expect(lookupSubject("203.0.113.7", null)).toBe("203.0.113.7");
+    expect(lookupSubject("203.0.113.7", null)).not.toBe(lookupSubject("198.51.100.9", null));
+  });
+
+  test("no address a header can carry is mistaken for a signed-in visitor", () => {
+    const user = "6f1c2a4e-0000-4000-8000-000000000001";
+    // Header values cannot hold NUL, which separates the user's subject from any address.
+    expect(lookupSubject(`user:${user}`, null)).not.toBe(lookupSubject("203.0.113.7", user));
+    expect(lookupSubject("203.0.113.7", user)).toContain("\0");
   });
 
   test("hashes the address with the salt and never contains it", () => {
