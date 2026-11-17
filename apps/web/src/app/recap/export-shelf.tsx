@@ -225,6 +225,18 @@ export function ExportShelf({
             </button>
           )}
         </li>
+        {"href" in card && card.privateHref && (
+          <li>
+            <a href={card.privateHref} download className={TICKET}>
+              <span aria-hidden="true" className={TILE}>
+                <CardMark />
+              </span>
+              <span>
+                Card with private work <span className="font-medium text-ink-soft">PNG</span>
+              </span>
+            </a>
+          </li>
+        )}
         {links.map((link) => {
           const inner = (
             <>

@@ -129,6 +129,11 @@ export function ExportPanel({
             Share card
           </button>
         )}
+        {"href" in card && card.privateHref && !busy && (
+          <a href={card.privateHref} download className={fileButton}>
+            Card with private work
+          </a>
+        )}
       </div>
 
       {!busy && reason && (
