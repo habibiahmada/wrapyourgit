@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-import { appUrl, githubApp, OAUTH_COOKIE, signInWithTokens, startSession } from "@/server/auth";
+import { appUrl, githubApp, oauthCookie, signInWithTokens, startSession } from "@/server/auth";
 import { errorSummary } from "@/server/log";
 import { exchangeCode, statesMatch } from "@/server/oauth";
 import { recapPath } from "@/server/routes";
@@ -11,8 +11,8 @@ const back = (error: string) => NextResponse.redirect(new URL(`/?signin=${error}
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const store = await cookies();
-  const [expectedState = "", verifier = ""] = (store.get(OAUTH_COOKIE)?.value ?? "").split(".");
-  store.delete({ name: OAUTH_COOKIE, path: "/api/auth" });
+  const [expectedState = "", verifier = ""] = (store.get(oauthCookie())?.value ?? "").split(".");
+  store.delete({ name: oauthCookie(), path: "/" });
 
   if (params.get("error") === "access_denied") return back("cancelled");
   const code = params.get("code");

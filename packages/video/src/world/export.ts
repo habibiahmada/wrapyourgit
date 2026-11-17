@@ -1,5 +1,8 @@
 import { type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
+import { fileSlug } from "./file-name";
 import { buildRide, type RideOptions, rideDuration } from "./ride/model";
+
+export { cardFileName } from "./file-name";
 
 export type ExportFormat = keyof typeof VIDEO_FORMATS;
 
@@ -47,14 +50,12 @@ export function slideFrames(
   });
 }
 
-const slug = (login: string) => login.toLowerCase().replace(/[^a-z0-9-]/g, "-");
-
 export function exportFileName(
   kind: "mp4" | "png" | "zip" | "pdf",
   data: RecapData,
   extra: { format?: ExportFormat; index?: number; stopId?: string } = {},
 ): string {
-  const base = `wrapyourgit-${data.meta.year}-${slug(data.profile.login)}`;
+  const base = `wrapyourgit-${data.meta.year}-${fileSlug(data.profile.login)}`;
   switch (kind) {
     case "mp4":
       return `${base}-${extra.format ?? "9x16"}.mp4`;

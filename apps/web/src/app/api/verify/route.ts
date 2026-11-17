@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { secureCookies } from "@/server/auth";
+import { appUrl, secureCookies } from "@/server/auth";
 import { requireEnv } from "@/server/env";
 import {
-  PASS_COOKIE,
   PASS_MS,
+  passCookie,
   passKey,
   signPass,
   turnstileConfig,
@@ -29,14 +29,16 @@ export async function POST(request: NextRequest) {
       ? body.token
       : "";
   const address = firstForwardedAddress(request.headers.get("x-forwarded-for"));
-  if (!(await verifyTurnstile(token, address, config.secretKey))) {
+  // In production the token must have been solved on this site (Cloudflare's hostname check).
+  const hostname = process.env.NODE_ENV === "production" ? new URL(appUrl()).hostname : undefined;
+  if (!(await verifyTurnstile(token, address, config.secretKey, fetch, { hostname }))) {
     return new NextResponse("Verification failed", { status: 403 });
   }
 
   const expires = new Date(Date.now() + PASS_MS);
   const response = new NextResponse(null, { status: 204 });
   response.cookies.set(
-    PASS_COOKIE,
+    passCookie(secureCookies()),
     signPass(clientKey(request.headers), expires, passKey(requireEnv("TOKEN_ENCRYPTION_KEY"))),
     { httpOnly: true, secure: secureCookies(), sameSite: "lax", path: "/", expires },
   );

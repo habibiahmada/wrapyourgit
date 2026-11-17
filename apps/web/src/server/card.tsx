@@ -1,7 +1,6 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { toPublicRecap } from "@wyg/analytics";
 import { EDITION_YEAR, type RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS } from "@wyg/video/copy";
 import { calendarGrid, heatLevels } from "@wyg/video/heat";
@@ -10,11 +9,13 @@ import { cacheLife } from "next/cache";
 import { ImageResponse } from "next/og";
 import { cardArt } from "./card-art";
 import { db, recaps } from "./db";
+import { privateCard } from "./owner-card";
 
 /*
  * The shareable summary card (PRD P0 "PNG summary card"), also used as the public page's OG image.
  * Rendered with next/og, so it needs no browser or Remotion. Callers must pass the PUBLIC
- * projection (toPublicRecap); the card itself only shows aggregates.
+ * projection (toPublicRecap); the card itself only shows aggregates. Only the owner's card with
+ * private work counts it, and then the card says so (owner-card.ts).
  */
 
 export const CARD_SIZE = { width: 1200, height: 630 } as const;
@@ -80,7 +81,10 @@ function artDataUrl(id: string): Promise<string> {
 /** The picture's width and height on the card: every still under public/art is 1200 x 900. */
 const ART = { width: 420, height: 315 } as const;
 
-export async function renderCard(data: RecapData): Promise<ImageResponse> {
+export async function renderCard(
+  data: RecapData,
+  { includesPrivate = false }: { includesPrivate?: boolean } = {},
+): Promise<ImageResponse> {
   const { contributions, languages, identity, profile, meta } = data;
   const levels = heatLevels(contributions.calendar);
   const { cells, weeks } = calendarGrid(contributions.calendar);
@@ -129,6 +133,11 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
                 ? `contributions in ${meta.year}`
                 : `contributions so far in ${meta.year}`}
             </span>
+            {includesPrivate ? (
+              <span style={{ fontSize: 22, fontWeight: 400, marginTop: 6 }}>
+                includes private contributions
+              </span>
+            ) : null}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 36px", width: 520 }}>
             {facts.map((fact) => (
@@ -181,9 +190,9 @@ export async function renderCard(data: RecapData): Promise<ImageResponse> {
 }
 
 /**
- * The owner's card as PNG bytes (/api/card), cached per user and sync time. Rendering is the
- * expensive part, so each recap version renders once; a new sync changes `_syncedAtIso` and with
- * it the cache key.
+ * The owner's card with private work, as PNG bytes (/api/card?with=private), cached per user and
+ * sync time. Rendering is the expensive part, so each recap version renders once; a new sync
+ * changes `_syncedAtIso` and with it the cache key. The share card is publicCardPng.
  */
 export async function cardPng(
   userId: string,
@@ -197,7 +206,8 @@ export async function cardPng(
     .from(recaps)
     .where(and(eq(recaps.userId, userId), eq(recaps.year, EDITION_YEAR)));
   if (!row) return null;
-  const card = await renderCard(toPublicRecap(row.data));
+  const own = privateCard(row.data);
+  const card = await renderCard(own.data, { includesPrivate: own.includesPrivate });
   return new Uint8Array(await card.arrayBuffer());
 }
 

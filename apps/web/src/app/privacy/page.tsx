@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
 };
 
-const UPDATED = "14 November 2026";
+const UPDATED = "17 November 2026";
 
 /*
  * Every statement here describes what the code does today (server/auth.ts, server/recaps.ts,
@@ -182,17 +182,21 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ul>
         <li>
-          <strong>wyg_session</strong>: keeps you signed in for up to 30 days. HttpOnly, sent only
-          to this site.
+          <strong>__Host-wyg_session</strong>: keeps you signed in for up to 30 days. HttpOnly, sent
+          only to this site.
         </li>
         <li>
-          <strong>wyg_oauth</strong>: protects the GitHub sign-in against forgery. It lasts 10
-          minutes and is removed after sign-in.
+          <strong>__Host-wyg_oauth</strong>: protects the GitHub sign-in against forgery. It lasts
+          10 minutes and is removed after sign-in.
         </li>
         <li>
-          <strong>wyg_human</strong>: set when you pass the check that you are a person. It holds an
-          expiry time and a signature, nothing that identifies you, and lasts one hour. HttpOnly,
-          sent only to this site.
+          <strong>__Host-wyg_human</strong>: set when you pass the check that you are a person. It
+          holds an expiry time and a signature, nothing that identifies you, and lasts one hour.
+          HttpOnly, sent only to this site.
+        </li>
+        <li>
+          The <strong>__Host-</strong> prefix tells your browser to accept these cookies only from
+          this exact site over HTTPS, so no other site or subdomain can set or replace them.
         </li>
       </ul>
     ),
