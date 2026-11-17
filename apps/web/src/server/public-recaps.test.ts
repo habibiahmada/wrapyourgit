@@ -12,8 +12,14 @@ import { underClientLimit } from "./public-policy";
 
 // public-recaps.ts is server-only; the guard throws outside a React server bundle.
 mock.module("server-only", () => ({}));
-const { loadPublicRecapWith, lookupLock, recentLookups, setPublicRecapHidden, staleLookups } =
-  await import("./public-recaps");
+const {
+  loadPublicRecapWith,
+  lookupLock,
+  recentLookups,
+  releaseLogin,
+  setPublicRecapHidden,
+  staleLookups,
+} = await import("./public-recaps");
 type Deps = Parameters<typeof loadPublicRecapWith>[0];
 type Store = Deps["store"];
 type Row = NonNullable<Awaited<ReturnType<Store["read"]>>>;
@@ -78,6 +84,7 @@ let onClaimRefused: (() => void) | null;
 let beforeClaim: (() => void) | null;
 let onSleep: (() => void) | null;
 let misses: Map<string, Date>;
+let released: string[];
 
 const store: Store = {
   isHidden: async () => hidden,
@@ -120,6 +127,9 @@ const store: Store = {
       fetchedAt: new Date(clock),
       fetchingSince: null,
     };
+  },
+  releaseLogin: async (login, githubId) => {
+    released.push(`${login} ${githubId}`);
   },
   release: async (_id, claimedAt) => {
     if (row && row.fetchingSince?.getTime() === claimedAt.getTime()) {
@@ -165,6 +175,7 @@ async function seed() {
 beforeEach(() => {
   clock = Date.parse("2026-11-11T12:00:00Z");
   misses = new Map();
+  released = [];
   row = null;
   hidden = false;
   lookups = 0;
@@ -218,6 +229,19 @@ describe("loadPublicRecapWith", () => {
     account = { kind: "user", id: ID, login: "newbie", remaining: 5000, resetAt: "" };
     expect((await loadPublicRecapWith(deps, "newbie", "c", true)).kind).toBe("recap");
     expect(calls.lookup).toBe(2);
+  });
+
+  test("a lookup moves any other stored recap off the login GitHub just gave this account", async () => {
+    // A renamed account's old recap must not keep showing under the name's new holder.
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
+    expect(released).toEqual([`Octo ${ID}`]);
+  });
+
+  test("a fresh stored recap asks GitHub nothing, so nothing is moved", async () => {
+    await seed();
+    released = [];
+    expect((await loadPublicRecapWith(deps, "octo", "c", true)).kind).toBe("recap");
+    expect(released).toEqual([]);
   });
 
   test("a hidden account is never fetched", async () => {
@@ -683,5 +707,15 @@ describe("setPublicRecapHidden", () => {
     log.length = 0;
     await setPublicRecapHidden(7, false, hideStore);
     expect(log).toEqual(["hidden 7 false"]);
+  });
+});
+
+describe("releaseLogin", () => {
+  test("moves every other account's row off the login, to a placeholder no login matches", () => {
+    const query = releaseLogin(drizzle.mock(), "Octo", 42).toSQL();
+    expect(query.sql).toBe(
+      `update "public_recaps" set "login" = '~' || "public_recaps"."github_id"::text where (lower("public_recaps"."login") = $1 and "public_recaps"."github_id" <> $2)`,
+    );
+    expect(query.params).toEqual(["octo", 42]);
   });
 });

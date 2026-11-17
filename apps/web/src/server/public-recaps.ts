@@ -9,7 +9,7 @@ import {
   type YearActivity,
 } from "@wyg/github";
 import { EDITION_YEAR, type RecapData, recapDataSchema, SCHEMA_VERSION } from "@wyg/schema";
-import { and, eq, gt, isNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, lt, ne, or, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { db, hiddenAccounts, publicLookups, publicMisses, publicRecaps } from "./db";
 import { requireEnv } from "./env";
@@ -71,6 +71,12 @@ export interface PublicStore {
    * expired rows (staleLookups), recorded or not.
    */
   admitLookup(client: string, now: Date): Promise<boolean>;
+  /**
+   * GitHub just said `login` belongs to `githubId`: every other account's row still filed under
+   * that login moves to a placeholder (releaseLogin), so a renamed account's old recap stops
+   * showing under the name's new holder.
+   */
+  releaseLogin(login: string, githubId: number): Promise<void>;
   /** Takes the fetch claim; returns the row as claimed, or null when another request holds it. */
   claim(githubId: number, login: string): Promise<StoredRow | null>;
   /**
@@ -171,6 +177,8 @@ export async function loadPublicRecapWith(
     }
     if (account.kind === "organization") return { kind: "organization", login: account.login };
     login = account.login;
+    // Best effort, like the miss: a failure only leaves an older row under this name a while.
+    await store.releaseLogin(login, account.id).catch(() => {});
     if (await store.isHidden(account.id)) return { kind: "hidden", login };
 
     const stored = usable(await store.read(account.id));
@@ -343,6 +351,28 @@ export function staleLookups(now: Date) {
 }
 
 /** This client's lookup rows inside the window that starts at `since`. */
+/**
+ * Moves every other account's stored public recap off `login` once GitHub has said who holds it
+ * now (a lookup, or a sign-in). The placeholder `~<github id>` is what `users` uses for the same
+ * case: no valid login matches it, so readByLogin never finds the row by name again, and the
+ * account's next lookup writes its current login back (claim/save).
+ */
+export function releaseLogin(
+  database: Pick<PgDatabase<PgQueryResultHKT>, "update">,
+  login: string,
+  githubId: number,
+) {
+  return database
+    .update(publicRecaps)
+    .set({ login: sql`'~' || ${publicRecaps.githubId}::text` })
+    .where(
+      and(
+        eq(sql`lower(${publicRecaps.login})`, login.toLowerCase()),
+        ne(publicRecaps.githubId, githubId),
+      ),
+    );
+}
+
 export function recentLookups(
   database: Pick<PgDatabase<PgQueryResultHKT>, "select">,
   client: string,
@@ -449,6 +479,10 @@ const dbStore: PublicStore = {
       await tx.insert(publicLookups).values({ client });
       return true;
     });
+  },
+
+  async releaseLogin(login, githubId) {
+    await releaseLogin(db, login, githubId);
   },
 
   async claim(githubId, login) {
