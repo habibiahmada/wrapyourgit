@@ -9,7 +9,7 @@ import { turnstileConfig } from "@/server/human-check";
 import { errorSummary } from "@/server/log";
 import { getPrivateNamesChoice, showFilesReminder, storyData } from "@/server/privacy";
 import { isFresh } from "@/server/public-policy";
-import { clientKey, loadPublicRecap } from "@/server/public-recaps";
+import { loadPublicRecap, lookupKey } from "@/server/public-recaps";
 import { getRecap, type StoredRecap, SyncTooSoonError, syncRecap } from "@/server/recaps";
 import { recapPath, viewerKind } from "@/server/routes";
 import { isValidLogin } from "@/server/username";
@@ -63,7 +63,7 @@ async function Recap({ name }: { name: string }) {
   const user = await getCurrentUser();
   if (user && viewerKind(user.login, name) === "owner")
     return <OwnerRecap user={user} name={name} />;
-  return <VisitorRecap name={name} signedIn={user !== null} />;
+  return <VisitorRecap name={name} userId={user?.id ?? null} />;
 }
 
 /**
@@ -113,12 +113,15 @@ async function freshRecap(
 }
 
 /** Anyone else: the public recap, fetched as an outsider sees it (never the owner's own). */
-async function VisitorRecap({ name, signedIn }: { name: string; signedIn: boolean }) {
+async function VisitorRecap({ name, userId }: { name: string; userId: string | null }) {
   // Covers /<username> and /u/<reserved name> alike (ruling R11): no lookup, no client-limit row.
   if (!isValidLogin(name)) return <MissingPage login={name} />;
+  const signedIn = userId !== null;
+  // A session skips the human check, so its lookups count against the user, not the address:
+  // one cookie replayed from many addresses must not get a fresh limit at each.
   const result = await loadPublicRecap(
     name,
-    clientKey(await headers()),
+    lookupKey(await headers(), userId),
     await requestIsHuman(signedIn),
   );
   switch (result.kind) {

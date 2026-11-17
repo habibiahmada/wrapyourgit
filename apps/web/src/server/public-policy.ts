@@ -101,6 +101,16 @@ export function firstForwardedAddress(header: string | null): string {
 }
 
 /**
+ * Who the lookup limit counts: the signed-in user when there is one, else the address. A session
+ * skips the human check (human.ts), and a session is not bound to an address, so counting it by
+ * address would give one cookie replayed from many addresses a fresh limit at each. NUL separates
+ * the user's subject because no header value can carry it, so no address can pose as a user.
+ */
+export function lookupSubject(address: string, userId: string | null): string {
+  return userId === null ? address : `user\0${userId}`;
+}
+
+/**
  * The salt for hashClient, derived from the token encryption key under its own label, so one
  * secret doesn't serve two purposes directly and the lookup hashes reveal nothing about the key.
  */

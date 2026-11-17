@@ -25,6 +25,7 @@ import {
   isFresh,
   isRateLimited,
   lookupSalt,
+  lookupSubject,
   MISS_FRESH_MS,
   missIsFresh,
   previousIsCurrent,
@@ -361,12 +362,23 @@ export function lookupLock(client: string) {
   return sql`select pg_advisory_xact_lock(hashtext('public_lookups'), hashtext(${client}))`;
 }
 
-/** The per-client key for the lookup limit: a salted hash of the address, never the address. */
+/**
+ * The address's key: a salted hash of the address, never the address. A human-check pass is bound
+ * to it, and it is the lookup limit's key for anyone not signed in.
+ */
 export function clientKey(headers: Headers): string {
+  return lookupKey(headers, null);
+}
+
+/**
+ * The lookup limit's key for a request (lookupSubject): the signed-in user's, from any address,
+ * or else the address's. Pass `userId` whenever there is a session.
+ */
+export function lookupKey(headers: Headers, userId: string | null): string {
   // On Vercel the platform sets x-forwarded-for itself, so its first address is the client's.
   // Behind a self-hosted proxy, the proxy must overwrite the header, or clients pick their bucket.
   return hashClient(
-    firstForwardedAddress(headers.get("x-forwarded-for")),
+    lookupSubject(firstForwardedAddress(headers.get("x-forwarded-for")), userId),
     lookupSalt(requireEnv("TOKEN_ENCRYPTION_KEY")),
   );
 }
