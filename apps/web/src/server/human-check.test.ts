@@ -93,6 +93,21 @@ describe("verifyTurnstile", () => {
     );
   });
 
+  test("with a hostname to expect, a token solved on another site is not a pass", async () => {
+    const solvedOn = (hostname: unknown) => answering({ success: true, hostname });
+    const site = { hostname: "wrapyourgit.com" };
+    expect(await verifyTurnstile("t", "unknown", "k", solvedOn("wrapyourgit.com"), site)).toBe(
+      true,
+    );
+    expect(await verifyTurnstile("t", "unknown", "k", solvedOn("evil.example"), site)).toBe(false);
+    expect(await verifyTurnstile("t", "unknown", "k", solvedOn(undefined), site)).toBe(false);
+    expect(await verifyTurnstile("t", "unknown", "k", answering({ success: false }), site)).toBe(
+      false,
+    );
+    // Without one (development, Cloudflare's test keys answer "example.com"), success is enough.
+    expect(await verifyTurnstile("t", "unknown", "k", solvedOn("example.com"))).toBe(true);
+  });
+
   test("sends the secret, the token and the address, and leaves an unknown address out", async () => {
     let sent: Record<string, unknown> = {};
     const record = (init: RequestInit | undefined) => {

@@ -74,13 +74,17 @@ export function passIsValid(
 /**
  * Asks Cloudflare whether `token` came from a visitor who passed the widget. False for anything
  * else, a network failure and a timeout included: a check that cannot be made is not passed.
- * `address` is the visitor's, or "unknown".
+ * `address` is the visitor's, or "unknown". With `hostname`, the token must also have been solved
+ * on that site, as Cloudflare advises: a widget's secret only proves the token is ours, not that a
+ * person solved it on our page. Development leaves it out, since Cloudflare's test keys answer
+ * with a hostname of their own.
  */
 export async function verifyTurnstile(
   token: string,
   address: string,
   secretKey: string,
   fetcher: typeof fetch = fetch,
+  expect: { hostname?: string } = {},
 ): Promise<boolean> {
   if (!token || token.length > TOKEN_MAX) return false;
   try {
@@ -96,9 +100,10 @@ export async function verifyTurnstile(
     });
     if (!response.ok) return false;
     const result: unknown = await response.json();
-    return typeof result === "object" && result !== null && "success" in result
-      ? result.success === true
-      : false;
+    if (typeof result !== "object" || result === null) return false;
+    if (!("success" in result) || result.success !== true) return false;
+    if (expect.hostname === undefined) return true;
+    return "hostname" in result && result.hostname === expect.hostname;
   } catch {
     return false;
   }
