@@ -33,7 +33,8 @@ describe("endScreenFor", () => {
 describe("shareCardFor", () => {
   test("the owner's card is their own, from /api/card", () => {
     expect(shareCardFor("owner", sampleRecap)).toBe(OWNER_CARD);
-    expect(OWNER_CARD).toEqual({ href: "/api/card" });
+    // Two cards: the share card (public numbers) and the one that counts private work.
+    expect(OWNER_CARD).toEqual({ href: "/api/card", privateHref: "/api/card?with=private" });
   });
 
   test("a visitor's card is the public page's link preview, named like the owner's", () => {

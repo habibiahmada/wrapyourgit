@@ -1,4 +1,5 @@
 import type { RecapData } from "@wyg/schema";
+import { cardFileName } from "@wyg/video/file-name";
 import { isReserved, recapPath } from "@/server/routes";
 
 export type EndLink = {
@@ -37,10 +38,17 @@ export function endScreenFor(
 }
 
 /** The share card's download link, or why there is none. */
-export type ShareCard = { href: string; filename?: string } | { reason: string };
+export type ShareCard =
+  | {
+      href: string;
+      filename?: string;
+      /** The owner's second card, which counts private work and says so (owner-card.ts). */
+      privateHref?: string;
+    }
+  | { reason: string };
 
-/** /api/card names the file itself (Content-Disposition). */
-export const OWNER_CARD: ShareCard = { href: "/api/card" };
+/** /api/card names the files itself (Content-Disposition). */
+export const OWNER_CARD: ShareCard = { href: "/api/card", privateHref: "/api/card?with=private" };
 
 /**
  * /api/card answers only the signed-in owner, so a visitor's card is the public page's link
@@ -53,6 +61,6 @@ export function shareCardFor(variant: "owner" | "public", data: RecapData): Shar
   if (isReserved(login)) return { reason: "There is no share card for this name yet." };
   return {
     href: `${recapPath(login)}/opengraph-image`,
-    filename: `wrapyourgit-${data.meta.year}-${login}.png`,
+    filename: cardFileName(data.meta.year, login),
   };
 }
