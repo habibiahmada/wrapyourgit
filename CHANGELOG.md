@@ -84,6 +84,7 @@ The 2026 edition, before its first release.
 
 ### Security
 
+- The nightly backup runs its Postgres image pinned by digest, the policy check escapes pull request text in its annotations, a mistyped `TOKEN_ENCRYPTION_KEY` fails instead of decoding to another key, link-preview images say how long they may be cached, and the restore steps sign everyone out and re-apply deletions and hides made after the snapshot ([#182](https://github.com/habibiahmada/wrapyourgit/issues/182)).
 - A signed-in visitor's new public lookups count against their account instead of their address, so one session sent from many addresses no longer gets 20 lookups an hour at each and drains the shared public token (ADR-0032).
 - The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
 
