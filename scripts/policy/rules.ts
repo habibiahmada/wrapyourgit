@@ -129,3 +129,12 @@ export function checkMainPush(commit: { parents: number; subject: string }): Ver
   }
   return out;
 }
+
+/**
+ * Text for a GitHub Actions workflow command (`::error::...`). Pull request titles, branch names
+ * and commit subjects are written by the PR's author, so a newline in one would start a command
+ * of its own; GitHub decodes these escapes when it shows the annotation.
+ */
+export function escapeAnnotation(text: string): string {
+  return text.replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A");
+}

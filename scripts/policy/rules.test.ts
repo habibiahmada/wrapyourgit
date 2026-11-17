@@ -6,6 +6,7 @@ import {
   checkMainPush,
   checkPullRequest,
   checkSubject,
+  escapeAnnotation,
 } from "./rules";
 
 describe("branches", () => {
@@ -118,5 +119,15 @@ describe("pushes to main", () => {
   test("a direct commit or a squash merge is flagged", () => {
     expect(checkMainPush({ parents: 1, subject: "feat: x (#27)" }).problems).toHaveLength(1);
     expect(checkMainPush({ parents: 2, subject: "Merge branch 'x'" }).problems).toHaveLength(1);
+  });
+});
+
+describe("annotations", () => {
+  test("text from a pull request cannot start a workflow command of its own", () => {
+    const title = "fix: x\n::add-mask::secret\r\n100% done";
+    const escaped = escapeAnnotation(title);
+    expect(escaped).not.toContain("\n");
+    expect(escaped).not.toContain("\r");
+    expect(escaped).toBe("fix: x%0A::add-mask::secret%0D%0A100%25 done");
   });
 });

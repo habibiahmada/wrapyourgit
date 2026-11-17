@@ -18,6 +18,7 @@ import {
   checkCommitMessage,
   checkMainPush,
   checkPullRequest,
+  escapeAnnotation,
   type Verdict,
 } from "./rules";
 
@@ -27,9 +28,9 @@ function report(verdicts: Verdict[]): never {
   const problems = verdicts.flatMap((v) => v.problems);
   const warnings = verdicts.flatMap((v) => v.warnings);
   for (const warning of warnings)
-    console.log(ci ? `::warning title=Policy::${warning}` : `⚠ ${warning}`);
+    console.log(ci ? `::warning title=Policy::${escapeAnnotation(warning)}` : `⚠ ${warning}`);
   for (const problem of problems)
-    console.log(ci ? `::error title=Policy::${problem}` : `✗ ${problem}`);
+    console.log(ci ? `::error title=Policy::${escapeAnnotation(problem)}` : `✗ ${problem}`);
   if (problems.length > 0) {
     if (!ci) console.log('\nSee CONTRIBUTING.md, "Workflow".');
     process.exit(1);
