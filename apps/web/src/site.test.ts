@@ -17,6 +17,12 @@ describe("SITE metadata", () => {
     }
   });
 
+  // Issue #189: the title says what the site is in the words people search with, as a description
+  // of the product, never as its name.
+  test("the title calls it a GitHub year in review", () => {
+    expect(SITE.title).toContain("GitHub year in review");
+  });
+
   test("the description says it is not affiliated with GitHub", () => {
     expect(SITE.description).toContain("not affiliated with GitHub");
   });
