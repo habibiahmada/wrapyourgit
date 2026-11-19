@@ -1,10 +1,12 @@
 # Changelog
 
-All notable changes to WrapYourGit are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from the first release.
+All notable changes to WrapYourGit are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-The 2026 edition, before its first release.
+## [1.0.0] - 2026-11-19
+
+The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourgit.com).
 
 ### Added
 
@@ -93,4 +95,5 @@ The 2026 edition, before its first release.
 - A signed-in visitor's new public lookups count against their account instead of their address, so one session sent from many addresses no longer gets 20 lookups an hour at each and drains the shared public token (ADR-0032).
 - The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
 
-[Unreleased]: https://github.com/habibiahmada/wrapyourgit/commits/main
+[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/habibiahmada/wrapyourgit/commits/v1.0.0
