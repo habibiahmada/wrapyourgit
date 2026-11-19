@@ -149,8 +149,8 @@ export default function Home({ searchParams }: PageProps<"/">) {
                     Every <span className="text-green">green square</span> has a story.
                   </h1>
                   <p className="mt-6 max-w-md text-lg text-muted">
-                    Type a GitHub username and watch {EDITION_YEAR} play back as a short story. Sign
-                    in to add your private work.
+                    Your GitHub year in review: type a username and watch {EDITION_YEAR} play back
+                    as a short story. Sign in to add your private work.
                   </p>
                   <div className="mt-8">
                     <Suspense fallback={<HeroForm />}>

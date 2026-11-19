@@ -21,7 +21,7 @@ export const SITE = {
    * (issue #153). GitHub is named only as where the data comes from.
    */
   alternateNames: ["Wrap Your Git", `WrapYourGit ${EDITION_YEAR}`],
-  title: `WrapYourGit ${EDITION_YEAR}: your year of code as an animated story`,
+  title: `WrapYourGit ${EDITION_YEAR}: your GitHub year in review, animated`,
   tagline: "Every green square has a story. Here's yours, in motion.",
   description: `WrapYourGit turns your ${EDITION_YEAR} on GitHub into an animated story. Type any GitHub username or sign in, and watch the year play back as a train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype. Free, read-only, yours to delete, and not affiliated with GitHub.`,
   author: {

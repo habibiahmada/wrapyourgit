@@ -39,6 +39,7 @@ The 2026 edition, before its first release.
 
 ### Changed
 
+- The site's title and the hero's lead call it a GitHub year in review, the words people search with, as a description and never as its name: "WrapYourGit 2026: your GitHub year in review, animated" ([#189](https://github.com/habibiahmada/wrapyourgit/issues/189)).
 - The landing page is lighter: the hero keeps its headline, a one-line lead, the username field and the sign-in, and its art sits further right. The username field is one pill with a search button, links underline with a line that draws in from the left on hover, the header's section links no longer highlight like buttons, the phone menu's sign-in spans the menu, and Slides, PDF and Share card each have an icon. The note that the site is not affiliated with GitHub now sits in the closing section and the footer ([#167](https://github.com/habibiahmada/wrapyourgit/issues/167)).
 - On a phone the hero starts further below the header ([#165](https://github.com/habibiahmada/wrapyourgit/issues/165)).
 - The header links to the source with GitHub's mark again, and its sign-in button reads "Sign in" so the mark never sits beside "Sign in with GitHub". The landing page keeps "Sign in with GitHub" with the note that the site is not affiliated with GitHub (ADR-0031) ([#163](https://github.com/habibiahmada/wrapyourgit/issues/163)).
