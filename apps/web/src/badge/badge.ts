@@ -781,30 +781,27 @@ interface GridCell {
 }
 
 /**
- * The snake's path, one grid cell per step: from just left of the first week to the nearest day
- * with contributions, then always on to the nearest one left (across first, then down), until all
- * are eaten. Returns every position, and the step at which each lit day is eaten.
+ * The snake's path, one grid cell per step. It eats the year in order: week by week from the left,
+ * down one week and up the next, so no day is left behind for a trip back at the end. Between two
+ * days it moves across, then down. Returns every position, and the step at which each lit day is
+ * eaten.
  */
 export function snakeRoute(cells: readonly GridCell[]): {
   path: GridCell[];
   eatenAt: number[];
 } {
-  const path: GridCell[] = [{ week: -1, row: 0 }];
-  const eatenAt = new Array<number>(cells.length).fill(0);
-  const left = new Set(cells.map((_, i) => i));
+  const order = cells
+    .map((cell, i) => ({ cell, i }))
+    .sort((a, b) =>
+      a.cell.week !== b.cell.week
+        ? a.cell.week - b.cell.week
+        : // Even weeks run down, odd weeks run up.
+          (a.cell.week % 2 === 0 ? 1 : -1) * (a.cell.row - b.cell.row),
+    );
   let at: GridCell = { week: -1, row: 0 };
-  while (left.size > 0) {
-    let best = -1;
-    let bestDistance = Number.POSITIVE_INFINITY;
-    for (const i of left) {
-      const cell = cells[i] as GridCell;
-      const distance = Math.abs(cell.week - at.week) + Math.abs(cell.row - at.row);
-      if (distance < bestDistance) {
-        best = i;
-        bestDistance = distance;
-      }
-    }
-    const target = cells[best] as GridCell;
+  const path: GridCell[] = [at];
+  const eatenAt = new Array<number>(cells.length).fill(0);
+  for (const { cell: target, i } of order) {
     while (at.week !== target.week) {
       at = { week: at.week + Math.sign(target.week - at.week), row: at.row };
       path.push(at);
@@ -813,15 +810,14 @@ export function snakeRoute(cells: readonly GridCell[]): {
       at = { week: at.week, row: at.row + Math.sign(target.row - at.row) };
       path.push(at);
     }
-    eatenAt[best] = path.length - 1;
-    left.delete(best);
+    eatenAt[i] = path.length - 1;
   }
   return { path, eatenAt };
 }
 
 /**
  * The year's graph with a snake eating it (maintainer's call, 2026-11-21): it works through every
- * day with contributions, each square going dark as it is eaten, and the year fills in again when
+ * day with contributions, week by week, each square going dark as it is eaten, and the year fills in again when
  * it starts over. It loops, which the rest of these images do not; ADR-0035 records why. A reader
  * who asks for reduced motion gets the still graph: CSS rules outrank the animated attributes, so
  * the media query below restores every colour and hides the snake. `recap` null draws the neutral

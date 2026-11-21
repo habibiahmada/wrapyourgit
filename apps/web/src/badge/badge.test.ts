@@ -346,11 +346,13 @@ describe("compact card", () => {
 });
 
 describe("snake", () => {
-  test("eats every lit day once, one step at a time, nearest first", () => {
+  test("eats the year in order, week by week, one step at a time", () => {
     const cells = [
       { week: 3, row: 2 },
-      { week: 0, row: 0 },
-      { week: 1, row: 0 },
+      { week: 0, row: 5 },
+      { week: 0, row: 1 },
+      { week: 1, row: 1 },
+      { week: 1, row: 4 },
     ];
     const { path, eatenAt } = snakeRoute(cells);
     for (let i = 1; i < path.length; i++) {
@@ -360,9 +362,9 @@ describe("snake", () => {
         Math.abs((a?.week ?? 0) - (b?.week ?? 0)) + Math.abs((a?.row ?? 0) - (b?.row ?? 0));
       expect(stepLength).toBe(1);
     }
-    // From (-1, 0): (0,0) first, then (1,0), then (3,2).
-    expect(eatenAt[1]).toBeLessThan(eatenAt[2] ?? 0);
-    expect(eatenAt[2]).toBeLessThan(eatenAt[0] ?? 0);
+    // Week 0 runs down (row 1, then 5), week 1 runs up (row 4, then 1), then week 3.
+    const order = [2, 1, 4, 3, 0].map((i) => eatenAt[i] ?? 0);
+    expect(order).toEqual([...order].sort((x, y) => x - y));
     expect(path[eatenAt[0] ?? 0]).toEqual({ week: 3, row: 2 });
   });
 
