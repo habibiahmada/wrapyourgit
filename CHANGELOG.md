@@ -4,6 +4,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- Slides, the PDF, the share card and the card with private work open in a preview before they download, with Download and Close; closing drops the file. The video still downloads as soon as it is made. Dialogs fade and rise in instead of appearing at once, with a quick fade only under reduced motion ([#201](https://github.com/habibiahmada/wrapyourgit/issues/201)).
+
 ## [1.0.0] - 2026-11-19
 
 The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourgit.com).
