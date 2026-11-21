@@ -1,7 +1,14 @@
 "use client";
 
 import Image, { type StaticImageData } from "next/image";
-import { type KeyboardEvent, type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 export type ReelFrame = { file: string; src: StaticImageData; alt: string };
 
@@ -81,7 +88,9 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
     dialog.current?.showModal();
   };
   const step = (by: number) =>
-    setOpen((current) => (current === null ? null : (current + by + frames.length) % frames.length));
+    setOpen((current) =>
+      current === null ? null : (current + by + frames.length) % frames.length,
+    );
   const onDialogKey = (event: KeyboardEvent<HTMLDialogElement>) => {
     if (event.key === "ArrowRight") step(1);
     if (event.key === "ArrowLeft") step(-1);
@@ -153,7 +162,15 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
                 onClick={() => dialog.current?.close()}
                 className={control}
               >
-                <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  className="size-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <path d="M6 6l12 12M18 6 6 18" />
                 </svg>
               </button>
@@ -165,14 +182,40 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
               className="h-auto max-h-[78svh] w-auto rounded-[var(--radius-control)] object-contain"
             />
             <figcaption className="flex items-center justify-between gap-3">
-              <button type="button" aria-label="Previous frame" onClick={() => step(-1)} className={control}>
-                <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <button
+                type="button"
+                aria-label="Previous frame"
+                onClick={() => step(-1)}
+                className={control}
+              >
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  className="size-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <path d="m15 6-6 6 6 6" />
                 </svg>
               </button>
               <span className="text-center text-sm text-muted">{viewed.alt}</span>
-              <button type="button" aria-label="Next frame" onClick={() => step(1)} className={control}>
-                <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <button
+                type="button"
+                aria-label="Next frame"
+                onClick={() => step(1)}
+                className={control}
+              >
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  className="size-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <path d="m9 6 6 6-6 6" />
                 </svg>
               </button>
