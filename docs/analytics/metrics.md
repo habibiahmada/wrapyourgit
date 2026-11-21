@@ -120,6 +120,10 @@ Without an installation the sign-in token has no repository permissions (ADR-000
 - Accounts with many popular repos add two REST requests per starred repo (star history) and fork pages. Both walks are capped by time (ADR-0020). Measured public fetches: octocat 24 s (it was 80 s), torvalds 21 s, sindresorhus (1,132 repos) 53 s.
 - Feasibility: every field above is ✅ or 🟡 as marked. Nothing is infeasible. Archetypes are not computed yet (M3); `identity.archetype` is `null` for now.
 
+## README images
+
+The badge, card and snake (ADR-0035) add no metric. They draw these fields of the stored public recap, with the rules above: `contributions.total`, `contributions.longestStreak.days`, `contributions.activeDays`, `contributions.calendar` (graph and snake, levels from `heatLevels`), `languages.top[0]` and `identity.archetype`. While `meta.isFinal` is false they say "so far". No `metric()` value is drawn, since a badge has no room to say "unavailable" or "estimated".
+
 ## Archetypes
 
 Rule-based, in `packages/analytics/src/archetype.ts`. An archetype is only scored when its **minimum** is met. Its **strength** is the signal divided by what a strong year looks like (1 = strong). The highest strength wins, and ties go to the archetype listed first in the table. When no minimum is met, `archetype = null` and the UI says "Your story is just beginning". `scores` holds `strength / (1 + strength)` for every archetype that qualified. That maps each strength into 0–1 without changing the order, and two very strong archetypes never both land on exactly 1. `reasons` are the winner's facts, most telling first, with zero-valued facts left out. Counts only: repository names never appear in reasons.
