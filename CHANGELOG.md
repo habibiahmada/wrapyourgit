@@ -4,6 +4,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- The dashboard matches the landing page: only the site's palette (last year in grey instead of blue, a smaller year in a neutral chip instead of amber), green links, 12px boxes and the landing's isometric floor, faint. It stays a tool, with no bands, glass or scenery ([#203](https://github.com/habibiahmada/wrapyourgit/issues/203)).
+
 ## [1.0.0] - 2026-11-19
 
 The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourgit.com).
