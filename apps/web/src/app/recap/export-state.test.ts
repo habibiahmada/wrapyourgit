@@ -71,6 +71,39 @@ describe("exportReducer", () => {
   });
 });
 
+describe("previews (#201)", () => {
+  const slides: ExportState = { status: "rendering", job: "zip", progress: 1 };
+  const ready: ExportState = {
+    status: "ready",
+    job: "zip",
+    file: "a.zip",
+    pages: ["blob:1", "blob:2"],
+  };
+
+  test("slides and the PDF wait as ready, with their pages, before anything downloads", () => {
+    expect(exportReducer(slides, { type: "ready", file: "a.zip", pages: ["blob:1", "blob:2"] })).toEqual(
+      ready,
+    );
+  });
+
+  test("ready ends as done when the reader downloads, or idle when they close it", () => {
+    expect(exportReducer(ready, { type: "finish", file: "a.zip" })).toEqual({
+      status: "done",
+      job: "zip",
+      file: "a.zip",
+    });
+    expect(exportReducer(ready, { type: "discard" })).toEqual(IDLE);
+  });
+
+  test("no new render starts while a preview is open", () => {
+    expect(exportReducer(ready, { type: "start", job: "mp4" })).toBe(ready);
+  });
+
+  test("a ready file is announced as waiting for the reader, not as saved", () => {
+    expect(announcement(ready)).toBe("Your slides are ready: 2 to look over, then download.");
+  });
+});
+
 test("percent rounds down so 100% only shows once the file is whole", () => {
   expect(percent(rendering(0.999))).toBe(99);
   expect(percent(rendering(1))).toBe(100);
