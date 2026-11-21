@@ -43,14 +43,54 @@ async function encode(file: string, resize: { width?: number; height?: number })
   };
 }
 
+/**
+ * The dashboard's moving diorama (#211): a still base and an animated overlay of the parts that
+ * move, both on the full canvas the still is drawn on. They are scaled, not trimmed (sharp would
+ * have to crop every frame), so the card crops them in SVG to the box the still was trimmed to.
+ */
+async function encodeMotion(id: string) {
+  const webp = (file: string, animated: boolean, quality: number) =>
+    sharp(join(artDir, file), { animated })
+      .resize({ width: DIORAMA_WIDTH, kernel: "lanczos3" })
+      .webp({ quality, alphaQuality: 85, effort: 6, loop: 0 })
+      .toBuffer({ resolveWithObject: true });
+  const base = await webp(`skin-${id}-base.webp`, false, 78);
+  const frames = await webp(`skin-${id}.webp`, true, 70);
+  // Where the still's trim found the diorama, in the still's own pixels.
+  const source = await sharp(join(artDir, `skin-${id}.png`)).metadata();
+  const trimmed = await sharp(join(artDir, `skin-${id}.png`))
+    .trim()
+    .toBuffer({ resolveWithObject: true });
+  const scale = DIORAMA_WIDTH / (source.width ?? DIORAMA_WIDTH);
+  const round = (n: number) => Math.round(n * scale * 100) / 100;
+  return {
+    base: `data:image/webp;base64,${base.data.toString("base64")}`,
+    frames: `data:image/webp;base64,${frames.data.toString("base64")}`,
+    width: base.info.width,
+    height: base.info.height,
+    crop: {
+      x: round(-(trimmed.info.trimOffsetLeft ?? 0)),
+      y: round(-(trimmed.info.trimOffsetTop ?? 0)),
+      width: round(trimmed.info.width),
+      height: round(trimmed.info.height),
+    },
+    bytes: base.data.length + frames.data.length,
+    pages: frames.info.pages ?? 1,
+  };
+}
+
 const entries: string[] = [];
 for (const id of archetypeIdSchema.options) {
   const diorama = await encode(`skin-${id}.png`, { width: DIORAMA_WIDTH });
+  const motion = await encodeMotion(id);
   console.log(
-    `${id}: diorama ${diorama.width}x${diorama.height} ${Math.round(diorama.bytes / 1024)} KB`,
+    `${id}: diorama ${diorama.width}x${diorama.height} ${Math.round(diorama.bytes / 1024)} KB, motion ${motion.pages} frames ${Math.round(motion.bytes / 1024)} KB`,
   );
   const pick = ({ href, width, height }: typeof diorama) => ({ href, width, height });
-  entries.push(`  ${JSON.stringify(id)}: ${JSON.stringify({ diorama: pick(diorama) })},`);
+  const { base, frames, width, height, crop } = motion;
+  entries.push(
+    `  ${JSON.stringify(id)}: ${JSON.stringify({ diorama: pick(diorama), motion: { base, frames, width, height, crop } })},`,
+  );
 }
 
 await Bun.write(
@@ -64,7 +104,19 @@ export interface BadgeImage {
   height: number;
 }
 
-export const ARCHETYPE_ART: Record<ArchetypeId, { diorama: BadgeImage }> = {
+/**
+ * The moving diorama: a still base and an animated overlay on the full canvas, and the box (in
+ * that canvas's pixels) the still diorama was trimmed to, so both can be cropped to match it.
+ */
+export interface BadgeMotion {
+  base: string;
+  frames: string;
+  width: number;
+  height: number;
+  crop: { x: number; y: number; width: number; height: number };
+}
+
+export const ARCHETYPE_ART: Record<ArchetypeId, { diorama: BadgeImage; motion: BadgeMotion }> = {
 ${entries.join("\n")}
 };
 `,

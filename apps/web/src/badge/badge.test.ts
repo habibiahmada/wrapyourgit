@@ -6,6 +6,7 @@ import {
   provisionalRecap,
 } from "../../../../packages/video/src/fixtures/edge-recaps";
 import { sampleRecap } from "../../../../packages/video/src/fixtures/sample-recap";
+import { ARCHETYPE_ART } from "./archetype-art";
 import {
   BADGE_SHOWS,
   badgeContent,
@@ -225,8 +226,9 @@ describe("cardSvg", () => {
     expect(imageX(left)).toBeLessThan(220);
     expect(imageX(right)).toBeGreaterThan(500);
     expect(label(left)).toContain("Builder archetype");
-    // Budget: the diorama is about 28 KB once base64, the calendar about 16 KB.
-    expect(left.length).toBeLessThan(56_000);
+    // Budget: the still diorama is about 28 KB once base64, its moving layer about 120 KB (#211),
+    // the calendar about 16 KB: 168 KB measured.
+    expect(left.length).toBeLessThan(185_000);
   });
 
   test("no archetype means no diorama, at the calendar's own width", () => {
@@ -292,6 +294,50 @@ describe("cardSvg", () => {
     expect(svg).toContain("See the 2026 recap");
     expect(svg).not.toContain("data:image/webp");
     expect(svg).not.toMatch(/contributions/);
+  });
+});
+
+describe("the card's moving archetype (#211)", () => {
+  const motion = ARCHETYPE_ART.builder.motion;
+  const cards = {
+    wide: cardSvg(sampleRecap),
+    compact: cardSvg(sampleRecap, cardOptions({ layout: "compact" })),
+    alone: cardSvg(sampleRecap, cardOptions({ hide: "graph,stats" })),
+  };
+  const box = (svg: string) =>
+    /<g class="ds"><image href="[^"]+" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/
+      .exec(svg)
+      ?.slice(1, 5);
+  const layer = (svg: string) =>
+    /<svg class="dm" aria-hidden="true" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" viewBox="([^"]+)" preserveAspectRatio="none">(.*?)<\/svg>/.exec(
+      svg,
+    );
+
+  test("plays the dashboard's base and animated overlay where the still diorama stands", () => {
+    for (const svg of Object.values(cards)) {
+      const moving = layer(svg);
+      expect(moving).not.toBeNull();
+      expect(moving?.slice(1, 5)).toEqual(box(svg));
+      const { x, y, width: w, height: h } = motion.crop;
+      expect(moving?.[5]).toBe(`${x} ${y} ${w} ${h}`);
+      expect(moving?.[6]).toBe(
+        `<image href="${motion.base}" width="${motion.width}" height="${motion.height}"/><image href="${motion.frames}" width="${motion.width}" height="${motion.height}"/>`,
+      );
+    }
+  });
+
+  test("reduced motion keeps the still and drops the animation; otherwise the still steps aside", () => {
+    expect(cards.wide).toContain("@media (prefers-reduced-motion:reduce){.dm{display:none}}");
+    // Inside the no-preference block, past the entrance's own rules.
+    expect(cards.wide).toMatch(
+      /@media \(prefers-reduced-motion:no-preference\)\{(?:[^{}]*\{[^{}]*\})*\.ds\{visibility:hidden\}\}/,
+    );
+  });
+
+  test("the badge and a card with no archetype carry no moving layer", () => {
+    expect(cardSvg(sampleRecap, cardOptions({ hide: "archetype" }))).not.toContain('class="dm"');
+    expect(cardSvg(emptyRecap)).not.toContain('class="dm"');
+    expect(badgeSvg(sampleRecap, badgeShows("archetype"))).not.toContain('class="dm"');
   });
 });
 
