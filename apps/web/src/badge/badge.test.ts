@@ -13,6 +13,7 @@ import {
   badgeSvg,
   cardOptions,
   cardSvg,
+  DAYS_PER_SEGMENT,
   snakeRoute,
   snakeSvg,
 } from "./badge";
@@ -346,26 +347,42 @@ describe("compact card", () => {
 });
 
 describe("snake", () => {
-  test("eats the year in order, week by week, one step at a time", () => {
-    const cells = [
-      { week: 3, row: 2 },
-      { week: 0, row: 5 },
-      { week: 0, row: 1 },
-      { week: 1, row: 1 },
-      { week: 1, row: 4 },
-    ];
-    const { path, eatenAt } = snakeRoute(cells);
-    for (let i = 1; i < path.length; i++) {
-      const a = path[i - 1];
-      const b = path[i];
-      const stepLength =
-        Math.abs((a?.week ?? 0) - (b?.week ?? 0)) + Math.abs((a?.row ?? 0) - (b?.row ?? 0));
-      expect(stepLength).toBe(1);
+  const year = Array.from({ length: 40 }, (_, i) => ({ week: (i * 7) % 53, row: (i * 3) % 7 }));
+  const stepsAreSingle = (path: { week: number; row: number }[]) =>
+    path.every(
+      (b, i) =>
+        i === 0 ||
+        Math.abs(b.week - (path[i - 1]?.week ?? 0)) + Math.abs(b.row - (path[i - 1]?.row ?? 0)) ===
+          1,
+    );
+
+  test("eats every lit day exactly once, one step at a time", () => {
+    const { path, eatenAt } = snakeRoute(year, "octocat/2026");
+    expect(stepsAreSingle(path)).toBe(true);
+    expect(new Set(eatenAt).size).toBe(year.length);
+    eatenAt.forEach((step, i) => {
+      expect(path[step]).toEqual(year[i]);
+    });
+  });
+
+  test("wanders at random, but the same login and year always take the same route", () => {
+    const a = snakeRoute(year, "octocat/2026").eatenAt;
+    expect(snakeRoute(year, "octocat/2026").eatenAt).toEqual(a);
+    expect(snakeRoute(year, "someone-else/2026").eatenAt).not.toEqual(a);
+  });
+
+  test("grows a segment for every three days, each in the darkest green it ate", () => {
+    const svg = snakeSvg(sampleRecap);
+    const lit = sampleRecap.contributions.calendar.filter((d) => d.count > 0).length;
+    const segments = svg.match(/<animateMotion /g) ?? [];
+    expect(segments).toHaveLength(2 + Math.floor(lit / DAYS_PER_SEGMENT));
+    // Every grown segment starts hidden and appears once, on the head's clock.
+    expect(svg.match(/<animate attributeName="opacity"/g)).toHaveLength(
+      Math.floor(lit / DAYS_PER_SEGMENT),
+    );
+    for (const colour of ["#0e4429", "#006d32", "#26a641", "#39d353"]) {
+      expect(svg).toContain(`rx="3" fill="${colour}" opacity="0"`);
     }
-    // Week 0 runs down (row 1, then 5), week 1 runs up (row 4, then 1), then week 3.
-    const order = [2, 1, 4, 3, 0].map((i) => eatenAt[i] ?? 0);
-    expect(order).toEqual([...order].sort((x, y) => x - y));
-    expect(path[eatenAt[0] ?? 0]).toEqual({ week: 3, row: 2 });
   });
 
   test("animates each day with contributions, loops, and stands still for reduced motion", () => {
@@ -373,10 +390,11 @@ describe("snake", () => {
     const lit = sampleRecap.contributions.calendar.filter((d) => d.count > 0).length;
     expect(svg.match(/<animate attributeName="fill"/g)).toHaveLength(lit);
     expect(svg).toContain('repeatCount="indefinite"');
-    expect(svg.match(/<animateMotion /g)).toHaveLength(4);
+    expect(svg).toContain('<path id="route"');
     expect(svg).toContain("@media (prefers-reduced-motion:reduce)");
     expect(svg).toContain(".s{display:none}");
     expect(label(svg)).toContain("eaten by a snake: 186 active days");
+    expect(svg.length).toBeLessThan(90_000);
   });
 
   test("a year with nothing to eat has no snake", () => {

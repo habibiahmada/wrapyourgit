@@ -773,35 +773,56 @@ const SNAKE_TOP = 52;
 const SNAKE_HEIGHT = SNAKE_TOP + 7 * SNAKE_STEP - (SNAKE_STEP - SNAKE_CELL) + 18;
 /** Seconds per cell the snake moves: about twelve cells a second. */
 const SNAKE_TICK = 0.08;
-const SNAKE_LENGTH = 4;
+/** The snake starts as a head and one segment, and grows a segment for every this many days. */
+const SNAKE_START = 2;
+export const DAYS_PER_SEGMENT = 3;
+/** The next day is picked at random from this many nearest, so it wanders without long trips. */
+const SNAKE_CHOICES = 3;
 
-interface GridCell {
+export interface GridCell {
   week: number;
   row: number;
 }
 
+/** A small seeded generator (mulberry32): the same login and year always give the same route. */
+function seeded(text: string): () => number {
+  let state = 2166136261;
+  for (const char of text) state = Math.imul(state ^ char.charCodeAt(0), 16777619);
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /**
- * The snake's path, one grid cell per step. It eats the year in order: week by week from the left,
- * down one week and up the next, so no day is left behind for a trip back at the end. Between two
- * days it moves across, then down. Returns every position, and the step at which each lit day is
- * eaten.
+ * The snake's path, one grid cell per step. From just left of the first week it heads for one of
+ * the SNAKE_CHOICES nearest days not yet eaten, picked at random from `seed`, moving across and
+ * then down. Fully random order would cross the year again and again (minutes per loop, hundreds
+ * of kilobytes); choosing among the nearest keeps it wandering but short. Returns every position,
+ * and the step at which each lit day is eaten.
  */
-export function snakeRoute(cells: readonly GridCell[]): {
-  path: GridCell[];
-  eatenAt: number[];
-} {
-  const order = cells
-    .map((cell, i) => ({ cell, i }))
-    .sort((a, b) =>
-      a.cell.week !== b.cell.week
-        ? a.cell.week - b.cell.week
-        : // Even weeks run down, odd weeks run up.
-          (a.cell.week % 2 === 0 ? 1 : -1) * (a.cell.row - b.cell.row),
-    );
-  let at: GridCell = { week: -1, row: 0 };
+export function snakeRoute(
+  cells: readonly GridCell[],
+  seed: string,
+): { path: GridCell[]; eatenAt: number[] } {
+  const random = seeded(seed);
+  let at: GridCell = { week: -1, row: Math.floor(random() * 7) };
   const path: GridCell[] = [at];
   const eatenAt = new Array<number>(cells.length).fill(0);
-  for (const { cell: target, i } of order) {
+  const left = new Set(cells.map((_, i) => i));
+  while (left.size > 0) {
+    const from = at;
+    const nearest = [...left]
+      .map((i) => {
+        const cell = cells[i] as GridCell;
+        return { i, d: Math.abs(cell.week - from.week) + Math.abs(cell.row - from.row) };
+      })
+      .sort((a, b) => a.d - b.d || a.i - b.i)
+      .slice(0, SNAKE_CHOICES);
+    const pick = nearest[Math.floor(random() * nearest.length)]?.i ?? 0;
+    const target = cells[pick] as GridCell;
     while (at.week !== target.week) {
       at = { week: at.week + Math.sign(target.week - at.week), row: at.row };
       path.push(at);
@@ -810,18 +831,20 @@ export function snakeRoute(cells: readonly GridCell[]): {
       at = { week: at.week, row: at.row + Math.sign(target.row - at.row) };
       path.push(at);
     }
-    eatenAt[i] = path.length - 1;
+    eatenAt[pick] = path.length - 1;
+    left.delete(pick);
   }
   return { path, eatenAt };
 }
 
 /**
- * The year's graph with a snake eating it (maintainer's call, 2026-11-21): it works through every
- * day with contributions, week by week, each square going dark as it is eaten, and the year fills in again when
- * it starts over. It loops, which the rest of these images do not; ADR-0035 records why. A reader
- * who asks for reduced motion gets the still graph: CSS rules outrank the animated attributes, so
- * the media query below restores every colour and hides the snake. `recap` null draws the neutral
- * card.
+ * The year's graph with a snake eating it (maintainer's call, 2026-11-21). It wanders from day to
+ * day with contributions, each square going dark as it is eaten, and grows a segment for every
+ * DAYS_PER_SEGMENT days, that segment in the darkest green of the days it came from, so its body
+ * becomes a gradient of what it ate. When every day is eaten the year fills in and it starts over,
+ * small again. It loops, which the rest of these images do not; ADR-0035 records why. A reader who
+ * asks for reduced motion gets the still graph: CSS rules outrank the animated attributes, so the
+ * media query below restores every colour and hides the snake. `recap` null draws the neutral card.
  */
 export function snakeSvg(recap: RecapData | null): string {
   if (!recap) return neutralCard(EDITION_YEAR);
@@ -855,32 +878,61 @@ export function snakeSvg(recap: RecapData | null): string {
     }
   });
 
-  const { path, eatenAt } = snakeRoute(lit.map((l) => l.cell));
+  const { path, eatenAt } = snakeRoute(
+    lit.map((l) => l.cell),
+    `${recap.profile.login.toLowerCase()}/${year}`,
+  );
   const steps = path.length - 1;
-  const dur = `${(Math.max(steps, 1) * SNAKE_TICK).toFixed(2)}s`;
+  const loop = Math.max(steps, 1) * SNAKE_TICK;
+  const dur = `${loop.toFixed(2)}s`;
+  const share = (step: number) => (step / Math.max(steps, 1)).toFixed(4);
+
   const eaten = lit.map(({ cell, level }, i) => {
     const { x, y } = at(cell);
     const colour = HEAT[level] as string;
     // Discrete: its own colour until the snake reaches it, then empty until the loop starts over.
-    const when = ((eatenAt[i] ?? 0) / Math.max(steps, 1)).toFixed(4);
-    return `<rect x="${x}" y="${y}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="2" class="l${level}" fill="${colour}"><animate attributeName="fill" values="${colour};${SURFACE};${colour}" keyTimes="0;${when};1" calcMode="discrete" dur="${dur}" repeatCount="indefinite"/></rect>`;
+    return `<rect x="${x}" y="${y}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="2" class="l${level}" fill="${colour}"><animate attributeName="fill" values="${colour};${SURFACE};${colour}" keyTimes="0;${share(eatenAt[i] ?? 0)};1" calcMode="discrete" dur="${dur}" repeatCount="indefinite"/></rect>`;
   });
 
-  // Each segment follows the head's path, a step behind the one before it.
-  const centre = (cell: GridCell) => {
-    const { x, y } = at(cell);
-    return `${x + SNAKE_CELL / 2},${y + SNAKE_CELL / 2}`;
-  };
-  const segments =
-    steps > 0
-      ? Array.from({ length: SNAKE_LENGTH }, (_, k) => {
-          const trail = path.map((_, i) => centre(path[Math.max(0, i - k)] as GridCell));
-          const half = SNAKE_CELL / 2;
-          return `<rect x="${-half}" y="${-half}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="3" fill="${FG}" opacity="${(1 - k * 0.2).toFixed(1)}"><animateMotion values="${trail.join(";")}" calcMode="linear" dur="${dur}" repeatCount="indefinite"/></rect>`;
-        })
-          .reverse()
-          .join("")
-      : "";
+  // The route is drawn once, as the path every segment follows; segment k runs k steps behind
+  // the head on its own clock, and appears when the snake has eaten enough to grow it.
+  const route = `M${path
+    .map((cell) => {
+      const { x, y } = at(cell);
+      return `${x + SNAKE_CELL / 2} ${y + SNAKE_CELL / 2}`;
+    })
+    .join("L")}`;
+  const byTime = lit
+    .map((l, i) => ({ level: l.level, step: eatenAt[i] ?? 0 }))
+    .sort((a, b) => a.step - b.step);
+  const segments: string[] = [];
+  if (steps > 0) {
+    const grown = Math.floor(byTime.length / DAYS_PER_SEGMENT);
+    const total = SNAKE_START + grown;
+    const half = SNAKE_CELL / 2;
+    for (let k = total - 1; k >= 0; k--) {
+      // Segment k joins once the snake has eaten (k - SNAKE_START + 1) * DAYS_PER_SEGMENT days,
+      // coloured by the darkest of those days; the head and the first segment are there from the start.
+      const group = byTime.slice(
+        (k - SNAKE_START) * DAYS_PER_SEGMENT,
+        (k - SNAKE_START + 1) * DAYS_PER_SEGMENT,
+      );
+      const joins = k < SNAKE_START ? 0 : (group.at(-1)?.step ?? 0);
+      const colour =
+        k === 0
+          ? FG
+          : k < SNAKE_START
+            ? MUTED
+            : (HEAT[Math.max(...group.map((g) => g.level))] as string);
+      const grow =
+        joins > 0
+          ? `<animate attributeName="opacity" values="0;1;0" keyTimes="0;${share(joins)};1" calcMode="discrete" dur="${dur}" repeatCount="indefinite"/>`
+          : "";
+      segments.push(
+        `<rect x="${-half}" y="${-half}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="3" fill="${colour}"${joins > 0 ? ' opacity="0"' : ""}>${grow}<animateMotion dur="${dur}" begin="${(k * SNAKE_TICK).toFixed(2)}s" repeatCount="indefinite"><mpath href="#route"/></animateMotion></rect>`,
+      );
+    }
+  }
 
   const styles = `<style>@media (prefers-reduced-motion:reduce){${HEAT.map((c, l) => `.l${l}{fill:${c}}`).join("")}.s{display:none}}</style>`;
   const n = recap.contributions.activeDays;
@@ -891,7 +943,9 @@ export function snakeSvg(recap: RecapData | null): string {
     cardHeader(recap, year, CARD_PAD, SNAKE_WIDTH - CARD_PAD, HEADER_BASELINE),
     still.join(""),
     eaten.join(""),
-    segments ? `<g class="s">${segments}</g>` : "",
+    segments.length
+      ? `<g class="s"><defs><path id="route" d="${route}"/></defs>${segments.join("")}</g>`
+      : "",
   ].join("");
   return svg(SNAKE_WIDTH, SNAKE_HEIGHT, label, body);
 }
