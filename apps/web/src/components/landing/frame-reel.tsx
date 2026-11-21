@@ -69,11 +69,16 @@ export function FrameReel({ frames }: { frames: ReelFrame[] }) {
     press.current = { x: event.clientX, moved: 0 };
     if (event.pointerType !== "mouse" || !track.current) return;
     drag.current = { x: event.clientX, left: track.current.scrollLeft };
-    track.current.setPointerCapture(event.pointerId);
   };
   const onPointerMove = (event: PointerEvent<HTMLElement>) => {
     press.current.moved = Math.max(press.current.moved, Math.abs(event.clientX - press.current.x));
     if (!drag.current || !track.current) return;
+    // Captured only once it is a drag: captured from the press, the click would land on the reel
+    // instead of the frame under the pointer, and no frame could be opened.
+    if (press.current.moved <= DRAG_PX) return;
+    if (!track.current.hasPointerCapture(event.pointerId)) {
+      track.current.setPointerCapture(event.pointerId);
+    }
     hold();
     track.current.scrollLeft = drag.current.left - (event.clientX - drag.current.x);
   };
