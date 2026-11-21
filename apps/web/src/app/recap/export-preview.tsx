@@ -82,7 +82,12 @@ export function FilePreview({
   const count = state.pages.length;
 
   return (
-    <dialog ref={ref} aria-labelledby={titleId} onCancel={onCancel} className={`${DIALOG} ${t.dialog}`}>
+    <dialog
+      ref={ref}
+      aria-labelledby={titleId}
+      onCancel={onCancel}
+      className={`${DIALOG} ${t.dialog}`}
+    >
       <div className="grid gap-4 p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 id={titleId} className="text-lg font-semibold">
@@ -152,6 +157,7 @@ export function CardPreview({
   const [load, setLoad] = useState<CardLoad>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a change of `attempt` (Try again) re-runs the fetch
   useEffect(() => {
     let live = true;
     let made: string | null = null;
@@ -176,16 +182,22 @@ export function CardPreview({
       const url = made;
       if (url) window.setTimeout(() => URL.revokeObjectURL(url), 40_000);
     };
-    // `attempt` re-runs the fetch for Try again.
   }, [href, fallbackName, attempt]);
 
   return (
-    <dialog ref={ref} aria-labelledby={titleId} onCancel={onCancel} className={`${DIALOG} ${t.dialog}`}>
+    <dialog
+      ref={ref}
+      aria-labelledby={titleId}
+      onCancel={onCancel}
+      className={`${DIALOG} ${t.dialog}`}
+    >
       <div className="grid gap-4 p-5">
         <h2 id={titleId} className="text-lg font-semibold">
           {title}
         </h2>
-        <div className={`grid aspect-[1200/630] w-full place-items-center overflow-hidden rounded-md ${t.frame}`}>
+        <div
+          className={`grid aspect-[1200/630] w-full place-items-center overflow-hidden rounded-md ${t.frame}`}
+        >
           {load.status === "loading" && (
             <p role="status" className={`text-sm ${t.muted}`}>
               Drawing your card…
@@ -194,7 +206,11 @@ export function CardPreview({
           {load.status === "error" && (
             <div role="alert" className="grid justify-items-center gap-3 p-4 text-center text-sm">
               <p>The card didn&apos;t load. Check your connection and try again.</p>
-              <button type="button" onClick={() => setAttempt((n) => n + 1)} className={t.secondary}>
+              <button
+                type="button"
+                onClick={() => setAttempt((n) => n + 1)}
+                className={t.secondary}
+              >
                 Try again
               </button>
             </div>
@@ -215,11 +231,20 @@ export function CardPreview({
             Close
           </button>
           {load.status === "ready" ? (
-            <a href={load.url} download={load.file} onClick={() => window.setTimeout(onClose, 0)} className={t.primary}>
+            <a
+              href={load.url}
+              download={load.file}
+              onClick={() => window.setTimeout(onClose, 0)}
+              className={t.primary}
+            >
               Download card
             </a>
           ) : (
-            <button type="button" disabled className={`${t.primary} disabled:cursor-not-allowed disabled:opacity-60`}>
+            <button
+              type="button"
+              disabled
+              className={`${t.primary} disabled:cursor-not-allowed disabled:opacity-60`}
+            >
               Download card
             </button>
           )}

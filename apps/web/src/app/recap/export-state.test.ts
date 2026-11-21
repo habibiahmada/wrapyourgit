@@ -81,9 +81,9 @@ describe("previews (#201)", () => {
   };
 
   test("slides and the PDF wait as ready, with their pages, before anything downloads", () => {
-    expect(exportReducer(slides, { type: "ready", file: "a.zip", pages: ["blob:1", "blob:2"] })).toEqual(
-      ready,
-    );
+    expect(
+      exportReducer(slides, { type: "ready", file: "a.zip", pages: ["blob:1", "blob:2"] }),
+    ).toEqual(ready);
   });
 
   test("ready ends as done when the reader downloads, or idle when they close it", () => {

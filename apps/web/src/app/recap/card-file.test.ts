@@ -3,9 +3,9 @@ import { cardFileName } from "./card-file";
 
 describe("cardFileName", () => {
   test("keeps the server's name", () => {
-    expect(
-      cardFileName('attachment; filename="wrapyourgit-2026-octocat.png"', "card.png"),
-    ).toBe("wrapyourgit-2026-octocat.png");
+    expect(cardFileName('attachment; filename="wrapyourgit-2026-octocat.png"', "card.png")).toBe(
+      "wrapyourgit-2026-octocat.png",
+    );
     expect(cardFileName("attachment; filename=plain.png", "card.png")).toBe("plain.png");
   });
 
