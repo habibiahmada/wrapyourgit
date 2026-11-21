@@ -30,6 +30,11 @@ export type RideStoryProps = {
    * it while a move carries on from part way through a rest loop; exports never do.
    */
   idle?: number;
+  /**
+   * Draw the stops' progress bar along the top. True in the player and the MP4, where it says
+   * where you are; stills (slides, PDF pages, the landing's frames) leave it out (#197).
+   */
+  progress?: boolean;
 };
 
 /**
@@ -39,7 +44,14 @@ export type RideStoryProps = {
  * the scene: every number is printed on a solid inside it. The one exception is the letter,
  * whose sheet of paper comes up over the scene at its stops (model.ts `letterBeat`).
  */
-export function RideStory({ data, mode, music = true, letter = true, idle = 0 }: RideStoryProps) {
+export function RideStory({
+  data,
+  mode,
+  music = true,
+  letter = true,
+  idle = 0,
+  progress = true,
+}: RideStoryProps) {
   const { width, height, fps } = useVideoConfig();
   const frame = useCurrentFrame();
   const size = useMemo(() => ({ width, height }), [width, height]);
@@ -95,6 +107,7 @@ export function RideStory({ data, mode, music = true, letter = true, idle = 0 }:
         year={data.meta.year}
         frame={size}
         darkness={{ top: 1, bottom: 1 }}
+        progress={progress}
       />
       {/* A video carries its own sound; the web player plays the same sounds itself, on the tap. */}
       {mode === "video" && (

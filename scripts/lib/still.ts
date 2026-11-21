@@ -100,8 +100,9 @@ export function renderSceneStill(
 ): Promise<Uint8Array> {
   return serial(async () => {
     const [url, puppeteerInstance] = await Promise.all([serveUrl(), sharedBrowser()]);
-    // The story plays the music separately; a still has no sound anyway.
-    const inputProps = { data, music: false };
+    // The story plays the music separately; a still has no sound anyway, and no progress bar,
+    // which on one frame reads as a loading line (#197).
+    const inputProps = { data, music: false, progress: false };
     const target = await selectComposition({
       serveUrl: url,
       id: composition,

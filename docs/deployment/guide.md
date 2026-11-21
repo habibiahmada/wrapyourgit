@@ -82,6 +82,8 @@ What is set up, and how to set it up again:
    - starts with `/api`;
    - starts with `/u/` (these redirect to `/<username>`, but `/u/<reserved name>` serves a recap itself).
 
+   README images (`/<username>/badge.svg`, `card.svg`, `snake.svg`, ADR-0035) must stay **outside** this rule: GitHub's image proxy fetches every README's images from a few shared addresses, so a per-IP limit would answer a popular README with 429. They are outside it today, except for an account whose name a site route uses, whose images sit under `/u/<name>/`; that is rare and only rate-limits that one account's images. The same goes for the bot rule if it ever moves from log to deny: camo is a bot.
+
    The recap pages `/<username>` are **not** in this rule, and on the Hobby plan they cannot be added: see [Firewall, DNS and headers](#firewall-dns-and-headers), which also has the other rules, Cloudflare's part and the headers. **Do not delete or disable this rule:** the plan would not let it be made again. This edge limit sits in front of the app's own one (20 new lookups per client per hour, `server/public-policy.ts`), which only counts requests that reach GitHub.
 5. **Domain:** Vercel → Domains → add `wrapyourgit.com` (connected to Production, with "redirect apex to www" unticked) and `www.wrapyourgit.com` (308 redirect to `wrapyourgit.com`); Vercel shows a project-specific CNAME target. In Cloudflare (zone `wrapyourgit.com`): `CNAME @ → <that target>` and `CNAME www → <that target>`, proxy **off** (DNS only), so Vercel terminates TLS and issues the certificate. The first domain, `wrapyourgit.habibiahmada.dev`, stays on the project as a 308 redirect to `wrapyourgit.com` ([ADR-0025](../architecture/decisions/0025-production-at-wrapyourgit-com.md)).
 

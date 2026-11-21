@@ -22,11 +22,14 @@ import { SiteHeader } from "@/components/site/site-header";
 import { button } from "@/components/ui";
 import { getCurrentUser } from "@/server/auth";
 import { getPrivateNamesChoice, showFilesReminder, storyData } from "@/server/privacy";
+import { isHidden } from "@/server/public-recaps";
 import { getRecap } from "@/server/recaps";
 import { recapPath } from "@/server/routes";
 import { nextSyncAt } from "@/server/sync-policy";
+import { siteUrl } from "@/site";
 import { YearComparison } from "./compare";
 import { InstallPrivate } from "./install-private";
+import { ReadmeImages } from "./readme-images";
 import { SyncForm } from "./sync-form";
 
 /*
@@ -102,7 +105,10 @@ async function Dashboard() {
   if (!recap) redirect(recapPath(user.login));
   const retryAt = nextSyncAt(recap.syncedAt, new Date());
   // Unanswered counts as hidden: the files never name a private repository before the owner says so.
-  const choice = await getPrivateNamesChoice(user.id);
+  const [choice, publicHidden] = await Promise.all([
+    getPrivateNamesChoice(user.id),
+    isHidden(user.githubId),
+  ]);
   const showNames = choice ?? false;
   const { data } = recap;
   const { meta } = data;
@@ -135,6 +141,14 @@ async function Dashboard() {
                 <Languages data={data} />
                 <Starred data={data} />
               </div>
+              <Panel id="readme-title" title="Put it in your README" meta="Badge, card or snake">
+                <ReadmeImages
+                  site={siteUrl()}
+                  login={user.login}
+                  year={meta.year}
+                  hidden={publicHidden}
+                />
+              </Panel>
             </div>
             <aside aria-label="Your profile" className="grid min-w-0 gap-6">
               <Archetype data={data} />
