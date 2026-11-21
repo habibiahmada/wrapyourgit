@@ -4,6 +4,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Fixed
+
+- Exported slides (PNG, ZIP, PDF) and the landing page's frames no longer carry the story's progress bar along the top, which on a single frame read as a loading line; the player and the MP4 keep it, and the copyright line stays ([#197](https://github.com/habibiahmada/wrapyourgit/issues/197)).
+
 ## [1.0.0] - 2026-11-19
 
 The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourgit.com).
