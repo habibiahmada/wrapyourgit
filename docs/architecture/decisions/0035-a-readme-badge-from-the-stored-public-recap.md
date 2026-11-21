@@ -22,7 +22,7 @@ A README image is not fetched by the person reading the README. GitHub rewrites 
    - `contributions` (the default): `contributions.total`
    - `streak`: `contributions.longestStreak.days`
    - `days`: `contributions.activeDays`
-   - `language`: `languages.top[0]`, in its GitHub colour
+   - `language`: `languages.top[0]`, with its Devicon logo (the same files as the story, `languageIcon`), or a dot in its GitHub colour when it has none. Logos drawn in plain black take the badge's text colour so they show on its dark ground
    - `archetype`: the label of `identity.archetype`, which the public share card already shows
 
    Unknown names are dropped, and an empty list gets the default. A value this recap has nothing for (no top language, no archetype) is left out; with none left the badge is neutral. No `metric()` value is offered until it has a way to say "unavailable" or "estimated" on the badge itself, so `starsGained`, `prsMerged` and the comparison with last year are left out for now.
