@@ -199,9 +199,19 @@ function day(iso: string): string {
   }).format(new Date(`${iso}T00:00:00Z`));
 }
 
-/** One run of text at `x`, held to its estimated width so every system's face fits the layout. */
-function text(run: Run, x: number, y: number, size: number, anchor?: "end"): string {
-  const width = textWidth(run.text, size, run.bold).toFixed(1);
+/**
+ * One run of text at `x`, held to its estimated width so every system's face fits the layout, or
+ * to `maxWidth` when that is narrower (the glyphs close up a little rather than overrun).
+ */
+function text(
+  run: Run,
+  x: number,
+  y: number,
+  size: number,
+  anchor?: "end",
+  maxWidth = Number.POSITIVE_INFINITY,
+): string {
+  const width = Math.min(maxWidth, textWidth(run.text, size, run.bold)).toFixed(1);
   return `<text x="${x.toFixed(1)}" y="${y}" fill="${run.color}" font-size="${size}"${
     run.bold ? ' font-weight="700"' : ""
   }${anchor ? ` text-anchor="${anchor}"` : ""} textLength="${width}" lengthAdjust="spacingAndGlyphs">${xml(run.text)}</text>`;
@@ -417,7 +427,7 @@ function grid(
 /**
  * A card's header: the login on the left, and on the right the mark and the year (where the
  * product signs the card, apart from the numbers). A login can be 39 characters, so its size gives
- * way, down to 11 px, before it would run into the year.
+ * way, down to 11 px, before it would run into the year; past that its letters close up.
  */
 function cardHeader(
   recap: RecapData,
@@ -432,7 +442,7 @@ function cardHeader(
   const room = signStart - 12 - left;
   const size = Math.max(11, Math.min(16, Math.floor(room / textWidth(login.text, 1, true))));
   return [
-    text(login, left, baseline, size),
+    text(login, left, baseline, size, undefined, room),
     mark(signStart, baseline - 9.5, 4),
     text(yearRun, right, baseline, 12, "end"),
   ].join("");

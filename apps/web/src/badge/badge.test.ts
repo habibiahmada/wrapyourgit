@@ -306,7 +306,10 @@ describe("compact card", () => {
       profile: { ...provisionalRecap.profile, login: "a".repeat(39) },
     };
     const svg = cardSvg(long, cardOptions({ layout: "compact" }));
-    const login = /<text x="18.0" y="36" fill="#eeeae0" font-size="(\d+)" font-weight="700"[^>]*textLength="([\d.]+)"/.exec(svg);
+    const login =
+      /<text x="18.0" y="36" fill="#eeeae0" font-size="(\d+)" font-weight="700"[^>]*textLength="([\d.]+)"/.exec(
+        svg,
+      );
     const size = Number(login?.[1]);
     const end = 18 + Number(login?.[2]);
     const mark = Number(/<rect class="c" [^>]* x="([\d.]+)" y="26.50"/.exec(svg)?.[1]);
