@@ -12,7 +12,7 @@ export function InstallPrivate() {
   if (!slug) return null;
   const href = `https://github.com/apps/${encodeURIComponent(slug)}/installations/new`;
   return (
-    <section aria-labelledby="private-title" className="rounded-md border border-line bg-surface">
+    <section aria-labelledby="private-title" className="rounded-xl border border-line bg-surface">
       <h2 id="private-title" className="border-b border-line px-4 py-3 text-sm font-semibold">
         Count your private repositories
       </h2>

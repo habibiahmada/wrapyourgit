@@ -3,13 +3,14 @@ import type { RecapData } from "@wyg/schema";
 /*
  * This year against the same span of last year, in one panel: a row per measure, each row on its
  * own scale, because contributions and reviews differ by orders of magnitude and must never share
- * an axis. Two series in a fixed order (this year GitHub green, last year blue, validated with the
- * dataviz palette checks on the dark surface), always labelled in text, so colour is never the
- * only cue. The two largest changes are said in words above it.
+ * an axis. Two series in a fixed order, this year in the contribution green and last year in the
+ * palette's muted grey (#203: the landing has no blue), always labelled in text and each bar with
+ * its own figure, so colour is never the only cue. Both bars pass 3:1 on the surface (5.5:1 and
+ * 6.4:1). The two largest changes are said in words above it.
  */
 
-const THIS = "#26a641";
-const LAST = "#7f93ff";
+const THIS = "var(--color-ramp-3)";
+const LAST = "var(--color-muted)";
 
 const n = (value: number) => value.toLocaleString("en-US");
 
@@ -45,16 +46,16 @@ function headlines(rows: Row[], lastYear: number): string[] {
 }
 
 /**
- * The change as a coloured chip: green and an up arrow for more, amber and a down arrow for less
- * (amber, not red: a slower year is something to beat, not a failure). The arrow and the sign
- * carry the direction too, so colour is never the only cue. Both pass 4.5:1 on the surface.
+ * The change as a chip: green and an up arrow for more; a neutral chip and a down arrow for less
+ * (a slower year is something to beat, not a failure, and the palette has no amber, #203). The
+ * arrow and the sign carry the direction, so colour is never the only cue. Both pass 4.5:1.
  */
 function Change({ now, before }: { now: number; before: number }) {
   const tone =
     now > before
       ? { cls: "bg-green/15 text-green", arrow: "▲" }
       : now < before
-        ? { cls: "bg-[#d29922]/15 text-[#d29922]", arrow: "▼" }
+        ? { cls: "bg-overlay text-fg", arrow: "▼" }
         : { cls: "bg-overlay text-muted", arrow: "" };
   return (
     <span

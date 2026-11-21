@@ -165,7 +165,7 @@ export function ExportPanel({
             className="h-2 overflow-hidden rounded-full bg-overlay"
           >
             <div
-              className="h-full bg-[#26a641] motion-safe:transition-[width] motion-safe:duration-200"
+              className="h-full bg-ramp-3 motion-safe:transition-[width] motion-safe:duration-200"
               style={{ width: `${percent(state)}%` }}
             />
           </div>
