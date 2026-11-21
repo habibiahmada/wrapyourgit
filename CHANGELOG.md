@@ -4,6 +4,8 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-21
+
 ### Added
 
 - README images for every GitHub username, built from the stored public recap and never starting a GitHub fetch (ADR-0035) ([#193](https://github.com/habibiahmada/wrapyourgit/issues/193)):
@@ -23,6 +25,8 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 ### Fixed
 
 - Exported slides (PNG, ZIP, PDF) and the landing page's frames no longer carry the story's progress bar along the top, which on a single frame read as a loading line; the player and the MP4 keep it, and the copyright line stays ([#197](https://github.com/habibiahmada/wrapyourgit/issues/197)).
+- The dashboard's "You can sync again at" time no longer differs between the server's page and the browser's (a hydration mismatch): it reads in UTC until the browser's timezone is known, then in local time ([#195](https://github.com/habibiahmada/wrapyourgit/issues/195)).
+- The dashboard's README panel uses the shared palette's green and 12 px boxes like the rest of the dashboard ([#205](https://github.com/habibiahmada/wrapyourgit/issues/205)).
 
 ## [1.0.0] - 2026-11-19
 
@@ -115,5 +119,6 @@ The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourg
 - A signed-in visitor's new public lookups count against their account instead of their address, so one session sent from many addresses no longer gets 20 lookups an hour at each and drains the shared public token (ADR-0032).
 - The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
 
-[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/habibiahmada/wrapyourgit/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/habibiahmada/wrapyourgit/commits/v1.0.0
