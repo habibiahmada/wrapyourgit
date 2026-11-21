@@ -1,5 +1,5 @@
 /**
- * Writes apps/web/src/badge/archetype-art.ts: each archetype's diorama and character, trimmed,
+ * Writes apps/web/src/badge/archetype-art.ts: each archetype's diorama for the README card, trimmed,
  * scaled down and encoded as WebP data URLs (ADR-0035). A README image is an <img>, which loads
  * nothing from inside an SVG, so the art has to travel inside the badge. WebP rather than AVIF:
  * these images show wherever GitHub shows a README, apps and webviews included.
@@ -17,12 +17,8 @@ const out = join(root, "apps/web/src/badge/archetype-art.ts");
 const next = Bun.resolveSync("next/package.json", join(root, "apps/web"));
 const sharp = (await import(Bun.resolveSync("sharp", dirname(next)))).default;
 
-/**
- * Sizes in px, two to three times what the card and badge draw, so they stay sharp on dense
- * screens. The diorama is the weight of the card, so it stops at twice: about 15 KB each.
- */
+/** Twice the width the card draws, so it stays sharp on dense screens: about 20 KB each. */
 const DIORAMA_WIDTH = 360;
-const CHARACTER_HEIGHT = 66;
 
 async function encode(file: string, resize: { width?: number; height?: number }) {
   const { data, info } = await sharp(join(artDir, file))
@@ -41,13 +37,12 @@ async function encode(file: string, resize: { width?: number; height?: number })
 const entries: string[] = [];
 for (const id of archetypeIdSchema.options) {
   const diorama = await encode(`skin-${id}.png`, { width: DIORAMA_WIDTH });
-  const character = await encode(`cutout-${id}.png`, { height: CHARACTER_HEIGHT });
   console.log(
-    `${id}: diorama ${diorama.width}x${diorama.height} ${Math.round(diorama.bytes / 1024)} KB, character ${character.width}x${character.height} ${Math.round(character.bytes / 1024)} KB`,
+    `${id}: diorama ${diorama.width}x${diorama.height} ${Math.round(diorama.bytes / 1024)} KB`,
   );
   const pick = ({ href, width, height }: typeof diorama) => ({ href, width, height });
   entries.push(
-    `  ${JSON.stringify(id)}: ${JSON.stringify({ diorama: pick(diorama), character: pick(character) })},`,
+    `  ${JSON.stringify(id)}: ${JSON.stringify({ diorama: pick(diorama) })},`,
   );
 }
 
@@ -62,7 +57,7 @@ export interface BadgeImage {
   height: number;
 }
 
-export const ARCHETYPE_ART: Record<ArchetypeId, { diorama: BadgeImage; character: BadgeImage }> = {
+export const ARCHETYPE_ART: Record<ArchetypeId, { diorama: BadgeImage }> = {
 ${entries.join("\n")}
 };
 `,

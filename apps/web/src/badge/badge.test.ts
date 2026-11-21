@@ -6,30 +6,42 @@ import {
   provisionalRecap,
 } from "../../../../packages/video/src/fixtures/edge-recaps";
 import { sampleRecap } from "../../../../packages/video/src/fixtures/sample-recap";
-import { archetypeCardSvg, BADGE_SHOWS, badgeContent, badgeShow, badgeSvg, cardSvg } from "./badge";
+import { BADGE_SHOWS, badgeContent, badgeShows, badgeSvg, cardSide, cardSvg } from "./badge";
 import { textWidth } from "./text-width";
 
 const words = (recap: RecapData, show: (typeof BADGE_SHOWS)[number]) =>
   badgeContent(recap, show)?.words;
+const width = (svg: string) => Number(/width="(\d+)"/.exec(svg)?.[1]);
+const label = (svg: string) => /aria-label="([^"]*)"/.exec(svg)?.[1];
 
-describe("badgeShow", () => {
-  test("keeps a known value and falls back to contributions", () => {
-    expect(badgeShow("streak")).toBe("streak");
-    expect(badgeShow("stars")).toBe("contributions");
-    expect(badgeShow(null)).toBe("contributions");
+describe("badgeShows", () => {
+  test("reads a list in the order given, each once", () => {
+    expect(badgeShows("streak,contributions,streak")).toEqual(["streak", "contributions"]);
+    expect(badgeShows(" Language , days ")).toEqual(["language", "days"]);
+  });
+
+  test("drops unknown names and falls back to contributions", () => {
+    expect(badgeShows("stars,streak")).toEqual(["streak"]);
+    expect(badgeShows("stars")).toEqual(["contributions"]);
+    expect(badgeShows(null)).toEqual(["contributions"]);
+  });
+
+  test("keeps at most four values", () => {
+    expect(badgeShows(BADGE_SHOWS.join(","))).toHaveLength(4);
+  });
+});
+
+describe("cardSide", () => {
+  test("is left unless right is asked for", () => {
+    expect(cardSide("right")).toBe("right");
+    expect(cardSide("middle")).toBe("left");
+    expect(cardSide(null)).toBe("left");
   });
 });
 
 describe("badgeContent", () => {
-  test("a final recap states its numbers plainly", () => {
+  test("states each value plainly", () => {
     expect(words(sampleRecap, "contributions")).toBe("1,284 contributions");
-  });
-
-  test('a recap before 31 December says "so far" on every badge', () => {
-    for (const show of BADGE_SHOWS) {
-      const content = badgeContent({ ...provisionalRecap, identity: sampleRecap.identity }, show);
-      expect(content?.words.endsWith(" so far")).toBe(true);
-    }
   });
 
   test("one of a thing is singular", () => {
@@ -61,18 +73,42 @@ describe("badgeContent", () => {
 
 describe("badgeSvg", () => {
   test("is a labelled image with the user's number", () => {
-    const svg = badgeSvg(sampleRecap, "contributions");
+    const svg = badgeSvg(sampleRecap, ["contributions"]);
     expect(svg.startsWith("<svg")).toBe(true);
     expect(svg).toContain('role="img"');
-    expect(svg).toContain("octo-sample&#39;s 2026 on WrapYourGit: 1,284 contributions");
-    expect(svg).toContain("through 31 Dec 2026");
+    expect(label(svg)).toBe(
+      "octo-sample&#39;s 2026 on WrapYourGit: 1,284 contributions, through 31 Dec 2026",
+    );
   });
 
-  test("null and a recap with nothing to show draw the same neutral badge", () => {
-    const neutral = badgeSvg(null, "contributions");
+  test("shows the mark and the year, not the product name", () => {
+    const svg = badgeSvg(sampleRecap, ["contributions"]);
+    expect(svg).toContain(">2026</text>");
+    expect(svg).not.toContain(">WrapYourGit</text>");
+  });
+
+  test("puts several values in one badge, in the order asked", () => {
+    const svg = badgeSvg(sampleRecap, ["streak", "contributions", "language"]);
+    expect(label(svg)).toContain(
+      "longest streak 24 days, 1,284 contributions, top language TypeScript",
+    );
+    expect(width(svg)).toBeGreaterThan(width(badgeSvg(sampleRecap, ["streak"])));
+  });
+
+  test('a recap before 31 December says "so far" once', () => {
+    const svg = badgeSvg(provisionalRecap, ["contributions", "days"]);
+    expect(svg.match(/>so far</g)).toHaveLength(1);
+    expect(label(svg)).toContain("on WrapYourGit so far:");
+  });
+
+  test("leaves out values with nothing to show, and is neutral when none are left", () => {
+    expect(label(badgeSvg(emptyRecap, ["language", "contributions"]))).toContain(
+      ": 0 contributions,",
+    );
+    const neutral = badgeSvg(null, ["contributions"]);
     expect(neutral).toContain("See the 2026 recap");
     expect(neutral).not.toMatch(/\d,\d{3}/);
-    expect(badgeSvg(emptyRecap, "archetype")).toBe(neutral);
+    expect(badgeSvg(emptyRecap, ["archetype", "language"])).toBe(neutral);
   });
 
   test("escapes what GitHub sends", () => {
@@ -80,21 +116,28 @@ describe("badgeSvg", () => {
       ...sampleRecap,
       languages: { ...sampleRecap.languages, top: [{ name: "<C&C>", color: null, share: 1 }] },
     };
-    const svg = badgeSvg(odd, "language");
+    const svg = badgeSvg(odd, ["language"]);
     expect(svg).toContain("&#60;C&#38;C&#62;");
     expect(svg).not.toContain("<C&C>");
   });
 
   test("grows with its text", () => {
-    const width = (svg: string) => Number(/width="(\d+)"/.exec(svg)?.[1]);
-    expect(width(badgeSvg(busyRecap, "contributions"))).toBeGreaterThan(
-      width(
-        badgeSvg(
-          { ...busyRecap, contributions: { ...busyRecap.contributions, total: 7 } },
-          "contributions",
-        ),
-      ),
+    const seven = { ...busyRecap, contributions: { ...busyRecap.contributions, total: 7 } };
+    expect(width(badgeSvg(busyRecap, ["contributions"]))).toBeGreaterThan(
+      width(badgeSvg(seven, ["contributions"])),
     );
+  });
+});
+
+describe("motion", () => {
+  test("plays once, briefly, and not for readers who ask for reduced motion", () => {
+    for (const svg of [badgeSvg(sampleRecap, ["contributions"]), cardSvg(sampleRecap)]) {
+      expect(svg).toContain("@media (prefers-reduced-motion:no-preference)");
+      expect(svg).not.toContain("infinite");
+      const delays = [...svg.matchAll(/animation-delay:([\d.]+)s/g)].map((m) => Number(m[1]));
+      // The last entrance starts by 1.6 s and lasts 0.5 s: the image is still within 5 s.
+      expect(Math.max(...delays)).toBeLessThanOrEqual(1.6);
+    }
   });
 });
 
@@ -110,32 +153,28 @@ describe("cardSvg", () => {
     expect(svg).toContain("2026 so far");
   });
 
-  test("the neutral card shows no numbers", () => {
+  test("the archetype's diorama stands on the side asked for", () => {
+    const imageX = (svg: string) => Number(/<image href="[^"]+" x="([\d.]+)"/.exec(svg)?.[1]);
+    const left = cardSvg(sampleRecap, "left");
+    const right = cardSvg(sampleRecap, "right");
+    expect(width(left)).toBe(720);
+    expect(imageX(left)).toBeLessThan(220);
+    expect(imageX(right)).toBeGreaterThan(500);
+    expect(label(left)).toContain("Builder archetype");
+    expect(left.length).toBeLessThan(40_000);
+  });
+
+  test("no archetype means no diorama, at the calendar's own width", () => {
+    const svg = cardSvg(emptyRecap, "right");
+    expect(svg).not.toContain("<image");
+    expect(width(svg)).toBe(500);
+  });
+
+  test("the neutral card shows no numbers and no diorama", () => {
     const svg = cardSvg(null);
     expect(svg).toContain("See the 2026 recap");
+    expect(svg).not.toContain("<image");
     expect(svg).not.toMatch(/contributions/);
-  });
-});
-
-describe("archetype art", () => {
-  test("the archetype badge carries its character inside the SVG", () => {
-    expect(badgeSvg(sampleRecap, "archetype")).toContain('<image href="data:image/webp;base64,');
-    expect(badgeSvg(sampleRecap, "contributions")).not.toContain("<image");
-  });
-
-  test("the archetype card shows the diorama and the name, and stays light enough to embed", () => {
-    const svg = archetypeCardSvg(sampleRecap);
-    expect(svg).toContain('<image href="data:image/webp;base64,');
-    expect(svg).toContain(">Builder<");
-    expect(svg).toContain("octo-sample&#39;s 2026 archetype on WrapYourGit: Builder");
-    expect(svg.length).toBeLessThan(40_000);
-  });
-
-  test("no archetype draws the neutral card, with no diorama", () => {
-    const neutral = archetypeCardSvg(null);
-    expect(neutral).not.toContain("<image");
-    expect(neutral).toContain("See the 2026 recap");
-    expect(archetypeCardSvg(emptyRecap)).toBe(neutral);
   });
 });
 
