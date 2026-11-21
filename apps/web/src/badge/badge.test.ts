@@ -76,7 +76,12 @@ describe("badgeSvg", () => {
   test("grows with its text", () => {
     const width = (svg: string) => Number(/width="(\d+)"/.exec(svg)?.[1]);
     expect(width(badgeSvg(busyRecap, "contributions"))).toBeGreaterThan(
-      width(badgeSvg({ ...busyRecap, contributions: { ...busyRecap.contributions, total: 7 } }, "contributions")),
+      width(
+        badgeSvg(
+          { ...busyRecap, contributions: { ...busyRecap.contributions, total: 7 } },
+          "contributions",
+        ),
+      ),
     );
   });
 });

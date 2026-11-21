@@ -116,8 +116,7 @@ export function badgeContent(recap: RecapData, show: BadgeShow): Content | null 
   }
 }
 
-const escape = (text: string) =>
-  text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const xml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /** "21 Nov 2026" from an ISO date, in UTC like the recap's days. */
 function day(iso: string): string {
@@ -134,7 +133,7 @@ function text(run: Run, x: number, y: number, size: number, anchor?: "end"): str
   const width = textWidth(run.text, size, run.bold).toFixed(1);
   return `<text x="${x.toFixed(1)}" y="${y}" fill="${run.color}" font-size="${size}"${
     run.bold ? ' font-weight="700"' : ""
-  }${anchor ? ` text-anchor="${anchor}"` : ""} textLength="${width}" lengthAdjust="spacingAndGlyphs">${escape(run.text)}</text>`;
+  }${anchor ? ` text-anchor="${anchor}"` : ""} textLength="${width}" lengthAdjust="spacingAndGlyphs">${xml(run.text)}</text>`;
 }
 
 /** Runs laid out left to right from `x`, a space apart unless `tight`; returns the SVG and the end x. */
@@ -163,7 +162,7 @@ const markWidth = (cell: number) => cell * 3 + cell * 0.375 * 2;
 
 function svg(width: number, height: number, label: string, body: string): string {
   const w = Math.ceil(width);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}" role="img" aria-label="${escape(label)}"><title>${escape(label)}</title><g font-family="${FONT}">${body}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}" role="img" aria-label="${xml(label)}"><title>${xml(label)}</title><g font-family="${FONT}">${body}</g></svg>`;
 }
 
 const BADGE_HEIGHT = 28;

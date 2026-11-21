@@ -101,5 +101,8 @@ function page(): string {
 </html>`;
 }
 
-Bun.serve({ port: PORT, fetch: () => new Response(page(), { headers: { "Content-Type": "text/html; charset=utf-8" } }) });
+Bun.serve({
+  port: PORT,
+  fetch: () => new Response(page(), { headers: { "Content-Type": "text/html; charset=utf-8" } }),
+});
 console.log(`badge preview on http://localhost:${PORT}`);
