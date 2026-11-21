@@ -4,6 +4,8 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-21
+
 ### Changed
 
 - The README card's archetype moves: it plays the dashboard's own loop of the diorama, and a reader who asks for reduced motion sees the still diorama. The card grows to about 150 KB (ADR-0035) ([#211](https://github.com/habibiahmada/wrapyourgit/issues/211)).
@@ -124,6 +126,7 @@ The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourg
 - A signed-in visitor's new public lookups count against their account instead of their address, so one session sent from many addresses no longer gets 20 lookups an hour at each and drains the shared public token (ADR-0032).
 - The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
 
-[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/habibiahmada/wrapyourgit/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/habibiahmada/wrapyourgit/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/habibiahmada/wrapyourgit/commits/v1.0.0
