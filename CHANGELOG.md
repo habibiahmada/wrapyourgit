@@ -16,6 +16,7 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ### Changed
 
+- Search engines, link previews and language models hear about the README images: the site's description, keywords and structured data name them, the FAQ says how to use them, `llms.txt` and `llms-full.txt` list their URLs and options, and the landing's README section can be linked as `/#readme`. The repository README shows the author's own badge, card and snake ([#207](https://github.com/habibiahmada/wrapyourgit/issues/207)).
 - Slides, the PDF, the share card and the card with private work open in a preview before they download, with Download and Close; closing drops the file. The video still downloads as soon as it is made. Dialogs fade and rise in instead of appearing at once, with a quick fade only under reduced motion ([#201](https://github.com/habibiahmada/wrapyourgit/issues/201)).
 - The dashboard matches the landing page: only the site's palette (last year in grey instead of blue, a smaller year in a neutral chip instead of amber), green links, 12px boxes and the landing's isometric floor, faint. It stays a tool, with no bands, glass or scenery ([#203](https://github.com/habibiahmada/wrapyourgit/issues/203)).
 

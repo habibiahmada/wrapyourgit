@@ -6,6 +6,8 @@ Site: https://wrapyourgit.com. People also call this kind of recap "GitHub Wrapp
 
 Any GitHub username has a recap of its public activity at https://wrapyourgit.com/<username>; signing in with GitHub adds private contribution counts to your own. Before 31 December the story says "so far" and can be synced again. Private repositories count toward totals but are never named in anything that can be shared.
 
+Every username also has three images for a GitHub profile README, built from its public recap: a badge at https://wrapyourgit.com/<username>/badge.svg (the year and up to four numbers), a card at https://wrapyourgit.com/<username>/card.svg (the developer archetype beside the numbers, with a compact layout for phones) and a snake at https://wrapyourgit.com/<username>/snake.svg that eats the year's contribution graph. Signed-in users copy the Markdown from their dashboard.
+
 ## Pages
 
 - [Home](https://wrapyourgit.com/): what the recap contains, the stations of the ride, the archetypes, what you can download, privacy facts and the FAQ

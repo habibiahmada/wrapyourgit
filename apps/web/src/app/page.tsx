@@ -95,6 +95,7 @@ function structuredData() {
           "Comparison with the same span of last year",
           "An MP4 video, slides as PNG and a PDF in four shapes, and a share card",
           "A public page for every GitHub username",
+          "README images for any GitHub username: a badge, a card with the archetype and a snake that eats the contribution graph",
         ],
       },
       {

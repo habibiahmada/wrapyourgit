@@ -122,6 +122,27 @@ The climax of the story names your archetype, with the facts that earned it. You
 | 🔗 **A public page** | Every GitHub username has one at `/<username>`, built from public activity only. You can hide yours in Settings.           |
 | 🪪 **A share card**  | A 1200 × 630 image for social posts, also used as the page's preview.                                                      |
 | 🎞️ **An MP4 video**  | In 9:16, 4:5, 1:1 and 16:9, with the soundtrack, rendered in your own browser.                                             |
+| 📛 **README images** | A badge, a card and a snake for your GitHub profile README, built from public activity only.                               |
+
+### In your README
+
+Every username has three images, here for the author's own account. Signed in, the dashboard's "Put it in your README" panel picks the options and copies the Markdown.
+
+[![WrapYourGit 2026](https://wrapyourgit.com/habibiahmada/badge.svg?show=contributions,streak,language)](https://wrapyourgit.com/habibiahmada)
+
+[![@habibiahmada's 2026 on GitHub](https://wrapyourgit.com/habibiahmada/card.svg)](https://wrapyourgit.com/habibiahmada)
+
+[![@habibiahmada's 2026 contribution graph, eaten by a snake](https://wrapyourgit.com/habibiahmada/snake.svg)](https://wrapyourgit.com/habibiahmada)
+
+```md
+[![WrapYourGit 2026](https://wrapyourgit.com/<username>/badge.svg?show=contributions,streak,language)](https://wrapyourgit.com/<username>)
+```
+
+| Image | URL                     | Options                                                                                  |
+| ----- | ----------------------- | ---------------------------------------------------------------------------------------- |
+| Badge | `/<username>/badge.svg` | `?show=` up to four of `contributions`, `streak`, `days`, `language`, `archetype`        |
+| Card  | `/<username>/card.svg`  | `?archetype=left\|right`, `?hide=archetype,name,stats`, `?show=graph`, `?layout=compact` |
+| Snake | `/<username>/snake.svg` | none                                                                                     |
 
 The dashboard adds a profile-style overview: your calendar, highlights, languages, this year against the same span of last year, and the repositories that caught your eye.
 

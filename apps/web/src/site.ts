@@ -23,7 +23,7 @@ export const SITE = {
   alternateNames: ["Wrap Your Git", `WrapYourGit ${EDITION_YEAR}`],
   title: `WrapYourGit ${EDITION_YEAR}: your GitHub year in review, animated`,
   tagline: "Every green square has a story. Here's yours, in motion.",
-  description: `WrapYourGit turns your ${EDITION_YEAR} on GitHub into an animated story. Type any GitHub username or sign in, and watch the year play back as a train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype. Free, read-only, yours to delete, and not affiliated with GitHub.`,
+  description: `WrapYourGit turns your ${EDITION_YEAR} on GitHub into an animated story. Type any GitHub username or sign in, and watch the year play back as a train ride through your contributions, streaks, languages, repositories, pull requests, stars and your developer archetype, then put a badge, a card or a contribution snake in your GitHub README. Free, read-only, yours to delete, and not affiliated with GitHub.`,
   author: {
     name: "Habibi Ahmad Aziz",
     handle: "habibiahmada",
@@ -58,6 +58,11 @@ export const SITE = {
     "year in code",
     "developer archetype",
     "GitHub video recap",
+    "GitHub README badge",
+    "GitHub profile README",
+    "GitHub README stats",
+    "GitHub stats card",
+    "contribution graph snake",
   ],
   themeColor: "#12110e",
 } as const;
