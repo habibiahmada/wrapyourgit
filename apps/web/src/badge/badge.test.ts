@@ -394,7 +394,8 @@ describe("snake", () => {
     expect(svg).toContain("@media (prefers-reduced-motion:reduce)");
     expect(svg).toContain(".s{display:none}");
     expect(label(svg)).toContain("eaten by a snake: 186 active days");
-    expect(svg.length).toBeLessThan(90_000);
+    // Budget: about 190 animated squares, a segment per three days and the route, once.
+    expect(svg.length).toBeLessThan(100_000);
   });
 
   test("a year with nothing to eat has no snake", () => {

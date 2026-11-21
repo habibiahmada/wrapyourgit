@@ -868,11 +868,11 @@ export function snakeSvg(recap: RecapData | null): string {
     const cell = { week: Math.floor(index / 7), row: index % 7 };
     const { x, y } = at(cell);
     const level = levels.get(date) ?? 0;
-    const box = `x="${x}" y="${y}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="2"`;
+    // Every square is a <use> of one shared rect (#q), which keeps 371 of them light.
     if (date > recap.meta.periodEnd) {
-      still.push(`<rect ${box} fill="none" stroke="${SURFACE}"/>`);
+      still.push(`<use href="#q" x="${x}" y="${y}" fill="none" stroke="${SURFACE}"/>`);
     } else if (level === 0) {
-      still.push(`<rect ${box} fill="${SURFACE}"/>`);
+      still.push(`<use href="#q" x="${x}" y="${y}" fill="${SURFACE}"/>`);
     } else {
       lit.push({ cell, level });
     }
@@ -891,7 +891,7 @@ export function snakeSvg(recap: RecapData | null): string {
     const { x, y } = at(cell);
     const colour = HEAT[level] as string;
     // Discrete: its own colour until the snake reaches it, then empty until the loop starts over.
-    return `<rect x="${x}" y="${y}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="2" class="l${level}" fill="${colour}"><animate attributeName="fill" values="${colour};${SURFACE};${colour}" keyTimes="0;${share(eatenAt[i] ?? 0)};1" calcMode="discrete" dur="${dur}" repeatCount="indefinite"/></rect>`;
+    return `<use href="#q" x="${x}" y="${y}" class="l${level}" fill="${colour}"><animate attributeName="fill" values="${colour};${SURFACE};${colour}" keyTimes="0;${share(eatenAt[i] ?? 0)};1" calcMode="discrete" dur="${dur}" repeatCount="indefinite"/></use>`;
   });
 
   // The route is drawn once, as the path every segment follows; segment k runs k steps behind
@@ -941,6 +941,7 @@ export function snakeSvg(recap: RecapData | null): string {
     `<rect x="0.5" y="0.5" width="${SNAKE_WIDTH - 1}" height="${SNAKE_HEIGHT - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
     styles,
     cardHeader(recap, year, CARD_PAD, SNAKE_WIDTH - CARD_PAD, HEADER_BASELINE),
+    `<defs><rect id="q" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="2"/></defs>`,
     still.join(""),
     eaten.join(""),
     segments.length
