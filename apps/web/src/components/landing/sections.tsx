@@ -654,7 +654,6 @@ export function ReadmeSection() {
                 width={360}
                 height={360}
               />
-              {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
               <img
                 src="/landing/readme-card.svg"
                 width={720}
