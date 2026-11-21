@@ -2,10 +2,11 @@ import { EDITION_YEAR, type RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS } from "@wyg/video/copy";
 import { heatLevels } from "@wyg/video/heat";
 import { LOGO_CELLS } from "../components/site/logo-mark";
+import { ARCHETYPE_ART, type BadgeImage } from "./archetype-art";
 import { textWidth } from "./text-width";
 
 /*
- * README badges and the README card (ADR-0035). Plain SVG strings: a README image is an <img>
+ * README badges, the README card and the archetype card (ADR-0035). Plain SVG strings: a README image is an <img>
  * behind GitHub's proxy, so it can load no font, script or stylesheet. Callers pass the PUBLIC
  * recap (loadPublicRecap) or null, and null draws the neutral image, the same for a hidden,
  * unknown or not-yet-fetched account so the badge never tells them apart.
@@ -42,6 +43,8 @@ interface Content {
   runs: Run[];
   /** A colour dot before the value: the language's own colour. */
   swatch?: string;
+  /** A small picture before the value: the archetype's character. */
+  image?: BadgeImage;
   /** The value in words, for the image's accessible name. */
   words: string;
 }
@@ -106,6 +109,7 @@ export function badgeContent(recap: RecapData, show: BadgeShow): Content | null 
       if (!id) return null;
       const label = ARCHETYPE_LABELS[id];
       return {
+        image: ARCHETYPE_ART[id].character,
         runs: [
           { text: label, color: FG, bold: true },
           { text: "archetype", color: MUTED },
@@ -159,6 +163,11 @@ function mark(x: number, y: number, cell: number): string {
   }).join("");
 }
 
+/** An embedded raster: a README <img> loads nothing from inside the SVG, so it travels as data. */
+function image(source: BadgeImage, x: number, y: number, width: number, height: number): string {
+  return `<image href="${source.href}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${width.toFixed(1)}" height="${height.toFixed(1)}"/>`;
+}
+
 const markWidth = (cell: number) => cell * 3 + cell * 0.375 * 2;
 
 function svg(width: number, height: number, label: string, body: string): string {
@@ -198,6 +207,13 @@ export function badgeSvg(recap: RecapData | null, show: BadgeShow): string {
     swatch = `<circle cx="${(valueX + 4).toFixed(1)}" cy="${BADGE_HEIGHT / 2}" r="4" fill="${content.swatch}" stroke="${EDGE}" stroke-width="0.5"/>`;
     valueX += 13;
   }
+  let picture = "";
+  if (content?.image) {
+    const height = 22;
+    const width = (content.image.width / content.image.height) * height;
+    picture = image(content.image, valueX, (BADGE_HEIGHT - height) / 2, width, height);
+    valueX += width + 6;
+  }
   const right = line(
     content?.runs ?? [{ text: `See the ${year} recap`, color: FG }],
     valueX,
@@ -218,6 +234,7 @@ export function badgeSvg(recap: RecapData | null, show: BadgeShow): string {
     mark(BADGE_PAD, markTop, BADGE_CELL),
     left.svg,
     swatch,
+    picture,
     right.svg,
   ].join("");
   return svg(width, BADGE_HEIGHT, label, body);
@@ -343,4 +360,83 @@ export function cardSvg(recap: RecapData | null): string {
     brand,
   ].join("");
   return svg(CARD_WIDTH, CARD_HEIGHT, label, body);
+}
+
+const ARCHETYPE_WIDTH = 420;
+const ARCHETYPE_HEIGHT = 200;
+const DIORAMA_BOX = { x: 14, y: 14, width: 192, height: ARCHETYPE_HEIGHT - 28 };
+const ARCHETYPE_TEXT_X = 222;
+
+/**
+ * The archetype card: the archetype's diorama from the landing page beside its name. `recap`
+ * null, or one with no archetype, draws the neutral card: the mark and a line pointing at the
+ * recap, never a diorama for an archetype the user does not have.
+ */
+export function archetypeCardSvg(recap: RecapData | null): string {
+  const year = recap?.meta.year ?? EDITION_YEAR;
+  const id = recap?.identity.archetype ?? null;
+  const textWidthLeft = ARCHETYPE_WIDTH - ARCHETYPE_TEXT_X - CARD_PAD;
+
+  let picture: string;
+  let words: string;
+  let label: string;
+  if (recap && id) {
+    const art = ARCHETYPE_ART[id].diorama;
+    // Fit the diorama inside its box, keeping its shape, centred.
+    const scale = Math.min(DIORAMA_BOX.width / art.width, DIORAMA_BOX.height / art.height);
+    const width = art.width * scale;
+    const height = art.height * scale;
+    picture = image(
+      art,
+      DIORAMA_BOX.x + (DIORAMA_BOX.width - width) / 2,
+      DIORAMA_BOX.y + (DIORAMA_BOX.height - height) / 2,
+      width,
+      height,
+    );
+    const name = ARCHETYPE_LABELS[id];
+    // The longest name ("Collaborator") still fits on one line: the size gives way, not the text.
+    const size = Math.min(28, textWidthLeft / textWidth(name, 1, true));
+    words = [
+      text({ text: "Archetype", color: MUTED }, ARCHETYPE_TEXT_X, 74, 12),
+      text({ text: name, color: FG, bold: true }, ARCHETYPE_TEXT_X, 108, Math.floor(size)),
+      text(
+        {
+          text: `@${recap.profile.login} · ${recap.meta.isFinal ? year : `${year} so far`}`,
+          color: MUTED,
+        },
+        ARCHETYPE_TEXT_X,
+        132,
+        12,
+      ),
+    ].join("");
+    label = `${recap.profile.login}'s ${year} archetype on WrapYourGit${recap.meta.isFinal ? "" : " so far"}: ${name}, through ${day(recap.meta.periodEnd)}`;
+  } else {
+    const cell = 14;
+    picture = mark(
+      DIORAMA_BOX.x + (DIORAMA_BOX.width - markWidth(cell)) / 2,
+      ARCHETYPE_HEIGHT / 2 - (cell * 2 + cell * 0.375) / 2,
+      cell,
+    );
+    words = line(
+      [
+        { text: "WrapYourGit", color: FG, bold: true },
+        { text: String(year), color: MUTED },
+      ],
+      ARCHETYPE_TEXT_X,
+      96,
+      16,
+    ).svg.concat(text({ text: `See the ${year} recap`, color: FG }, ARCHETYPE_TEXT_X, 122, 13));
+    label = `WrapYourGit ${year}: see the recap`;
+  }
+
+  const site = { text: "wrapyourgit.com", color: MUTED };
+  const brand = recap && id ? `${mark(ARCHETYPE_TEXT_X, 168, 3)}${text(site, ARCHETYPE_TEXT_X + markWidth(3) + 6, 175, 11)}` : "";
+
+  const body = [
+    `<rect x="0.5" y="0.5" width="${ARCHETYPE_WIDTH - 1}" height="${ARCHETYPE_HEIGHT - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
+    picture,
+    words,
+    brand,
+  ].join("");
+  return svg(ARCHETYPE_WIDTH, ARCHETYPE_HEIGHT, label, body);
 }

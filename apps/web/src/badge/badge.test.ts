@@ -6,7 +6,14 @@ import {
   provisionalRecap,
 } from "../../../../packages/video/src/fixtures/edge-recaps";
 import { sampleRecap } from "../../../../packages/video/src/fixtures/sample-recap";
-import { BADGE_SHOWS, badgeContent, badgeShow, badgeSvg, cardSvg } from "./badge";
+import {
+  archetypeCardSvg,
+  BADGE_SHOWS,
+  badgeContent,
+  badgeShow,
+  badgeSvg,
+  cardSvg,
+} from "./badge";
 import { textWidth } from "./text-width";
 
 const words = (recap: RecapData, show: (typeof BADGE_SHOWS)[number]) =>
@@ -114,6 +121,28 @@ describe("cardSvg", () => {
     const svg = cardSvg(null);
     expect(svg).toContain("See the 2026 recap");
     expect(svg).not.toMatch(/contributions/);
+  });
+});
+
+describe("archetype art", () => {
+  test("the archetype badge carries its character inside the SVG", () => {
+    expect(badgeSvg(sampleRecap, "archetype")).toContain('<image href="data:image/webp;base64,');
+    expect(badgeSvg(sampleRecap, "contributions")).not.toContain("<image");
+  });
+
+  test("the archetype card shows the diorama and the name, and stays light enough to embed", () => {
+    const svg = archetypeCardSvg(sampleRecap);
+    expect(svg).toContain('<image href="data:image/webp;base64,');
+    expect(svg).toContain(">Builder<");
+    expect(svg).toContain("octo-sample&#39;s 2026 archetype on WrapYourGit: Builder");
+    expect(svg.length).toBeLessThan(40_000);
+  });
+
+  test("no archetype draws the neutral card, with no diorama", () => {
+    const neutral = archetypeCardSvg(null);
+    expect(neutral).not.toContain("<image");
+    expect(neutral).toContain("See the 2026 recap");
+    expect(archetypeCardSvg(emptyRecap)).toBe(neutral);
   });
 });
 

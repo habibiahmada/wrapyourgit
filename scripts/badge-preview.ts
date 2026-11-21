@@ -5,8 +5,8 @@
  *
  *   bun scripts/badge-preview.ts
  */
-import type { RecapData } from "@wyg/schema";
-import { BADGE_SHOWS, badgeSvg, cardSvg } from "../apps/web/src/badge/badge";
+import { archetypeIdSchema, type RecapData } from "@wyg/schema";
+import { archetypeCardSvg, BADGE_SHOWS, badgeSvg, cardSvg } from "../apps/web/src/badge/badge";
 import {
   busyRecap,
   emptyRecap,
@@ -47,7 +47,20 @@ function images(recap: RecapData | null): string {
     return `<figure><img src="${dataUrl(badgeSvg(recap, show))}" alt="${esc(alt)}"><figcaption><code>${esc(`/${login}/badge.svg${query}`)}</code></figcaption></figure>`;
   }).join("");
   const card = `<figure><img src="${dataUrl(cardSvg(recap))}" alt="${esc(`${login}'s 2026 on WrapYourGit`)}" width="500" height="186"><figcaption><code>${esc(`/${login}/card.svg`)}</code></figcaption></figure>`;
-  return `<div class="badges">${badges}</div>${card}`;
+  const archetype = `<figure><img src="${dataUrl(archetypeCardSvg(recap))}" alt="${esc(`${login}'s 2026 archetype on WrapYourGit`)}" width="420" height="200"><figcaption><code>${esc(`/${login}/archetype.svg`)}</code></figcaption></figure>`;
+  return `<div class="badges">${badges}</div><div class="cards">${card}${archetype}</div>`;
+}
+
+/** Each archetype's badge and card, on GitHub dark, to check every diorama and character. */
+function archetypes(theme: "light" | "dark"): string {
+  return archetypeIdSchema.options
+    .map((id) => {
+      const recap = { ...sampleRecap, identity: { ...sampleRecap.identity, archetype: id } };
+      return `<figure class="stack"><img src="${dataUrl(badgeSvg(recap, "archetype"))}" alt="${esc(`${id} archetype badge`)}"><img src="${dataUrl(archetypeCardSvg(recap))}" alt="${esc(`${id} archetype card`)}" width="420" height="200"></figure>`;
+    })
+    .join("")
+    .replace(/^/, `<div class="readme ${theme}"><p class="theme">GitHub ${theme}</p><div class="cards">`)
+    .concat("</div></div>");
 }
 
 function page(): string {
@@ -62,6 +75,12 @@ function page(): string {
       </div>
     </section>`,
   ).join("");
+  const everyArchetype = `
+    <section aria-labelledby="archetypes">
+      <h2 id="archetypes">Every archetype</h2>
+      <p class="note">sampleRecap with each archetype in turn: the character badge and the diorama card</p>
+      <div class="themes">${archetypes("light")}${archetypes("dark")}</div>
+    </section>`;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -87,6 +106,8 @@ function page(): string {
   .badges { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
   figure { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
   figcaption code { font-size: 12px; opacity: 0.8; }
+  .cards { display: flex; flex-direction: column; gap: 20px; }
+  .stack { flex-direction: column; align-items: flex-start; gap: 8px; }
   img { display: block; max-width: 100%; height: auto; }
 </style>
 </head>
@@ -95,7 +116,7 @@ function page(): string {
   <h1>README badge preview</h1>
   <p>Sample data from the story's test fixtures, not a real account. Issue #193, ADR-0035.</p>
 </header>
-<main>${sections}
+<main>${sections}${everyArchetype}
 </main>
 </body>
 </html>`;
