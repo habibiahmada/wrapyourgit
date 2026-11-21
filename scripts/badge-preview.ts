@@ -87,6 +87,31 @@ function images(recap: RecapData | null): string {
   return `<div class="badges">${badges}</div><div class="cards">${cards}</div>`;
 }
 
+/** Logos that were black, logos with little contrast, and a language with no logo (Gleam). */
+const LANGUAGES = [
+  "TypeScript",
+  "Rust",
+  "Markdown",
+  "Solidity",
+  "Go",
+  "Erlang",
+  "Objective-C",
+  "Haskell",
+  "Blade",
+  "Gleam",
+];
+
+function languages(theme: "light" | "dark"): string {
+  const badges = LANGUAGES.map((name) => {
+    const recap = {
+      ...sampleRecap,
+      languages: { ...sampleRecap.languages, top: [{ name, color: "#ffaff3", share: 1 }] },
+    };
+    return figure(badgeSvg(recap, ["language"]), `${name} badge`, name);
+  }).join("");
+  return `<div class="readme ${theme}"><p class="theme">GitHub ${theme}</p><div class="badges">${badges}</div></div>`;
+}
+
 /** Each archetype's card, to check every diorama. */
 function archetypes(theme: "light" | "dark"): string {
   const cards = archetypeIdSchema.options
@@ -145,6 +170,11 @@ function page(): string {
   <p>Sample data from the story's test fixtures, not a real account. Issue #193, ADR-0035. Reload to replay the entrance.</p>
 </header>
 <main>${sections}
+    <section aria-labelledby="languages">
+      <h2 id="languages">Language logos</h2>
+      <p class="note">Devicon logos; Rust, Markdown and Solidity were plain black and take the text colour; Gleam has no logo and keeps its colour dot</p>
+      <div class="themes">${languages("light")}${languages("dark")}</div>
+    </section>
     <section aria-labelledby="archetypes">
       <h2 id="archetypes">Every archetype</h2>
       <p class="note">sampleRecap with each archetype in turn, diorama on the left</p>

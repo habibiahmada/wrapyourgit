@@ -7,6 +7,7 @@ import {
 } from "../../../../packages/video/src/fixtures/edge-recaps";
 import { sampleRecap } from "../../../../packages/video/src/fixtures/sample-recap";
 import { BADGE_SHOWS, badgeContent, badgeShows, badgeSvg, cardOptions, cardSvg } from "./badge";
+import { LANGUAGE_ICONS } from "./language-icons";
 import { textWidth } from "./text-width";
 
 const words = (recap: RecapData, show: (typeof BADGE_SHOWS)[number]) =>
@@ -140,6 +141,35 @@ describe("badgeSvg", () => {
     expect(width(badgeSvg(busyRecap, ["contributions"]))).toBeGreaterThan(
       width(badgeSvg(seven, ["contributions"])),
     );
+  });
+});
+
+describe("language logos", () => {
+  const withLanguage = (name: string): RecapData => ({
+    ...sampleRecap,
+    languages: { ...sampleRecap.languages, top: [{ name, color: "#dea584", share: 1 }] },
+  });
+
+  test("a language with a Devicon logo shows the logo, in the badge and on the card", () => {
+    expect(badgeSvg(withLanguage("TypeScript"), ["language"])).toContain(
+      `<image href="${LANGUAGE_ICONS.typescript}"`,
+    );
+    expect(cardSvg(withLanguage("TypeScript"))).toContain(
+      `<image href="${LANGUAGE_ICONS.typescript}"`,
+    );
+  });
+
+  test("a language with no logo keeps a dot in its GitHub colour", () => {
+    const svg = badgeSvg(withLanguage("Gleam"), ["language"]);
+    expect(svg).toContain('fill="#dea584"');
+    expect(svg).not.toContain("data:image/svg+xml");
+  });
+
+  test("logos drawn in plain black are given the text colour, so they show on the dark ground", () => {
+    const rust = Buffer.from(LANGUAGE_ICONS.rust?.split(",")[1] ?? "", "base64").toString();
+    expect(rust).toContain('<svg fill="#eeeae0"');
+    const ts = Buffer.from(LANGUAGE_ICONS.typescript?.split(",")[1] ?? "", "base64").toString();
+    expect(ts).not.toContain('<svg fill="#eeeae0"');
   });
 });
 

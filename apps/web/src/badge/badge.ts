@@ -1,8 +1,10 @@
 import { EDITION_YEAR, type RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS } from "@wyg/video/copy";
 import { heatLevels } from "@wyg/video/heat";
+import { languageIcon } from "@wyg/video/languages";
 import { LOGO_CELLS } from "../components/site/logo-mark";
 import { ARCHETYPE_ART, type BadgeImage } from "./archetype-art";
+import { LANGUAGE_ICONS } from "./language-icons";
 import { textWidth } from "./text-width";
 
 /*
@@ -101,8 +103,8 @@ interface Run {
 
 interface Content {
   runs: Run[];
-  /** A colour dot before the value: the language's own colour. */
-  swatch?: string;
+  /** The language's logo, or its colour as a dot when it has none. */
+  language?: { name: string; color: string | null };
   /** The value in words, for the image's accessible name. */
   words: string;
 }
@@ -156,7 +158,7 @@ export function badgeContent(recap: RecapData, show: BadgeShow): Content | null 
       const top = recap.languages.top[0];
       if (!top) return null;
       return {
-        swatch: top.color ?? MUTED,
+        language: { name: top.name, color: top.color },
         runs: [
           { text: top.name, color: FG, bold: true },
           { text: "top language", color: MUTED },
@@ -224,6 +226,31 @@ function mark(x: number, y: number, cell: number, start = 0): string {
 const markWidth = (cell: number) => cell * 3 + cell * 0.375 * 2;
 const markHeight = (cell: number) => cell * 2 + cell * 0.375;
 
+/**
+ * The language's Devicon logo, `size` px square, centred on `cy` from `x`; a dot in its GitHub
+ * colour when there is no logo. Decorative: the name is always written beside it.
+ */
+function languageMark(
+  language: { name: string; color: string | null },
+  x: number,
+  cy: number,
+  size: number,
+): { svg: string; width: number } {
+  const slug = languageIcon(language.name)?.replace(/^lang\/|\.svg$/g, "");
+  const href = slug ? LANGUAGE_ICONS[slug] : undefined;
+  if (href) {
+    return {
+      svg: `<image href="${href}" x="${x.toFixed(1)}" y="${(cy - size / 2).toFixed(1)}" width="${size}" height="${size}"/>`,
+      width: size,
+    };
+  }
+  const r = size * 0.3;
+  return {
+    svg: `<circle cx="${(x + r).toFixed(1)}" cy="${cy}" r="${r.toFixed(1)}" fill="${language.color ?? MUTED}" stroke="${EDGE}" stroke-width="0.5"/>`,
+    width: r * 2,
+  };
+}
+
 /** An embedded raster: a README <img> loads nothing from inside the SVG, so it travels as data. */
 function image(source: BadgeImage, x: number, y: number, width: number, height: number): string {
   return `<image href="${source.href}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${width.toFixed(1)}" height="${height.toFixed(1)}"/>`;
@@ -273,9 +300,10 @@ export function badgeSvg(recap: RecapData | null, shows: readonly BadgeShow[]): 
     if (i > 0) dividers.push(x);
     let valueX = x + BADGE_PAD;
     let swatch = "";
-    if (content.swatch) {
-      swatch = `<circle cx="${(valueX + 4).toFixed(1)}" cy="${BADGE_HEIGHT / 2}" r="4" fill="${content.swatch}" stroke="${EDGE}" stroke-width="0.5"/>`;
-      valueX += 13;
+    if (content.language) {
+      const logo = languageMark(content.language, valueX, BADGE_HEIGHT / 2, 14);
+      swatch = logo.svg;
+      valueX += logo.width + 5;
     }
     const last = i === values.length - 1;
     const runs = last && soFar ? [...content.runs, { text: "so far", color: MUTED }] : content.runs;
@@ -417,8 +445,9 @@ function column(
     const top3 = recap.languages.top[0];
     const second = left + CARD_PAD + 150;
     const third = left + CARD_PAD + 300;
-    const language = top3
-      ? `<circle cx="${third + 5}" cy="${valueY - 6}" r="5" fill="${top3.color ?? MUTED}" stroke="${EDGE}" stroke-width="0.5"/>${text({ text: top3.name, color: FG, bold: true }, third + 15, valueY, 16)}`
+    const logo = top3 && languageMark(top3, third, valueY - 6, 18);
+    const language = top3 && logo
+      ? `${logo.svg}${text({ text: top3.name, color: FG, bold: true }, third + logo.width + 6, valueY, 16)}`
       : text({ text: "None yet", color: MUTED }, third, valueY, 16);
     const start = options.graph ? 1.1 : 0.3;
     parts.push(
