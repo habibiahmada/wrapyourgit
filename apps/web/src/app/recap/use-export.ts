@@ -19,6 +19,10 @@ export type ExportControls = {
   support: ExportSupport | null;
   busy: boolean;
   run: (job: ExportJob, format: ExportFormat) => void;
+  /** Download the slides or PDF waiting in the preview (#201). */
+  save: () => void;
+  /** Close the preview and drop its file. */
+  discard: () => void;
   cancel: () => void;
 };
 
@@ -86,6 +90,8 @@ export function useExport(
     support,
     busy,
     run: (job, format) => void runner.current?.run(job, format),
+    save: () => runner.current?.save(),
+    discard: () => runner.current?.discard(),
     cancel: () => runner.current?.cancel(),
   };
 }

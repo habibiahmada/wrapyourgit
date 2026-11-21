@@ -6,6 +6,7 @@ import Link from "next/link";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Art } from "@/components/art";
 import type { EndLink, ShareCard } from "./end-screen";
+import { CardPreview, FilePreview } from "./export-preview";
 import { announcement, type ExportJob, percent, renderingTitle } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { useExport } from "./use-export";
@@ -47,8 +48,10 @@ const USE: Record<ExportFormat, string> = {
 /**
  * "Keep your year" at the closing stop: the story's files as two columns of paper tickets on the
  * grass at the bottom right, each an ink tile with a pixel mark and the file's name. The video,
- * slides and PDF open their four shapes first; the share card is the link preview's own size. While a file is made, and only then, a small dialog shows Cell, a bar and one
- * sentence. Never part of the composition, so never in a file.
+ * slides and PDF open their four shapes first; the share card is the link preview's own size.
+ * While a file is made, and only then, a small dialog shows Cell, a bar and one sentence. The
+ * slides, the PDF and the cards then wait in a preview to download or close (#201); the video
+ * downloads as soon as it is made. Never part of the composition, so never in a file.
  */
 export function ExportShelf({
   data,
@@ -71,7 +74,13 @@ export function ExportShelf({
   links: readonly EndLink[];
   onBusyChange: (busy: boolean) => void;
 }) {
-  const { state, support, busy, run, cancel } = useExport(data, { letter, onBusyChange });
+  const { state, support, busy, run, save, discard, cancel } = useExport(data, {
+    letter,
+    onBusyChange,
+  });
+  // Which card's preview is open, if any (#201), and its ticket, to take focus back.
+  const [cardOpen, setCardOpen] = useState<"share" | "private" | null>(null);
+  const cardTickets = useRef<Partial<Record<"share" | "private", HTMLButtonElement | null>>>({});
   const left = useTimeLeft(state);
   // Which file's shapes are open, if any; and each file's ticket, to take focus back.
   const [open, setOpen] = useState<ExportJob | null>(null);
@@ -208,14 +217,21 @@ export function ExportShelf({
         })}
         <li>
           {"href" in card ? (
-            <a href={card.href} download={card.filename ?? true} className={TICKET}>
+            <button
+              ref={(node) => {
+                cardTickets.current.share = node;
+              }}
+              type="button"
+              onClick={() => setCardOpen("share")}
+              className={TICKET}
+            >
               <span aria-hidden="true" className={TILE}>
                 <CardMark />
               </span>
               <span>
                 Share card <span className="font-medium text-ink-soft">PNG</span>
               </span>
-            </a>
+            </button>
           ) : (
             <button type="button" disabled aria-describedby={cardId} className={TICKET}>
               <span aria-hidden="true" className={TILE}>
@@ -227,14 +243,21 @@ export function ExportShelf({
         </li>
         {"href" in card && card.privateHref && (
           <li>
-            <a href={card.privateHref} download className={TICKET}>
+            <button
+              ref={(node) => {
+                cardTickets.current.private = node;
+              }}
+              type="button"
+              onClick={() => setCardOpen("private")}
+              className={TICKET}
+            >
               <span aria-hidden="true" className={TILE}>
                 <CardMark />
               </span>
               <span>
                 Card with private work <span className="font-medium text-ink-soft">PNG</span>
               </span>
-            </a>
+            </button>
           </li>
         )}
         {links.map((link) => {
@@ -283,6 +306,35 @@ export function ExportShelf({
         <p id={cardId} className="sr-only">
           {card.reason}
         </p>
+      )}
+
+      {state.status === "ready" && (
+        <FilePreview
+          state={state}
+          tone="paper"
+          // The dialog that had focus is gone: give it back to the file's own ticket.
+          onSave={() => {
+            save();
+            tickets.current[state.job]?.focus();
+          }}
+          onClose={() => {
+            discard();
+            tickets.current[state.job]?.focus();
+          }}
+        />
+      )}
+      {cardOpen && "href" in card && (
+        <CardPreview
+          href={cardOpen === "private" && card.privateHref ? card.privateHref : card.href}
+          title={cardOpen === "private" ? "Your card with private work" : "Your share card"}
+          fallbackName={card.filename ?? "wrapyourgit-card.png"}
+          tone="paper"
+          onClose={() => {
+            const back = cardTickets.current[cardOpen];
+            setCardOpen(null);
+            back?.focus();
+          }}
+        />
       )}
 
       {state.status === "rendering" && (
