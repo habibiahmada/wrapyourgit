@@ -4,6 +4,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- The landing page's story frames open larger: choose one in the reel to see it over a dark overlay, step through the others, and close it with Escape, the close button or a click outside ([#199](https://github.com/habibiahmada/wrapyourgit/issues/199)).
+
 ## [1.0.0] - 2026-11-19
 
 The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourgit.com).
