@@ -1,4 +1,4 @@
-import { EDITION_YEAR, type RecapData } from "@wyg/schema";
+import { type ArchetypeId, EDITION_YEAR, type RecapData } from "@wyg/schema";
 import { ARCHETYPE_LABELS } from "@wyg/video/copy";
 import { heatLevels } from "@wyg/video/heat";
 import { languageIcon } from "@wyg/video/languages";
@@ -14,8 +14,9 @@ import { textWidth } from "./text-width";
  * pass the PUBLIC recap (loadPublicRecap) or null, and null draws the neutral image, the same for
  * a hidden, unknown or not-yet-fetched account so the image never tells them apart.
  *
- * Both play a short entrance once (under two seconds) and then hold still: an <img> can carry no
- * pause button, so nothing loops, and a reader who asks for reduced motion sees the still image.
+ * Both play a short entrance once (under two seconds). Then only the card's archetype keeps moving,
+ * the dashboard's own loop, by the maintainer's call like the snake (#211); everything else holds
+ * still, and a reader who asks for reduced motion sees the still image.
  */
 
 // The site's warm ink (DESIGN.md "Web"). Contrast measured with antislop's checker: fg 16.5:1 on
@@ -35,8 +36,12 @@ const FONT = "Mona Sans,-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Aria
  * The entrance: `.c` cells and `.w` calendar weeks fade in, `.v` values rise into place. The
  * resting state is the final one (`backwards` only paints the start before each delay ends), so a
  * renderer without CSS animation still shows the whole image.
+ *
+ * The archetype's `.dm` moving layer draws over its `.ds` still: in motion the still steps aside,
+ * or its Cell would show behind the moving one; with reduced motion the moving layer goes. A
+ * renderer without CSS draws both, the moving one on top.
  */
-const MOTION = `<style>@media (prefers-reduced-motion:no-preference){.c,.w{animation:wyg-in .4s ease-out backwards}.v{animation:wyg-up .5s ease-out backwards}}@keyframes wyg-in{from{opacity:0}}@keyframes wyg-up{from{opacity:0;transform:translateY(4px)}}</style>`;
+const MOTION = `<style>@media (prefers-reduced-motion:no-preference){.c,.w{animation:wyg-in .4s ease-out backwards}.v{animation:wyg-up .5s ease-out backwards}.ds{visibility:hidden}}@media (prefers-reduced-motion:reduce){.dm{display:none}}@keyframes wyg-in{from{opacity:0}}@keyframes wyg-up{from{opacity:0;transform:translateY(4px)}}</style>`;
 const delay = (seconds: number) => `style="animation-delay:${seconds.toFixed(2)}s"`;
 
 export { BADGE_SHOWS, type BadgeShow, type CardLayout, type CardSide, MAX_SHOWS };
@@ -273,6 +278,24 @@ function languageMark(
 /** An embedded raster: a README <img> loads nothing from inside the SVG, so it travels as data. */
 function image(source: BadgeImage, x: number, y: number, width: number, height: number): string {
   return `<image href="${source.href}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${width.toFixed(1)}" height="${height.toFixed(1)}"/>`;
+}
+
+/**
+ * The archetype's diorama in the box given: the still, and over it the dashboard's base and
+ * animated overlay, cropped to the box the still was trimmed to so the two line up (#211).
+ */
+function diorama(id: ArchetypeId, x: number, y: number, width: number, height: number): string {
+  const { diorama: still, motion } = ARCHETYPE_ART[id];
+  const { crop } = motion;
+  const layer = (href: string) =>
+    `<image href="${href}" width="${motion.width}" height="${motion.height}"/>`;
+  return [
+    `<g class="ds">${image(still, x, y, width, height)}</g>`,
+    `<svg class="dm" aria-hidden="true" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${width.toFixed(1)}" height="${height.toFixed(1)}" viewBox="${crop.x} ${crop.y} ${crop.width} ${crop.height}" preserveAspectRatio="none">`,
+    layer(motion.base),
+    layer(motion.frames),
+    "</svg>",
+  ].join("");
 }
 
 function svg(width: number, height: number, label: string, body: string): string {
@@ -542,7 +565,7 @@ function archetypePanel(
     text(run, centre - textWidth(run.text, size, run.bold) / 2, y, size);
   return [
     alone ? mark(left + 14, top + 14, 4) : "",
-    `<g class="v" ${delay(0.1)}>${image(art, centre - width / 2, top + 14 + (box.height - height) / 2, width, height)}</g>`,
+    `<g class="v" ${delay(0.1)}>${diorama(id, centre - width / 2, top + 14 + (box.height - height) / 2, width, height)}</g>`,
     withName
       ? `<g class="v" ${delay(0.5)}>${centred({ text: name, color: FG, bold: true }, top + 162, 18)}${centred({ text: caption, color: MUTED }, top + 180, 11)}</g>`
       : "",
@@ -679,7 +702,7 @@ function compactCardSvg(recap: RecapData | null, options: CardOptions): string {
     const height = art.height * scale;
     const centre = COMPACT_WIDTH / 2;
     parts.push(
-      `<g class="v" ${delay(0.1)}>${image(art, centre - width / 2, y + 4 + (box.height - height) / 2, width, height)}</g>`,
+      `<g class="v" ${delay(0.1)}>${diorama(id, centre - width / 2, y + 4 + (box.height - height) / 2, width, height)}</g>`,
     );
     y += 4 + box.height;
     if (options.name) {
