@@ -201,7 +201,9 @@ describe("cardSvg", () => {
 
   test("the archetype's name can go, and the diorama grows into its place", () => {
     const imageHeight = (svg: string) =>
-      Number(/<image href="[^"]+" x="[\d.]+" y="[\d.]+" width="[\d.]+" height="([\d.]+)"/.exec(svg)?.[1]);
+      Number(
+        /<image href="[^"]+" x="[\d.]+" y="[\d.]+" width="[\d.]+" height="([\d.]+)"/.exec(svg)?.[1],
+      );
     const named = cardSvg(sampleRecap);
     const unnamed = cardSvg(sampleRecap, cardOptions({ hide: "name" }));
     expect(unnamed).not.toContain(">Builder<");

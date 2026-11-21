@@ -538,7 +538,9 @@ export function cardSvg(recap: RecapData | null, options: CardOptions = DEFAULT_
     withPanel && withColumn
       ? `<rect x="${divider}" y="16" width="1" height="${height - 32}" fill="${SURFACE}"/>`
       : "",
-    withPanel ? archetypePanel(recap, panelLeft, (height - PANEL_HEIGHT) / 2, !withColumn, options.name) : "",
+    withPanel
+      ? archetypePanel(recap, panelLeft, (height - PANEL_HEIGHT) / 2, !withColumn, options.name)
+      : "",
     withColumn
       ? column(recap, year, columnLeft, Math.floor((height - colHeight) / 2), options)
       : "",
