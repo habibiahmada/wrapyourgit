@@ -610,8 +610,9 @@ export function ReadmeSection() {
       className="band tone-dark motif-hatch reach-right relative overflow-clip py-24 sm:py-32"
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
-        <div className="grid gap-10 lg:grid-cols-12 lg:items-end">
-          <div className="lg:col-span-6">
+        {/* Text beside the README frame, so the frame is only as wide as the images in it. */}
+        <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-5">
             <h2 id="readme-title" className={`reveal-heading ${heading}`}>
               Put your year in your <span className="text-green">README.</span>
             </h2>
@@ -619,66 +620,66 @@ export function ReadmeSection() {
               A badge, a card or a snake for any GitHub username, built from public activity only.
               Sign in to copy yours from your dashboard.
             </p>
+            <dl className="stagger mt-10 grid gap-6 sm:grid-cols-3 lg:grid-cols-1">
+              {README_IMAGES.map(({ name, detail }) => (
+                <div key={name} className="reveal">
+                  <dt className="text-lg font-bold text-fg">{name}</dt>
+                  <dd className="mt-1 text-muted">{detail}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
-          <dl className="stagger grid gap-6 sm:grid-cols-3 lg:col-span-6">
-            {README_IMAGES.map(({ name, detail }) => (
-              <div key={name} className="reveal">
-                <dt className="text-lg font-bold text-fg">{name}</dt>
-                <dd className="mt-1 text-muted">{detail}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
 
-        <figure className="reveal mt-12 overflow-hidden rounded-xl border border-line bg-head">
-          <div className="border-b border-line px-5 py-3 font-mono text-sm text-muted">
-            README.md
-          </div>
-          <div className="grid justify-items-start gap-6 p-5 sm:p-8">
-            {/* Plain <img>: the SVGs animate as they do in a README, which next/image would stop. */}
-            {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
-            <img
-              src="/landing/readme-badge.svg"
-              width={499}
-              height={28}
-              loading="lazy"
-              decoding="async"
-              alt="A sample badge: 2026, 1,284 contributions, longest streak 24 days, top language TypeScript"
-              className="h-auto max-w-full"
-            />
-            {/* On a phone the compact card, as a README can offer it with <picture> (ADR-0035). */}
-            <picture>
-              <source
-                media="(max-width: 600px)"
-                srcSet="/landing/readme-card-compact.svg"
-                width={360}
-                height={360}
-              />
+          <figure className="reveal overflow-hidden rounded-xl border border-line bg-head lg:col-span-7">
+            <div className="border-b border-line px-5 py-3 font-mono text-sm text-muted">
+              README.md
+            </div>
+            <div className="grid justify-items-start gap-6 p-5 sm:p-8">
+              {/* Plain <img>: the SVGs animate as they do in a README, which next/image would stop. */}
+              {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
               <img
-                src="/landing/readme-card.svg"
-                width={720}
-                height={200}
+                src="/landing/readme-badge.svg"
+                width={499}
+                height={28}
                 loading="lazy"
                 decoding="async"
-                alt="A sample card: the Builder archetype's city beside 1,284 contributions, a 24-day longest streak and TypeScript"
+                alt="A sample badge: 2026, 1,284 contributions, longest streak 24 days, top language TypeScript"
                 className="h-auto max-w-full"
               />
-            </picture>
-            {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
-            <img
-              src="/landing/readme-snake.svg"
-              width={670}
-              height={152}
-              loading="lazy"
-              decoding="async"
-              alt="A sample contribution graph with a snake eating its green squares"
-              className="h-auto max-w-full"
-            />
-          </div>
-          <figcaption className="border-t border-line px-5 py-3 text-sm text-muted">
-            Sample data from the story&apos;s sample recap, @octo-sample.
-          </figcaption>
-        </figure>
+              {/* On a phone the compact card, as a README can offer it with <picture> (ADR-0035). */}
+              <picture>
+                <source
+                  media="(max-width: 600px)"
+                  srcSet="/landing/readme-card-compact.svg"
+                  width={360}
+                  height={360}
+                />
+                <img
+                  src="/landing/readme-card.svg"
+                  width={720}
+                  height={200}
+                  loading="lazy"
+                  decoding="async"
+                  alt="A sample card: the Builder archetype's city beside 1,284 contributions, a 24-day longest streak and TypeScript"
+                  className="h-auto max-w-full"
+                />
+              </picture>
+              {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
+              <img
+                src="/landing/readme-snake.svg"
+                width={670}
+                height={152}
+                loading="lazy"
+                decoding="async"
+                alt="A sample contribution graph with a snake eating its green squares"
+                className="h-auto max-w-full"
+              />
+            </div>
+            <figcaption className="border-t border-line px-5 py-3 text-sm text-muted">
+              Sample data from the story&apos;s sample recap, @octo-sample.
+            </figcaption>
+          </figure>
+        </div>
       </div>
     </section>
   );
