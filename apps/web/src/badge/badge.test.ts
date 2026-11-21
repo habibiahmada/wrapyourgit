@@ -14,6 +14,7 @@ import {
   cardOptions,
   cardSvg,
   DAYS_PER_SEGMENT,
+  SNAKE_MAX,
   snakeRoute,
   snakeSvg,
 } from "./badge";
@@ -371,18 +372,31 @@ describe("snake", () => {
     expect(snakeRoute(year, "someone-else/2026").eatenAt).not.toEqual(a);
   });
 
-  test("grows a segment for every three days, each in the darkest green it ate", () => {
-    const svg = snakeSvg(sampleRecap);
-    const lit = sampleRecap.contributions.calendar.filter((d) => d.count > 0).length;
-    const segments = svg.match(/<animateMotion /g) ?? [];
-    expect(segments).toHaveLength(2 + Math.floor(lit / DAYS_PER_SEGMENT));
-    // Every grown segment starts hidden and appears once, on the head's clock.
-    expect(svg.match(/<animate attributeName="opacity"/g)).toHaveLength(
-      Math.floor(lit / DAYS_PER_SEGMENT),
-    );
-    for (const colour of ["#0e4429", "#006d32", "#26a641", "#39d353"]) {
-      expect(svg).toContain(`rx="3" fill="${colour}" opacity="0"`);
-    }
+  test("grows a segment for every three days, each in a green it ate, up to twenty", () => {
+    const fills = (svg: string) =>
+      [...svg.matchAll(/rx="3" fill="(#[0-9a-f]{6})" opacity="0"/g)].map((m) => m[1]);
+    const segments = (svg: string) => (svg.match(/<animateMotion /g) ?? []).length;
+
+    // The sample year has 186 lit days: 2 + 62 would be 64, so it stops at the cap.
+    const busy = snakeSvg(sampleRecap);
+    expect(segments(busy)).toBe(SNAKE_MAX);
+    expect(fills(busy)).toHaveLength(SNAKE_MAX - 2);
+    const greens = new Set(["#0e4429", "#006d32", "#26a641", "#39d353"]);
+    expect(fills(busy).every((fill) => greens.has(fill ?? ""))).toBe(true);
+    expect(new Set(fills(busy)).size).toBeGreaterThan(1);
+
+    // A quiet year grows a segment per three days, under the cap.
+    const twelveDays = {
+      ...sampleRecap,
+      contributions: {
+        ...sampleRecap.contributions,
+        calendar: sampleRecap.contributions.calendar.map((d, i) => ({
+          ...d,
+          count: i % 30 === 0 && i < 360 ? 3 : 0,
+        })),
+      },
+    };
+    expect(segments(snakeSvg(twelveDays))).toBe(2 + Math.floor(12 / DAYS_PER_SEGMENT));
   });
 
   test("animates each day with contributions, loops, and stands still for reduced motion", () => {

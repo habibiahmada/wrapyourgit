@@ -776,6 +776,9 @@ const SNAKE_TICK = 0.08;
 /** The snake starts as a head and one segment, and grows a segment for every this many days. */
 const SNAKE_START = 2;
 export const DAYS_PER_SEGMENT = 3;
+/** Longest the snake gets, head included: past this it keeps eating without growing, so its body
+ * stays a readable line instead of knotting over itself in a busy year. */
+export const SNAKE_MAX = 20;
 /** The next day is picked at random from this many nearest, so it wanders without long trips. */
 const SNAKE_CHOICES = 3;
 
@@ -840,8 +843,8 @@ export function snakeRoute(
 /**
  * The year's graph with a snake eating it (maintainer's call, 2026-11-21). It wanders from day to
  * day with contributions, each square going dark as it is eaten, and grows a segment for every
- * DAYS_PER_SEGMENT days, that segment in the darkest green of the days it came from, so its body
- * becomes a gradient of what it ate. When every day is eaten the year fills in and it starts over,
+ * DAYS_PER_SEGMENT days up to SNAKE_MAX, each segment in the darkest green of the days it came
+ * from, so its body becomes a gradient of what it ate. When every day is eaten the year fills in and it starts over,
  * small again. It loops, which the rest of these images do not; ADR-0035 records why. A reader who
  * asks for reduced motion gets the still graph: CSS rules outrank the animated attributes, so the
  * media query below restores every colour and hides the snake. `recap` null draws the neutral card.
@@ -908,7 +911,7 @@ export function snakeSvg(recap: RecapData | null): string {
   const segments: string[] = [];
   if (steps > 0) {
     const grown = Math.floor(byTime.length / DAYS_PER_SEGMENT);
-    const total = SNAKE_START + grown;
+    const total = Math.min(SNAKE_MAX, SNAKE_START + grown);
     const half = SNAKE_CELL / 2;
     for (let k = total - 1; k >= 0; k--) {
       // Segment k joins once the snake has eaten (k - SNAKE_START + 1) * DAYS_PER_SEGMENT days,
