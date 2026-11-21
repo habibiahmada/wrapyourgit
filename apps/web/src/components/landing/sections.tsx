@@ -606,6 +606,7 @@ const README_IMAGES = [
 export function ReadmeSection() {
   return (
     <section
+      id="readme"
       aria-labelledby="readme-title"
       className="band tone-dark motif-hatch reach-right relative overflow-clip py-24 sm:py-32"
     >
@@ -767,6 +768,10 @@ export const FAQ = [
   {
     q: "Can I download the video?",
     a: "Yes. Make an MP4, every stop as a PNG in a ZIP, or one PDF, each in 9:16, 4:5, 1:1 or 16:9, plus a share card. They are made in your browser, so keep the tab open while a video renders.",
+  },
+  {
+    q: "Can I put my recap in my GitHub README?",
+    a: "Yes. Every GitHub username has three images built from its public recap: a badge at /<username>/badge.svg, a card at /<username>/card.svg and a snake that eats your contribution graph at /<username>/snake.svg. Sign in to pick their options and copy the Markdown from your dashboard.",
   },
   {
     q: "How do I hide my page or delete my data?",

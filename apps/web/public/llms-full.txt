@@ -45,6 +45,11 @@ At the closing stop, and on your dashboard:
 - One PDF with every stop, in the same four shapes.
 - A share card (PNG, 1200 x 630, the link preview's size) with your figures, your contribution graph and your archetype's picture.
 - A public page at /<your-username>, built from public activity only, for every GitHub username; private repository names never appear, and the owner can hide it in Settings.
+- Images for your GitHub profile README, from your public recap, animated once (the snake loops) and still for anyone who prefers reduced motion:
+  - a badge at /<your-username>/badge.svg with the year and up to four values (`?show=contributions,streak,days,language,archetype`, the top language with its logo);
+  - a card at /<your-username>/card.svg with your archetype's picture beside your numbers (`?archetype=left|right`, `?hide=archetype,name,stats`, `?show=graph`, and `?layout=compact`, 360 px wide, for phones);
+  - a snake at /<your-username>/snake.svg that wanders through your contribution graph eating each day you contributed and grows as it goes.
+  The dashboard's "Put it in your README" panel picks the options and copies the Markdown, or HTML with `<picture>` so a phone gets the compact card.
 
 Files are made in your browser, so keep the tab open while a video renders.
 
@@ -76,6 +81,8 @@ Files are made in your browser, so keep the tab open while a video renders.
 **Does it compare with last year?** Yes. Your dashboard and the story put this year next to the same stretch of last year, so the comparison is fair while the year is still running.
 
 **Can I download the video?** Yes. At the end of your story, and on your dashboard, you can make an MP4, every stop as a PNG in a ZIP, or one PDF, each in four shapes (9:16, 4:5, 1:1 and 16:9), and download a share card. They are made in your browser, so keep the tab open while a video renders.
+
+**Can I put my recap in my GitHub README?** Yes. Every GitHub username has three images built from its public recap: a badge at /your-username/badge.svg, a card at /your-username/card.svg and a snake that eats your contribution graph at /your-username/snake.svg. Sign in to pick their options and copy the Markdown from your dashboard. Private repositories are never in them.
 
 ## Source, license and credit
 
