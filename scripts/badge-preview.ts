@@ -13,6 +13,7 @@ import {
   badgeSvg,
   cardOptions,
   cardSvg,
+  snakeSvg,
 } from "../apps/web/src/badge/badge";
 import {
   busyRecap,
@@ -53,6 +54,7 @@ const BADGES: BadgeShow[][] = [
 /** The card as it comes, then each option a README might set. */
 const CARDS = [
   "",
+  "show=graph",
   "archetype=right",
   "hide=archetype",
   "hide=graph",
@@ -61,7 +63,7 @@ const CARDS = [
   "hide=name",
   "hide=name,graph,stats",
   "layout=compact",
-  "layout=compact&hide=graph",
+  "layout=compact&show=graph",
   "layout=compact&hide=archetype",
 ];
 
@@ -88,10 +90,12 @@ function images(recap: RecapData | null): string {
       layout: params.get("layout"),
       archetype: params.get("archetype"),
       hide: params.get("hide"),
+      show: params.get("show"),
     });
     return figure(cardSvg(recap, options), alt, `/${login}/card.svg${query ? `?${query}` : ""}`);
   }).join("");
-  return `<div class="badges">${badges}</div><div class="cards">${cards}</div>`;
+  const snake = figure(snakeSvg(recap), alt, `/${login}/snake.svg`);
+  return `<div class="badges">${badges}</div><div class="cards">${cards}${snake}</div>`;
 }
 
 /** Logos that were black, logos with little contrast, and a language with no logo (Gleam). */

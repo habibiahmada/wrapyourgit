@@ -61,6 +61,8 @@ export type CardSide = "left" | "right";
 export type CardLayout = "wide" | "compact";
 export const CARD_PARTS = ["archetype", "name", "graph", "stats"] as const;
 export type CardPart = (typeof CARD_PARTS)[number];
+/** Parts a card leaves out unless `?show=` asks for them. */
+const OPT_IN: readonly CardPart[] = ["graph"];
 
 export interface CardOptions {
   /** Wide (720 px at most, side by side) or compact (360 px, stacked for phones). */
@@ -76,17 +78,23 @@ export interface CardOptions {
 
 /**
  * The card's query: `?layout=compact` stacks it for phones, `?archetype=left|right` places the
- * diorama on the wide card (left by default), and `?hide=archetype,name,graph,stats` leaves parts
- * out, unknown names ignored. Hiding every part would leave an empty frame, so it gets the default
- * parts instead.
+ * diorama on the wide card (left by default), `?hide=archetype,name,stats` leaves parts out, and
+ * `?show=graph` adds the year's graph, which is off by default because a profile README already
+ * sits above GitHub's own. Unknown names are ignored. Hiding every part would leave an empty
+ * frame, so it gets the default parts instead.
  */
 export function cardOptions(query: {
   layout?: string | null;
   archetype?: string | null;
   hide?: string | null;
+  show?: string | null;
 }): CardOptions {
-  const hidden = new Set((query.hide ?? "").split(",").map((part) => part.trim().toLowerCase()));
-  const shown = (part: CardPart) => !hidden.has(part);
+  const list = (value: string | null | undefined) =>
+    new Set((value ?? "").split(",").map((part) => part.trim().toLowerCase()));
+  const hidden = list(query.hide);
+  const asked = list(query.show);
+  const shown = (part: CardPart) =>
+    !hidden.has(part) && (!OPT_IN.includes(part) || asked.has(part));
   const options: CardOptions = {
     layout: query.layout === "compact" ? "compact" : "wide",
     side: query.archetype === "right" ? "right" : "left",
@@ -96,7 +104,7 @@ export function cardOptions(query: {
     stats: shown("stats"),
   };
   if (!options.archetype && !options.graph && !options.stats) {
-    return { ...options, archetype: true, name: true, graph: true, stats: true };
+    return { ...options, archetype: true, name: true, stats: true };
   }
   return options;
 }
@@ -363,7 +371,7 @@ const DEFAULT_OPTIONS: CardOptions = {
   side: "left",
   archetype: true,
   name: true,
-  graph: true,
+  graph: false,
   stats: true,
 };
 
@@ -548,7 +556,7 @@ function archetypePanel(
 
 /** The neutral card, the same for every account with no stored recap, whatever the options. */
 function neutralCard(year: number): string {
-  const height = columnHeight(DEFAULT_OPTIONS);
+  const height = HEADER_BOTTOM + 52;
   const body = [
     `<rect x="0.5" y="0.5" width="${COLUMN_WIDTH - 1}" height="${height - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
     line(
@@ -561,8 +569,7 @@ function neutralCard(year: number): string {
       16,
     ).svg,
     mark(COLUMN_WIDTH - CARD_PAD - markWidth(4), HEADER_BASELINE - 9.5, 4),
-    grid(null, year, 0, HEADER_BOTTOM + 2),
-    `<g class="v" ${delay(1.2)}>${text({ text: `See the ${year} recap`, color: FG }, CARD_PAD, HEADER_BOTTOM + 2 + GRID_HEIGHT + 36, 14)}</g>`,
+    `<g class="v" ${delay(0.3)}>${text({ text: `See the ${year} recap`, color: FG }, CARD_PAD, HEADER_BOTTOM + 26, 14)}</g>`,
   ].join("");
   return svg(COLUMN_WIDTH, height, `WrapYourGit ${year}: see the recap`, body);
 }
@@ -652,11 +659,10 @@ function compactCardSvg(recap: RecapData | null, options: CardOptions): string {
         16,
       ).svg,
       mark(right - markWidth(4), HEADER_BASELINE - 9.5, 4),
-      grid(null, year, 0, HEADER_BOTTOM + 2, COMPACT_STEP, COMPACT_CELL),
     );
-    const y = HEADER_BOTTOM + 2 + COMPACT_GRID_HEIGHT + 30;
+    const y = HEADER_BOTTOM + 26;
     parts.push(
-      `<g class="v" ${delay(1.2)}>${text({ text: `See the ${year} recap`, color: FG }, CARD_PAD, y, 14)}</g>`,
+      `<g class="v" ${delay(0.3)}>${text({ text: `See the ${year} recap`, color: FG }, CARD_PAD, y, 14)}</g>`,
     );
     return compactFrame(y + 22, `WrapYourGit ${year}: see the recap`, parts);
   }
@@ -758,4 +764,138 @@ function compactFrame(height: number, label: string, parts: string[]): string {
     label,
     `<rect x="0.5" y="0.5" width="${COMPACT_WIDTH - 1}" height="${h - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>${parts.join("")}`,
   );
+}
+
+const SNAKE_STEP = 12;
+const SNAKE_CELL = 10;
+const SNAKE_WIDTH = CARD_PAD * 2 + 53 * SNAKE_STEP - (SNAKE_STEP - SNAKE_CELL);
+const SNAKE_TOP = 52;
+const SNAKE_HEIGHT = SNAKE_TOP + 7 * SNAKE_STEP - (SNAKE_STEP - SNAKE_CELL) + 18;
+/** Seconds per cell the snake moves: about twelve cells a second. */
+const SNAKE_TICK = 0.08;
+const SNAKE_LENGTH = 4;
+
+interface GridCell {
+  week: number;
+  row: number;
+}
+
+/**
+ * The snake's path, one grid cell per step: from just left of the first week to the nearest day
+ * with contributions, then always on to the nearest one left (across first, then down), until all
+ * are eaten. Returns every position, and the step at which each lit day is eaten.
+ */
+export function snakeRoute(cells: readonly GridCell[]): {
+  path: GridCell[];
+  eatenAt: number[];
+} {
+  const path: GridCell[] = [{ week: -1, row: 0 }];
+  const eatenAt = new Array<number>(cells.length).fill(0);
+  const left = new Set(cells.map((_, i) => i));
+  let at: GridCell = { week: -1, row: 0 };
+  while (left.size > 0) {
+    let best = -1;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const i of left) {
+      const cell = cells[i] as GridCell;
+      const distance = Math.abs(cell.week - at.week) + Math.abs(cell.row - at.row);
+      if (distance < bestDistance) {
+        best = i;
+        bestDistance = distance;
+      }
+    }
+    const target = cells[best] as GridCell;
+    while (at.week !== target.week) {
+      at = { week: at.week + Math.sign(target.week - at.week), row: at.row };
+      path.push(at);
+    }
+    while (at.row !== target.row) {
+      at = { week: at.week, row: at.row + Math.sign(target.row - at.row) };
+      path.push(at);
+    }
+    eatenAt[best] = path.length - 1;
+    left.delete(best);
+  }
+  return { path, eatenAt };
+}
+
+/**
+ * The year's graph with a snake eating it (maintainer's call, 2026-11-21): it works through every
+ * day with contributions, each square going dark as it is eaten, and the year fills in again when
+ * it starts over. It loops, which the rest of these images do not; ADR-0035 records why. A reader
+ * who asks for reduced motion gets the still graph: CSS rules outrank the animated attributes, so
+ * the media query below restores every colour and hides the snake. `recap` null draws the neutral
+ * card.
+ */
+export function snakeSvg(recap: RecapData | null): string {
+  if (!recap) return neutralCard(EDITION_YEAR);
+  const year = recap.meta.year;
+  const days = yearDays(year);
+  const offset = new Date(Date.UTC(year, 0, 1)).getUTCDay();
+  const heat = heatLevels(recap.contributions.calendar);
+  const levels = new Map<string, number>();
+  recap.contributions.calendar.forEach((d, i) => {
+    levels.set(d.date, heat[i] ?? 0);
+  });
+
+  const at = (cell: GridCell) => ({
+    x: CARD_PAD + cell.week * SNAKE_STEP,
+    y: SNAKE_TOP + cell.row * SNAKE_STEP,
+  });
+  const lit: { cell: GridCell; level: number }[] = [];
+  const still: string[] = [];
+  days.forEach((date, i) => {
+    const index = i + offset;
+    const cell = { week: Math.floor(index / 7), row: index % 7 };
+    const { x, y } = at(cell);
+    const level = levels.get(date) ?? 0;
+    const box = `x="${x}" y="${y}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="2"`;
+    if (date > recap.meta.periodEnd) {
+      still.push(`<rect ${box} fill="none" stroke="${SURFACE}"/>`);
+    } else if (level === 0) {
+      still.push(`<rect ${box} fill="${SURFACE}"/>`);
+    } else {
+      lit.push({ cell, level });
+    }
+  });
+
+  const { path, eatenAt } = snakeRoute(lit.map((l) => l.cell));
+  const steps = path.length - 1;
+  const dur = `${(Math.max(steps, 1) * SNAKE_TICK).toFixed(2)}s`;
+  const eaten = lit.map(({ cell, level }, i) => {
+    const { x, y } = at(cell);
+    const colour = HEAT[level] as string;
+    // Discrete: its own colour until the snake reaches it, then empty until the loop starts over.
+    const when = ((eatenAt[i] ?? 0) / Math.max(steps, 1)).toFixed(4);
+    return `<rect x="${x}" y="${y}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="2" class="l${level}" fill="${colour}"><animate attributeName="fill" values="${colour};${SURFACE};${colour}" keyTimes="0;${when};1" calcMode="discrete" dur="${dur}" repeatCount="indefinite"/></rect>`;
+  });
+
+  // Each segment follows the head's path, a step behind the one before it.
+  const centre = (cell: GridCell) => {
+    const { x, y } = at(cell);
+    return `${x + SNAKE_CELL / 2},${y + SNAKE_CELL / 2}`;
+  };
+  const segments =
+    steps > 0
+      ? Array.from({ length: SNAKE_LENGTH }, (_, k) => {
+          const trail = path.map((_, i) => centre(path[Math.max(0, i - k)] as GridCell));
+          const half = SNAKE_CELL / 2;
+          return `<rect x="${-half}" y="${-half}" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="3" fill="${FG}" opacity="${(1 - k * 0.2).toFixed(1)}"><animateMotion values="${trail.join(";")}" calcMode="linear" dur="${dur}" repeatCount="indefinite"/></rect>`;
+        })
+          .reverse()
+          .join("")
+      : "";
+
+  const styles = `<style>@media (prefers-reduced-motion:reduce){${HEAT.map((c, l) => `.l${l}{fill:${c}}`).join("")}.s{display:none}}</style>`;
+  const n = recap.contributions.activeDays;
+  const label = `${recap.profile.login}'s ${year} contribution graph on WrapYourGit, eaten by a snake: ${count(n)} ${plural(n, "active day", "active days")}${recap.meta.isFinal ? "" : " so far"}, through ${day(recap.meta.periodEnd)}`;
+  const body = [
+    `<rect x="0.5" y="0.5" width="${SNAKE_WIDTH - 1}" height="${SNAKE_HEIGHT - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
+    styles,
+    cardHeader(recap, year, CARD_PAD, SNAKE_WIDTH - CARD_PAD, HEADER_BASELINE),
+    still.join(""),
+    eaten.join(""),
+    segments ? `<g class="s">${segments}</g>` : "",
+  ].join("");
+  return svg(SNAKE_WIDTH, SNAKE_HEIGHT, label, body);
 }

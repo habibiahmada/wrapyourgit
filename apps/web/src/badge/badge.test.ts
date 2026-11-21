@@ -6,7 +6,16 @@ import {
   provisionalRecap,
 } from "../../../../packages/video/src/fixtures/edge-recaps";
 import { sampleRecap } from "../../../../packages/video/src/fixtures/sample-recap";
-import { BADGE_SHOWS, badgeContent, badgeShows, badgeSvg, cardOptions, cardSvg } from "./badge";
+import {
+  BADGE_SHOWS,
+  badgeContent,
+  badgeShows,
+  badgeSvg,
+  cardOptions,
+  cardSvg,
+  snakeRoute,
+  snakeSvg,
+} from "./badge";
 import { LANGUAGE_ICONS } from "./language-icons";
 import { textWidth } from "./text-width";
 
@@ -187,21 +196,29 @@ describe("motion", () => {
 });
 
 describe("cardSvg", () => {
+  const graph = cardOptions({ show: "graph" });
+
+  test("leaves the graph out unless it is asked for", () => {
+    expect(cardSvg(sampleRecap)).not.toContain('<use href="#d"');
+    expect(cardOptions({}).graph).toBe(false);
+    expect(graph.graph).toBe(true);
+  });
+
   test("draws a cell for every day of the year", () => {
-    const cells = cardSvg(sampleRecap).match(/<use href="#d"/g) ?? [];
+    const cells = cardSvg(sampleRecap, graph).match(/<use href="#d"/g) ?? [];
     expect(cells.length).toBe(365);
   });
 
   test("days after the recap's last day are outlines, not empty data", () => {
-    const svg = cardSvg(provisionalRecap);
+    const svg = cardSvg(provisionalRecap, graph);
     expect(svg).toContain('class="f"');
     expect(svg).toContain("2026 so far");
   });
 
   test("the archetype's diorama stands on the side asked for", () => {
     const imageX = (svg: string) => Number(/<image href="[^"]+" x="([\d.]+)"/.exec(svg)?.[1]);
-    const left = cardSvg(sampleRecap, cardOptions({}));
-    const right = cardSvg(sampleRecap, cardOptions({ archetype: "right" }));
+    const left = cardSvg(sampleRecap, graph);
+    const right = cardSvg(sampleRecap, cardOptions({ archetype: "right", show: "graph" }));
     expect(width(left)).toBe(720);
     expect(imageX(left)).toBeLessThan(220);
     expect(imageX(right)).toBeGreaterThan(500);
@@ -217,11 +234,11 @@ describe("cardSvg", () => {
   });
 
   test("each part can be left out", () => {
-    const noGraph = cardSvg(sampleRecap, cardOptions({ hide: "graph" }));
+    const noGraph = cardSvg(sampleRecap, cardOptions({ show: "graph", hide: "graph" }));
     expect(noGraph).not.toContain('<use href="#d"');
     expect(noGraph).toContain(">1,284<");
 
-    const noStats = cardSvg(sampleRecap, cardOptions({ hide: "stats" }));
+    const noStats = cardSvg(sampleRecap, cardOptions({ hide: "stats", show: "graph" }));
     expect(noStats).not.toContain(">1,284<");
     expect(noStats).toContain('<use href="#d"');
 
@@ -246,7 +263,8 @@ describe("cardSvg", () => {
 
   test("the card grows only as tall as its parts", () => {
     const height = (svg: string) => Number(/height="(\d+)"/.exec(svg)?.[1]);
-    const only = (hide: string) => height(cardSvg(sampleRecap, cardOptions({ hide })));
+    const only = (hide: string) =>
+      height(cardSvg(sampleRecap, cardOptions({ hide, show: "graph" })));
     expect(only("archetype,stats")).toBeLessThan(only("archetype"));
     expect(only("archetype,graph")).toBeLessThan(only("archetype"));
   });
@@ -276,7 +294,8 @@ describe("cardSvg", () => {
 });
 
 describe("compact card", () => {
-  const compact = (hide?: string) => cardSvg(sampleRecap, cardOptions({ layout: "compact", hide }));
+  const compact = (hide?: string) =>
+    cardSvg(sampleRecap, cardOptions({ layout: "compact", hide, show: "graph" }));
 
   test("is 360 px wide and stacks the diorama, the numbers and the graph", () => {
     const svg = compact();
@@ -323,6 +342,47 @@ describe("compact card", () => {
     expect(width(neutral)).toBe(360);
     expect(cardSvg(null, cardOptions({ layout: "compact", hide: "graph" }))).toBe(neutral);
     expect(neutral).toContain("See the 2026 recap");
+  });
+});
+
+describe("snake", () => {
+  test("eats every lit day once, one step at a time, nearest first", () => {
+    const cells = [
+      { week: 3, row: 2 },
+      { week: 0, row: 0 },
+      { week: 1, row: 0 },
+    ];
+    const { path, eatenAt } = snakeRoute(cells);
+    for (let i = 1; i < path.length; i++) {
+      const a = path[i - 1];
+      const b = path[i];
+      const stepLength =
+        Math.abs((a?.week ?? 0) - (b?.week ?? 0)) + Math.abs((a?.row ?? 0) - (b?.row ?? 0));
+      expect(stepLength).toBe(1);
+    }
+    // From (-1, 0): (0,0) first, then (1,0), then (3,2).
+    expect(eatenAt[1]).toBeLessThan(eatenAt[2] ?? 0);
+    expect(eatenAt[2]).toBeLessThan(eatenAt[0] ?? 0);
+    expect(path[eatenAt[0] ?? 0]).toEqual({ week: 3, row: 2 });
+  });
+
+  test("animates each day with contributions, loops, and stands still for reduced motion", () => {
+    const svg = snakeSvg(sampleRecap);
+    const lit = sampleRecap.contributions.calendar.filter((d) => d.count > 0).length;
+    expect(svg.match(/<animate attributeName="fill"/g)).toHaveLength(lit);
+    expect(svg).toContain('repeatCount="indefinite"');
+    expect(svg.match(/<animateMotion /g)).toHaveLength(4);
+    expect(svg).toContain("@media (prefers-reduced-motion:reduce)");
+    expect(svg).toContain(".s{display:none}");
+    expect(label(svg)).toContain("eaten by a snake: 186 active days");
+  });
+
+  test("a year with nothing to eat has no snake", () => {
+    expect(snakeSvg(emptyRecap)).not.toContain("<animateMotion");
+  });
+
+  test("no stored recap draws the neutral card", () => {
+    expect(snakeSvg(null)).toBe(cardSvg(null));
   });
 });
 
