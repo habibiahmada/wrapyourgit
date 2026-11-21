@@ -6,14 +6,7 @@ import {
   provisionalRecap,
 } from "../../../../packages/video/src/fixtures/edge-recaps";
 import { sampleRecap } from "../../../../packages/video/src/fixtures/sample-recap";
-import {
-  BADGE_SHOWS,
-  badgeContent,
-  badgeShows,
-  badgeSvg,
-  cardOptions,
-  cardSvg,
-} from "./badge";
+import { BADGE_SHOWS, badgeContent, badgeShows, badgeSvg, cardOptions, cardSvg } from "./badge";
 import { textWidth } from "./text-width";
 
 const words = (recap: RecapData, show: (typeof BADGE_SHOWS)[number]) =>
