@@ -14,6 +14,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 - "Put it in your README" on the dashboard: pick an image and its options, see it as GitHub will, and copy the Markdown (or HTML with `<picture>` for a card that switches to the compact one on phones).
 - The landing page's story frames open larger: choose one in the reel to see it over a dark overlay, step through the others, and close it with Escape, the close button or a click outside ([#199](https://github.com/habibiahmada/wrapyourgit/issues/199)).
 
+### Changed
+
+- Slides, the PDF, the share card and the card with private work open in a preview before they download, with Download and Close; closing drops the file. The video still downloads as soon as it is made. Dialogs fade and rise in instead of appearing at once, with a quick fade only under reduced motion ([#201](https://github.com/habibiahmada/wrapyourgit/issues/201)).
+
 ### Fixed
 
 - Exported slides (PNG, ZIP, PDF) and the landing page's frames no longer carry the story's progress bar along the top, which on a single frame read as a loading line; the player and the MP4 keep it, and the copyright line stays ([#197](https://github.com/habibiahmada/wrapyourgit/issues/197)).

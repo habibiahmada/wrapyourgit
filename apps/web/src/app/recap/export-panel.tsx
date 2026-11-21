@@ -5,6 +5,7 @@ import type { ExportFormat } from "@wyg/video/export";
 import { useEffect, useId, useRef, useState } from "react";
 import { button } from "@/components/ui";
 import type { ShareCard } from "./end-screen";
+import { afterClose, CardPreview, FilePreview } from "./export-preview";
 import { announcement, type ExportJob, NOUN, percent } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { SizePicker } from "./size-picker";
@@ -40,7 +41,21 @@ export function ExportPanel({
   letter?: boolean;
   onBusyChange?: (busy: boolean) => void;
 }) {
-  const { state, support, busy, run: start, cancel } = useExport(data, { letter, onBusyChange });
+  const {
+    state,
+    support,
+    busy,
+    run: start,
+    save,
+    discard,
+    cancel,
+  } = useExport(data, {
+    letter,
+    onBusyChange,
+  });
+  // Which card's preview is open, if any (#201).
+  const [cardOpen, setCardOpen] = useState<"share" | "private" | null>(null);
+  const cardButtons = useRef<Partial<Record<"share" | "private", HTMLButtonElement | null>>>({});
   const left = useTimeLeft(state);
   const [format, setFormat] = useState<ExportFormat>("9x16");
   const buttons = useRef<Partial<Record<ExportJob, HTMLButtonElement | null>>>({});
@@ -116,9 +131,16 @@ export function ExportPanel({
           PDF
         </button>
         {"href" in card && !busy ? (
-          <a href={card.href} download={card.filename ?? true} className={fileButton}>
+          <button
+            ref={(node) => {
+              cardButtons.current.share = node;
+            }}
+            type="button"
+            onClick={() => setCardOpen("share")}
+            className={fileButton}
+          >
             Share card
-          </a>
+          </button>
         ) : (
           <button
             type="button"
@@ -130,9 +152,16 @@ export function ExportPanel({
           </button>
         )}
         {"href" in card && card.privateHref && !busy && (
-          <a href={card.privateHref} download className={fileButton}>
+          <button
+            ref={(node) => {
+              cardButtons.current.private = node;
+            }}
+            type="button"
+            onClick={() => setCardOpen("private")}
+            className={fileButton}
+          >
             Card with private work
-          </a>
+          </button>
         )}
       </div>
 
@@ -186,6 +215,37 @@ export function ExportPanel({
       <p aria-live="polite" className="sr-only">
         {announcement(state)}
       </p>
+
+      {state.status === "ready" && (
+        <FilePreview
+          state={state}
+          tone="dark"
+          // The dialog that had focus is gone: give it back to the file's own button.
+          onSave={() => {
+            const back = buttons.current[state.job];
+            save();
+            afterClose(() => back?.focus());
+          }}
+          onClose={() => {
+            const back = buttons.current[state.job];
+            discard();
+            afterClose(() => back?.focus());
+          }}
+        />
+      )}
+      {cardOpen && "href" in card && (
+        <CardPreview
+          href={cardOpen === "private" && card.privateHref ? card.privateHref : card.href}
+          title={cardOpen === "private" ? "Your card with private work" : "Your share card"}
+          fallbackName={card.filename ?? "wrapyourgit-card.png"}
+          tone="dark"
+          onClose={() => {
+            const back = cardButtons.current[cardOpen];
+            setCardOpen(null);
+            afterClose(() => back?.focus());
+          }}
+        />
+      )}
     </div>
   );
 }

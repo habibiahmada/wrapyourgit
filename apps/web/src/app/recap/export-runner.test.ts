@@ -55,6 +55,17 @@ function setup(options?: { letter?: boolean }) {
   const fake = fakeEngine();
   const actions: ExportAction[] = [];
   const warnings: unknown[] = [];
+  // Object URLs for the preview's pages, counted so a test can see them freed.
+  const made: string[] = [];
+  const freed: string[] = [];
+  const urls = {
+    create: () => {
+      const url = `blob:${made.length + 1}`;
+      made.push(url);
+      return url;
+    },
+    revoke: (url: string) => freed.push(url),
+  };
   // The panel hands the runner a ref; a test swaps `source.data` the way a server refresh does.
   const source = { data: sampleRecap };
   const runner = exportRunner(
@@ -62,9 +73,9 @@ function setup(options?: { letter?: boolean }) {
     () => source.data,
     (a) => actions.push(a),
     (...w) => warnings.push(w),
-    options,
+    { ...options, urls },
   );
-  return { ...fake, actions, warnings, runner, source };
+  return { ...fake, actions, warnings, runner, source, made, freed };
 }
 
 const abortError = () => new DOMException("cancelled", "AbortError");
@@ -73,7 +84,9 @@ describe("exportRunner", () => {
   test("slides and the PDF are made in the chosen shape, and named for it", async () => {
     const { runner, downloads, shapes } = setup();
     await runner.run("zip", "1x1");
+    runner.save();
     await runner.run("pdf", "16x9");
+    runner.save();
     expect(shapes).toEqual(["1x1", "16x9", "16x9"]);
     expect(downloads[0]).toEndWith("-slides-1x1.zip");
     expect(downloads[1]).toEndWith("-16x9.pdf");
@@ -98,7 +111,9 @@ describe("exportRunner", () => {
   test("slides fill 90% of the bar, assembly the rest, and end as a ZIP or a PDF", async () => {
     const { runner, downloads, actions } = setup();
     await runner.run("zip", "9x16");
+    runner.save();
     await runner.run("pdf", "9x16");
+    runner.save();
     expect(downloads.map((name) => name.split(".").pop())).toEqual(["zip", "pdf"]);
     const steps = [0.45, 0.9, 1].map((value) => ({ type: "progress" as const, value }));
     expect(actions.filter((a) => a.type === "progress")).toEqual([...steps, ...steps]);
@@ -115,7 +130,7 @@ describe("exportRunner", () => {
     await running;
     expect(actions.slice(-2)).toEqual([
       { type: "progress", value: 1 },
-      { type: "finish", file: expect.stringMatching(/\.zip$/) },
+      { type: "ready", file: expect.stringMatching(/\.zip$/), pages: ["blob:1"] },
     ]);
   });
 
@@ -125,6 +140,7 @@ describe("exportRunner", () => {
     bare.renders[0]?.done.resolve(blob("mp4"));
     await mp4;
     await bare.runner.run("zip", "9x16");
+    bare.runner.discard();
     await bare.runner.run("pdf", "9x16");
     expect(bare.letters).toEqual([false, false, false]);
 
@@ -193,6 +209,44 @@ describe("exportRunner", () => {
     await second;
     expect(actions.map((a) => a.type)).toEqual(["start", "finish", "start", "cancel"]);
     expect(runner.busy()).toBe(false);
+  });
+
+  test("slides wait for the reader: nothing downloads until save (#201)", async () => {
+    const { runner, downloads, actions, made } = setup();
+    await runner.run("zip", "4x5");
+    expect(downloads).toEqual([]);
+    expect(made).toEqual(["blob:1"]);
+    expect(actions.at(-1)).toEqual({
+      type: "ready",
+      file: expect.stringMatching(/-slides-4x5\.zip$/),
+      pages: ["blob:1"],
+    });
+
+    runner.save();
+    expect(downloads).toHaveLength(1);
+    expect(actions.at(-1)).toEqual({ type: "finish", file: downloads[0] });
+  });
+
+  test("saving or closing the preview frees its pages; closing saves nothing", async () => {
+    const { runner, downloads, actions, freed } = setup();
+    await runner.run("pdf", "9x16");
+    runner.discard();
+    expect(freed).toEqual(["blob:1"]);
+    expect(downloads).toEqual([]);
+    expect(actions.at(-1)).toEqual({ type: "discard" });
+
+    await runner.run("zip", "9x16");
+    runner.save();
+    expect(freed).toEqual(["blob:1", "blob:2"]);
+  });
+
+  test("no new run starts while a preview waits, and leaving the screen frees it", async () => {
+    const { runner, renders, freed } = setup();
+    await runner.run("zip", "9x16");
+    runner.run("mp4", "9x16");
+    expect(renders).toHaveLength(0);
+    runner.dispose();
+    expect(freed).toEqual(["blob:1"]);
   });
 
   test("dispose aborts silently: the screen is gone, nothing is left to tell", async () => {
