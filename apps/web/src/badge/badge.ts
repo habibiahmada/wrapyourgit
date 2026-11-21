@@ -703,7 +703,13 @@ function compactCardSvg(recap: RecapData | null, options: CardOptions): string {
       const logoX = right - nameWidth - 6 - languageMark(top, 0, 0, 16).width;
       language = `${languageMark(top, logoX, baseline - 5, 16).svg}${text({ text: top.name, color: FG, bold: true }, right, baseline, 14, "end")}`;
     } else {
-      language = text({ text: "None yet", color: MUTED }, right, y + 2 * COMPACT_ROW + 19, 14, "end");
+      language = text(
+        { text: "None yet", color: MUTED },
+        right,
+        y + 2 * COMPACT_ROW + 19,
+        14,
+        "end",
+      );
     }
     parts.push(
       row(0, "Contributions", number(count(total), "", 0)),
