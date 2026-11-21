@@ -6,7 +6,14 @@ import {
   provisionalRecap,
 } from "../../../../packages/video/src/fixtures/edge-recaps";
 import { sampleRecap } from "../../../../packages/video/src/fixtures/sample-recap";
-import { BADGE_SHOWS, badgeContent, badgeShows, badgeSvg, cardSide, cardSvg } from "./badge";
+import {
+  BADGE_SHOWS,
+  badgeContent,
+  badgeShows,
+  badgeSvg,
+  cardOptions,
+  cardSvg,
+} from "./badge";
 import { textWidth } from "./text-width";
 
 const words = (recap: RecapData, show: (typeof BADGE_SHOWS)[number]) =>
@@ -31,11 +38,24 @@ describe("badgeShows", () => {
   });
 });
 
-describe("cardSide", () => {
-  test("is left unless right is asked for", () => {
-    expect(cardSide("right")).toBe("right");
-    expect(cardSide("middle")).toBe("left");
-    expect(cardSide(null)).toBe("left");
+describe("cardOptions", () => {
+  test("places the archetype left unless right is asked for", () => {
+    expect(cardOptions({ archetype: "right" }).side).toBe("right");
+    expect(cardOptions({ archetype: "middle" }).side).toBe("left");
+    expect(cardOptions({}).side).toBe("left");
+  });
+
+  test("hides the parts listed, ignoring unknown names", () => {
+    expect(cardOptions({ hide: "graph, Stats,legend" })).toEqual({
+      side: "left",
+      archetype: true,
+      graph: false,
+      stats: false,
+    });
+  });
+
+  test("hiding every part gives the default card, not an empty frame", () => {
+    expect(cardOptions({ hide: "archetype,graph,stats" })).toEqual(cardOptions({}));
   });
 });
 
@@ -155,8 +175,8 @@ describe("cardSvg", () => {
 
   test("the archetype's diorama stands on the side asked for", () => {
     const imageX = (svg: string) => Number(/<image href="[^"]+" x="([\d.]+)"/.exec(svg)?.[1]);
-    const left = cardSvg(sampleRecap, "left");
-    const right = cardSvg(sampleRecap, "right");
+    const left = cardSvg(sampleRecap, cardOptions({}));
+    const right = cardSvg(sampleRecap, cardOptions({ archetype: "right" }));
     expect(width(left)).toBe(720);
     expect(imageX(left)).toBeLessThan(220);
     expect(imageX(right)).toBeGreaterThan(500);
@@ -166,9 +186,46 @@ describe("cardSvg", () => {
   });
 
   test("no archetype means no diorama, at the calendar's own width", () => {
-    const svg = cardSvg(emptyRecap, "right");
+    const svg = cardSvg(emptyRecap, cardOptions({ archetype: "right" }));
     expect(svg).not.toContain("<image");
     expect(width(svg)).toBe(500);
+  });
+
+  test("each part can be left out", () => {
+    const noGraph = cardSvg(sampleRecap, cardOptions({ hide: "graph" }));
+    expect(noGraph).not.toContain('<use href="#d"');
+    expect(noGraph).toContain(">1,284<");
+
+    const noStats = cardSvg(sampleRecap, cardOptions({ hide: "stats" }));
+    expect(noStats).not.toContain(">1,284<");
+    expect(noStats).toContain('<use href="#d"');
+
+    const noArchetype = cardSvg(sampleRecap, cardOptions({ hide: "archetype" }));
+    expect(noArchetype).not.toContain("<image");
+    expect(width(noArchetype)).toBe(500);
+  });
+
+  test("the card grows only as tall as its parts", () => {
+    const height = (svg: string) => Number(/height="(\d+)"/.exec(svg)?.[1]);
+    const only = (hide: string) => height(cardSvg(sampleRecap, cardOptions({ hide })));
+    expect(only("archetype,stats")).toBeLessThan(only("archetype"));
+    expect(only("archetype,graph")).toBeLessThan(only("archetype"));
+  });
+
+  test("the archetype alone is a card of its own that still names the user", () => {
+    const svg = cardSvg(sampleRecap, cardOptions({ hide: "graph,stats" }));
+    expect(width(svg)).toBe(220);
+    expect(svg).toContain("@octo-sample · 2026");
+  });
+
+  test("the product signs the card beside the year, not among the numbers", () => {
+    const svg = cardSvg(sampleRecap);
+    expect(svg).not.toContain("wrapyourgit.com");
+    expect(svg).toContain(">2026</text>");
+  });
+
+  test("the neutral card ignores the options, so it tells no account from another", () => {
+    expect(cardSvg(null, cardOptions({ hide: "graph" }))).toBe(cardSvg(null));
   });
 
   test("the neutral card shows no numbers and no diorama", () => {

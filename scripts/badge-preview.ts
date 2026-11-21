@@ -11,7 +11,7 @@ import {
   BADGE_SHOWS,
   type BadgeShow,
   badgeSvg,
-  type CardSide,
+  cardOptions,
   cardSvg,
 } from "../apps/web/src/badge/badge";
 import {
@@ -50,6 +50,16 @@ const BADGES: BadgeShow[][] = [
   ["days", "streak", "archetype"],
 ];
 
+/** The card as it comes, then each option a README might set. */
+const CARDS = [
+  "",
+  "archetype=right",
+  "hide=archetype",
+  "hide=graph",
+  "hide=stats",
+  "hide=graph,stats",
+];
+
 const dataUrl = (svg: string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -67,15 +77,11 @@ function images(recap: RecapData | null): string {
       shows.length === 1 && shows[0] === "contributions" ? "" : `?show=${shows.join(",")}`;
     return figure(badgeSvg(recap, shows), alt, `/${login}/badge.svg${query}`);
   }).join("");
-  const cards = (["left", "right"] as CardSide[])
-    .map((side) =>
-      figure(
-        cardSvg(recap, side),
-        alt,
-        `/${login}/card.svg${side === "left" ? "" : "?archetype=right"}`,
-      ),
-    )
-    .join("");
+  const cards = CARDS.map((query) => {
+    const params = new URLSearchParams(query);
+    const options = cardOptions({ archetype: params.get("archetype"), hide: params.get("hide") });
+    return figure(cardSvg(recap, options), alt, `/${login}/card.svg${query ? `?${query}` : ""}`);
+  }).join("");
   return `<div class="badges">${badges}</div><div class="cards">${cards}</div>`;
 }
 

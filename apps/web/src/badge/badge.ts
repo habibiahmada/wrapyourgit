@@ -56,10 +56,38 @@ export function badgeShows(value: string | null | undefined): BadgeShow[] {
 }
 
 export type CardSide = "left" | "right";
+export const CARD_PARTS = ["archetype", "graph", "stats"] as const;
+export type CardPart = (typeof CARD_PARTS)[number];
 
-/** `?archetype=` on the card: which side the archetype's diorama stands on. Left by default. */
-export function cardSide(value: string | null | undefined): CardSide {
-  return value === "right" ? "right" : "left";
+export interface CardOptions {
+  /** Which side the archetype's diorama stands on. */
+  side: CardSide;
+  archetype: boolean;
+  graph: boolean;
+  stats: boolean;
+}
+
+/**
+ * The card's query: `?archetype=left|right` places the diorama (left by default), and
+ * `?hide=archetype,graph,stats` leaves parts out, unknown names ignored. Hiding every part would
+ * leave an empty frame, so it gets the default card instead.
+ */
+export function cardOptions(query: {
+  archetype?: string | null;
+  hide?: string | null;
+}): CardOptions {
+  const hidden = new Set((query.hide ?? "").split(",").map((part) => part.trim().toLowerCase()));
+  const shown = (part: CardPart) => !hidden.has(part);
+  const options: CardOptions = {
+    side: query.archetype === "right" ? "right" : "left",
+    archetype: shown("archetype"),
+    graph: shown("graph"),
+    stats: shown("stats"),
+  };
+  if (!options.archetype && !options.graph && !options.stats) {
+    return { ...options, archetype: true, graph: true, stats: true };
+  }
+  return options;
 }
 
 interface Run {
@@ -274,13 +302,16 @@ export function badgeSvg(recap: RecapData | null, shows: readonly BadgeShow[]): 
   return svg(width, BADGE_HEIGHT, label, body);
 }
 
-const CARD_HEIGHT = 200;
-const STATS_WIDTH = 500;
+const COLUMN_WIDTH = 500;
 const PANEL_WIDTH = 220;
+const PANEL_HEIGHT = 200;
 const CARD_PAD = 18;
-const GRID_TOP = 52;
-const STEP = (STATS_WIDTH - CARD_PAD * 2) / 53;
+const HEADER_BASELINE = 36;
+const HEADER_BOTTOM = 50;
+const STEP = (COLUMN_WIDTH - CARD_PAD * 2) / 53;
 const CELL = 7;
+const GRID_HEIGHT = 6 * STEP + CELL;
+const DEFAULT_OPTIONS: CardOptions = { side: "left", archetype: true, graph: true, stats: true };
 
 /** Every day of `year`, in order, as ISO dates (UTC). */
 function yearDays(year: number): string[] {
@@ -296,7 +327,7 @@ function yearDays(year: number): string[] {
  * count in their heat level, days not yet reached as outlines, so a recap before December reads
  * as a year still being written.
  */
-function grid(recap: RecapData | null, year: number, left: number): string {
+function grid(recap: RecapData | null, year: number, left: number, top: number): string {
   const days = yearDays(year);
   const offset = new Date(Date.UTC(year, 0, 1)).getUTCDay();
   const levels = new Map<string, number>();
@@ -313,7 +344,7 @@ function grid(recap: RecapData | null, year: number, left: number): string {
   days.forEach((date, i) => {
     const index = i + offset;
     const week = Math.floor(index / 7);
-    const y = (GRID_TOP + (index % 7) * STEP).toFixed(1);
+    const y = (top + (index % 7) * STEP).toFixed(1);
     const kind = !recap || (end && date > end) ? "f" : `l${levels.get(date) ?? 0}`;
     weeks[week] ??= [];
     weeks[week].push(`<use href="#d" y="${y}" class="${kind}"/>`);
@@ -332,74 +363,83 @@ function grid(recap: RecapData | null, year: number, left: number): string {
   );
 }
 
-/** The calendar half of the card, `left` px from the card's edge. */
-function stats(recap: RecapData | null, year: number, left: number): string {
-  const gridBottom = GRID_TOP + 6 * STEP + CELL;
-  const valueY = gridBottom + 36;
-  const captionY = valueY + 18;
-  const right = left + STATS_WIDTH - CARD_PAD;
-
-  if (!recap) {
-    return [
-      line(
-        [
-          { text: "WrapYourGit", color: FG, bold: true },
-          { text: String(year), color: MUTED },
-        ],
-        left + CARD_PAD,
-        36,
-        16,
-      ).svg,
-      mark(right - markWidth(5), 23, 5),
-      grid(null, year, left),
-      `<g class="v" ${delay(1.2)}>${text({ text: `See the ${year} recap`, color: FG }, left + CARD_PAD, valueY, 14)}</g>`,
-    ].join("");
-  }
-
-  const { total, longestStreak } = recap.contributions;
-  const top = recap.languages.top[0];
-  const column = left + CARD_PAD + 128;
-  const third = left + CARD_PAD + 256;
-  const languageValue = top
-    ? `<circle cx="${third + 5}" cy="${valueY - 6}" r="5" fill="${top.color ?? MUTED}" stroke="${EDGE}" stroke-width="0.5"/>${text({ text: top.name, color: FG, bold: true }, third + 15, valueY, 16)}`
-    : text({ text: "None yet", color: MUTED }, third, valueY, 16);
-  const site = { text: "wrapyourgit.com", color: MUTED };
-  const siteWidth = textWidth(site.text, 11);
-
-  return [
-    text({ text: `@${recap.profile.login}`, color: FG, bold: true }, left + CARD_PAD, 36, 16),
-    text(
-      { text: recap.meta.isFinal ? String(year) : `${year} so far`, color: MUTED },
-      right,
-      36,
-      12,
-      "end",
-    ),
-    grid(recap, year, left),
-    `<g class="v" ${delay(1.1)}>`,
-    text({ text: count(total), color: GREEN, bold: true }, left + CARD_PAD, valueY, 20),
-    text(
-      { text: plural(total, "contribution", "contributions"), color: MUTED },
-      left + CARD_PAD,
-      captionY,
-      11,
-    ),
-    "</g>",
-    `<g class="v" ${delay(1.25)}>`,
-    text({ text: count(longestStreak.days), color: GREEN, bold: true }, column, valueY, 20),
-    text({ text: "longest streak (days)", color: MUTED }, column, captionY, 11),
-    "</g>",
-    `<g class="v" ${delay(1.4)}>`,
-    languageValue,
-    text({ text: "top language", color: MUTED }, third, captionY, 11),
-    "</g>",
-    mark(right - siteWidth - markWidth(3) - 6, captionY - 7, 3, 1.3),
-    text(site, right, captionY, 11, "end"),
-  ].join("");
+/** Height of the calendar column for these parts: the header, then the graph and the numbers. */
+function columnHeight(options: CardOptions): number {
+  let y = HEADER_BOTTOM;
+  if (options.graph) y += 2 + GRID_HEIGHT;
+  if (options.stats) y += 74;
+  return Math.ceil(y + 18);
 }
 
-/** The archetype half of the card: the landing page's diorama over the archetype's name. */
-function archetypePanel(recap: RecapData, left: number): string {
+/**
+ * The calendar column: the login, and on the right the mark and the year (where the product signs
+ * the card, apart from the numbers), then the graph and the three numbers, as `options` ask.
+ */
+function column(
+  recap: RecapData,
+  year: number,
+  left: number,
+  top: number,
+  options: CardOptions,
+): string {
+  const right = left + COLUMN_WIDTH - CARD_PAD;
+  const yearRun = { text: recap.meta.isFinal ? String(year) : `${year} so far`, color: MUTED };
+  const yearWidth = textWidth(yearRun.text, 12);
+  const parts = [
+    text(
+      { text: `@${recap.profile.login}`, color: FG, bold: true },
+      left + CARD_PAD,
+      top + HEADER_BASELINE,
+      16,
+    ),
+    mark(right - yearWidth - 6 - markWidth(4), top + HEADER_BASELINE - 9.5, 4),
+    text(yearRun, right, top + HEADER_BASELINE, 12, "end"),
+  ];
+
+  let y = top + HEADER_BOTTOM;
+  if (options.graph) {
+    parts.push(grid(recap, year, left, y + 2));
+    y += 2 + GRID_HEIGHT;
+  }
+  if (options.stats) {
+    const valueY = y + 36;
+    const captionY = valueY + 18;
+    const { total, longestStreak } = recap.contributions;
+    const top3 = recap.languages.top[0];
+    const second = left + CARD_PAD + 150;
+    const third = left + CARD_PAD + 300;
+    const language = top3
+      ? `<circle cx="${third + 5}" cy="${valueY - 6}" r="5" fill="${top3.color ?? MUTED}" stroke="${EDGE}" stroke-width="0.5"/>${text({ text: top3.name, color: FG, bold: true }, third + 15, valueY, 16)}`
+      : text({ text: "None yet", color: MUTED }, third, valueY, 16);
+    const start = options.graph ? 1.1 : 0.3;
+    parts.push(
+      `<g class="v" ${delay(start)}>`,
+      text({ text: count(total), color: GREEN, bold: true }, left + CARD_PAD, valueY, 20),
+      text(
+        { text: plural(total, "contribution", "contributions"), color: MUTED },
+        left + CARD_PAD,
+        captionY,
+        11,
+      ),
+      "</g>",
+      `<g class="v" ${delay(start + 0.15)}>`,
+      text({ text: count(longestStreak.days), color: GREEN, bold: true }, second, valueY, 20),
+      text({ text: "longest streak (days)", color: MUTED }, second, captionY, 11),
+      "</g>",
+      `<g class="v" ${delay(start + 0.3)}>`,
+      language,
+      text({ text: "top language", color: MUTED }, third, captionY, 11),
+      "</g>",
+    );
+  }
+  return parts.join("");
+}
+
+/**
+ * The archetype panel: the landing page's diorama over the archetype's name. On a card of its own
+ * (`alone`) it also carries the mark, the login and the year, which the calendar column would.
+ */
+function archetypePanel(recap: RecapData, left: number, top: number, alone: boolean): string {
   const id = recap.identity.archetype;
   if (!id) return "";
   const art = ARCHETYPE_ART[id].diorama;
@@ -408,48 +448,85 @@ function archetypePanel(recap: RecapData, left: number): string {
   const width = art.width * scale;
   const height = art.height * scale;
   const name = ARCHETYPE_LABELS[id];
-  const nameWidth = textWidth(name, 18, true);
-  const captionWidth = textWidth("archetype", 11);
+  const caption = alone
+    ? `@${recap.profile.login} · ${recap.meta.isFinal ? recap.meta.year : `${recap.meta.year} so far`}`
+    : "archetype";
   const centre = left + PANEL_WIDTH / 2;
+  const centred = (run: Run, y: number, size: number) =>
+    text(run, centre - textWidth(run.text, size, run.bold) / 2, y, size);
   return [
-    `<g class="v" ${delay(0.1)}>${image(art, centre - width / 2, 14 + (box.height - height) / 2, width, height)}</g>`,
+    alone ? mark(left + 14, top + 14, 4) : "",
+    `<g class="v" ${delay(0.1)}>${image(art, centre - width / 2, top + 14 + (box.height - height) / 2, width, height)}</g>`,
     `<g class="v" ${delay(0.5)}>`,
-    text({ text: name, color: FG, bold: true }, centre - nameWidth / 2, 162, 18),
-    text({ text: "archetype", color: MUTED }, centre - captionWidth / 2, 180, 11),
+    centred({ text: name, color: FG, bold: true }, top + 162, 18),
+    centred({ text: caption, color: MUTED }, top + 180, 11),
     "</g>",
   ].join("");
 }
 
-/**
- * The README card: the login, the year's calendar and three numbers, with the archetype's diorama
- * on `side`. No archetype means no diorama, never one for an archetype the user does not have;
- * `recap` null draws the neutral card, an empty year and a line pointing at the recap.
- */
-export function cardSvg(recap: RecapData | null, side: CardSide = "left"): string {
-  const year = recap?.meta.year ?? EDITION_YEAR;
-  const withPanel = Boolean(recap?.identity.archetype);
-  const width = STATS_WIDTH + (withPanel ? PANEL_WIDTH : 0);
-  const statsLeft = withPanel && side === "left" ? PANEL_WIDTH : 0;
-  const panelLeft = side === "left" ? 0 : STATS_WIDTH;
-
-  let label: string;
-  if (recap) {
-    const { total, longestStreak } = recap.contributions;
-    const top = recap.languages.top[0];
-    const id = recap.identity.archetype;
-    label = `${recap.profile.login}'s ${year} on WrapYourGit${recap.meta.isFinal ? "" : " so far"}: ${count(total)} ${plural(total, "contribution", "contributions")}, longest streak ${count(longestStreak.days)} ${plural(longestStreak.days, "day", "days")}${top ? `, top language ${top.name}` : ""}${id ? `, ${ARCHETYPE_LABELS[id]} archetype` : ""}, through ${day(recap.meta.periodEnd)}`;
-  } else {
-    label = `WrapYourGit ${year}: see the recap`;
-  }
-
-  const divider = withPanel ? (side === "left" ? PANEL_WIDTH : STATS_WIDTH) : 0;
+/** The neutral card, the same for every account with no stored recap, whatever the options. */
+function neutralCard(year: number): string {
+  const height = columnHeight(DEFAULT_OPTIONS);
   const body = [
-    `<rect x="0.5" y="0.5" width="${width - 1}" height="${CARD_HEIGHT - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
-    withPanel
-      ? `<rect x="${divider}" y="16" width="1" height="${CARD_HEIGHT - 32}" fill="${SURFACE}"/>`
-      : "",
-    recap && withPanel ? archetypePanel(recap, panelLeft) : "",
-    stats(recap, year, statsLeft),
+    `<rect x="0.5" y="0.5" width="${COLUMN_WIDTH - 1}" height="${height - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
+    line(
+      [
+        { text: "WrapYourGit", color: FG, bold: true },
+        { text: String(year), color: MUTED },
+      ],
+      CARD_PAD,
+      HEADER_BASELINE,
+      16,
+    ).svg,
+    mark(COLUMN_WIDTH - CARD_PAD - markWidth(4), HEADER_BASELINE - 9.5, 4),
+    grid(null, year, 0, HEADER_BOTTOM + 2),
+    `<g class="v" ${delay(1.2)}>${text({ text: `See the ${year} recap`, color: FG }, CARD_PAD, HEADER_BOTTOM + 2 + GRID_HEIGHT + 36, 14)}</g>`,
   ].join("");
-  return svg(width, CARD_HEIGHT, label, body);
+  return svg(COLUMN_WIDTH, height, `WrapYourGit ${year}: see the recap`, body);
+}
+
+/**
+ * The README card: the login, the year's graph and three numbers, beside the archetype's diorama,
+ * each part shown or left out by `options`. No archetype means no diorama, never one for an
+ * archetype the user does not have; `recap` null draws the neutral card.
+ */
+export function cardSvg(recap: RecapData | null, options: CardOptions = DEFAULT_OPTIONS): string {
+  const year = recap?.meta.year ?? EDITION_YEAR;
+  if (!recap) return neutralCard(year);
+
+  const id = recap.identity.archetype;
+  const withPanel = options.archetype && id !== null;
+  const withColumn = options.graph || options.stats;
+  // Hiding the graph and the numbers of a recap with no archetype would leave nothing: the
+  // default card stands in, as it does when every part is hidden.
+  if (!withPanel && !withColumn) return cardSvg(recap, DEFAULT_OPTIONS);
+
+  const colHeight = withColumn ? columnHeight(options) : 0;
+  const height = Math.max(colHeight, withPanel ? PANEL_HEIGHT : 0);
+  const width = (withColumn ? COLUMN_WIDTH : 0) + (withPanel ? PANEL_WIDTH : 0);
+  const panelLeft = withColumn && options.side === "right" ? COLUMN_WIDTH : 0;
+  const columnLeft = withPanel && options.side === "left" ? PANEL_WIDTH : 0;
+
+  const { total, longestStreak } = recap.contributions;
+  const top = recap.languages.top[0];
+  const said = [
+    options.stats &&
+      `${count(total)} ${plural(total, "contribution", "contributions")}, longest streak ${count(longestStreak.days)} ${plural(longestStreak.days, "day", "days")}${top ? `, top language ${top.name}` : ""}`,
+    withPanel && id && `${ARCHETYPE_LABELS[id]} archetype`,
+    options.graph && "a calendar of the year",
+  ].filter(Boolean);
+  const label = `${recap.profile.login}'s ${year} on WrapYourGit${recap.meta.isFinal ? "" : " so far"}: ${said.join(", ")}, through ${day(recap.meta.periodEnd)}`;
+
+  const divider = options.side === "left" ? PANEL_WIDTH : COLUMN_WIDTH;
+  const body = [
+    `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
+    withPanel && withColumn
+      ? `<rect x="${divider}" y="16" width="1" height="${height - 32}" fill="${SURFACE}"/>`
+      : "",
+    withPanel ? archetypePanel(recap, panelLeft, (height - PANEL_HEIGHT) / 2, !withColumn) : "",
+    withColumn
+      ? column(recap, year, columnLeft, Math.floor((height - colHeight) / 2), options)
+      : "",
+  ].join("");
+  return svg(width, height, label, body);
 }
