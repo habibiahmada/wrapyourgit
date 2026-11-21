@@ -41,6 +41,18 @@ describe("badgeContent", () => {
     expect(words(one, "days")).toBe("1 active day");
   });
 
+  test("a streak reads for zero and one day too", () => {
+    expect(words(emptyRecap, "streak")).toBe("longest streak 0 days");
+    const one = {
+      ...emptyRecap,
+      contributions: {
+        ...emptyRecap.contributions,
+        longestStreak: { days: 1, start: "2026-03-02", end: "2026-03-02" },
+      },
+    };
+    expect(words(one, "streak")).toBe("longest streak 1 day");
+  });
+
   test("no top language or archetype means nothing to show, not a made-up value", () => {
     expect(badgeContent(emptyRecap, "language")).toBeNull();
     expect(badgeContent(emptyRecap, "archetype")).toBeNull();

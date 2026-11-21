@@ -36,8 +36,6 @@ interface Run {
   text: string;
   color: string;
   bold?: boolean;
-  /** Set straight after the previous run, with no space ("23" + "-day"). */
-  tight?: boolean;
 }
 
 interface Content {
@@ -69,14 +67,17 @@ export function badgeContent(recap: RecapData, show: BadgeShow): Content | null 
       };
     }
     case "streak": {
+      // "longest streak 0 days" reads where "0-day longest streak" would not.
       const n = contributions.longestStreak.days;
+      const noun = plural(n, "day", "days");
       return {
         runs: [
+          { text: "longest streak", color: FG },
           { text: count(n), color: GREEN, bold: true },
-          { text: "-day longest streak", color: FG, tight: true },
+          { text: noun, color: FG },
           ...soFar,
         ],
-        words: `${count(n)}-day longest streak${tail}`,
+        words: `longest streak ${count(n)} ${noun}${tail}`,
       };
     }
     case "days": {
@@ -136,11 +137,11 @@ function text(run: Run, x: number, y: number, size: number, anchor?: "end"): str
   }${anchor ? ` text-anchor="${anchor}"` : ""} textLength="${width}" lengthAdjust="spacingAndGlyphs">${xml(run.text)}</text>`;
 }
 
-/** Runs laid out left to right from `x`, a space apart unless `tight`; returns the SVG and the end x. */
+/** Runs laid out left to right from `x`, a space apart; returns the SVG and the end x. */
 function line(runs: Run[], x: number, y: number, size: number): { svg: string; end: number } {
   let cursor = x;
   const parts = runs.map((run, i) => {
-    if (i > 0 && !run.tight) cursor += textWidth(" ", size);
+    if (i > 0) cursor += textWidth(" ", size);
     const part = text(run, cursor, y, size);
     cursor += textWidth(run.text, size, run.bold);
     return part;
@@ -317,11 +318,11 @@ export function cardSvg(recap: RecapData | null): string {
         11,
       ),
       text({ text: count(longestStreak.days), color: GREEN, bold: true }, column, valueY, 20),
-      text({ text: "day longest streak", color: MUTED }, column, captionY, 11),
+      text({ text: "longest streak (days)", color: MUTED }, column, captionY, 11),
       languageValue,
       text({ text: "top language", color: MUTED }, third, captionY, 11),
     ].join("");
-    label = `${recap.profile.login}'s ${year} on WrapYourGit${recap.meta.isFinal ? "" : " so far"}: ${count(total)} ${plural(total, "contribution", "contributions")}, a ${longestStreak.days}-day longest streak${top ? `, top language ${top.name}` : ""}, through ${day(recap.meta.periodEnd)}`;
+    label = `${recap.profile.login}'s ${year} on WrapYourGit${recap.meta.isFinal ? "" : " so far"}: ${count(total)} ${plural(total, "contribution", "contributions")}, longest streak ${count(longestStreak.days)} ${plural(longestStreak.days, "day", "days")}${top ? `, top language ${top.name}` : ""}, through ${day(recap.meta.periodEnd)}`;
   } else {
     stats = text({ text: `See the ${year} recap`, color: FG }, CARD_PAD, valueY, 14);
     label = `WrapYourGit ${year}: see the recap`;
