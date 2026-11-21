@@ -1,6 +1,6 @@
 "use client";
 
-import { type SyntheticEvent, useEffect, useId, useRef, useState } from "react";
+import { type SyntheticEvent, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { button } from "@/components/ui";
 import { cardFileName } from "./card-file";
 import type { ExportJob, ExportState } from "./export-state";
@@ -39,10 +39,13 @@ const TONES: Record<
 const DIALOG =
   "m-auto w-[min(44rem,calc(100vw-2rem))] max-h-[calc(100svh-2rem)] overscroll-contain p-0 backdrop:overflow-hidden backdrop:overscroll-contain";
 
-/** Opens as a modal on mount, closes on unmount; Escape runs `onClose`. */
+/**
+ * Opens as a modal on mount, closes on unmount; Escape runs `onClose`. A layout effect, so the
+ * dialog is closed by the time `afterClose` hands focus back.
+ */
 function useModal(onClose: () => void) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = ref.current;
     if (node && !node.open) node.showModal();
     return () => node?.close();
@@ -56,10 +59,11 @@ function useModal(onClose: () => void) {
 
 /**
  * Runs `then` once a preview has closed. Focus can't go back while the modal is still open (the
- * page behind it is inert), and it closes as React removes it, after the handler that asked.
+ * page behind it is inert), and it closes as React removes it, after the handler that asked. A
+ * timer, not an animation frame: frames stop while the tab isn't drawn, and focus mustn't wait.
  */
 export function afterClose(then: () => void) {
-  window.requestAnimationFrame(() => window.requestAnimationFrame(then));
+  window.setTimeout(then, 0);
 }
 
 const KIND: Record<ExportJob, { title: string; noun: string; save: string }> = {
