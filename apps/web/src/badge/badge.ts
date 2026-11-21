@@ -5,6 +5,7 @@ import { languageIcon } from "@wyg/video/languages";
 import { LOGO_CELLS } from "../components/site/logo-mark";
 import { ARCHETYPE_ART, type BadgeImage } from "./archetype-art";
 import { LANGUAGE_ICONS } from "./language-icons";
+import { BADGE_SHOWS, type BadgeShow, type CardLayout, type CardSide, MAX_SHOWS } from "./options";
 import { textWidth } from "./text-width";
 
 /*
@@ -38,11 +39,7 @@ const FONT = "Mona Sans,-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Aria
 const MOTION = `<style>@media (prefers-reduced-motion:no-preference){.c,.w{animation:wyg-in .4s ease-out backwards}.v{animation:wyg-up .5s ease-out backwards}}@keyframes wyg-in{from{opacity:0}}@keyframes wyg-up{from{opacity:0;transform:translateY(4px)}}</style>`;
 const delay = (seconds: number) => `style="animation-delay:${seconds.toFixed(2)}s"`;
 
-export const BADGE_SHOWS = ["contributions", "streak", "days", "language", "archetype"] as const;
-export type BadgeShow = (typeof BADGE_SHOWS)[number];
-
-/** At most this many values in one badge, so it stays a badge. */
-export const MAX_SHOWS = 4;
+export { BADGE_SHOWS, type BadgeShow, type CardLayout, type CardSide, MAX_SHOWS };
 
 /**
  * `?show=` as a list: comma-separated, in the order given, each once, unknown names dropped, at
@@ -57,8 +54,6 @@ export function badgeShows(value: string | null | undefined): BadgeShow[] {
   return shows.length ? shows.slice(0, MAX_SHOWS) : ["contributions"];
 }
 
-export type CardSide = "left" | "right";
-export type CardLayout = "wide" | "compact";
 export const CARD_PARTS = ["archetype", "name", "graph", "stats"] as const;
 export type CardPart = (typeof CARD_PARTS)[number];
 /** Parts a card leaves out unless `?show=` asks for them. */
