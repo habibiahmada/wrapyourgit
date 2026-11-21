@@ -28,7 +28,7 @@ const SHOW_LABELS: Record<BadgeShow, string> = {
 };
 
 const field = "flex min-h-11 items-center gap-3";
-const box = "size-5 shrink-0 accent-[#1d7a3a]";
+const box = "size-5 shrink-0 accent-green-button";
 const legend = "mb-1 text-sm font-semibold";
 
 /**
@@ -227,13 +227,13 @@ export function ReadmeImages({
 
       <div className="grid min-w-0 content-start gap-4">
         {hidden && (
-          <p role="status" className="rounded-md border border-line bg-overlay px-4 py-3 text-sm">
+          <p role="status" className="rounded-xl border border-line bg-overlay px-4 py-3 text-sm">
             Your public recap is hidden, so these images only say &ldquo;See the {year}{" "}
             recap&rdquo;. <a href="/settings">Show it again in Settings</a> to put your numbers in
             them.
           </p>
         )}
-        <div className="overflow-x-auto rounded-md border border-line bg-head p-4">
+        <div className="overflow-x-auto rounded-xl border border-line bg-head p-4">
           {failed === preview ? (
             <p className="text-sm text-muted">
               The preview didn&apos;t load. The snippet still works; try reloading the page.
