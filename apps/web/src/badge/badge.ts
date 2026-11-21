@@ -430,7 +430,10 @@ export function archetypeCardSvg(recap: RecapData | null): string {
   }
 
   const site = { text: "wrapyourgit.com", color: MUTED };
-  const brand = recap && id ? `${mark(ARCHETYPE_TEXT_X, 168, 3)}${text(site, ARCHETYPE_TEXT_X + markWidth(3) + 6, 175, 11)}` : "";
+  const brand =
+    recap && id
+      ? `${mark(ARCHETYPE_TEXT_X, 168, 3)}${text(site, ARCHETYPE_TEXT_X + markWidth(3) + 6, 175, 11)}`
+      : "";
 
   const body = [
     `<rect x="0.5" y="0.5" width="${ARCHETYPE_WIDTH - 1}" height="${ARCHETYPE_HEIGHT - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,

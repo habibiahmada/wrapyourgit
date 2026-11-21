@@ -59,7 +59,10 @@ function archetypes(theme: "light" | "dark"): string {
       return `<figure class="stack"><img src="${dataUrl(badgeSvg(recap, "archetype"))}" alt="${esc(`${id} archetype badge`)}"><img src="${dataUrl(archetypeCardSvg(recap))}" alt="${esc(`${id} archetype card`)}" width="420" height="200"></figure>`;
     })
     .join("")
-    .replace(/^/, `<div class="readme ${theme}"><p class="theme">GitHub ${theme}</p><div class="cards">`)
+    .replace(
+      /^/,
+      `<div class="readme ${theme}"><p class="theme">GitHub ${theme}</p><div class="cards">`,
+    )
     .concat("</div></div>");
 }
 
