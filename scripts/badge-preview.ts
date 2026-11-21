@@ -58,6 +58,8 @@ const CARDS = [
   "hide=graph",
   "hide=stats",
   "hide=graph,stats",
+  "hide=name",
+  "hide=name,graph,stats",
 ];
 
 const dataUrl = (svg: string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;

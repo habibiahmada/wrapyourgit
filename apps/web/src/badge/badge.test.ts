@@ -42,6 +42,7 @@ describe("cardOptions", () => {
     expect(cardOptions({ hide: "graph, Stats,legend" })).toEqual({
       side: "left",
       archetype: true,
+      name: true,
       graph: false,
       stats: false,
     });
@@ -196,6 +197,18 @@ describe("cardSvg", () => {
     const noArchetype = cardSvg(sampleRecap, cardOptions({ hide: "archetype" }));
     expect(noArchetype).not.toContain("<image");
     expect(width(noArchetype)).toBe(500);
+  });
+
+  test("the archetype's name can go, and the diorama grows into its place", () => {
+    const imageHeight = (svg: string) =>
+      Number(/<image href="[^"]+" x="[\d.]+" y="[\d.]+" width="[\d.]+" height="([\d.]+)"/.exec(svg)?.[1]);
+    const named = cardSvg(sampleRecap);
+    const unnamed = cardSvg(sampleRecap, cardOptions({ hide: "name" }));
+    expect(unnamed).not.toContain(">Builder<");
+    expect(unnamed).not.toContain(">archetype<");
+    expect(imageHeight(unnamed)).toBeGreaterThan(imageHeight(named));
+    // The archetype is still in the image's accessible name.
+    expect(label(unnamed)).toContain("Builder archetype");
   });
 
   test("the card grows only as tall as its parts", () => {

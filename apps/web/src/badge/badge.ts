@@ -56,20 +56,22 @@ export function badgeShows(value: string | null | undefined): BadgeShow[] {
 }
 
 export type CardSide = "left" | "right";
-export const CARD_PARTS = ["archetype", "graph", "stats"] as const;
+export const CARD_PARTS = ["archetype", "name", "graph", "stats"] as const;
 export type CardPart = (typeof CARD_PARTS)[number];
 
 export interface CardOptions {
   /** Which side the archetype's diorama stands on. */
   side: CardSide;
   archetype: boolean;
+  /** The archetype's name and the line under it, below the diorama. */
+  name: boolean;
   graph: boolean;
   stats: boolean;
 }
 
 /**
  * The card's query: `?archetype=left|right` places the diorama (left by default), and
- * `?hide=archetype,graph,stats` leaves parts out, unknown names ignored. Hiding every part would
+ * `?hide=archetype,name,graph,stats` leaves parts out, unknown names ignored. Hiding every part would
  * leave an empty frame, so it gets the default card instead.
  */
 export function cardOptions(query: {
@@ -81,11 +83,12 @@ export function cardOptions(query: {
   const options: CardOptions = {
     side: query.archetype === "right" ? "right" : "left",
     archetype: shown("archetype"),
+    name: shown("name"),
     graph: shown("graph"),
     stats: shown("stats"),
   };
   if (!options.archetype && !options.graph && !options.stats) {
-    return { ...options, archetype: true, graph: true, stats: true };
+    return { ...options, archetype: true, name: true, graph: true, stats: true };
   }
   return options;
 }
@@ -311,7 +314,13 @@ const HEADER_BOTTOM = 50;
 const STEP = (COLUMN_WIDTH - CARD_PAD * 2) / 53;
 const CELL = 7;
 const GRID_HEIGHT = 6 * STEP + CELL;
-const DEFAULT_OPTIONS: CardOptions = { side: "left", archetype: true, graph: true, stats: true };
+const DEFAULT_OPTIONS: CardOptions = {
+  side: "left",
+  archetype: true,
+  name: true,
+  graph: true,
+  stats: true,
+};
 
 /** Every day of `year`, in order, as ISO dates (UTC). */
 function yearDays(year: number): string[] {
@@ -438,12 +447,19 @@ function column(
 /**
  * The archetype panel: the landing page's diorama over the archetype's name. On a card of its own
  * (`alone`) it also carries the mark, the login and the year, which the calendar column would.
+ * Without the name (`withName` false) the diorama takes the panel's whole height.
  */
-function archetypePanel(recap: RecapData, left: number, top: number, alone: boolean): string {
+function archetypePanel(
+  recap: RecapData,
+  left: number,
+  top: number,
+  alone: boolean,
+  withName: boolean,
+): string {
   const id = recap.identity.archetype;
   if (!id) return "";
   const art = ARCHETYPE_ART[id].diorama;
-  const box = { width: PANEL_WIDTH - 28, height: 124 };
+  const box = { width: PANEL_WIDTH - 28, height: withName ? 124 : PANEL_HEIGHT - 28 };
   const scale = Math.min(box.width / art.width, box.height / art.height);
   const width = art.width * scale;
   const height = art.height * scale;
@@ -457,10 +473,9 @@ function archetypePanel(recap: RecapData, left: number, top: number, alone: bool
   return [
     alone ? mark(left + 14, top + 14, 4) : "",
     `<g class="v" ${delay(0.1)}>${image(art, centre - width / 2, top + 14 + (box.height - height) / 2, width, height)}</g>`,
-    `<g class="v" ${delay(0.5)}>`,
-    centred({ text: name, color: FG, bold: true }, top + 162, 18),
-    centred({ text: caption, color: MUTED }, top + 180, 11),
-    "</g>",
+    withName
+      ? `<g class="v" ${delay(0.5)}>${centred({ text: name, color: FG, bold: true }, top + 162, 18)}${centred({ text: caption, color: MUTED }, top + 180, 11)}</g>`
+      : "",
   ].join("");
 }
 
@@ -523,7 +538,7 @@ export function cardSvg(recap: RecapData | null, options: CardOptions = DEFAULT_
     withPanel && withColumn
       ? `<rect x="${divider}" y="16" width="1" height="${height - 32}" fill="${SURFACE}"/>`
       : "",
-    withPanel ? archetypePanel(recap, panelLeft, (height - PANEL_HEIGHT) / 2, !withColumn) : "",
+    withPanel ? archetypePanel(recap, panelLeft, (height - PANEL_HEIGHT) / 2, !withColumn, options.name) : "",
     withColumn
       ? column(recap, year, columnLeft, Math.floor((height - colHeight) / 2), options)
       : "",
