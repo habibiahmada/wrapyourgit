@@ -161,7 +161,8 @@ describe("cardSvg", () => {
     expect(imageX(left)).toBeLessThan(220);
     expect(imageX(right)).toBeGreaterThan(500);
     expect(label(left)).toContain("Builder archetype");
-    expect(left.length).toBeLessThan(40_000);
+    // Budget: the diorama is about 28 KB once base64, the calendar about 16 KB.
+    expect(left.length).toBeLessThan(56_000);
   });
 
   test("no archetype means no diorama, at the calendar's own width", () => {
