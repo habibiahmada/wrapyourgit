@@ -13,6 +13,7 @@ import {
   LetterSection,
   MetricsTrioSection,
   PrivacySection,
+  ReadmeSection,
   SampleReelSection,
   StorySection,
   VideoExportSection,
@@ -180,6 +181,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
           <LetterSection />
           <VideoExportSection />
           <KeepSection />
+          <ReadmeSection />
           <PrivacySection />
           <FaqSection />
           <ClosingSection
