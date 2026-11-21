@@ -1,0 +1,55 @@
+# 0035. A README badge from the stored public recap
+
+- Status: Accepted
+- Date: 2026-11-21
+
+## Context
+
+A recap is watched once and shared once. A GitHub profile README is where developers keep showing their year, and an image there that links to `wrapyourgit.com/<login>` keeps the recap in view. It is also a link to this site from a page people trust, which a new domain has few of.
+
+A README image is not fetched by the person reading the README. GitHub rewrites every image to its proxy, camo, which fetches it from GitHub's own addresses, caches it as the response's `Cache-Control` allows, and gives up after a few seconds. Three things follow from that:
+
+- Camo cannot pass Turnstile, so it is never a person in the sense of [ADR-0026](0026-a-human-check-before-a-new-public-fetch.md), and a public fetch takes 20 to 55 seconds, far past camo's timeout.
+- Every README's images come from a small set of shared addresses. The edge rate limit on `/api` and `/u/` (60 requests a minute per IP, deployment guide item 4) would answer a popular README with 429.
+- The badge is a public surface: anyone can put any username in the address. AGENTS.md rule 6 applies in full.
+
+## Decision
+
+1. **The address is `/<login>/badge.svg`**, next to the recap it links to, outside `/api` and `/u/` and so outside the edge rate limit. An account whose name a site route uses has its images next to its recap at `/u/<name>/`, which the limit does cover; that is rare and limits only that account's images. The deployment guide notes that the paths must stay outside that rule, and outside the bot rule if it ever moves from log to deny.
+2. **Only the stored public recap.** The route calls `loadPublicRecap(login, clientKey(headers), false)`. With `human` false it never asks GitHub: it serves a stored recap that is fresh, or stale within the existing cap (`STALE_SERVE_MS`, seven days), checks `hidden_accounts` by GitHub id, and otherwise answers `verify`. No new path into `public_recaps` and no new limit.
+3. **One neutral badge for every other answer.** Hidden, missing, organization, verify, busy, limited and error all get the same image (the mark, "2026", "See the 2026 recap"), with status 200 so camo shows it. The badge never says whether an account is hidden, unknown or simply not fetched yet. A visit to the recap page itself, which the badge links to, is what fetches or refreshes it; the next time camo asks, the badge has numbers.
+4. **What a badge may show.** The badge starts with the six-cell mark and the year; the product's name is in the image's accessible name and on the page it links to. Then come the values listed in `?show=`, comma-separated, in that order, each once, at most four (`?show=contributions,streak,language`), each in its own segment. All come from the public projection and none is new to the schema:
+   - `contributions` (the default): `contributions.total`
+   - `streak`: `contributions.longestStreak.days`
+   - `days`: `contributions.activeDays`
+   - `language`: `languages.top[0]`, with its Devicon logo (the same files as the story, `languageIcon`), or a dot in its GitHub colour when it has none. Logos drawn in plain black take the badge's text colour so they show on its dark ground
+   - `archetype`: the label of `identity.archetype`, which the public share card already shows
+
+   Unknown names are dropped, and an empty list gets the default. A value this recap has nothing for (no top language, no archetype) is left out; with none left the badge is neutral. No `metric()` value is offered until it has a way to say "unavailable" or "estimated" on the badge itself, so `starsGained`, `prsMerged` and the comparison with last year are left out for now.
+5. **Honest wording.** While `meta.isFinal` is false the badge ends with "so far", once after the last value ("1,284 contributions | longest streak 24 days so far"). The SVG's `<title>`, which GitHub shows as the image's tooltip, names the user and the recap's `periodEnd`, so a stale badge says how old it is.
+6. **The SVG is built as a string on the server**, with no library and no remote font: camo serves it as an `<img>`, which loads nothing, not even an image the SVG points at. Text uses a system font stack and widths from a fixed per-character table. The archetype dioramas travel inside the card as WebP data URLs, cut from the landing page's existing `skin-*` renders by `scripts/badge-art.ts` (about 20 KB each); WebP rather than AVIF because a README shows in GitHub's apps and webviews as well as browsers. Every value written into it is XML-escaped (language names come from GitHub). The response is `image/svg+xml` and carries the site's Content-Security-Policy like any other route, so an SVG opened directly runs nothing.
+7. **Caching:** `Cache-Control: public, max-age=3600, s-maxage=3600`. Camo and Vercel's edge keep it an hour, so a badge on a busy profile costs one function call an hour, not one per reader. Hiding the public recap takes up to an hour to reach a badge already cached; the recap page itself stops at once.
+8. **One card**, `/<login>/card.svg`, under the same rules: the login, the contribution total, the longest streak and the top language, beside the archetype's diorama and name. The year's graph (days not reached yet drawn as outlines) is opt-in with `?show=graph`: a profile README already sits above GitHub's own graph, so by default the card does not repeat it. The six-cell mark and the year sign it at the top right, apart from the numbers. Two options:
+   - `?archetype=left` (the default) or `right`: the side the diorama stands on.
+   - `?hide=archetype,name,stats`: parts left out (`name` is the text under the diorama, which then grows into its place). The card is as tall as what is left, and the archetype alone is a card of its own with the login under its name. Hiding everything, or the graph and numbers of a recap with no archetype, gives the default card rather than an empty frame.
+
+   - `?layout=compact`: a 360 px card for phones, where GitHub scales a README image down to the column and a 720 px card's 11 px captions would shrink to about 5 px. The parts stack (header, diorama and name, the numbers as label-and-value rows, the graph) and no text is under 11 px. The same `hide` options apply; the side does not. A README can offer both with `<picture>` and a `max-width` media query on its `<source>`, if GitHub's sanitiser keeps that attribute (not yet checked on GitHub itself).
+
+   With no archetype there is no diorama, never one for an archetype the user does not have. The neutral card ignores the options, so the options cannot tell one account without a stored recap from another. The badge stays text: a diorama or character at 28 px reads as a smudge.
+9. **A short entrance, once.** The badge's mark lights cell by cell and its values rise into place; the card's weeks come in left to right, then its numbers. Everything starts within 1.6 s and the image then holds still, because an `<img>` can carry no pause control, so nothing loops. It is CSS inside the SVG, wrapped in `prefers-reduced-motion: no-preference`, and the resting state is the final one, so a reader who asks for less motion, or a renderer without CSS animation, sees the whole image at once. Not a GIF: a GIF would be several times heavier, limited to 256 colours with blurred text, and could not honour reduced motion.
+10. **The snake** (`/<login>/snake.svg`, the maintainer's call on 2026-11-21): the year's graph with a snake wandering from day to day with contributions, one cell per step, each square going dark as it is eaten. The next day is picked at random from the three nearest, seeded by the login and year so an image never changes between renders; a fully random order would cross the year again and again (minutes per loop, hundreds of kilobytes). It starts as a head and one segment and grows a segment for every three days eaten, up to twenty segments with the head (longer, it knotted over itself in a busy year), each segment in the darkest green of its three, so the body becomes a gradient of what it ate. When every day is eaten the year fills in and it starts over, small again. It is the one image here that loops, which goes against item 9 and antislop's R-39 (WCAG 2.2.2: motion that lasts more than five seconds next to other content needs a pause, and an `<img>` cannot carry one). The maintainer chose it knowing that, because it is the motion people expect from a README snake. What stays: the route is computed on the server and drawn once as the path every segment follows, it moves at about twelve cells a second, and a reader who asks for reduced motion gets the still graph (a CSS rule restores every colour and hides the snake, since CSS outranks the animated attributes). The sample year loops every 50 s at about 71 KB.
+
+## Alternatives considered
+
+- **A shields.io endpoint** (`/api/badge/<login>.json` read by shields.io). Less SVG code, but the badge would depend on a third party's uptime and look, and the JSON would sit under `/api`.
+- **Let the badge start a fetch.** Camo would time out before the fetch ended, and anyone could make the server spend the shared token by putting usernames in image tags.
+- **Serve any stored recap, however old.** Past the stale cap a row may belong to a login that has since been renamed and reused ([#186](https://github.com/habibiahmada/wrapyourgit/issues/186)); the badge follows the same cap as the page.
+- **Only for signed-in owners who turn it on.** Safer, but every username already has a public recap (ADR-0019), and the badge shows nothing that page does not.
+- **Render it with Satori, like the share card.** Satori outputs SVG with text as paths, so the badge would be larger and its text unreadable to screen readers and search engines.
+
+## Consequences
+
+- No schema change and no change to `loadPublicRecap`: the badge is a new reader of what is already stored.
+- A badge whose recap nobody visits for seven days falls back to the neutral image until someone follows it.
+- The numbers on a badge can be up to an hour behind the page, plus however long the stored recap is (12 hours fresh, seven days at most).
+- Metrics that can be unavailable or estimated need a badge design of their own before they can be offered.
