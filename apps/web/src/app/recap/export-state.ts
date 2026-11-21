@@ -4,6 +4,11 @@ export type ExportJob = "mp4" | "zip" | "pdf";
 export type ExportState =
   | { status: "idle" }
   | { status: "rendering"; job: ExportJob; progress: number }
+  /**
+   * Slides or the PDF, made and waiting for the reader (#201): `pages` are object URLs of the
+   * slides to look over; nothing downloads until they choose to.
+   */
+  | { status: "ready"; job: ExportJob; file: string; pages: readonly string[] }
   | { status: "done"; job: ExportJob; file: string }
   | { status: "error"; job: ExportJob }
   | { status: "cancelled"; job: ExportJob };
@@ -11,6 +16,9 @@ export type ExportState =
 export type ExportAction =
   | { type: "start"; job: ExportJob }
   | { type: "progress"; value: number }
+  | { type: "ready"; file: string; pages: readonly string[] }
+  /** The reader closed the preview: the file is dropped. */
+  | { type: "discard" }
   | { type: "finish"; file: string }
   | { type: "fail" }
   | { type: "cancel" };
@@ -25,10 +33,16 @@ export const renderingTitle = (job: ExportJob): string => `Making your ${NOUN[jo
 
 export function exportReducer(state: ExportState, action: ExportAction): ExportState {
   if (action.type === "start") {
-    // The web renderer is single-threaded and shares the tab: one render at a time.
-    return state.status === "rendering"
+    // The web renderer is single-threaded and shares the tab: one render at a time, and none
+    // while a finished file waits in its preview.
+    return state.status === "rendering" || state.status === "ready"
       ? state
       : { status: "rendering", job: action.job, progress: 0 };
+  }
+  if (state.status === "ready") {
+    if (action.type === "finish") return { status: "done", job: state.job, file: action.file };
+    if (action.type === "discard") return IDLE;
+    return state;
   }
   if (state.status !== "rendering") return state;
   switch (action.type) {
@@ -39,6 +53,10 @@ export function exportReducer(state: ExportState, action: ExportAction): ExportS
     }
     case "finish":
       return { status: "done", job: state.job, file: action.file };
+    case "ready":
+      return { status: "ready", job: state.job, file: action.file, pages: action.pages };
+    case "discard":
+      return state;
     case "fail":
       return { status: "error", job: state.job };
     case "cancel":
@@ -77,6 +95,8 @@ export function announcement(state: ExportState): string {
       return "";
     case "rendering":
       return `Making your ${NOUN[state.job]}: ${Math.floor(percent(state) / 10) * 10}%`;
+    case "ready":
+      return `Your ${NOUN[state.job]} ${state.job === "zip" ? "are" : "is"} ready: ${state.pages.length} to look over, then download.`;
     case "done":
       return `Saved ${state.file}. Check your downloads.`;
     case "error":

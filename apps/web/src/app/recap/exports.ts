@@ -186,7 +186,13 @@ export async function renderSlides(
   onProgress(0, frames.length);
   for (const [i, { stopId, frame }] of frames.entries()) {
     const blob = await cancellable(signal, () =>
-      engine.renderStill({ composition: world, inputProps: world.defaultProps, frame, signal }),
+      engine.renderStill({
+        composition: world,
+        // A slide is one frame: the progress bar would read as a loading line (#197).
+        inputProps: { ...world.defaultProps, progress: false },
+        frame,
+        signal,
+      }),
     );
     slides.push({ name: exportFileName("png", data, { index: i + 1, stopId }), blob });
     onProgress(i + 1, frames.length);

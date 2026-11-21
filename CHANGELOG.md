@@ -4,9 +4,24 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- README images for every GitHub username, built from the stored public recap and never starting a GitHub fetch (ADR-0035) ([#193](https://github.com/habibiahmada/wrapyourgit/issues/193)):
+  - a badge at `/<username>/badge.svg` with the year and up to four values (`?show=contributions,streak,days,language,archetype`), the top language with its logo;
+  - a card at `/<username>/card.svg` with the archetype's diorama beside the numbers, `?archetype=left|right`, `?hide=archetype,name,stats`, the year's graph with `?show=graph`, and a 360 px `?layout=compact` for phones;
+  - a snake at `/<username>/snake.svg` that wanders through the year's graph eating each day with contributions and grows as it goes (it loops, the maintainer's call; reduced motion shows the still graph).
+- The landing page shows the three README images from the sample recap, with the compact card on phones.
+- "Put it in your README" on the dashboard: pick an image and its options, see it as GitHub will, and copy the Markdown (or HTML with `<picture>` for a card that switches to the compact one on phones).
+- The landing page's story frames open larger: choose one in the reel to see it over a dark overlay, step through the others, and close it with Escape, the close button or a click outside ([#199](https://github.com/habibiahmada/wrapyourgit/issues/199)).
+
 ### Changed
 
+- Slides, the PDF, the share card and the card with private work open in a preview before they download, with Download and Close; closing drops the file. The video still downloads as soon as it is made. Dialogs fade and rise in instead of appearing at once, with a quick fade only under reduced motion ([#201](https://github.com/habibiahmada/wrapyourgit/issues/201)).
 - The dashboard matches the landing page: only the site's palette (last year in grey instead of blue, a smaller year in a neutral chip instead of amber), green links, 12px boxes and the landing's isometric floor, faint. It stays a tool, with no bands, glass or scenery ([#203](https://github.com/habibiahmada/wrapyourgit/issues/203)).
+
+### Fixed
+
+- Exported slides (PNG, ZIP, PDF) and the landing page's frames no longer carry the story's progress bar along the top, which on a single frame read as a loading line; the player and the MP4 keep it, and the copyright line stays ([#197](https://github.com/habibiahmada/wrapyourgit/issues/197)).
 
 ## [1.0.0] - 2026-11-19
 

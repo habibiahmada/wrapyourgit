@@ -9,7 +9,8 @@ export type ExportFormat = keyof typeof VIDEO_FORMATS;
 /** Slides are one per stop, letter pages included unless left out; by default the Instagram feed size (4:5). */
 const SLIDE_FORMAT: ExportFormat = "4x5";
 
-type ExportProps = { data: RecapData; mode: "video"; letter?: boolean };
+/** `progress: false` for stills: a slide leaves the stops' progress bar out (#197). */
+type ExportProps = { data: RecapData; mode: "video"; letter?: boolean; progress?: boolean };
 
 /**
  * Everything the browser renderer needs for one MP4; the web side attaches the component itself.
