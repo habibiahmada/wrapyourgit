@@ -138,11 +138,11 @@ Every username has three images, here for the author's own account. Signed in, t
 [![WrapYourGit 2026](https://wrapyourgit.com/<username>/badge.svg?show=contributions,streak,language)](https://wrapyourgit.com/<username>)
 ```
 
-| Image | URL                     | Options                                                                                 |
-| ----- | ----------------------- | --------------------------------------------------------------------------------------- |
-| Badge | `/<username>/badge.svg` | `?show=` up to four of `contributions`, `streak`, `days`, `language`, `archetype`       |
+| Image | URL                     | Options                                                                                  |
+| ----- | ----------------------- | ---------------------------------------------------------------------------------------- |
+| Badge | `/<username>/badge.svg` | `?show=` up to four of `contributions`, `streak`, `days`, `language`, `archetype`        |
 | Card  | `/<username>/card.svg`  | `?archetype=left\|right`, `?hide=archetype,name,stats`, `?show=graph`, `?layout=compact` |
-| Snake | `/<username>/snake.svg` | none                                                                                    |
+| Snake | `/<username>/snake.svg` | none                                                                                     |
 
 The dashboard adds a profile-style overview: your calendar, highlights, languages, this year against the same span of last year, and the repositories that caught your eye.
 
