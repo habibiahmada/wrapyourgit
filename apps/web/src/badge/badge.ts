@@ -58,11 +58,14 @@ export function badgeShows(value: string | null | undefined): BadgeShow[] {
 }
 
 export type CardSide = "left" | "right";
+export type CardLayout = "wide" | "compact";
 export const CARD_PARTS = ["archetype", "name", "graph", "stats"] as const;
 export type CardPart = (typeof CARD_PARTS)[number];
 
 export interface CardOptions {
-  /** Which side the archetype's diorama stands on. */
+  /** Wide (720 px at most, side by side) or compact (360 px, stacked for phones). */
+  layout: CardLayout;
+  /** Which side the archetype's diorama stands on, on the wide card. */
   side: CardSide;
   archetype: boolean;
   /** The archetype's name and the line under it, below the diorama. */
@@ -72,17 +75,20 @@ export interface CardOptions {
 }
 
 /**
- * The card's query: `?archetype=left|right` places the diorama (left by default), and
- * `?hide=archetype,name,graph,stats` leaves parts out, unknown names ignored. Hiding every part would
- * leave an empty frame, so it gets the default card instead.
+ * The card's query: `?layout=compact` stacks it for phones, `?archetype=left|right` places the
+ * diorama on the wide card (left by default), and `?hide=archetype,name,graph,stats` leaves parts
+ * out, unknown names ignored. Hiding every part would leave an empty frame, so it gets the default
+ * parts instead.
  */
 export function cardOptions(query: {
+  layout?: string | null;
   archetype?: string | null;
   hide?: string | null;
 }): CardOptions {
   const hidden = new Set((query.hide ?? "").split(",").map((part) => part.trim().toLowerCase()));
   const shown = (part: CardPart) => !hidden.has(part);
   const options: CardOptions = {
+    layout: query.layout === "compact" ? "compact" : "wide",
     side: query.archetype === "right" ? "right" : "left",
     archetype: shown("archetype"),
     name: shown("name"),
@@ -343,6 +349,7 @@ const STEP = (COLUMN_WIDTH - CARD_PAD * 2) / 53;
 const CELL = 7;
 const GRID_HEIGHT = 6 * STEP + CELL;
 const DEFAULT_OPTIONS: CardOptions = {
+  layout: "wide",
   side: "left",
   archetype: true,
   name: true,
@@ -364,7 +371,14 @@ function yearDays(year: number): string[] {
  * count in their heat level, days not yet reached as outlines, so a recap before December reads
  * as a year still being written.
  */
-function grid(recap: RecapData | null, year: number, left: number, top: number): string {
+function grid(
+  recap: RecapData | null,
+  year: number,
+  left: number,
+  top: number,
+  step = STEP,
+  cell = CELL,
+): string {
   const days = yearDays(year);
   const offset = new Date(Date.UTC(year, 0, 1)).getUTCDay();
   const levels = new Map<string, number>();
@@ -381,19 +395,19 @@ function grid(recap: RecapData | null, year: number, left: number, top: number):
   days.forEach((date, i) => {
     const index = i + offset;
     const week = Math.floor(index / 7);
-    const y = (top + (index % 7) * STEP).toFixed(1);
+    const y = (top + (index % 7) * step).toFixed(1);
     const kind = !recap || (end && date > end) ? "f" : `l${levels.get(date) ?? 0}`;
     weeks[week] ??= [];
     weeks[week].push(`<use href="#d" y="${y}" class="${kind}"/>`);
   });
   const styles = `<style>${HEAT.map((color, level) => `.l${level}{fill:${color}}`).join("")}.f{fill:none;stroke:${SURFACE}}</style>`;
-  const square = `<defs><rect id="d" width="${CELL}" height="${CELL}" rx="1.5"/></defs>`;
+  const square = `<defs><rect id="d" width="${cell}" height="${cell}" rx="${(cell * 0.2).toFixed(1)}"/></defs>`;
   return (
     styles +
     square +
     weeks
       .map((cells, week) => {
-        const x = (left + CARD_PAD + week * STEP).toFixed(1);
+        const x = (left + CARD_PAD + week * step).toFixed(1);
         return `<g class="w" ${delay(0.15 + week * 0.022)}><g transform="translate(${x} 0)">${cells.join("")}</g></g>`;
       })
       .join("")
@@ -537,14 +551,15 @@ function neutralCard(year: number): string {
  */
 export function cardSvg(recap: RecapData | null, options: CardOptions = DEFAULT_OPTIONS): string {
   const year = recap?.meta.year ?? EDITION_YEAR;
+  if (options.layout === "compact") return compactCardSvg(recap, options);
   if (!recap) return neutralCard(year);
 
   const id = recap.identity.archetype;
   const withPanel = options.archetype && id !== null;
   const withColumn = options.graph || options.stats;
   // Hiding the graph and the numbers of a recap with no archetype would leave nothing: the
-  // default card stands in, as it does when every part is hidden.
-  if (!withPanel && !withColumn) return cardSvg(recap, DEFAULT_OPTIONS);
+  // default parts stand in, as they do when every part is hidden.
+  if (!withPanel && !withColumn) return cardSvg(recap, { ...DEFAULT_OPTIONS, layout: "wide" });
 
   const colHeight = withColumn ? columnHeight(options) : 0;
   const height = Math.max(colHeight, withPanel ? PANEL_HEIGHT : 0);
@@ -552,15 +567,7 @@ export function cardSvg(recap: RecapData | null, options: CardOptions = DEFAULT_
   const panelLeft = withColumn && options.side === "right" ? COLUMN_WIDTH : 0;
   const columnLeft = withPanel && options.side === "left" ? PANEL_WIDTH : 0;
 
-  const { total, longestStreak } = recap.contributions;
-  const top = recap.languages.top[0];
-  const said = [
-    options.stats &&
-      `${count(total)} ${plural(total, "contribution", "contributions")}, longest streak ${count(longestStreak.days)} ${plural(longestStreak.days, "day", "days")}${top ? `, top language ${top.name}` : ""}`,
-    withPanel && id && `${ARCHETYPE_LABELS[id]} archetype`,
-    options.graph && "a calendar of the year",
-  ].filter(Boolean);
-  const label = `${recap.profile.login}'s ${year} on WrapYourGit${recap.meta.isFinal ? "" : " so far"}: ${said.join(", ")}, through ${day(recap.meta.periodEnd)}`;
+  const label = cardLabel(recap, options, withPanel);
 
   const divider = options.side === "left" ? PANEL_WIDTH : COLUMN_WIDTH;
   const body = [
@@ -576,4 +583,155 @@ export function cardSvg(recap: RecapData | null, options: CardOptions = DEFAULT_
       : "",
   ].join("");
   return svg(width, height, label, body);
+}
+
+/** The card's accessible name: what it shows, in words, and the day it runs to. */
+function cardLabel(recap: RecapData, options: CardOptions, withPanel: boolean): string {
+  const { total, longestStreak } = recap.contributions;
+  const top = recap.languages.top[0];
+  const id = recap.identity.archetype;
+  const said = [
+    options.stats &&
+      `${count(total)} ${plural(total, "contribution", "contributions")}, longest streak ${count(longestStreak.days)} ${plural(longestStreak.days, "day", "days")}${top ? `, top language ${top.name}` : ""}`,
+    withPanel && id && `${ARCHETYPE_LABELS[id]} archetype`,
+    options.graph && "a calendar of the year",
+  ].filter(Boolean);
+  return `${recap.profile.login}'s ${recap.meta.year} on WrapYourGit${recap.meta.isFinal ? "" : " so far"}: ${said.join(", ")}, through ${day(recap.meta.periodEnd)}`;
+}
+
+const COMPACT_WIDTH = 360;
+const COMPACT_STEP = (COMPACT_WIDTH - CARD_PAD * 2) / 53;
+const COMPACT_CELL = 5;
+const COMPACT_GRID_HEIGHT = 6 * COMPACT_STEP + COMPACT_CELL;
+const COMPACT_ROW = 28;
+
+/**
+ * The compact card, for phones: 360 px wide, so a README column on a phone shows it at about its
+ * own size and its text at the size it was set. The parts stack: the header, the diorama and its
+ * name, the numbers as rows (a label on the left, the value on the right, so a long language name
+ * has the whole width), then the year's graph. The same `hide` options apply; the side does not.
+ */
+function compactCardSvg(recap: RecapData | null, options: CardOptions): string {
+  const year = recap?.meta.year ?? EDITION_YEAR;
+  const right = COMPACT_WIDTH - CARD_PAD;
+  const parts: string[] = [];
+
+  if (!recap) {
+    // Neutral: the same for every account with no stored recap, whatever the options.
+    parts.push(
+      line(
+        [
+          { text: "WrapYourGit", color: FG, bold: true },
+          { text: String(year), color: MUTED },
+        ],
+        CARD_PAD,
+        HEADER_BASELINE,
+        16,
+      ).svg,
+      mark(right - markWidth(4), HEADER_BASELINE - 9.5, 4),
+      grid(null, year, 0, HEADER_BOTTOM + 2, COMPACT_STEP, COMPACT_CELL),
+    );
+    const y = HEADER_BOTTOM + 2 + COMPACT_GRID_HEIGHT + 30;
+    parts.push(
+      `<g class="v" ${delay(1.2)}>${text({ text: `See the ${year} recap`, color: FG }, CARD_PAD, y, 14)}</g>`,
+    );
+    return compactFrame(y + 22, `WrapYourGit ${year}: see the recap`, parts);
+  }
+
+  const id = recap.identity.archetype;
+  const withPanel = options.archetype && id !== null;
+  if (!withPanel && !options.graph && !options.stats) {
+    return compactCardSvg(recap, { ...DEFAULT_OPTIONS, layout: "compact" });
+  }
+
+  const yearRun = { text: recap.meta.isFinal ? String(year) : `${year} so far`, color: MUTED };
+  parts.push(
+    text({ text: `@${recap.profile.login}`, color: FG, bold: true }, CARD_PAD, HEADER_BASELINE, 16),
+    mark(right - textWidth(yearRun.text, 12) - 6 - markWidth(4), HEADER_BASELINE - 9.5, 4),
+    text(yearRun, right, HEADER_BASELINE, 12, "end"),
+  );
+  let y = HEADER_BOTTOM;
+
+  if (withPanel && id) {
+    const art = ARCHETYPE_ART[id].diorama;
+    const box = { width: COMPACT_WIDTH - CARD_PAD * 2, height: options.name ? 150 : 180 };
+    const scale = Math.min(box.width / art.width, box.height / art.height);
+    const width = art.width * scale;
+    const height = art.height * scale;
+    const centre = COMPACT_WIDTH / 2;
+    parts.push(
+      `<g class="v" ${delay(0.1)}>${image(art, centre - width / 2, y + 4 + (box.height - height) / 2, width, height)}</g>`,
+    );
+    y += 4 + box.height;
+    if (options.name) {
+      const name = { text: ARCHETYPE_LABELS[id], color: FG, bold: true };
+      const caption = { text: "archetype", color: MUTED };
+      parts.push(
+        `<g class="v" ${delay(0.4)}>`,
+        text(name, centre - textWidth(name.text, 18, true) / 2, y + 24, 18),
+        text(caption, centre - textWidth(caption.text, 11) / 2, y + 40, 11),
+        "</g>",
+      );
+      y += 48;
+    }
+  }
+
+  if (options.stats) {
+    const { total, longestStreak } = recap.contributions;
+    const top = recap.languages.top[0];
+    y += 6;
+    const row = (i: number, label: string, value: string) => {
+      const baseline = y + i * COMPACT_ROW + 19;
+      return `<g class="v" ${delay(0.5 + i * 0.12)}>${
+        i > 0
+          ? `<rect x="${CARD_PAD}" y="${y + i * COMPACT_ROW}" width="${COMPACT_WIDTH - CARD_PAD * 2}" height="1" fill="${SURFACE}"/>`
+          : ""
+      }${text({ text: label, color: MUTED }, CARD_PAD, baseline, 12)}${value}</g>`;
+    };
+    const number = (n: string, unit: string, i: number) => {
+      const baseline = y + i * COMPACT_ROW + 19;
+      const unitWidth = unit ? textWidth(unit, 12) + textWidth(" ", 12) : 0;
+      return `${text({ text: n, color: GREEN, bold: true }, right - unitWidth, baseline, 15, "end")}${
+        unit ? text({ text: unit, color: FG }, right, baseline, 12, "end") : ""
+      }`;
+    };
+    let language: string;
+    if (top) {
+      const baseline = y + 2 * COMPACT_ROW + 19;
+      const nameWidth = textWidth(top.name, 14, true);
+      // The mark's width depends only on whether the language has a logo, not on where it goes.
+      const logoX = right - nameWidth - 6 - languageMark(top, 0, 0, 16).width;
+      language = `${languageMark(top, logoX, baseline - 5, 16).svg}${text({ text: top.name, color: FG, bold: true }, right, baseline, 14, "end")}`;
+    } else {
+      language = text({ text: "None yet", color: MUTED }, right, y + 2 * COMPACT_ROW + 19, 14, "end");
+    }
+    parts.push(
+      row(0, "Contributions", number(count(total), "", 0)),
+      row(
+        1,
+        "Longest streak",
+        number(count(longestStreak.days), plural(longestStreak.days, "day", "days"), 1),
+      ),
+      row(2, "Top language", language),
+    );
+    y += 3 * COMPACT_ROW;
+  }
+
+  if (options.graph) {
+    y += 12;
+    parts.push(grid(recap, year, 0, y, COMPACT_STEP, COMPACT_CELL));
+    y += COMPACT_GRID_HEIGHT;
+  }
+
+  return compactFrame(y + 18, cardLabel(recap, options, Boolean(withPanel)), parts);
+}
+
+function compactFrame(height: number, label: string, parts: string[]): string {
+  const h = Math.ceil(height);
+  return svg(
+    COMPACT_WIDTH,
+    h,
+    label,
+    `<rect x="0.5" y="0.5" width="${COMPACT_WIDTH - 1}" height="${h - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>${parts.join("")}`,
+  );
 }

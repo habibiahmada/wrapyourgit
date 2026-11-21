@@ -60,6 +60,9 @@ const CARDS = [
   "hide=graph,stats",
   "hide=name",
   "hide=name,graph,stats",
+  "layout=compact",
+  "layout=compact&hide=graph",
+  "layout=compact&hide=archetype",
 ];
 
 const dataUrl = (svg: string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
@@ -81,7 +84,11 @@ function images(recap: RecapData | null): string {
   }).join("");
   const cards = CARDS.map((query) => {
     const params = new URLSearchParams(query);
-    const options = cardOptions({ archetype: params.get("archetype"), hide: params.get("hide") });
+    const options = cardOptions({
+      layout: params.get("layout"),
+      archetype: params.get("archetype"),
+      hide: params.get("hide"),
+    });
     return figure(cardSvg(recap, options), alt, `/${login}/card.svg${query ? `?${query}` : ""}`);
   }).join("");
   return `<div class="badges">${badges}</div><div class="cards">${cards}</div>`;

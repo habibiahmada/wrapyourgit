@@ -41,6 +41,7 @@ describe("cardOptions", () => {
 
   test("hides the parts listed, ignoring unknown names", () => {
     expect(cardOptions({ hide: "graph, Stats,legend" })).toEqual({
+      layout: "wide",
       side: "left",
       archetype: true,
       name: true,
@@ -271,6 +272,39 @@ describe("cardSvg", () => {
     expect(svg).toContain("See the 2026 recap");
     expect(svg).not.toContain("data:image/webp");
     expect(svg).not.toMatch(/contributions/);
+  });
+});
+
+describe("compact card", () => {
+  const compact = (hide?: string) => cardSvg(sampleRecap, cardOptions({ layout: "compact", hide }));
+
+  test("is 360 px wide and stacks the diorama, the numbers and the graph", () => {
+    const svg = compact();
+    expect(width(svg)).toBe(360);
+    expect(svg).toContain("data:image/webp");
+    expect(svg).toContain(">Contributions<");
+    expect(svg).toContain(">1,284<");
+    expect(svg.match(/<use href="#d"/g)).toHaveLength(365);
+  });
+
+  test("sets no text smaller than 11 px, since it is shown at about its own size", () => {
+    const sizes = [...compact().matchAll(/font-size="(\d+)"/g)].map((m) => Number(m[1]));
+    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(11);
+  });
+
+  test("takes the same hide options, and grows only as tall as its parts", () => {
+    const height = (svg: string) => Number(/height="(\d+)"/.exec(svg)?.[1]);
+    expect(compact("graph")).not.toContain('<use href="#d"');
+    expect(compact("archetype")).not.toContain("data:image/webp");
+    expect(compact("stats")).not.toContain(">Contributions<");
+    expect(height(compact("archetype,stats"))).toBeLessThan(height(compact()));
+  });
+
+  test("the neutral compact card ignores the hide options", () => {
+    const neutral = cardSvg(null, cardOptions({ layout: "compact" }));
+    expect(width(neutral)).toBe(360);
+    expect(cardSvg(null, cardOptions({ layout: "compact", hide: "graph" }))).toBe(neutral);
+    expect(neutral).toContain("See the 2026 recap");
   });
 });
 
