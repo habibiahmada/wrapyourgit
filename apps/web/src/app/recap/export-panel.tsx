@@ -5,7 +5,7 @@ import type { ExportFormat } from "@wyg/video/export";
 import { useEffect, useId, useRef, useState } from "react";
 import { button } from "@/components/ui";
 import type { ShareCard } from "./end-screen";
-import { CardPreview, FilePreview } from "./export-preview";
+import { afterClose, CardPreview, FilePreview } from "./export-preview";
 import { announcement, type ExportJob, NOUN, percent } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { SizePicker } from "./size-picker";
@@ -222,12 +222,14 @@ export function ExportPanel({
           tone="dark"
           // The dialog that had focus is gone: give it back to the file's own button.
           onSave={() => {
+            const back = buttons.current[state.job];
             save();
-            buttons.current[state.job]?.focus();
+            afterClose(() => back?.focus());
           }}
           onClose={() => {
+            const back = buttons.current[state.job];
             discard();
-            buttons.current[state.job]?.focus();
+            afterClose(() => back?.focus());
           }}
         />
       )}
@@ -240,7 +242,7 @@ export function ExportPanel({
           onClose={() => {
             const back = cardButtons.current[cardOpen];
             setCardOpen(null);
-            back?.focus();
+            afterClose(() => back?.focus());
           }}
         />
       )}

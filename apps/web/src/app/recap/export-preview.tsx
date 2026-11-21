@@ -54,6 +54,14 @@ function useModal(onClose: () => void) {
   return { ref, onCancel };
 }
 
+/**
+ * Runs `then` once a preview has closed. Focus can't go back while the modal is still open (the
+ * page behind it is inert), and it closes as React removes it, after the handler that asked.
+ */
+export function afterClose(then: () => void) {
+  window.requestAnimationFrame(() => window.requestAnimationFrame(then));
+}
+
 const KIND: Record<ExportJob, { title: string; noun: string; save: string }> = {
   mp4: { title: "Your video", noun: "frame", save: "Download MP4" },
   zip: { title: "Your slides", noun: "slide", save: "Download ZIP" },

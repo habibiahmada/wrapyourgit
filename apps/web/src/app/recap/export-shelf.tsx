@@ -6,7 +6,7 @@ import Link from "next/link";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Art } from "@/components/art";
 import type { EndLink, ShareCard } from "./end-screen";
-import { CardPreview, FilePreview } from "./export-preview";
+import { afterClose, CardPreview, FilePreview } from "./export-preview";
 import { announcement, type ExportJob, percent, renderingTitle } from "./export-state";
 import { PRIVATE_NAMES_REMINDER, showReminder } from "./reminder";
 import { useExport } from "./use-export";
@@ -314,12 +314,14 @@ export function ExportShelf({
           tone="paper"
           // The dialog that had focus is gone: give it back to the file's own ticket.
           onSave={() => {
+            const back = tickets.current[state.job];
             save();
-            tickets.current[state.job]?.focus();
+            afterClose(() => back?.focus());
           }}
           onClose={() => {
+            const back = tickets.current[state.job];
             discard();
-            tickets.current[state.job]?.focus();
+            afterClose(() => back?.focus());
           }}
         />
       )}
@@ -332,7 +334,7 @@ export function ExportShelf({
           onClose={() => {
             const back = cardTickets.current[cardOpen];
             setCardOpen(null);
-            back?.focus();
+            afterClose(() => back?.focus());
           }}
         />
       )}
