@@ -55,6 +55,7 @@ export function ExportPanel({
   });
   // Which card's preview is open, if any (#201).
   const [cardOpen, setCardOpen] = useState<"share" | "private" | null>(null);
+  const cardButtons = useRef<Partial<Record<"share" | "private", HTMLButtonElement | null>>>({});
   const left = useTimeLeft(state);
   const [format, setFormat] = useState<ExportFormat>("9x16");
   const buttons = useRef<Partial<Record<ExportJob, HTMLButtonElement | null>>>({});
@@ -130,7 +131,14 @@ export function ExportPanel({
           PDF
         </button>
         {"href" in card && !busy ? (
-          <button type="button" onClick={() => setCardOpen("share")} className={fileButton}>
+          <button
+            ref={(node) => {
+              cardButtons.current.share = node;
+            }}
+            type="button"
+            onClick={() => setCardOpen("share")}
+            className={fileButton}
+          >
             Share card
           </button>
         ) : (
@@ -144,7 +152,14 @@ export function ExportPanel({
           </button>
         )}
         {"href" in card && card.privateHref && !busy && (
-          <button type="button" onClick={() => setCardOpen("private")} className={fileButton}>
+          <button
+            ref={(node) => {
+              cardButtons.current.private = node;
+            }}
+            type="button"
+            onClick={() => setCardOpen("private")}
+            className={fileButton}
+          >
             Card with private work
           </button>
         )}
@@ -222,7 +237,11 @@ export function ExportPanel({
           title={cardOpen === "private" ? "Your card with private work" : "Your share card"}
           fallbackName={card.filename ?? "wrapyourgit-card.png"}
           tone="dark"
-          onClose={() => setCardOpen(null)}
+          onClose={() => {
+            const back = cardButtons.current[cardOpen];
+            setCardOpen(null);
+            back?.focus();
+          }}
         />
       )}
     </div>
