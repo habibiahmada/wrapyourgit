@@ -7,6 +7,7 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 ### Changed
 
 - The README card's archetype moves: it plays the dashboard's own loop of the diorama, and a reader who asks for reduced motion sees the still diorama. The card grows to about 150 KB (ADR-0035) ([#211](https://github.com/habibiahmada/wrapyourgit/issues/211)).
+- The README card and the snake no longer print the login, which the profile around them already shows (their accessible name still does), and their corners are square. The mark and the year sign the header on the left ([#213](https://github.com/habibiahmada/wrapyourgit/issues/213)).
 
 ## [1.1.0] - 2026-11-21
 
