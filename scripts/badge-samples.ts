@@ -15,6 +15,7 @@ const out = join(resolve(import.meta.dir, ".."), "apps/web/public/landing");
 const files: Record<string, string> = {
   "readme-badge.svg": badgeSvg(sampleRecap, ["contributions", "streak", "language"]),
   "readme-card.svg": cardSvg(sampleRecap, cardOptions({})),
+  "readme-card-compact.svg": cardSvg(sampleRecap, cardOptions({ layout: "compact" })),
   "readme-snake.svg": snakeSvg(sampleRecap),
 };
 
