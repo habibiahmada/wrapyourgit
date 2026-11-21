@@ -47,7 +47,10 @@ async function frame(kind: string, format: VideoFormatId, width: number, file: s
   const rest = timeline.stopFrames[i];
   if (i < 0 || rest === undefined) throw new Error(`No ${kind} stop in the public sample`);
   const png = await renderSceneStill(data, `ride-${format}`, rest);
-  const webp = await sharp(png).resize({ width, kernel: "lanczos3" }).webp({ quality: 82 }).toBuffer();
+  const webp = await sharp(png)
+    .resize({ width, kernel: "lanczos3" })
+    .webp({ quality: 82 })
+    .toBuffer();
   await Bun.write(join(out, file), webp);
   console.log(`${file}: ${Math.round(webp.length / 1024)} KB`);
 }
