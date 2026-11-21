@@ -188,7 +188,10 @@ export function ReadmeImages({
                     Archetype side
                   </legend>
                   {(["left", "right"] as const).map((value) => (
-                    <label key={value} className={`${field} ${parts.archetype ? "" : "text-muted"}`}>
+                    <label
+                      key={value}
+                      className={`${field} ${parts.archetype ? "" : "text-muted"}`}
+                    >
                       <input
                         type="radio"
                         name={`${id}-side`}
@@ -236,7 +239,7 @@ export function ReadmeImages({
               The preview didn&apos;t load. The snippet still works; try reloading the page.
             </p>
           ) : (
-            // A plain <img> of the real SVG, the way a README shows it; next/image would re-encode it.
+            // biome-ignore lint/performance/noImgElement: the real SVG as a README shows it; next/image would re-encode it
             <img
               key={preview}
               src={preview}
