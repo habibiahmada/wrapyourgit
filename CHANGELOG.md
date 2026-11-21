@@ -4,6 +4,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- The README card's archetype moves: it plays the dashboard's own loop of the diorama, and a reader who asks for reduced motion sees the still diorama. The card grows to about 150 KB (ADR-0035) ([#211](https://github.com/habibiahmada/wrapyourgit/issues/211)).
+
 ## [1.1.0] - 2026-11-21
 
 ### Added
