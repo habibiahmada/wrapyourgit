@@ -41,9 +41,7 @@ for (const id of archetypeIdSchema.options) {
     `${id}: diorama ${diorama.width}x${diorama.height} ${Math.round(diorama.bytes / 1024)} KB`,
   );
   const pick = ({ href, width, height }: typeof diorama) => ({ href, width, height });
-  entries.push(
-    `  ${JSON.stringify(id)}: ${JSON.stringify({ diorama: pick(diorama) })},`,
-  );
+  entries.push(`  ${JSON.stringify(id)}: ${JSON.stringify({ diorama: pick(diorama) })},`);
 }
 
 await Bun.write(

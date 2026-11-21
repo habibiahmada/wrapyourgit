@@ -307,23 +307,29 @@ function grid(recap: RecapData | null, year: number, left: number): string {
     });
   }
   const end = recap?.meta.periodEnd;
+  // 365 cells are most of the card's markup, so each is a <use> of one shared square, placed by
+  // its week's group and coloured by class (l0-l4 heat levels, f a day not reached yet).
   const weeks: string[][] = [];
   days.forEach((date, i) => {
     const index = i + offset;
     const week = Math.floor(index / 7);
-    const x = left + CARD_PAD + week * STEP;
-    const y = GRID_TOP + (index % 7) * STEP;
-    const at = `x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${CELL}" height="${CELL}" rx="1.5"`;
-    const cell =
-      !recap || (end && date > end)
-        ? `<rect ${at} fill="none" stroke="${SURFACE}"/>`
-        : `<rect ${at} fill="${HEAT[levels.get(date) ?? 0]}"/>`;
+    const y = (GRID_TOP + (index % 7) * STEP).toFixed(1);
+    const kind = !recap || (end && date > end) ? "f" : `l${levels.get(date) ?? 0}`;
     weeks[week] ??= [];
-    weeks[week].push(cell);
+    weeks[week].push(`<use href="#d" y="${y}" class="${kind}"/>`);
   });
-  return weeks
-    .map((cells, week) => `<g class="w" ${delay(0.15 + week * 0.022)}>${cells.join("")}</g>`)
-    .join("");
+  const styles = `<style>${HEAT.map((color, level) => `.l${level}{fill:${color}}`).join("")}.f{fill:none;stroke:${SURFACE}}</style>`;
+  const square = `<defs><rect id="d" width="${CELL}" height="${CELL}" rx="1.5"/></defs>`;
+  return (
+    styles +
+    square +
+    weeks
+      .map((cells, week) => {
+        const x = (left + CARD_PAD + week * STEP).toFixed(1);
+        return `<g class="w" ${delay(0.15 + week * 0.022)}><g transform="translate(${x} 0)">${cells.join("")}</g></g>`;
+      })
+      .join("")
+  );
 }
 
 /** The calendar half of the card, `left` px from the card's edge. */

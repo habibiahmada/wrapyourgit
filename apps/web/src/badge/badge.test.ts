@@ -143,13 +143,13 @@ describe("motion", () => {
 
 describe("cardSvg", () => {
   test("draws a cell for every day of the year", () => {
-    const cells = cardSvg(sampleRecap).match(/<rect x="[\d.]+" y="[\d.]+" width="7"/g) ?? [];
+    const cells = cardSvg(sampleRecap).match(/<use href="#d"/g) ?? [];
     expect(cells.length).toBe(365);
   });
 
   test("days after the recap's last day are outlines, not empty data", () => {
     const svg = cardSvg(provisionalRecap);
-    expect(svg).toContain('fill="none" stroke="#1b1a16"');
+    expect(svg).toContain('class="f"');
     expect(svg).toContain("2026 so far");
   });
 
