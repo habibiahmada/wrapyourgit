@@ -17,8 +17,11 @@ const out = join(root, "apps/web/src/badge/archetype-art.ts");
 const next = Bun.resolveSync("next/package.json", join(root, "apps/web"));
 const sharp = (await import(Bun.resolveSync("sharp", dirname(next)))).default;
 
-/** Sizes in px, three times what the badge and card draw, so they stay sharp on dense screens. */
-const DIORAMA_WIDTH = 540;
+/**
+ * Sizes in px, two to three times what the card and badge draw, so they stay sharp on dense
+ * screens. The diorama is the weight of the card, so it stops at twice: about 15 KB each.
+ */
+const DIORAMA_WIDTH = 360;
 const CHARACTER_HEIGHT = 66;
 
 async function encode(file: string, resize: { width?: number; height?: number }) {
