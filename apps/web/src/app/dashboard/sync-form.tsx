@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { Art } from "@/components/art";
 import { button } from "@/components/ui";
 import { type SyncState, syncAction } from "./actions";
+import { retryTime } from "./retry-time";
 
 const MESSAGES: Record<Exclude<SyncState, { status: "idle" | "done" }>["kind"], string> = {
   "signed-out": "Your session ended. Sign in again to sync.",
@@ -13,9 +14,6 @@ const MESSAGES: Record<Exclude<SyncState, { status: "idle" | "done" }>["kind"], 
   github: "GitHub didn't answer as expected. Try again in a minute.",
   unknown: "Something went wrong while building your recap. Try again in a minute.",
 };
-
-const time = (iso: string) =>
-  new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 
 /**
  * Sends the browser's timezone with the sync: days are dated by GitHub, but `periodEnd` and the
@@ -32,7 +30,8 @@ export function SyncForm({
   variant?: "primary" | "secondary";
 }) {
   const [state, action, pending] = useActionState(syncAction, { status: "idle" });
-  const [timezone, setTimezone] = useState("UTC");
+  // Null until the browser says: the server render and the first client render must match (#195).
+  const [timezone, setTimezone] = useState<string | null>(null);
   useEffect(() => setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone), []);
 
   const waitUntil = state.status === "error" && state.retryAt ? state.retryAt : retryAt;
@@ -40,7 +39,7 @@ export function SyncForm({
 
   return (
     <form action={action} className="flex flex-col items-start gap-3">
-      <input type="hidden" name="timezone" value={timezone} />
+      <input type="hidden" name="timezone" value={timezone ?? "UTC"} />
       <button type="submit" className={button[variant]} disabled={pending || blocked}>
         {pending ? "Reading your GitHub activity…" : label}
       </button>
@@ -66,7 +65,7 @@ export function SyncForm({
           </>
         )}
         {!pending && state.status !== "error" && blocked && waitUntil && (
-          <>You can sync again at {time(waitUntil)}.</>
+          <>You can sync again at {retryTime(waitUntil, timezone)}.</>
         )}
       </p>
     </form>

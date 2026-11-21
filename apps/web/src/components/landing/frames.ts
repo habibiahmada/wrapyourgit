@@ -22,9 +22,8 @@ import versus from "../../../public/landing/ride-versus.webp";
  * served from the image optimizer's cache: the closing stop became a party and the page went on
  * showing the board. The files stay under `public/` because the README shows the same ones.
  *
- * To render them again: `bun scripts/ride-stills.ts <stop> <dir> --fixture public-sample`
- * with `--format 4x5` (then 540 x 675 WebP) for the stops and `--format 16x9` (960 x 540) for
- * the three acts.
+ * To render them again: `bun scripts/landing-frames.ts` (the stops at 4:5, 540 x 675, and the
+ * three acts at 16:9, 960 x 540, as WebP, without the progress bar).
  */
 
 /** One picture to an act, in the acts' order: the city, the rhythm, the archetype. */
