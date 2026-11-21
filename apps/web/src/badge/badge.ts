@@ -451,27 +451,15 @@ function grid(
 }
 
 /**
- * A card's header: the login on the left, and on the right the mark and the year (where the
- * product signs the card, apart from the numbers). A login can be 39 characters, so its size gives
- * way, down to 11 px, before it would run into the year; past that its letters close up.
+ * A card's header: the mark and the year, where the product signs the card apart from the
+ * numbers. No login (#213): the card sits on that user's profile, and its accessible name and
+ * tooltip still name them.
  */
-function cardHeader(
-  recap: RecapData,
-  year: number,
-  left: number,
-  right: number,
-  baseline: number,
-): string {
+function cardHeader(recap: RecapData, year: number, left: number, baseline: number): string {
   const yearRun = { text: recap.meta.isFinal ? String(year) : `${year} so far`, color: MUTED };
-  const signStart = right - textWidth(yearRun.text, 12) - 6 - markWidth(4);
-  const login = { text: `@${recap.profile.login}`, color: FG, bold: true };
-  const room = signStart - 12 - left;
-  const size = Math.max(11, Math.min(16, Math.floor(room / textWidth(login.text, 1, true))));
-  return [
-    text(login, left, baseline, size, undefined, room),
-    mark(signStart, baseline - 9.5, 4),
-    text(yearRun, right, baseline, 12, "end"),
-  ].join("");
+  return [mark(left, baseline - 9.5, 4), text(yearRun, left + markWidth(4) + 6, baseline, 12)].join(
+    "",
+  );
 }
 
 /** Height of the calendar column for these parts: the header, then the graph and the numbers. */
@@ -483,7 +471,7 @@ function columnHeight(options: CardOptions): number {
 }
 
 /**
- * The calendar column: the login, and on the right the mark and the year (where the product signs
+ * The calendar column: the mark and the year (where the product signs
  * the card, apart from the numbers), then the graph and the three numbers, as `options` ask.
  */
 function column(
@@ -493,8 +481,7 @@ function column(
   top: number,
   options: CardOptions,
 ): string {
-  const right = left + COLUMN_WIDTH - CARD_PAD;
-  const parts = [cardHeader(recap, year, left + CARD_PAD, right, top + HEADER_BASELINE)];
+  const parts = [cardHeader(recap, year, left + CARD_PAD, top + HEADER_BASELINE)];
 
   let y = top + HEADER_BOTTOM;
   if (options.graph) {
@@ -539,7 +526,7 @@ function column(
 
 /**
  * The archetype panel: the landing page's diorama over the archetype's name. On a card of its own
- * (`alone`) it also carries the mark, the login and the year, which the calendar column would.
+ * (`alone`) it also carries the mark and the year, which the calendar column would.
  * Without the name (`withName` false) the diorama takes the panel's whole height.
  */
 function archetypePanel(
@@ -558,7 +545,7 @@ function archetypePanel(
   const height = art.height * scale;
   const name = ARCHETYPE_LABELS[id];
   const caption = alone
-    ? `@${recap.profile.login} · ${recap.meta.isFinal ? recap.meta.year : `${recap.meta.year} so far`}`
+    ? `archetype · ${recap.meta.isFinal ? recap.meta.year : `${recap.meta.year} so far`}`
     : "archetype";
   const centre = left + PANEL_WIDTH / 2;
   const centred = (run: Run, y: number, size: number) =>
@@ -576,7 +563,7 @@ function archetypePanel(
 function neutralCard(year: number): string {
   const height = HEADER_BOTTOM + 52;
   const body = [
-    `<rect x="0.5" y="0.5" width="${COLUMN_WIDTH - 1}" height="${height - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
+    `<rect x="0.5" y="0.5" width="${COLUMN_WIDTH - 1}" height="${height - 1}" fill="${HEAD}" stroke="${EDGE}"/>`,
     line(
       [
         { text: "WrapYourGit", color: FG, bold: true },
@@ -593,7 +580,7 @@ function neutralCard(year: number): string {
 }
 
 /**
- * The README card: the login, the year's graph and three numbers, beside the archetype's diorama,
+ * The README card: the year's graph and three numbers, beside the archetype's diorama,
  * each part shown or left out by `options`. No archetype means no diorama, never one for an
  * archetype the user does not have; `recap` null draws the neutral card.
  */
@@ -619,7 +606,7 @@ export function cardSvg(recap: RecapData | null, options: CardOptions = DEFAULT_
 
   const divider = options.side === "left" ? PANEL_WIDTH : COLUMN_WIDTH;
   const body = [
-    `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
+    `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" fill="${HEAD}" stroke="${EDGE}"/>`,
     withPanel && withColumn
       ? `<rect x="${divider}" y="16" width="1" height="${height - 32}" fill="${SURFACE}"/>`
       : "",
@@ -691,7 +678,7 @@ function compactCardSvg(recap: RecapData | null, options: CardOptions): string {
     return compactCardSvg(recap, { ...DEFAULT_OPTIONS, layout: "compact" });
   }
 
-  parts.push(cardHeader(recap, year, CARD_PAD, right, HEADER_BASELINE));
+  parts.push(cardHeader(recap, year, CARD_PAD, HEADER_BASELINE));
   let y = HEADER_BOTTOM;
 
   if (withPanel && id) {
@@ -780,7 +767,7 @@ function compactFrame(height: number, label: string, parts: string[]): string {
     COMPACT_WIDTH,
     h,
     label,
-    `<rect x="0.5" y="0.5" width="${COMPACT_WIDTH - 1}" height="${h - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>${parts.join("")}`,
+    `<rect x="0.5" y="0.5" width="${COMPACT_WIDTH - 1}" height="${h - 1}" fill="${HEAD}" stroke="${EDGE}"/>${parts.join("")}`,
   );
 }
 
@@ -959,9 +946,9 @@ export function snakeSvg(recap: RecapData | null): string {
   const n = recap.contributions.activeDays;
   const label = `${recap.profile.login}'s ${year} contribution graph on WrapYourGit, eaten by a snake: ${count(n)} ${plural(n, "active day", "active days")}${recap.meta.isFinal ? "" : " so far"}, through ${day(recap.meta.periodEnd)}`;
   const body = [
-    `<rect x="0.5" y="0.5" width="${SNAKE_WIDTH - 1}" height="${SNAKE_HEIGHT - 1}" rx="11.5" fill="${HEAD}" stroke="${EDGE}"/>`,
+    `<rect x="0.5" y="0.5" width="${SNAKE_WIDTH - 1}" height="${SNAKE_HEIGHT - 1}" fill="${HEAD}" stroke="${EDGE}"/>`,
     styles,
-    cardHeader(recap, year, CARD_PAD, SNAKE_WIDTH - CARD_PAD, HEADER_BASELINE),
+    cardHeader(recap, year, CARD_PAD, HEADER_BASELINE),
     `<defs><rect id="q" width="${SNAKE_CELL}" height="${SNAKE_CELL}" rx="2"/></defs>`,
     still.join(""),
     eaten.join(""),

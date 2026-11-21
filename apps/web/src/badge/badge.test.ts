@@ -273,10 +273,10 @@ describe("cardSvg", () => {
     expect(only("archetype,graph")).toBeLessThan(only("archetype"));
   });
 
-  test("the archetype alone is a card of its own that still names the user", () => {
+  test("the archetype alone is a card of its own, captioned with the year", () => {
     const svg = cardSvg(sampleRecap, cardOptions({ hide: "graph,stats" }));
     expect(width(svg)).toBe(220);
-    expect(svg).toContain("@octo-sample · 2026");
+    expect(svg).toContain(">archetype · 2026<");
   });
 
   test("the product signs the card beside the year, not among the numbers", () => {
@@ -294,6 +294,41 @@ describe("cardSvg", () => {
     expect(svg).toContain("See the 2026 recap");
     expect(svg).not.toContain("data:image/webp");
     expect(svg).not.toMatch(/contributions/);
+  });
+});
+
+describe("cards without the login, square (#213)", () => {
+  const images = {
+    wide: cardSvg(sampleRecap, cardOptions({ show: "graph" })),
+    compact: cardSvg(sampleRecap, cardOptions({ layout: "compact", show: "graph" })),
+    alone: cardSvg(sampleRecap, cardOptions({ hide: "graph,stats" })),
+    noArchetype: cardSvg(sampleRecap, cardOptions({ hide: "archetype" })),
+    snake: snakeSvg(sampleRecap),
+  };
+  // What is drawn, without the accessible name and tooltip that rightly carry the login.
+  const drawn = (svg: string) =>
+    svg.replace(/ aria-label="[^"]*"/, "").replace(/<title>.*?<\/title>/, "");
+
+  test("print no login, which the profile around them already shows", () => {
+    for (const svg of Object.values(images)) {
+      expect(drawn(svg)).not.toContain("octo-sample");
+      expect(label(svg)).toContain("octo-sample");
+    }
+  });
+
+  test("sign the header with the mark and the year instead", () => {
+    for (const svg of [images.wide, images.compact, images.noArchetype, images.snake]) {
+      expect(drawn(svg)).toContain(">2026</text>");
+    }
+  });
+
+  test("have square frames; the badge keeps its rounded shape", () => {
+    const frame = (svg: string) => /<rect x="0\.5" y="0\.5"[^>]*>/.exec(svg)?.[0] ?? "";
+    for (const svg of [...Object.values(images), cardSvg(null)]) {
+      expect(frame(svg)).not.toBe("");
+      expect(frame(svg)).not.toContain("rx=");
+    }
+    expect(frame(badgeSvg(sampleRecap, badgeShows("contributions")))).toContain("rx=");
   });
 });
 
@@ -367,22 +402,17 @@ describe("compact card", () => {
     expect(height(compact("archetype,stats"))).toBeLessThan(height(compact()));
   });
 
-  test("a 39-character login gives way in size rather than running into the year", () => {
-    const long: RecapData = {
+  test("a 39-character login changes nothing that is drawn", () => {
+    const named = (login: string): RecapData => ({
       ...provisionalRecap,
-      profile: { ...provisionalRecap.profile, login: "a".repeat(39) },
-    };
-    const svg = cardSvg(long, cardOptions({ layout: "compact" }));
-    const login =
-      /<text x="18.0" y="36" fill="#eeeae0" font-size="(\d+)" font-weight="700"[^>]*textLength="([\d.]+)"/.exec(
-        svg,
-      );
-    const size = Number(login?.[1]);
-    const end = 18 + Number(login?.[2]);
-    const mark = Number(/<rect class="c" [^>]* x="([\d.]+)" y="26.50"/.exec(svg)?.[1]);
-    expect(size).toBeLessThan(16);
-    expect(size).toBeGreaterThanOrEqual(11);
-    expect(end).toBeLessThan(mark);
+      profile: { ...provisionalRecap.profile, login },
+    });
+    const drawn = (svg: string) =>
+      svg.replace(/ aria-label="[^"]*"/, "").replace(/<title>.*?<\/title>/, "");
+    const options = cardOptions({ layout: "compact" });
+    expect(drawn(cardSvg(named("a".repeat(39)), options))).toBe(
+      drawn(cardSvg(named("ab"), options)),
+    );
   });
 
   test("the neutral compact card ignores the hide options", () => {
