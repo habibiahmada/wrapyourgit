@@ -446,9 +446,10 @@ function column(
     const second = left + CARD_PAD + 150;
     const third = left + CARD_PAD + 300;
     const logo = top3 && languageMark(top3, third, valueY - 6, 18);
-    const language = top3 && logo
-      ? `${logo.svg}${text({ text: top3.name, color: FG, bold: true }, third + logo.width + 6, valueY, 16)}`
-      : text({ text: "None yet", color: MUTED }, third, valueY, 16);
+    const language =
+      top3 && logo
+        ? `${logo.svg}${text({ text: top3.name, color: FG, bold: true }, third + logo.width + 6, valueY, 16)}`
+        : text({ text: "None yet", color: MUTED }, third, valueY, 16);
     const start = options.graph ? 1.1 : 0.3;
     parts.push(
       `<g class="v" ${delay(start)}>`,

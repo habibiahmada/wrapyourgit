@@ -211,7 +211,7 @@ describe("cardSvg", () => {
 
   test("no archetype means no diorama, at the calendar's own width", () => {
     const svg = cardSvg(emptyRecap, cardOptions({ archetype: "right" }));
-    expect(svg).not.toContain("<image");
+    expect(svg).not.toContain("data:image/webp");
     expect(width(svg)).toBe(500);
   });
 
@@ -225,7 +225,7 @@ describe("cardSvg", () => {
     expect(noStats).toContain('<use href="#d"');
 
     const noArchetype = cardSvg(sampleRecap, cardOptions({ hide: "archetype" }));
-    expect(noArchetype).not.toContain("<image");
+    expect(noArchetype).not.toContain("data:image/webp");
     expect(width(noArchetype)).toBe(500);
   });
 
@@ -269,7 +269,7 @@ describe("cardSvg", () => {
   test("the neutral card shows no numbers and no diorama", () => {
     const svg = cardSvg(null);
     expect(svg).toContain("See the 2026 recap");
-    expect(svg).not.toContain("<image");
+    expect(svg).not.toContain("data:image/webp");
     expect(svg).not.toMatch(/contributions/);
   });
 });
