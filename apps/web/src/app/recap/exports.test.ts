@@ -173,6 +173,21 @@ describe("renderSlides", () => {
     expect(seen[0]).toEqual({ width: 1080, height: 1920 });
   });
 
+  test("draws slides without the progress bar, which on one frame reads as a loading line (#197)", async () => {
+    const props: unknown[] = [];
+    await renderSlides(
+      sampleRecap,
+      { onProgress: () => {}, signal: new AbortController().signal, letter: false },
+      {
+        renderStill: async ({ inputProps }) => {
+          props.push(inputProps);
+          return png();
+        },
+      },
+    );
+    expect(props[0]).toEqual({ data: sampleRecap, mode: "video", letter: false, progress: false });
+  });
+
   test("without the letter: no letter slides", async () => {
     const out = await renderSlides(
       sampleRecap,
