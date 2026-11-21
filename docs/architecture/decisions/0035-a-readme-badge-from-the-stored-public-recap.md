@@ -23,13 +23,15 @@ A README image is not fetched by the person reading the README. GitHub rewrites 
    - `streak`: `contributions.longestStreak.days`
    - `days`: `contributions.activeDays`
    - `language`: `languages.top[0]`, in its GitHub colour
-   - `archetype`: the label of `identity.archetype`, which the public share card already shows; the neutral badge when it is null
+   - `archetype`: the label of `identity.archetype`, which the public share card already shows, after the archetype's character from the landing page; the neutral badge when it is null
 
    An unknown `show` gets the default. No `metric()` value is offered until it has a way to say "unavailable" or "estimated" on the badge itself, so `starsGained`, `prsMerged` and the comparison with last year are left out for now.
 5. **Honest wording.** While `meta.isFinal` is false the value reads "so far" ("1,284 contributions so far"). The SVG's `<title>`, which GitHub shows as the image's tooltip, names the user and the recap's `periodEnd`, so a stale badge says how old it is.
-6. **The SVG is built as a string on the server**, with no library and no remote font: camo serves it as an `<img>`, which loads nothing. Text uses a system font stack and widths from a fixed per-character table. Every value written into it is XML-escaped (language names come from GitHub). The response is `image/svg+xml` and carries the site's Content-Security-Policy like any other route, so an SVG opened directly runs nothing.
+6. **The SVG is built as a string on the server**, with no library and no remote font: camo serves it as an `<img>`, which loads nothing, not even an image the SVG points at. Text uses a system font stack and widths from a fixed per-character table. The archetype art travels inside the SVG as WebP data URLs, cut from the landing page's existing `skin-*` and `cutout-*` renders by `scripts/badge-art.ts` (about 20 KB a diorama, 2 KB a character); WebP rather than AVIF because a README shows in GitHub's apps and webviews as well as browsers. Every value written into it is XML-escaped (language names come from GitHub). The response is `image/svg+xml` and carries the site's Content-Security-Policy like any other route, so an SVG opened directly runs nothing.
 7. **Caching:** `Cache-Control: public, max-age=3600, s-maxage=3600`. Camo and Vercel's edge keep it an hour, so a badge on a busy profile costs one function call an hour, not one per reader. Hiding the public recap takes up to an hour to reach a badge already cached; the recap page itself stops at once.
-8. **A larger card** (the year's calendar strip, the same public numbers) is a later step under the same rules, at its own address next to this one.
+8. **Two cards**, under the same rules and each at its own address next to the badge:
+   - `/<login>/card.svg`: the login, the year's calendar (days not reached yet drawn as outlines), the contribution total, the longest streak and the top language.
+   - `/<login>/archetype.svg`: the archetype's diorama beside its name. With no archetype it is the neutral card, never a diorama for an archetype the user does not have.
 
 ## Alternatives considered
 
