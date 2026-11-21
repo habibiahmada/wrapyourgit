@@ -244,7 +244,8 @@ export function ReadmeImages({
               key={preview}
               src={preview}
               alt={`Preview: ${snippet.format === "html" ? "the card" : `the ${kind}`} as it shows in a README`}
-              className="block max-w-none"
+              // Scaled to the column, as GitHub scales a README image to its column.
+              className="block h-auto max-w-full"
               onError={() => setFailed(preview)}
             />
           )}
@@ -263,7 +264,13 @@ export function ReadmeImages({
             ref={snippetRef}
             readOnly
             value={snippet.text}
-            rows={snippet.format === "html" ? 6 : 3}
+            // Tall enough for the whole snippet at about 56 characters a line, so nothing scrolls.
+            rows={Math.max(
+              3,
+              snippet.text
+                .split("\n")
+                .reduce((lines, line) => lines + Math.ceil(line.length / 56), 0),
+            )}
             spellCheck={false}
             className="w-full resize-none rounded-[var(--radius-control)] border border-line bg-head p-3 font-mono text-sm text-fg"
           />
