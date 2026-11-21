@@ -646,16 +646,25 @@ export function ReadmeSection() {
               alt="A sample badge: 2026, 1,284 contributions, longest streak 24 days, top language TypeScript"
               className="h-auto max-w-full"
             />
-            {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
-            <img
-              src="/landing/readme-card.svg"
-              width={720}
-              height={200}
-              loading="lazy"
-              decoding="async"
-              alt="A sample card: the Builder archetype's city beside 1,284 contributions, a 24-day longest streak and TypeScript"
-              className="h-auto max-w-full"
-            />
+            {/* On a phone the compact card, as a README can offer it with <picture> (ADR-0035). */}
+            <picture>
+              <source
+                media="(max-width: 600px)"
+                srcSet="/landing/readme-card-compact.svg"
+                width={360}
+                height={360}
+              />
+              {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
+              <img
+                src="/landing/readme-card.svg"
+                width={720}
+                height={200}
+                loading="lazy"
+                decoding="async"
+                alt="A sample card: the Builder archetype's city beside 1,284 contributions, a 24-day longest streak and TypeScript"
+                className="h-auto max-w-full"
+              />
+            </picture>
             {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
             <img
               src="/landing/readme-snake.svg"
