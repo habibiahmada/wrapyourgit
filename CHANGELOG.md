@@ -17,6 +17,7 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 ### Changed
 
 - Slides, the PDF, the share card and the card with private work open in a preview before they download, with Download and Close; closing drops the file. The video still downloads as soon as it is made. Dialogs fade and rise in instead of appearing at once, with a quick fade only under reduced motion ([#201](https://github.com/habibiahmada/wrapyourgit/issues/201)).
+- The dashboard matches the landing page: only the site's palette (last year in grey instead of blue, a smaller year in a neutral chip instead of amber), green links, 12px boxes and the landing's isometric floor, faint. It stays a tool, with no bands, glass or scenery ([#203](https://github.com/habibiahmada/wrapyourgit/issues/203)).
 
 ### Fixed
 

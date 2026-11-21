@@ -34,9 +34,10 @@ import { SyncForm } from "./sync-form";
 
 /*
  * The signed-in home is a tool, not a page that sells (#113): a short page head with the two
- * things to do, then dense panels on the canvas, the main column for the year's numbers and a
- * sidebar for who the year made you. No landing bands, scroll reveals or scenery here, so the
- * dashboard never reads as the landing. Every figure is from the recap.
+ * things to do, then dense panels, the main column for the year's numbers and a sidebar for who
+ * the year made you. No landing bands, scroll reveals or scenery here, so the dashboard never
+ * reads as the landing; it shares the landing's palette, 12 px boxes, green accent and a faint
+ * isometric floor, so it reads as the same product (#203). Every figure is from the recap.
  */
 
 /** Signed-in only: nothing here for search engines. */
@@ -44,7 +45,8 @@ export const metadata: Metadata = { title: "Dashboard", robots: { index: false, 
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-1 flex-col">
+    // The landing's isometric floor, faint and full width, so the tool stands in the same place (#203).
+    <div className="iso-field iso-faint flex flex-1 flex-col">
       <Suspense
         fallback={
           <FallbackTransition>
@@ -83,7 +85,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="min-w-0 rounded-md border border-line bg-surface">
+    <section aria-labelledby={id} className="min-w-0 rounded-xl border border-line bg-surface">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-3">
         <h2 id={id} className="text-sm font-semibold">
           {title}
@@ -296,12 +298,8 @@ function Calendar({ data }: { data: RecapData }) {
               </p>
               <div className="flex items-center gap-1 text-xs" aria-hidden>
                 Less
-                {["#1b1a16", "#0e4429", "#006d32", "#26a641", "#39d353"].map((c) => (
-                  <span
-                    key={c}
-                    className="size-2.5 rounded-[2px] ring-1 ring-white/10"
-                    style={{ background: c }}
-                  />
+                {["bg-surface", "bg-ramp-1", "bg-ramp-2", "bg-ramp-3", "bg-cell"].map((c) => (
+                  <span key={c} className={`size-2.5 rounded-[2px] ring-1 ring-line ${c}`} />
                 ))}
                 More
               </div>
@@ -350,7 +348,7 @@ function Archetype({ data }: { data: RecapData }) {
           <ul className="mt-3 space-y-2 border-t border-line pt-3 text-sm">
             {identity.reasons.map((reason) => (
               <li key={reason} className="flex gap-2">
-                <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-[2px] bg-[#26a641]" />
+                <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-[2px] bg-ramp-3" />
                 {reason}
               </li>
             ))}
@@ -383,7 +381,7 @@ function Languages({ data }: { data: RecapData }) {
               </div>
               <div aria-hidden className="mt-1.5 h-1.5 rounded-full bg-overlay">
                 <div
-                  className="h-full rounded-full bg-[#26a641]"
+                  className="h-full rounded-full bg-ramp-3"
                   style={{ width: `${Math.max(2, language.share * 100)}%` }}
                 />
               </div>
@@ -422,7 +420,7 @@ function Starred({ data }: { data: RecapData }) {
             <li key={repo.nameWithOwner} className="flex items-center gap-3 text-sm">
               <a
                 href={`https://github.com/${repo.nameWithOwner}`}
-                className="min-h-11 min-w-0 flex-1 truncate py-3 font-semibold text-blue"
+                className="min-h-11 min-w-0 flex-1 truncate py-3 font-semibold text-green"
               >
                 <span className="link-slide">{repo.nameWithOwner}</span>
               </a>
