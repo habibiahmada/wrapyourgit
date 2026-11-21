@@ -300,6 +300,21 @@ describe("compact card", () => {
     expect(height(compact("archetype,stats"))).toBeLessThan(height(compact()));
   });
 
+  test("a 39-character login gives way in size rather than running into the year", () => {
+    const long: RecapData = {
+      ...provisionalRecap,
+      profile: { ...provisionalRecap.profile, login: "a".repeat(39) },
+    };
+    const svg = cardSvg(long, cardOptions({ layout: "compact" }));
+    const login = /<text x="18.0" y="36" fill="#eeeae0" font-size="(\d+)" font-weight="700"[^>]*textLength="([\d.]+)"/.exec(svg);
+    const size = Number(login?.[1]);
+    const end = 18 + Number(login?.[2]);
+    const mark = Number(/<rect class="c" [^>]* x="([\d.]+)" y="26.50"/.exec(svg)?.[1]);
+    expect(size).toBeLessThan(16);
+    expect(size).toBeGreaterThanOrEqual(11);
+    expect(end).toBeLessThan(mark);
+  });
+
   test("the neutral compact card ignores the hide options", () => {
     const neutral = cardSvg(null, cardOptions({ layout: "compact" }));
     expect(width(neutral)).toBe(360);

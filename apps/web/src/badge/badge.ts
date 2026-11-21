@@ -414,6 +414,30 @@ function grid(
   );
 }
 
+/**
+ * A card's header: the login on the left, and on the right the mark and the year (where the
+ * product signs the card, apart from the numbers). A login can be 39 characters, so its size gives
+ * way, down to 11 px, before it would run into the year.
+ */
+function cardHeader(
+  recap: RecapData,
+  year: number,
+  left: number,
+  right: number,
+  baseline: number,
+): string {
+  const yearRun = { text: recap.meta.isFinal ? String(year) : `${year} so far`, color: MUTED };
+  const signStart = right - textWidth(yearRun.text, 12) - 6 - markWidth(4);
+  const login = { text: `@${recap.profile.login}`, color: FG, bold: true };
+  const room = signStart - 12 - left;
+  const size = Math.max(11, Math.min(16, Math.floor(room / textWidth(login.text, 1, true))));
+  return [
+    text(login, left, baseline, size),
+    mark(signStart, baseline - 9.5, 4),
+    text(yearRun, right, baseline, 12, "end"),
+  ].join("");
+}
+
 /** Height of the calendar column for these parts: the header, then the graph and the numbers. */
 function columnHeight(options: CardOptions): number {
   let y = HEADER_BOTTOM;
@@ -434,18 +458,7 @@ function column(
   options: CardOptions,
 ): string {
   const right = left + COLUMN_WIDTH - CARD_PAD;
-  const yearRun = { text: recap.meta.isFinal ? String(year) : `${year} so far`, color: MUTED };
-  const yearWidth = textWidth(yearRun.text, 12);
-  const parts = [
-    text(
-      { text: `@${recap.profile.login}`, color: FG, bold: true },
-      left + CARD_PAD,
-      top + HEADER_BASELINE,
-      16,
-    ),
-    mark(right - yearWidth - 6 - markWidth(4), top + HEADER_BASELINE - 9.5, 4),
-    text(yearRun, right, top + HEADER_BASELINE, 12, "end"),
-  ];
+  const parts = [cardHeader(recap, year, left + CARD_PAD, right, top + HEADER_BASELINE)];
 
   let y = top + HEADER_BOTTOM;
   if (options.graph) {
@@ -644,12 +657,7 @@ function compactCardSvg(recap: RecapData | null, options: CardOptions): string {
     return compactCardSvg(recap, { ...DEFAULT_OPTIONS, layout: "compact" });
   }
 
-  const yearRun = { text: recap.meta.isFinal ? String(year) : `${year} so far`, color: MUTED };
-  parts.push(
-    text({ text: `@${recap.profile.login}`, color: FG, bold: true }, CARD_PAD, HEADER_BASELINE, 16),
-    mark(right - textWidth(yearRun.text, 12) - 6 - markWidth(4), HEADER_BASELINE - 9.5, 4),
-    text(yearRun, right, HEADER_BASELINE, 12, "end"),
-  );
+  parts.push(cardHeader(recap, year, CARD_PAD, right, HEADER_BASELINE));
   let y = HEADER_BOTTOM;
 
   if (withPanel && id) {
