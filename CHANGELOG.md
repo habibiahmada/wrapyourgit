@@ -12,6 +12,7 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
   - a snake at `/<username>/snake.svg` that wanders through the year's graph eating each day with contributions and grows as it goes (it loops, the maintainer's call; reduced motion shows the still graph).
 - The landing page shows the three README images from the sample recap, with the compact card on phones.
 - "Put it in your README" on the dashboard: pick an image and its options, see it as GitHub will, and copy the Markdown (or HTML with `<picture>` for a card that switches to the compact one on phones).
+- The landing page's story frames open larger: choose one in the reel to see it over a dark overlay, step through the others, and close it with Escape, the close button or a click outside ([#199](https://github.com/habibiahmada/wrapyourgit/issues/199)).
 
 ### Fixed
 

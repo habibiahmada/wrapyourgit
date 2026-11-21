@@ -421,6 +421,60 @@ html {
     cursor: not-allowed;
   }
 
+  /* Dialogs and lightboxes come in rather than appear: a short fade and rise, with their overlay
+     fading in behind. The overlay fades by opacity, since its colour is each dialog's own utility.
+     Exits animate where a closing dialog can stay in the top layer (overlay and a discrete display
+     transition); elsewhere they close at once. Reduced motion keeps only a quick fade. */
+  dialog {
+    opacity: 0;
+    transition-property: opacity, transform, display, overlay;
+    transition-duration: 0.22s;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition-behavior: allow-discrete;
+  }
+  dialog[open] {
+    opacity: 1;
+  }
+  @starting-style {
+    dialog[open] {
+      opacity: 0;
+    }
+  }
+  dialog::backdrop {
+    opacity: 0;
+    transition-property: opacity, display, overlay;
+    transition-duration: 0.22s;
+    transition-timing-function: ease-out;
+    transition-behavior: allow-discrete;
+  }
+  dialog[open]::backdrop {
+    opacity: 1;
+  }
+  @starting-style {
+    dialog[open]::backdrop {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog {
+      transform: translateY(0.75rem) scale(0.97);
+    }
+    dialog[open] {
+      transform: none;
+    }
+    @starting-style {
+      dialog[open] {
+        transform: translateY(0.75rem) scale(0.97);
+      }
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    dialog,
+    dialog::backdrop {
+      transition-duration: 0.1s;
+    }
+  }
+
   /* Illustrations and images are part of the page, not files to grab: they take no clicks (a
      click passes through to the link or button around them, so those still work), can't be
      selected or dragged, and get no "save image" menu on right-click or long-press. Screen
