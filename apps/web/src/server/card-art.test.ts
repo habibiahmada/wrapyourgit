@@ -9,7 +9,9 @@ test("the site card shows three different archetypes' dioramas, each with its ar
   expect(new Set(SITE_CARD_ARCHETYPES).size).toBe(3);
   for (const id of SITE_CARD_ARCHETYPES) {
     expect(archetypeIdSchema.options).toContain(id);
-    expect(existsSync(join(import.meta.dir, "../../public/art", `skin-${id}.png`))).toBe(true);
+    // public/art is copied from packages/video at dev and build time (sync-web-public.ts).
+    const art = join(import.meta.dir, "../../../../packages/video/public/art", `skin-${id}.png`);
+    expect(existsSync(art)).toBe(true);
   }
 });
 
