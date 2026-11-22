@@ -4,6 +4,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Fixed
+
+- The README snake no longer runs through its own body: it walks around it, only heads for a day it can leave again, and steps aside when every day left is walled in. A year's loop is about half as long again ([#217](https://github.com/habibiahmada/wrapyourgit/issues/217)).
+
 ## [1.2.0] - 2026-11-21
 
 ### Changed
