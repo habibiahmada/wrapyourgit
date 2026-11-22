@@ -4,6 +4,8 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-22
+
 ### Changed
 
 - The site's share image, also the preview of a recap address with nothing to show, has the landing's look: the hero's headline with "green square" in green, the six-cell mark and the 2026 pill, the faint isometric floor, and three archetype dioramas (Builder in front, Explorer and Night Owl behind) in place of the first green Cell ([#221](https://github.com/habibiahmada/wrapyourgit/issues/221)).
@@ -11,6 +13,7 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 ### Fixed
 
 - The README snake no longer runs through its own body: it walks around it, only heads for a day it can leave again, and steps aside when every day left is walled in. A year's loop is about half as long again ([#217](https://github.com/habibiahmada/wrapyourgit/issues/217)).
+- The landing page's README images can no longer be dragged out or caught up in a text selection, like the page's other images ([#219](https://github.com/habibiahmada/wrapyourgit/issues/219)).
 
 ## [1.2.0] - 2026-11-21
 
@@ -134,7 +137,8 @@ The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourg
 - A signed-in visitor's new public lookups count against their account instead of their address, so one session sent from many addresses no longer gets 20 lookups an hour at each and drains the shared public token (ADR-0032).
 - The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
 
-[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/habibiahmada/wrapyourgit/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/habibiahmada/wrapyourgit/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/habibiahmada/wrapyourgit/commits/v1.0.0
