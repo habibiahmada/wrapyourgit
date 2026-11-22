@@ -635,7 +635,7 @@ export function ReadmeSection() {
             <div className="border-b border-line px-5 py-3 font-mono text-sm text-muted">
               README.md
             </div>
-            <div className="grid justify-items-start gap-6 p-5 sm:p-8">
+            <div className="grid justify-items-start gap-6 p-5 select-none sm:p-8">
               {/* Plain <img>: the SVGs animate as they do in a README, which next/image would stop. */}
               {/* biome-ignore lint/performance/noImgElement: the real README image, animation and all */}
               <img
@@ -645,6 +645,7 @@ export function ReadmeSection() {
                 loading="lazy"
                 decoding="async"
                 alt="A sample badge: 2026, 1,284 contributions, longest streak 24 days, top language TypeScript"
+                draggable={false}
                 className="h-auto max-w-full"
               />
               {/* On a phone the compact card, as a README can offer it with <picture> (ADR-0035). */}
@@ -662,6 +663,7 @@ export function ReadmeSection() {
                   loading="lazy"
                   decoding="async"
                   alt="A sample card: the Builder archetype's city beside 1,284 contributions, a 24-day longest streak and TypeScript"
+                  draggable={false}
                   className="h-auto max-w-full"
                 />
               </picture>
@@ -673,6 +675,7 @@ export function ReadmeSection() {
                 loading="lazy"
                 decoding="async"
                 alt="A sample contribution graph with a snake eating its green squares"
+                draggable={false}
                 className="h-auto max-w-full"
               />
             </div>
