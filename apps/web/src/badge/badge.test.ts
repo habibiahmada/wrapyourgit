@@ -448,6 +448,36 @@ describe("snake", () => {
     expect(snakeRoute(year, "someone-else/2026").eatenAt).not.toEqual(a);
   });
 
+  test("never moves its head onto a cell its body is on (#217)", () => {
+    // 2026 starts on a Thursday: day i sits in week (i + 4) / 7, row (i + 4) % 7.
+    const day = (i: number) => ({ week: Math.floor((i + 4) / 7), row: (i + 4) % 7 });
+    const every = Array.from({ length: 365 }, (_, i) => day(i));
+    let x = 7;
+    const dense = every.filter(() => {
+      x = (x * 1103515245 + 12345) % 2147483648;
+      return x % 10 < 7;
+    });
+    const sparse = every.filter((_, i) => i % 5 === 0 || i % 7 === 3);
+    for (const cells of [year, every, dense, sparse]) {
+      for (const seed of ["octocat/2026", "someone-else/2026", "a/2026"]) {
+        const { path, eatenAt } = snakeRoute(cells, seed);
+        const eaten = [...eatenAt].sort((a, b) => a - b);
+        let ate = 0;
+        for (let s = 1; s < path.length; s++) {
+          while (ate < eaten.length && (eaten[ate] ?? 0) < s) ate++;
+          // The head and its first segment from the start, a segment per DAYS_PER_SEGMENT days.
+          const length = Math.min(SNAKE_MAX, 2 + Math.floor(ate / DAYS_PER_SEGMENT));
+          const head = path[s];
+          const body = path.slice(Math.max(0, s - length + 1), s);
+          const hit = body.some((b) => b.week === head?.week && b.row === head?.row);
+          if (hit) throw new Error(`${seed}: step ${s} runs into the body (length ${length})`);
+        }
+        expect(stepsAreSingle(path)).toBe(true);
+        expect(new Set(eatenAt).size).toBe(cells.length);
+      }
+    }
+  });
+
   test("grows a segment for every three days, each in a green it ate, up to twenty", () => {
     const fills = (svg: string) =>
       [...svg.matchAll(/rx="3" fill="(#[0-9a-f]{6})" opacity="0"/g)].map((m) => m[1]);
