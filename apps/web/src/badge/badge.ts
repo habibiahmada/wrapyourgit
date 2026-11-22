@@ -804,12 +804,23 @@ function seeded(text: string): () => number {
   };
 }
 
+/** The snake's length, head included, once it has eaten `eaten` days. */
+function snakeLength(eaten: number): number {
+  return Math.min(SNAKE_MAX, SNAKE_START + Math.floor(eaten / DAYS_PER_SEGMENT));
+}
+
 /**
  * The snake's path, one grid cell per step. From just left of the first week it heads for one of
- * the SNAKE_CHOICES nearest days not yet eaten, picked at random from `seed`, moving across and
- * then down. Fully random order would cross the year again and again (minutes per loop, hundreds
- * of kilobytes); choosing among the nearest keeps it wandering but short. Returns every position,
- * and the step at which each lit day is eaten.
+ * the SNAKE_CHOICES nearest days not yet eaten, picked at random from `seed`. Fully random order
+ * would cross the year again and again (minutes per loop, hundreds of kilobytes); choosing among
+ * the nearest keeps it wandering but short. Returns every position, and the step at which each lit
+ * day is eaten.
+ *
+ * It never runs into itself (#217). Each leg is a shortest walk found breadth-first around the
+ * cells its body is on when the leg starts: a shortest walk never crosses itself, and the body
+ * only leaves cells while the leg runs, so the head never enters one the body is on. "Nearest" is
+ * by that walk, so a day walled in by the body waits for a later leg. Only a snake boxed in on
+ * every side would cross, and then it takes the straight walk as before.
  */
 export function snakeRoute(
   cells: readonly GridCell[],
@@ -820,27 +831,124 @@ export function snakeRoute(
   const path: GridCell[] = [at];
   const eatenAt = new Array<number>(cells.length).fill(0);
   const left = new Set(cells.map((_, i) => i));
+  const lastWeek = Math.max(53, ...cells.map((c) => c.week)) + 1;
+  const key = (c: GridCell) => c.week * 8 + c.row;
+  const indexOf = new Map(cells.map((c, i) => [key(c), i]));
+  const around = (c: GridCell): GridCell[] =>
+    [
+      { week: c.week + 1, row: c.row },
+      { week: c.week - 1, row: c.row },
+      { week: c.week, row: c.row + 1 },
+      { week: c.week, row: c.row - 1 },
+    ].filter((s) => s.week >= -1 && s.week <= lastWeek && s.row >= 0 && s.row <= 6);
+  // The shortest walk from the head of `trail` to the tip of its tail, for a snake `length` cells
+  // long, around the rest of its body (the tip itself is free: it moves on as the head moves).
+  const walk = (trail: readonly GridCell[], length: number): GridCell[] | null => {
+    const head = trail.at(-1) as GridCell;
+    const segments = trail.slice(Math.max(0, trail.length - length), -1);
+    const tip = segments[0];
+    if (!tip) return [];
+    const walls = new Set(segments.slice(1).map(key));
+    const back = new Map<number, GridCell | null>([[key(head), null]]);
+    let frontier = [head];
+    while (frontier.length > 0) {
+      const next: GridCell[] = [];
+      for (const cell of frontier) {
+        for (const step of around(cell)) {
+          const k = key(step);
+          if (back.has(k) || walls.has(k)) continue;
+          back.set(k, cell);
+          if (k === key(tip)) {
+            const out: GridCell[] = [];
+            for (let c: GridCell | null | undefined = step; c && key(c) !== key(head); ) {
+              out.push(c);
+              c = back.get(key(c));
+            }
+            return out.reverse();
+          }
+          next.push(step);
+        }
+      }
+      frontier = next;
+    }
+    return null;
+  };
+  let eaten = 0;
+  // Cells stepped on while waiting for a safe day, since the last meal.
+  const visits = new Map<number, number>();
   while (left.size > 0) {
-    const from = at;
-    const nearest = [...left]
-      .map((i) => {
-        const cell = cells[i] as GridCell;
-        return { i, d: Math.abs(cell.week - from.week) + Math.abs(cell.row - from.row) };
-      })
-      .sort((a, b) => a.d - b.d || a.i - b.i)
-      .slice(0, SNAKE_CHOICES);
-    const pick = nearest[Math.floor(random() * nearest.length)]?.i ?? 0;
-    const target = cells[pick] as GridCell;
-    while (at.week !== target.week) {
-      at = { week: at.week + Math.sign(target.week - at.week), row: at.row };
-      path.push(at);
+    const length = snakeLength(eaten);
+    const body = new Set(path.slice(Math.max(0, path.length - length), -1).map(key));
+    // Breadth-first from the head around the body: each reachable cell's distance and the cell
+    // it was reached from.
+    const from = new Map<number, GridCell | null>([[key(at), null]]);
+    const reached: { i: number; d: number }[] = [];
+    let ring: GridCell[] = [at];
+    for (let d = 1; ring.length > 0; d++) {
+      const next: GridCell[] = [];
+      for (const cell of ring) {
+        for (const step of around(cell)) {
+          const k = key(step);
+          if (from.has(k) || body.has(k)) continue;
+          from.set(k, cell);
+          next.push(step);
+          const i = indexOf.get(k);
+          if (i !== undefined && left.has(i)) reached.push({ i, d });
+        }
+      }
+      ring = next;
     }
-    while (at.row !== target.row) {
-      at = { week: at.week, row: at.row + Math.sign(target.row - at.row) };
-      path.push(at);
+    reached.sort((a, b) => a.d - b.d || a.i - b.i);
+    const legTo = (target: GridCell) => {
+      const leg: GridCell[] = [];
+      for (let c: GridCell | null | undefined = target; c && key(c) !== key(at); ) {
+        leg.push(c);
+        c = from.get(key(c));
+      }
+      return leg.reverse();
+    };
+    // A day is safe if, once there and a segment longer, the head can still reach the tip of its
+    // tail: the tail leaves a cell every step, so a snake that can follow it is never trapped. A
+    // day at the end of a pocket the body closes fails this.
+    const roomy = (leg: GridCell[]) => {
+      const after = [...path, ...leg];
+      return walk(after, snakeLength(eaten + 1)) !== null;
+    };
+    const safe: typeof reached = [];
+    for (const r of reached) {
+      if (safe.length === SNAKE_CHOICES) break;
+      if (roomy(legTo(cells[r.i] as GridCell))) safe.push(r);
     }
-    eatenAt[pick] = path.length - 1;
-    left.delete(pick);
+    const picked = safe[Math.floor(random() * safe.length)];
+    if (picked) {
+      path.push(...legTo(cells[picked.i] as GridCell));
+      at = path.at(-1) as GridCell;
+      eatenAt[picked.i] = path.length - 1;
+      left.delete(picked.i);
+    } else {
+      // Every day left is unsafe or walled in: step aside, keeping the tip of the tail in reach,
+      // and look again. Of the steps that keep it, the one least visited since the last meal and
+      // then nearest a day left, so the body changes shape instead of circling the same loop.
+      const walls = new Set(path.slice(Math.max(0, path.length - length) + 1, -1).map(key));
+      const goal = (c: GridCell) =>
+        Math.min(
+          ...[...left].map((i) => {
+            const d = cells[i] as GridCell;
+            return Math.abs(d.week - c.week) + Math.abs(d.row - c.row);
+          }),
+        );
+      const step = around(at)
+        .filter((c) => !walls.has(key(c)) && walk([...path, c], length) !== null)
+        .map((c) => ({ c, seen: visits.get(key(c)) ?? 0, d: goal(c) }))
+        .sort((x, y) => x.seen - y.seen || x.d - y.d)[0]?.c;
+      if (!step || path.length > 50_000) throw new Error("snakeRoute: the snake is boxed in");
+      visits.set(key(step), (visits.get(key(step)) ?? 0) + 1);
+      path.push(step);
+      at = step;
+      continue;
+    }
+    visits.clear();
+    eaten++;
   }
   return { path, eatenAt };
 }
