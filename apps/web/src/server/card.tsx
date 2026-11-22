@@ -7,7 +7,7 @@ import { calendarGrid, heatLevels } from "@wyg/video/heat";
 import { and, eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { ImageResponse } from "next/og";
-import { cardArt } from "./card-art";
+import { cardArt, SITE_CARD_ARCHETYPES } from "./card-art";
 import { db, recaps } from "./db";
 import { privateCard } from "./owner-card";
 
@@ -222,43 +222,105 @@ export async function publicCardPng(data: RecapData): Promise<Uint8Array<ArrayBu
   return new Uint8Array(await card.arrayBuffer());
 }
 
-/** The site's own card, with no recap data: the landing page's share image. */
+// The landing's warm ink (DESIGN.md "Web") and its floor: a 1 px line every 128 px, as .iso-field.
+const SITE_INK = "#12110e";
+const SITE_FG = "#eeeae0";
+const SITE_MUTED = "#a29d90";
+const SITE_GREEN = "#4cc764";
+const SITE_LINE = "#2a2823";
+const FLOOR = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='8'><path d='M0 0V8' stroke='${SITE_LINE}' stroke-width='2'/></svg>`,
+)}")`;
+const MARK = ["#0e4429", "#26a641", "#39d353", "#006d32", "#39d353", "#26a641"];
+
+/**
+ * The site's own card, with no recap data: the landing page's share image, and the preview of a
+ * recap address with nothing to show (#221). The hero's headline beside three archetype dioramas
+ * on the landing's floor, the front one largest, so it reads as the product people get.
+ */
 export async function renderSiteCard(): Promise<ImageResponse> {
-  const [fonts, cast] = await Promise.all([
+  const [fonts, ...art] = await Promise.all([
     cardFonts(),
-    readFile(join(process.cwd(), "public/art/hero-cast.png")).then(
-      (bytes) => `data:image/png;base64,${bytes.toString("base64")}`,
-    ),
+    ...SITE_CARD_ARCHETYPES.map((id) => artDataUrl(`skin-${id}`)),
   ]);
+  const [front, left, right] = art;
+  // The dioramas are 4:3 renders with room around the model; these boxes overlap them into one
+  // group on the right, clear of the 560 px headline column.
+  const diorama = (src: string | undefined, style: Record<string, number>, width: number) =>
+    src ? (
+      <img
+        src={src}
+        width={width}
+        height={(width * 3) / 4}
+        alt=""
+        style={{ position: "absolute", ...style }}
+      />
+    ) : null;
   return new ImageResponse(
     <div
       style={{
         width: "100%",
         height: "100%",
         display: "flex",
-        background: "#12110e",
-        color: "#eeeae0",
+        background: SITE_INK,
+        backgroundImage: FLOOR,
+        backgroundSize: "128px 8px",
+        color: SITE_FG,
         fontFamily: "Bricolage",
         padding: 64,
         position: "relative",
       }}
     >
-      {/* The art starts at x = 624, clear of the 540 px headline column (its longest line,
-          "square has a", ends near x = 590), and is drawn first so text would still paint on top. */}
-      <img
-        src={cast}
-        width={640}
-        height={480}
-        alt=""
-        style={{ position: "absolute", right: -64, bottom: -10 }}
-      />
-      <div style={{ display: "flex", flexDirection: "column", width: 540 }}>
-        <span style={{ fontSize: 32, fontWeight: 700 }}>WrapYourGit 2026</span>
-        <span style={{ fontSize: 84, fontWeight: 800, lineHeight: 0.95, marginTop: 40 }}>
-          Every green square has a story.
+      {diorama(left, { right: 300, top: -6 }, 400)}
+      {diorama(right, { right: -40, top: 18 }, 400)}
+      {diorama(front, { right: 70, bottom: -70 }, 600)}
+      <div style={{ display: "flex", flexDirection: "column", width: 560, height: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", width: 50, gap: 4 }}>
+            {MARK.map((color, i) => (
+              <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: fixed six-cell mark
+                key={i}
+                style={{ width: 14, height: 14, borderRadius: 3, background: color }}
+              />
+            ))}
+          </div>
+          <span style={{ fontSize: 34, fontWeight: 700, marginLeft: 16 }}>WrapYourGit</span>
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: SITE_MUTED,
+              marginLeft: 14,
+              padding: "2px 12px",
+              border: `2px solid ${SITE_LINE}`,
+              borderRadius: 999,
+            }}
+          >
+            {EDITION_YEAR}
+          </span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            fontSize: 80,
+            fontWeight: 800,
+            lineHeight: 1,
+            letterSpacing: -2,
+            marginTop: 64,
+          }}
+        >
+          {/* One line each, as it wraps in this column anyway: a wrapped span would keep its space. */}
+          <span>Every</span>
+          <span style={{ color: SITE_GREEN }}>green square</span>
+          <span>has a story.</span>
+        </div>
+        <span style={{ fontSize: 30, color: SITE_MUTED, marginTop: 28, lineHeight: 1.3 }}>
+          Your GitHub year in review, animated. Find your developer archetype.
         </span>
-        <span style={{ fontSize: 34, fontWeight: 700, color: "#4cc764", marginTop: 24 }}>
-          Here is yours, in motion.
+        <span style={{ fontSize: 24, fontWeight: 700, color: SITE_FG, marginTop: "auto" }}>
+          wrapyourgit.com
         </span>
       </div>
     </div>,

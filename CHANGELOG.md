@@ -4,6 +4,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- The site's share image, also the preview of a recap address with nothing to show, has the landing's look: the hero's headline with "green square" in green, the six-cell mark and the 2026 pill, the faint isometric floor, and three archetype dioramas (Builder in front, Explorer and Night Owl behind) in place of the first green Cell ([#221](https://github.com/habibiahmada/wrapyourgit/issues/221)).
+
 ### Fixed
 
 - The README snake no longer runs through its own body: it walks around it, only heads for a day it can leave again, and steps aside when every day left is walled in. A year's loop is about half as long again ([#217](https://github.com/habibiahmada/wrapyourgit/issues/217)).
