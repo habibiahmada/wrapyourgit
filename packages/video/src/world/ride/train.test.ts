@@ -51,6 +51,20 @@ test("every wheel is the same size, painted on both sides of its body: three axl
   expect(engine.size).toBeCloseTo(engine.height);
 });
 
+test("the bunker is flush with the back and sides of the frame it stands on, with a solid top", () => {
+  // With slivers of the frame showing round it and a near-black inset on its top, the bunker read
+  // as an empty, untidy box behind Cell, and on its own once Cell had stepped off (issue #232).
+  const parts = train(40);
+  const frame = tagged(parts, "frame")[0];
+  const bunker = tagged(parts, "bunker")[0];
+  if (!frame || !bunker) throw new Error("no frame or bunker");
+  expect(bunker.at[0]).toBeCloseTo(frame.at[0]);
+  expect(bunker.at[1]).toBeCloseTo(frame.at[1]);
+  expect(bunker.size[1]).toBeCloseTo(frame.size[1]);
+  expect(bunker.at[2]).toBeCloseTo(frame.at[2] + frame.size[2]);
+  expect((bunker.decals ?? []).filter((d) => d.on === "top")).toHaveLength(0);
+});
+
 test("a wheel's tyre stands out from the skirt it is painted on", () => {
   // In INK on the near-black skirt the tyre vanished, and what was left of a wheel was no bigger
   // than the sleeper ends under the train, which then read as square wheels (issue #143).
