@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { RideStory, sampleRecap } from "@wyg/video";
-import { slideFrames, worldExportComposition } from "@wyg/video/export";
+import { exportPropsSchema, slideFrames, worldExportComposition } from "@wyg/video/export";
 import { unzipSync } from "fflate";
 import { PDFDocument } from "pdf-lib";
 import {
@@ -188,6 +188,22 @@ describe("renderSlides", () => {
     expect(props[0]).toEqual({ data: sampleRecap, mode: "video", letter: false, progress: false });
   });
 
+  test("hands each slide the props schema, so a bad recap fails before the first slide (#227)", async () => {
+    const schemas: unknown[] = [];
+    await renderSlides(
+      sampleRecap,
+      { onProgress: () => {}, signal: new AbortController().signal },
+      {
+        renderStill: async ({ schema }) => {
+          schemas.push(schema);
+          return png();
+        },
+      },
+    );
+    expect(schemas.length).toBeGreaterThan(0);
+    expect(schemas.every((s) => s === exportPropsSchema)).toBe(true);
+  });
+
   test("without the letter: no letter slides", async () => {
     const out = await renderSlides(
       sampleRecap,
@@ -252,6 +268,8 @@ describe("renderMp4", () => {
     });
     expect(options?.composition.component).toBe(RideStory);
     expect(options?.inputProps).toEqual({ data: sampleRecap, mode: "video" });
+    // Remotion checks the props against it before the first frame (#227).
+    expect(options?.schema).toBe(exportPropsSchema);
     expect(options?.container).toBe("mp4");
     expect(options?.signal).toBe(signal);
     expect(progress).toEqual([0.5]);

@@ -6,6 +6,7 @@ import {
   cardFileName,
   type ExportFormat,
   exportFileName,
+  exportPropsSchema,
   slideFrames,
   worldExportComposition,
 } from "./export";
@@ -114,4 +115,24 @@ test("a ZIP or PDF in a chosen shape says so in its name", () => {
   const base = `wrapyourgit-${sampleRecap.meta.year}-${sampleRecap.profile.login.toLowerCase()}`;
   expect(exportFileName("zip", sampleRecap, { format: "9x16" })).toBe(`${base}-slides-9x16.zip`);
   expect(exportFileName("pdf", sampleRecap, { format: "16x9" })).toBe(`${base}-16x9.pdf`);
+});
+
+test("export props match the schema the renderer checks them against (#227)", () => {
+  const props = worldExportComposition(sampleRecap, "4x5").defaultProps;
+  expect(exportPropsSchema.safeParse(props).success).toBe(true);
+  expect(
+    exportPropsSchema.safeParse({
+      ...worldExportComposition(busyRecap, "9x16", { letter: false }).defaultProps,
+      progress: false,
+    }).success,
+  ).toBe(true);
+});
+
+test("a broken recap fails the schema, naming where (#227)", () => {
+  const props = worldExportComposition(sampleRecap, "4x5").defaultProps;
+  const broken = { ...props, data: { ...props.data, meta: { ...props.data.meta, year: "2026" } } };
+  const result = exportPropsSchema.safeParse(broken);
+  expect(result.success).toBe(false);
+  expect(result.error?.issues[0]?.path).toEqual(["data", "meta", "year"]);
+  expect(exportPropsSchema.safeParse({ ...props, mode: "story" }).success).toBe(false);
 });
