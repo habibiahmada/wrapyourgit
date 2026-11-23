@@ -46,8 +46,8 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.7",
-    "@types/bun": "1.4.4",
+    "@biomejs/biome": "2.6.8",
+    "@types/bun": "1.4.5",
     "typescript": "^7"
   }
 }
