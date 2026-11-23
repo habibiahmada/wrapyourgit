@@ -4,6 +4,10 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- Exports check their props against the recap schema before the first frame, with Remotion 4.0.545's validation: a malformed recap fails at once, naming the field, instead of minutes into an MP4 or as a file with wrong numbers ([#227](https://github.com/habibiahmada/wrapyourgit/issues/227)).
+
 ## [1.2.1] - 2026-11-22
 
 ### Changed
