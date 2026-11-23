@@ -11,8 +11,8 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@remotion/player": "4.0.543",
-    "@remotion/web-renderer": "4.0.543",
+    "@remotion/player": "4.0.545",
+    "@remotion/web-renderer": "4.0.545",
     "@wyg/analytics": "workspace:*",
     "@wyg/github": "workspace:*",
     "@wyg/schema": "workspace:*",
@@ -24,7 +24,7 @@
     "postgres": "^4.1.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "remotion": "4.0.543",
+    "remotion": "4.0.545",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
