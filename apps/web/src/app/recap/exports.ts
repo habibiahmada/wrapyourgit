@@ -10,6 +10,7 @@ import { RideStory } from "@wyg/video";
 import {
   type ExportFormat,
   exportFileName,
+  exportPropsSchema,
   slideFrames,
   worldExportComposition,
 } from "@wyg/video/export";
@@ -27,6 +28,7 @@ type WorldProps = WorldComposition["defaultProps"];
 export type MediaOptions = {
   composition: WorldComposition;
   inputProps: WorldProps;
+  schema: typeof exportPropsSchema;
   container: "mp4";
   videoCodec: "h264";
   audioCodec: "aac";
@@ -36,6 +38,7 @@ export type MediaOptions = {
 export type StillOptions = {
   composition: WorldComposition;
   inputProps: WorldProps;
+  schema: typeof exportPropsSchema;
   frame: number;
   signal: AbortSignal;
 };
@@ -146,6 +149,7 @@ export function renderMp4(
     engineWith(overrides).renderMedia({
       composition: world,
       inputProps: world.defaultProps,
+      schema: exportPropsSchema,
       container: "mp4",
       videoCodec: "h264",
       audioCodec: "aac",
@@ -190,6 +194,7 @@ export async function renderSlides(
         composition: world,
         // A slide is one frame: the progress bar would read as a loading line (#197).
         inputProps: { ...world.defaultProps, progress: false },
+        schema: exportPropsSchema,
         frame,
         signal,
       }),

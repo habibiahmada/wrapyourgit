@@ -1,4 +1,5 @@
-import { type RecapData, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
+import { type RecapData, recapDataSchema, VIDEO_FORMATS, VIDEO_FPS } from "@wyg/schema";
+import { z } from "zod";
 import { fileSlug } from "./file-name";
 import { buildRide, type RideOptions, rideDuration } from "./ride/model";
 
@@ -9,7 +10,19 @@ export type ExportFormat = keyof typeof VIDEO_FORMATS;
 /** Slides are one per stop, letter pages included unless left out; by default the Instagram feed size (4:5). */
 const SLIDE_FORMAT: ExportFormat = "4x5";
 
-/** `progress: false` for stills: a slide leaves the stops' progress bar out (#197). */
+/**
+ * The props an export renders with, as a schema the browser renderer checks them against before
+ * the first frame (#227): a malformed recap fails at once, naming the field, instead of minutes
+ * into a render or as a finished file with wrong numbers. `progress: false` for stills: a slide
+ * leaves the stops' progress bar out (#197).
+ */
+export const exportPropsSchema = z.object({
+  data: recapDataSchema,
+  mode: z.literal("video"),
+  letter: z.boolean().optional(),
+  progress: z.boolean().optional(),
+});
+
 type ExportProps = { data: RecapData; mode: "video"; letter?: boolean; progress?: boolean };
 
 /**
