@@ -4,9 +4,12 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-23
+
 ### Changed
 
 - Exports check their props against the recap schema before the first frame, with Remotion 4.0.545's validation: a malformed recap fails at once, naming the field, instead of minutes into an MP4 or as a file with wrong numbers ([#227](https://github.com/habibiahmada/wrapyourgit/issues/227)).
+- Remotion 4.0.543 to 4.0.545 across the player, the web renderer and the scripts (#225); Biome 2.6.8 and `@types/bun` 1.4.5 (#226), with `biome.json` on the 2.6.8 schema (#229).
 
 ## [1.2.1] - 2026-11-22
 
@@ -141,7 +144,8 @@ The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourg
 - A signed-in visitor's new public lookups count against their account instead of their address, so one session sent from many addresses no longer gets 20 lookups an hour at each and drains the shared public token (ADR-0032).
 - The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
 
-[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/habibiahmada/wrapyourgit/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/habibiahmada/wrapyourgit/compare/v1.0.0...v1.1.0
