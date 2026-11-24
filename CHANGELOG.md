@@ -4,6 +4,16 @@ All notable changes to WrapYourGit are recorded here. The format follows [Keep a
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-11-24
+
+### Fixed
+
+- The engine's bunker still read as an unclear box behind Cell, even flush with the frame and with a plain top: it is removed, and its two tail lamps are painted on the frame's back end ([#236](https://github.com/habibiahmada/wrapyourgit/issues/236)).
+
+### Removed
+
+- The engine's bunker block ([#236](https://github.com/habibiahmada/wrapyourgit/issues/236)).
+
 ## [1.2.3] - 2026-11-24
 
 ### Fixed
@@ -150,7 +160,8 @@ The first release: the 2026 edition, live at [wrapyourgit.com](https://wrapyourg
 - A signed-in visitor's new public lookups count against their account instead of their address, so one session sent from many addresses no longer gets 20 lookups an hour at each and drains the shared public token (ADR-0032).
 - The last two items of the security review are closed: CI checks on Node that a tampered or truncated token never decrypts, and every session of an account can be ended at once ([#44](https://github.com/habibiahmada/wrapyourgit/issues/44)).
 
-[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.3...HEAD
+[Unreleased]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/habibiahmada/wrapyourgit/compare/v1.2.0...v1.2.1
