@@ -72,6 +72,10 @@ export function train(s: number): Solid[] {
       decals: [
         ...running(2.5, 0.48, [-0.78, 0, 0.78]),
         { on: "sides", rect: [0, 0.84, 1, 0.94], fill: "#56d364" },
+        // The tail lamps, on the dark skirt at the back. They used to be on a low bunker behind
+        // Cell's seat, a block that read as nothing however it was shaped (issues #232, #236).
+        { on: "back", rect: [0.08, 0.36, 0.21, 0.66], fill: "#ffd866", round: true },
+        { on: "back", rect: [0.79, 0.36, 0.92, 0.66], fill: "#ffd866", round: true },
       ],
     }),
     e(1.0, 0, 0.2, [0.1, 1.24, 0.16], TONE.mid),
@@ -84,16 +88,6 @@ export function train(s: number): Solid[] {
     }),
     e(CHIMNEY, 0, 0.94, [0.24, 0.24, 0.44], TONE.dark),
     e(CHIMNEY, 0, 1.38, [0.34, 0.34, 0.08], TONE.mid),
-    // A low bunker, so Cell shows over it from behind. It is flush with the frame's back and
-    // sides, with a plain top: narrower, it left slivers of the frame showing round it, and a dark
-    // inset on its top made it read as an empty box (issue #232).
-    e(-1.24, 0, 0.5, [0.62, 1.1, 0.3], TONE.dark, {
-      tag: "bunker",
-      decals: [
-        { on: "back", rect: [0.08, 0.25, 0.26, 0.75], fill: "#ffd866" },
-        { on: "back", rect: [0.74, 0.25, 0.92, 0.75], fill: "#ffd866" },
-      ],
-    }),
   ];
   for (const k of [0, 1]) {
     const ws = s - 2.8 - k * 1.5;

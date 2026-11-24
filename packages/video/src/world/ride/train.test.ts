@@ -51,18 +51,23 @@ test("every wheel is the same size, painted on both sides of its body: three axl
   expect(engine.size).toBeCloseTo(engine.height);
 });
 
-test("the bunker is flush with the back and sides of the frame it stands on, with a solid top", () => {
-  // With slivers of the frame showing round it and a near-black inset on its top, the bunker read
-  // as an empty, untidy box behind Cell, and on its own once Cell had stepped off (issue #232).
+test("nothing stands behind Cell's seat, and the tail lamps are on the frame's back end", () => {
+  // A low block behind the seat read as nothing at all, even made flush and plain (issues #232,
+  // #236): the deck behind Cell is bare, and the frame carries the tail lamps.
   const parts = train(40);
   const frame = tagged(parts, "frame")[0];
-  const bunker = tagged(parts, "bunker")[0];
-  if (!frame || !bunker) throw new Error("no frame or bunker");
-  expect(bunker.at[0]).toBeCloseTo(frame.at[0]);
-  expect(bunker.at[1]).toBeCloseTo(frame.at[1]);
-  expect(bunker.size[1]).toBeCloseTo(frame.size[1]);
-  expect(bunker.at[2]).toBeCloseTo(frame.at[2] + frame.size[2]);
-  expect((bunker.decals ?? []).filter((d) => d.on === "top")).toHaveLength(0);
+  if (!frame) throw new Error("no frame");
+  expect(tagged(parts, "bunker")).toHaveLength(0);
+  // Boxes are laid out along the train before it is turned to the rail, so x runs from the nose.
+  // Cell is 0.6 long and sits 0.35 back from the nose: its back is 0.65 from the nose.
+  const nose = frame.pivot?.[0] ?? 0;
+  const deck = frame.at[2] + frame.size[2];
+  const behindSeat = tagged(parts, "engine").filter(
+    (p) => p.at[0] + p.size[0] <= nose - 0.65 && p.at[2] >= deck - 0.01,
+  );
+  expect(behindSeat).toHaveLength(0);
+  const lamps = (frame.decals ?? []).filter((d) => d.on === "back" && d.fill === "#ffd866");
+  expect(lamps).toHaveLength(2);
 });
 
 test("a wheel's tyre stands out from the skirt it is painted on", () => {
